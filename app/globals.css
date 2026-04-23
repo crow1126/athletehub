@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --blue:         #4A90E2;
+  --blue-dark:    #2E6FC4;
+  --blue-light:   #E8F4FF;
+  --blue-mid:     #6BA8E8;
+  --dark:         #2C3E50;
+  --dark-mid:     #3D5166;
+  --success:      #27AE60;
+  --success-light:#E8F8EE;
+  --warning:      #F39C12;
+  --warning-light:#FEF9E7;
+  --danger:       #E74C3C;
+  --danger-light: #FDEDEC;
+  --surface:      #FFFFFF;
+  --surface2:     #F8FAFB;
+  --surface3:     #EEF2F7;
+  --border:       #E8ECF0;
+  --border-md:    #D0D7DF;
+  --text:         #1A2332;
+  --text2:        #5A6778;
+  --text3:        #96A3B0;
+  --font:         'Plus Jakarta Sans', sans-serif;
+  --r-sm:         6px;
+  --r-md:         10px;
+  --r-lg:         14px;
+  --r-xl:         20px;
+  --shadow-xs:    0 1px 3px rgba(0,0,0,0.06);
+  --shadow-sm:    0 2px 8px rgba(0,0,0,0.08);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.10);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.12);
+  --shadow-blue:  0 4px 16px rgba(74,144,226,0.30);
+  --transition:   all 0.18s cubic-bezier(0.4,0,0.2,1);
+}
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font);
+  background: var(--surface2);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+}
+
+h1, h2, h3, h4 { font-family: var(--font); font-weight: 700; }
+a { color: inherit; text-decoration: none; }
+input, select, textarea, button { font-family: var(--font); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--surface2); }
+::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 3px; }
+::selection { background: var(--blue-light); color: var(--blue-dark); }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.fade-up   { animation: fadeUp 0.28s cubic-bezier(0.4,0,0.2,1) both; }
+.fade-up-1 { animation-delay: 0.05s; }
+.fade-up-2 { animation-delay: 0.10s; }
+.fade-up-3 { animation-delay: 0.15s; }
+.fade-up-4 { animation-delay: 0.20s; }
+
+/* Hover helpers */
+.btn-blue {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font);
+  box-shadow: var(--shadow-blue);
+}
+.btn-blue:hover { background: var(--blue-dark); transform: translateY(-1px); }
+
+.btn-ghost {
+  background: var(--surface);
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-family: var(--font);
+}
+.btn-ghost:hover { background: var(--blue-light); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-sm);
+}

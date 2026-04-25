@@ -7,7 +7,6 @@ export default function LoginPage() {
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [loading,  setLoading]  = useState(false)
-  const [checking, setChecking] = useState(true)
   const [error,    setError]    = useState('')
   const [showPass, setShowPass] = useState(false)
   const [disabled, setDisabled] = useState(false)
@@ -18,16 +17,17 @@ export default function LoginPage() {
       const params = new URLSearchParams(window.location.search)
       if (params.get('reason') === 'disabled') setDisabled(true)
     }
+    // Check session in background — redirect if already logged in
+    // but don't block showing the form
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         try {
           const { data: profile } = await supabase
             .from('profiles').select('is_active').eq('id', session.user.id).single()
-          if (profile?.is_active !== false) { router.replace('/dashboard'); return }
+          if (profile?.is_active !== false) router.replace('/dashboard')
         } catch (e) {}
       }
-      setChecking(false)
-    })
+    }).catch(() => {})
   }, [])
 
   async function handleLogin(e) {
@@ -55,19 +55,16 @@ export default function LoginPage() {
       }
       router.replace('/dashboard')
     } catch (err) {
-      setError(err.message || 'Unexpected error. Please try again.')
+      if (err.message?.includes('fetch') || err.message?.includes('Failed')) {
+        setError('Cannot connect. Check your internet connection and try again.')
+      } else {
+        setError(err.message || 'Unexpected error. Please try again.')
+      }
       setLoading(false)
     }
   }
 
-  if (checking) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#F8FAFB' }}>
-      <div style={{ width:36, height:36, border:'4px solid #E8F4FF', borderTopColor:'#4A90E2', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-    </div>
-  )
-
-  const F = { width:'100%', padding:'12px 16px', border:'1.5px solid #E8ECF0', borderRadius:10, fontSize:15, outline:'none', fontFamily:'Plus Jakarta Sans,sans-serif', color:'#1A2332', background:'#F8FAFB', boxSizing:'border-box', transition:'border-color 0.15s', WebkitAppearance:'none' }
+  const F = { width:'100%', padding:'12px 16px', border:'1.5px solid #E8ECF0', borderRadius:10, fontSize:16, outline:'none', fontFamily:'Plus Jakarta Sans,sans-serif', color:'#1A2332', background:'#F8FAFB', boxSizing:'border-box', transition:'border-color 0.15s', WebkitAppearance:'none' }
 
   return (
     <>
@@ -79,12 +76,11 @@ export default function LoginPage() {
         .login-right { width:460px; display:flex; align-items:center; justify-content:center; padding:44px; background:#fff; }
         @media (max-width: 768px) {
           .login-wrap { flex-direction:column; }
-          .login-left { padding:32px 24px 28px; flex:none; }
-          .login-left h1 { font-size:26px !important; }
-          .login-left p { display:none; }
+          .login-left { padding:28px 24px 24px; flex:none; }
+          .login-left h1 { font-size:24px !important; margin-bottom:8px !important; }
           .login-features { display:none !important; }
-          .login-logo-text { display:block !important; }
-          .login-right { width:100%; padding:28px 20px 40px; flex:1; align-items:flex-start; }
+          .login-left p { display:none !important; }
+          .login-right { width:100%; padding:28px 20px 48px; flex:1; align-items:flex-start; }
         }
       `}</style>
 
@@ -94,7 +90,7 @@ export default function LoginPage() {
           <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
           <div style={{ position:'absolute', bottom:-60, left:-60, width:240, height:240, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
           <div style={{ position:'relative', zIndex:2 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:32 }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
               <div style={{ width:46, height:46, borderRadius:13, background:'rgba(255,255,255,0.18)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>📊</div>
               <div>
                 <div style={{ fontWeight:800, fontSize:19, color:'#fff' }}>Athlete<span style={{ color:'#93C5FD' }}>Hub</span></div>
@@ -151,7 +147,7 @@ export default function LoginPage() {
                   <input type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" style={{ ...F, paddingRight:44 }}
                     onFocus={e=>e.target.style.borderColor='#4A90E2'}
                     onBlur={e=>e.target.style.borderColor='#E8ECF0'} />
-                  <button type="button" onClick={()=>setShowPass(v=>!v)} style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#96A3B0', padding:0, lineHeight:1 }}>
+                  <button type="button" onClick={()=>setShowPass(v=>!v)} style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#96A3B0', padding:0, lineHeight:1, minHeight:'auto' }}>
                     {showPass?'🙈':'👁️'}
                   </button>
                 </div>
@@ -163,7 +159,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading} style={{ background:loading?'#96A3B0':'linear-gradient(135deg,#2E6FC4,#4A90E2)', color:'#fff', border:'none', padding:'14px', borderRadius:10, fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(74,144,226,0.3)', fontFamily:'Plus Jakarta Sans,sans-serif', width:'100%', marginTop:4, touchAction:'manipulation' }}>
+              <button type="submit" disabled={loading} style={{ background:loading?'#96A3B0':'linear-gradient(135deg,#2E6FC4,#4A90E2)', color:'#fff', border:'none', padding:'15px', borderRadius:10, fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(74,144,226,0.3)', fontFamily:'Plus Jakarta Sans,sans-serif', width:'100%', marginTop:4, touchAction:'manipulation', minHeight:52 }}>
                 {loading?'Signing in…':'Sign In →'}
               </button>
             </form>
@@ -171,8 +167,8 @@ export default function LoginPage() {
             <div style={{ marginTop:24, padding:'14px 16px', background:'#F8FAFB', borderRadius:10, border:'1px solid #E8ECF0' }}>
               <div style={{ fontSize:10, fontWeight:700, color:'#96A3B0', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:7 }}>Default Admin</div>
               <div style={{ fontSize:13, color:'#5A6778', lineHeight:1.9 }}>
-                <div>📧 <strong>admin@pitchreport.gh</strong></div>
-                <div>🔑 <strong>Admin@1234</strong></div>
+                <div>📧 <strong>admin@kotoko.gh</strong></div>
+                <div>🔑 <strong>Kotoko@1234</strong></div>
               </div>
             </div>
           </div>

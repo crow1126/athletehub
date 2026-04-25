@@ -257,17 +257,34 @@ export default function SettingsPage() {
 
   async function revokeLogin(loginId) {
     if (!confirm('Revoke this login? The user will be signed out immediately.')) return
-    const login   = staffLogins.find(l => l.id === loginId)
-    const user    = allUsers.find(u =>
-      u.email?.toLowerCase() === login?.email?.toLowerCase() ||
-      u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase()
-    )
-    const user_id = user?.id
-    if (!user_id) {
-      await supabase.from('staff_logins').update({ is_active: false }).eq('id', loginId)
-      flash('Login revoked in records (auth account not found).'); await loadAll(); return
+    const login = staffLogins.find(l => l.id === loginId)
+    if (!login) { flash('Login record not found.', 'error'); return }
+
+    // Strategy 1: query profiles directly by email (most reliable)
+    let userId = null
+    const { data: byEmail } = await supabase
+      .from('profiles').select('id').ilike('email', login.email).maybeSingle()
+    if (byEmail?.id) userId = byEmail.id
+
+    // Strategy 2: fallback to allUsers in memory
+    if (!userId) {
+      const u = allUsers.find(u =>
+        u.email?.toLowerCase() === login.email?.toLowerCase() ||
+        u.full_name?.toLowerCase() === login.coaches?.name?.toLowerCase()
+      )
+      if (u?.id) userId = u.id
     }
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id, login_id:loginId, action:'revoke' }) })
+
+    if (!userId) {
+      flash(
+        `Cannot find auth account for ${login.coaches?.name || login.email}.\n` +
+        `Check their email in Supabase Auth matches exactly: ${login.email}`,
+        'error'
+      )
+      return
+    }
+
+    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:loginId, action:'revoke' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash('✅ Login revoked. User has been signed out immediately.')
@@ -276,17 +293,34 @@ export default function SettingsPage() {
 
   async function reactivateLogin(loginId) {
     if (!confirm('Reactivate this login?')) return
-    const login   = staffLogins.find(l => l.id === loginId)
-    const user    = allUsers.find(u =>
-      u.email?.toLowerCase() === login?.email?.toLowerCase() ||
-      u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase()
-    )
-    const user_id = user?.id
-    if (!user_id) {
-      await supabase.from('staff_logins').update({ is_active: true }).eq('id', loginId)
-      flash('Login reactivated in records.'); await loadAll(); return
+    const login = staffLogins.find(l => l.id === loginId)
+    if (!login) { flash('Login record not found.', 'error'); return }
+
+    // Strategy 1: query profiles directly by email (most reliable)
+    let userId = null
+    const { data: byEmail } = await supabase
+      .from('profiles').select('id').ilike('email', login.email).maybeSingle()
+    if (byEmail?.id) userId = byEmail.id
+
+    // Strategy 2: fallback to allUsers in memory
+    if (!userId) {
+      const u = allUsers.find(u =>
+        u.email?.toLowerCase() === login.email?.toLowerCase() ||
+        u.full_name?.toLowerCase() === login.coaches?.name?.toLowerCase()
+      )
+      if (u?.id) userId = u.id
     }
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id, login_id:loginId, action:'reactivate' }) })
+
+    if (!userId) {
+      flash(
+        `Cannot find auth account for ${login.coaches?.name || login.email}.\n` +
+        `Check their email in Supabase Auth matches exactly: ${login.email}`,
+        'error'
+      )
+      return
+    }
+
+    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:loginId, action:'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash('✅ Login reactivated.')

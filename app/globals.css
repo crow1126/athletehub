@@ -46,6 +46,17 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   font-size: 15px;
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+}
+
+/* Mobile tap highlight */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Better touch targets on mobile */
+@media (max-width: 768px) {
+  button, a { min-height: 44px; }
+  input, select, textarea { font-size: 16px !important; } /* Prevents iOS zoom */
 }
 
 h1, h2, h3, h4 { font-family: var(--font); font-weight: 700; }
@@ -69,7 +80,6 @@ input, select, textarea, button { font-family: var(--font); }
 .fade-up-3 { animation-delay: 0.15s; }
 .fade-up-4 { animation-delay: 0.20s; }
 
-/* Hover helpers */
 .btn-blue {
   background: var(--blue);
   color: #fff;
@@ -82,6 +92,7 @@ input, select, textarea, button { font-family: var(--font); }
   transition: var(--transition);
   font-family: var(--font);
   box-shadow: var(--shadow-blue);
+  touch-action: manipulation;
 }
 .btn-blue:hover { background: var(--blue-dark); transform: translateY(-1px); }
 
@@ -96,6 +107,7 @@ input, select, textarea, button { font-family: var(--font); }
   cursor: pointer;
   transition: var(--transition);
   font-family: var(--font);
+  touch-action: manipulation;
 }
 .btn-ghost:hover { background: var(--blue-light); }
 
@@ -104,4 +116,9 @@ input, select, textarea, button { font-family: var(--font); }
   border: 1px solid var(--border);
   border-radius: var(--r-xl);
   box-shadow: var(--shadow-sm);
+}
+
+/* Mobile card adjustments */
+@media (max-width: 768px) {
+  .card { border-radius: var(--r-lg); }
 }

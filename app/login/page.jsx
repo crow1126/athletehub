@@ -17,8 +17,6 @@ export default function LoginPage() {
       const params = new URLSearchParams(window.location.search)
       if (params.get('reason') === 'disabled') setDisabled(true)
     }
-    // Check session in background — redirect if already logged in
-    // but don't block showing the form
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
         try {
@@ -85,7 +83,6 @@ export default function LoginPage() {
       `}</style>
 
       <div className="login-wrap">
-        {/* Left panel */}
         <div className="login-left">
           <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
           <div style={{ position:'absolute', bottom:-60, left:-60, width:240, height:240, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
@@ -119,7 +116,6 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right form */}
         <div className="login-right">
           <div style={{ width:'100%', maxWidth:360, animation:'fadeUp 0.35s ease both' }}>
             <div style={{ marginBottom:28 }}>
@@ -140,7 +136,6 @@ export default function LoginPage() {
                   onFocus={e=>e.target.style.borderColor='#4A90E2'}
                   onBlur={e=>e.target.style.borderColor='#E8ECF0'} />
               </div>
-
               <div>
                 <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#5A6778', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Password</label>
                 <div style={{ position:'relative' }}>
@@ -163,14 +158,6 @@ export default function LoginPage() {
                 {loading?'Signing in…':'Sign In →'}
               </button>
             </form>
-
-            <div style={{ marginTop:24, padding:'14px 16px', background:'#F8FAFB', borderRadius:10, border:'1px solid #E8ECF0' }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'#96A3B0', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:7 }}>Default Admin</div>
-              <div style={{ fontSize:13, color:'#5A6778', lineHeight:1.9 }}>
-                <div>📧 <strong>admin@kotoko.gh</strong></div>
-                <div>🔑 <strong>Kotoko@1234</strong></div>
-              </div>
-            </div>
           </div>
         </div>
       </div>

@@ -342,9 +342,9 @@ export default function SettingsPage() {
           @media(max-width:768px){
             .settings-wrap { grid-template-columns:1fr !important; gap:12px !important; }
             .settings-profile-header { display:none !important; }
-            .settings-tabs-list { flex-direction:row !important; overflow-x:auto; gap:4px !important; padding:4px 0 8px !important; scrollbar-width:none; }
-            .settings-tabs-list::-webkit-scrollbar { display:none; }
-            .settings-tab-btn { white-space:nowrap !important; flex-shrink:0 !important; text-align:center !important; padding:8px 14px !important; }
+            .settings-tabs-list { flex-direction:row !important; overflow-x:auto !important; gap:4px !important; padding:8px !important; scrollbar-width:none !important; }
+            .settings-tabs-list::-webkit-scrollbar { display:none !important; }
+            .settings-tab-btn { width:auto !important; width:auto !important; white-space:nowrap !important; flex-shrink:0 !important; text-align:center !important; padding:8px 14px !important; margin-bottom:0 !important; margin-bottom:0 !important; }
             .settings-content { padding:16px !important; }
             .settings-grid-2 { grid-template-columns:1fr !important; }
             .issue-grid { grid-template-columns:1fr !important; }

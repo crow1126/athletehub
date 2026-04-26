@@ -6,10 +6,10 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-const POSITIONS = ['Forward','Midfielder','Defender','Goalkeeper']
-const REGIONS   = ['Greater Accra','Ashanti','Western','Eastern','Volta','Brong-Ahafo','Northern','Upper East','Upper West','Central']
-const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
-const EMPTY     = { name:'',age:'',position:'',region:'',club:'',phone:'',height:'',weight:'',coach_id:'' }
+const POSITIONS  = ['Forward','Midfielder','Defender','Goalkeeper']
+const REGIONS    = ['Greater Accra','Ashanti','Western','Eastern','Volta','Brong-Ahafo','Northern','Upper East','Upper West','Central']
+const AV_COLORS  = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
+const EMPTY      = { name:'',age:'',position:'',strong_foot:'',region:'',club:'',phone:'',height:'',weight:'',coach_id:'' }
 
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
@@ -30,20 +30,20 @@ const inp = { width:'100%',padding:'10px 14px',background:'var(--surface2)',bord
 const lbl = { display:'block',fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6 }
 
 export default function AthletesPage() {
-  const [athletes,   setAthletes]   = useState([])
-  const [coaches,    setCoaches]    = useState([])
-  const [loading,    setLoading]    = useState(true)
-  const [saving,     setSaving]     = useState(false)
-  const [deleting,   setDeleting]   = useState(null)
-  const [showForm,   setShowForm]   = useState(false)
-  const [editId,     setEditId]     = useState(null)
-  const [form,       setForm]       = useState(EMPTY)
-  const [photoFile,  setPhotoFile]  = useState(null)
-  const [photoPreview,setPhotoPreview] = useState(null)
-  const [search,     setSearch]     = useState('')
-  const [posFilter,  setPosFilter]  = useState('')
-  const [statFilter, setStatFilter] = useState('')
-  const [formError,  setFormError]  = useState('')
+  const [athletes,    setAthletes]    = useState([])
+  const [coaches,     setCoaches]     = useState([])
+  const [loading,     setLoading]     = useState(true)
+  const [saving,      setSaving]      = useState(false)
+  const [deleting,    setDeleting]    = useState(null)
+  const [showForm,    setShowForm]    = useState(false)
+  const [editId,      setEditId]      = useState(null)
+  const [form,        setForm]        = useState(EMPTY)
+  const [photoFile,   setPhotoFile]   = useState(null)
+  const [photoPreview,setPhotoPreview]= useState(null)
+  const [search,      setSearch]      = useState('')
+  const [posFilter,   setPosFilter]   = useState('')
+  const [statFilter,  setStatFilter]  = useState('')
+  const [formError,   setFormError]   = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -62,7 +62,7 @@ export default function AthletesPage() {
 
   function openEdit(ath) {
     setEditId(ath.id)
-    setForm({ name:ath.name||'',age:ath.age||'',position:ath.position||'',region:ath.region||'',club:ath.club||'',phone:ath.phone||'',height:ath.height||'',weight:ath.weight||'',coach_id:ath.coach_id||'' })
+    setForm({ name:ath.name||'', age:ath.age||'', position:ath.position||'', strong_foot:ath.strong_foot||'', region:ath.region||'', club:ath.club||'', phone:ath.phone||'', height:ath.height||'', weight:ath.weight||'', coach_id:ath.coach_id||'' })
     setPhotoFile(null); setPhotoPreview(ath.photo_url||null); setFormError(''); setShowForm(true)
   }
 
@@ -89,6 +89,7 @@ export default function AthletesPage() {
     setSaving(true)
     const payload = {
       name:form.name.trim(), age:parseInt(form.age)||null, position:form.position||null,
+      strong_foot:form.strong_foot||null,
       region:form.region||null, club:form.club||null, phone:form.phone||null,
       height:parseInt(form.height)||null, weight:parseInt(form.weight)||null, coach_id:form.coach_id||null,
     }
@@ -153,7 +154,6 @@ export default function AthletesPage() {
           action={<button className="btn-blue" onClick={openAdd}>+ Register Athlete</button>}
         />
 
-        {/* Filters */}
         <div className="ath-filters fade-up">
           <input placeholder="🔍 Search name, club, region…" value={search} onChange={e=>setSearch(e.target.value)}
             style={{ ...inp, maxWidth:300 }}
@@ -175,14 +175,12 @@ export default function AthletesPage() {
           )}
         </div>
 
-        {/* Table */}
         <div className="card fade-up fade-up-1" style={{ overflow:'hidden' }}>
           <div className="ath-th">
             {['Athlete','Position','Club','Region','Coach','Age','Status','Actions'].map(h=>(
               <div key={h} style={{ fontSize:11, fontWeight:700, color:'var(--text3)', letterSpacing:'0.08em', textTransform:'uppercase' }}>{h}</div>
             ))}
           </div>
-
           {loading ? (
             <div style={{ padding:'60px', textAlign:'center' }}>
               <div style={{ width:30, height:30, border:'4px solid var(--blue-light)', borderTopColor:'var(--blue)', borderRadius:'50%', animation:'spin 0.7s linear infinite', margin:'0 auto 10px' }}/>
@@ -236,6 +234,8 @@ export default function AthletesPage() {
               {formError && (
                 <div style={{ background:'var(--danger-light)', border:'1px solid rgba(231,76,60,0.25)', borderRadius:'var(--r-md)', padding:'10px 14px', fontSize:13, color:'var(--danger)', fontWeight:600 }}>⚠ {formError}</div>
               )}
+
+              {/* Photo */}
               <div>
                 <label style={lbl}>Profile Photo</label>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
@@ -251,11 +251,13 @@ export default function AthletesPage() {
                   </div>
                 </div>
               </div>
+
               <div>
                 <label style={lbl}>Full Name *</label>
                 <input value={form.name} onChange={e=>set('name')(e.target.value)} style={inp} placeholder="e.g. Kwame Asante"
                   onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
               </div>
+
               <div className="modal-g2">
                 <div><label style={lbl}>Age</label><input type="number" min="14" max="50" value={form.age} onChange={e=>set('age')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
                 <div>
@@ -266,6 +268,18 @@ export default function AthletesPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Strong Foot */}
+              <div>
+                <label style={lbl}>Strong Foot</label>
+                <select value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>
+                  <option value="">Select…</option>
+                  <option value="right">🦶 Right Foot</option>
+                  <option value="left">🦶 Left Foot</option>
+                  <option value="both">🦶 Both Feet</option>
+                </select>
+              </div>
+
               <div>
                 <label style={lbl}>Club / Team</label>
                 <input value={form.club} onChange={e=>set('club')(e.target.value)} style={inp} placeholder="e.g. Asante Kotoko SC"
@@ -294,6 +308,7 @@ export default function AthletesPage() {
                 <div><label style={lbl}>Height (cm)</label><input type="number" value={form.height} onChange={e=>set('height')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
                 <div><label style={lbl}>Weight (kg)</label><input type="number" value={form.weight} onChange={e=>set('weight')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
               </div>
+
               <div style={{ display:'flex', gap:10, paddingTop:8 }}>
                 <button onClick={()=>setShowForm(false)} style={{ flex:1, background:'var(--surface2)', border:'1px solid var(--border)', color:'var(--text2)', padding:'12px', borderRadius:'var(--r-md)', fontSize:14, cursor:'pointer', fontWeight:600, fontFamily:'var(--font)' }}>Cancel</button>
                 <button onClick={handleSave} disabled={saving} className="btn-blue" style={{ flex:2, padding:'12px', opacity:saving?0.7:1, fontSize:14 }}>

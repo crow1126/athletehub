@@ -257,34 +257,17 @@ export default function SettingsPage() {
 
   async function revokeLogin(loginId) {
     if (!confirm('Revoke this login? The user will be signed out immediately.')) return
-    const login = staffLogins.find(l => l.id === loginId)
-    if (!login) { flash('Login record not found.', 'error'); return }
-
-    // Strategy 1: query profiles directly by email (most reliable)
-    let userId = null
-    const { data: byEmail } = await supabase
-      .from('profiles').select('id').ilike('email', login.email).maybeSingle()
-    if (byEmail?.id) userId = byEmail.id
-
-    // Strategy 2: fallback to allUsers in memory
-    if (!userId) {
-      const u = allUsers.find(u =>
-        u.email?.toLowerCase() === login.email?.toLowerCase() ||
-        u.full_name?.toLowerCase() === login.coaches?.name?.toLowerCase()
-      )
-      if (u?.id) userId = u.id
+    const login   = staffLogins.find(l => l.id === loginId)
+    const user    = allUsers.find(u =>
+      u.email?.toLowerCase() === login?.email?.toLowerCase() ||
+      u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase()
+    )
+    const user_id = user?.id
+    if (!user_id) {
+      await supabase.from('staff_logins').update({ is_active: false }).eq('id', loginId)
+      flash('Login revoked in records (auth account not found).'); await loadAll(); return
     }
-
-    if (!userId) {
-      flash(
-        `Cannot find auth account for ${login.coaches?.name || login.email}.\n` +
-        `Check their email in Supabase Auth matches exactly: ${login.email}`,
-        'error'
-      )
-      return
-    }
-
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:loginId, action:'revoke' }) })
+    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id, login_id:loginId, action:'revoke' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash('✅ Login revoked. User has been signed out immediately.')
@@ -293,34 +276,17 @@ export default function SettingsPage() {
 
   async function reactivateLogin(loginId) {
     if (!confirm('Reactivate this login?')) return
-    const login = staffLogins.find(l => l.id === loginId)
-    if (!login) { flash('Login record not found.', 'error'); return }
-
-    // Strategy 1: query profiles directly by email (most reliable)
-    let userId = null
-    const { data: byEmail } = await supabase
-      .from('profiles').select('id').ilike('email', login.email).maybeSingle()
-    if (byEmail?.id) userId = byEmail.id
-
-    // Strategy 2: fallback to allUsers in memory
-    if (!userId) {
-      const u = allUsers.find(u =>
-        u.email?.toLowerCase() === login.email?.toLowerCase() ||
-        u.full_name?.toLowerCase() === login.coaches?.name?.toLowerCase()
-      )
-      if (u?.id) userId = u.id
+    const login   = staffLogins.find(l => l.id === loginId)
+    const user    = allUsers.find(u =>
+      u.email?.toLowerCase() === login?.email?.toLowerCase() ||
+      u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase()
+    )
+    const user_id = user?.id
+    if (!user_id) {
+      await supabase.from('staff_logins').update({ is_active: true }).eq('id', loginId)
+      flash('Login reactivated in records.'); await loadAll(); return
     }
-
-    if (!userId) {
-      flash(
-        `Cannot find auth account for ${login.coaches?.name || login.email}.\n` +
-        `Check their email in Supabase Auth matches exactly: ${login.email}`,
-        'error'
-      )
-      return
-    }
-
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:loginId, action:'reactivate' }) })
+    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id, login_id:loginId, action:'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash('✅ Login reactivated.')
@@ -369,11 +335,33 @@ export default function SettingsPage() {
       <div style={{ maxWidth:1100,margin:'0 auto',padding:'32px 40px' }}>
         <PageHeader label="Configuration" title="Settings" subtitle="Profile, security, and system administration"/>
 
-        <div style={{ display:'grid',gridTemplateColumns:'230px 1fr',gap:24,alignItems:'start' }}>
+        <style>{`
+          .settings-wrap { display:grid; grid-template-columns:230px 1fr; gap:24px; align-items:start; }
+          .settings-tabs-list { display:flex; flex-direction:column; }
+          .settings-content { padding:30px; }
+          @media(max-width:768px){
+            .settings-wrap { grid-template-columns:1fr !important; gap:12px !important; }
+            .settings-profile-header { display:none !important; }
+            .settings-tabs-list { flex-direction:row !important; overflow-x:auto; gap:4px !important; padding:4px 0 8px !important; scrollbar-width:none; }
+            .settings-tabs-list::-webkit-scrollbar { display:none; }
+            .settings-tab-btn { white-space:nowrap !important; flex-shrink:0 !important; text-align:center !important; padding:8px 14px !important; }
+            .settings-content { padding:16px !important; }
+            .settings-grid-2 { grid-template-columns:1fr !important; }
+            .issue-grid { grid-template-columns:1fr !important; }
+            .recover-grid { grid-template-columns:1fr !important; }
+            .logins-table-header { display:none !important; }
+            .logins-table-row { display:flex !important; flex-direction:column !important; gap:6px !important; padding:14px !important; }
+            .users-table-header { display:none !important; }
+            .users-table-row { display:flex !important; flex-wrap:wrap !important; gap:8px !important; align-items:center !important; padding:12px 14px !important; }
+            .system-grid { grid-template-columns:1fr !important; }
+          }
+        `}</style>
+
+        <div className="settings-wrap">
 
           {/* Sidebar */}
           <div className="card" style={{ padding:10 }}>
-            <div style={{ textAlign:'center',padding:'16px 12px',borderBottom:'1px solid var(--border)',marginBottom:10 }}>
+            <div className="settings-profile-header" style={{ textAlign:'center',padding:'16px 12px',borderBottom:'1px solid var(--border)',marginBottom:10 }}>
               <div style={{ width:54,height:54,borderRadius:'50%',background:`linear-gradient(135deg,${ROLE_COLORS[profile?.role||'admin']},${ROLE_COLORS[profile?.role||'admin']}99)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:800,color:'#fff',margin:'0 auto 10px' }}>
                 {initials(profile?.full_name)}
               </div>
@@ -383,16 +371,19 @@ export default function SettingsPage() {
                 {profile?.role||'user'}
               </span>
             </div>
+            <div className="settings-tabs-list">
             {TABS.map(t => (
               <button key={t.id} onClick={() => { setTab(t.id); setMsg({ text:'',type:'' }); setIssueMsg({ text:'',type:'' }); setRecoverMsg({ text:'',type:'' }) }}
+                className="settings-tab-btn"
                 style={{ width:'100%',padding:'10px 14px',background:tab===t.id?'var(--blue-light)':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'var(--blue)':'var(--text2)',cursor:'pointer',textAlign:'left',transition:'var(--transition)',marginBottom:2,fontFamily:'var(--font)',display:'block' }}>
                 {t.label}
               </button>
             ))}
+            </div>
           </div>
 
           {/* Content */}
-          <div className="card" style={{ padding:30 }}>
+          <div className="card settings-content">
 
             {/* ── MY PROFILE ── */}
             {tab === 'profile' && (
@@ -477,7 +468,7 @@ export default function SettingsPage() {
                           {allStaff.length===0 ? <option disabled>No staff found — add staff in Teams tab first</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
                         </select>
                       </div>
-                      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                      <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                         <div><label style={{ ...lbl,color:'#1A4A8A' }}>Login Email *</label><input type="email" value={issueForm.email} onChange={e=>setIssueForm(f=>({...f,email:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="staff@club.gh" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
                         <div><label style={{ ...lbl,color:'#1A4A8A' }}>Password *</label><input type="text" value={issueForm.password} onChange={e=>setIssueForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
                       </div>
@@ -511,13 +502,13 @@ export default function SettingsPage() {
                   <div style={{ padding:'28px',textAlign:'center',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:14,fontStyle:'italic',border:'1px solid var(--border)',marginTop:12 }}>No logins issued yet.</div>
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
-                    <div style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                    <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
                       {['Staff','Email','Password','Role','Issued','Status','Action'].map(h=>(
                         <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
                       ))}
                     </div>
                     {staffLogins.map(login => (
-                      <div key={login.id} style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
+                      <div key={login.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
                         onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                         onMouseLeave={e=>e.currentTarget.style.background=''}>
                         <div>
@@ -623,7 +614,7 @@ export default function SettingsPage() {
                       })()}
                     </div>
 
-                    <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                    <div className="recover-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                       <div><label style={{ ...lbl,color:'#1A4A8A' }}>Set New Password *</label><input type="text" value={recoverForm.new_password} onChange={e=>setRecoverForm(f=>({...f,new_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
                       <div><label style={{ ...lbl,color:'#1A4A8A' }}>Confirm Password *</label><input type="text" value={recoverForm.confirm_password} onChange={e=>setRecoverForm(f=>({...f,confirm_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Repeat password" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
                     </div>
@@ -697,11 +688,11 @@ export default function SettingsPage() {
                 <MsgBox m={msg}/>
                 {allUsers.length===0 ? <p style={{ fontSize:13,color:'var(--text3)',fontStyle:'italic',marginTop:12 }}>No users yet.</p> : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:msg.text?12:0 }}>
-                    <div style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                    <div className="users-table-header" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
                       {['Name','Email','Role','Status','Action'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
                     </div>
                     {allUsers.map(u=>(
-                      <div key={u.id} style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:u.is_active!==false?1:0.6 }}
+                      <div key={u.id} className="users-table-row" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:u.is_active!==false?1:0.6 }}
                         onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                         onMouseLeave={e=>e.currentTarget.style.background=''}>
                         <div style={{ display:'flex',alignItems:'center',gap:9 }}>
@@ -734,7 +725,7 @@ export default function SettingsPage() {
                     ))}
                   </div>
                 </div>
-                <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24 }}>
+                <div className="system-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24 }}>
                   {[['Platform','AthleteHub FOS v2.0'],['Database','Supabase PostgreSQL'],['Framework','Next.js 16'],['Auth','Supabase Auth (JWT)'],['Security','Multi-tenant RLS'],['Region','West EU (London)']].map(([label,value])=>(
                     <div key={label} style={{ background:'var(--surface2)',borderRadius:'var(--r-md)',padding:'14px 18px',border:'1px solid var(--border)' }}>
                       <div style={{ fontSize:10,color:'var(--text3)',fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5 }}>{label}</div>

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  turbopack: {},
+  allowedDevOrigins: ['10.244.248.115'],
 }
 
 module.exports = nextConfig

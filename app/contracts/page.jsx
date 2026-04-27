@@ -114,6 +114,15 @@ export default function ContractsPage() {
 
   return (
     <Layout>
+      <style>{`
+  @media(max-width:768px){
+    div[style*="32px 40px"]{padding:14px 12px!important}
+    div[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+    div[style*="2fr 1fr 1fr 1.2fr"]{display:none!important}
+    div[style*="1fr 1fr;gap:14"]{grid-template-columns:1fr!important}
+    div[style*="1fr 1fr 1fr;gap:12"]{grid-template-columns:1fr!important}
+  }
+`}</style>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 40px' }}>
         <PageHeader
           label="Finance"

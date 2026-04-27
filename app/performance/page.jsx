@@ -68,6 +68,14 @@ export default function PerformancePage(){
 
   return(
     <Layout>
+      <style>{`
+  @media(max-width:768px){
+    .perf-lb{grid-template-columns:repeat(2,1fr)!important}
+    div[style*="32px 40px"]{padding:14px 12px!important}
+    div[style*="1.8fr 0.9fr 0.9fr"]{display:none!important}
+    div[style*="repeat(4,1fr)"]{grid-template-columns:1fr 1fr!important}
+  }
+`}</style>
       <div style={{ maxWidth:1280,margin:'0 auto',padding:'32px 40px' }}>
         <PageHeader label="Analytics" title="Performance" subtitle="Match stats, xG, xA and player analytics"
           action={<button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>

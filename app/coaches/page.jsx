@@ -189,6 +189,13 @@ export default function CoachesPage() {
 
   return (
     <Layout>
+      <style>{`
+  @media(max-width:768px){
+    div[style*="32px 40px"]{padding:14px 12px!important}
+    div[style*="repeat(5,1fr);gap:14"]{grid-template-columns:repeat(2,1fr)!important}
+    div[style*="1fr 1fr;gap:14"]{grid-template-columns:1fr!important}
+  }
+`}</style>
       <div style={{ maxWidth:1280,margin:'0 auto',padding:'32px 40px' }}>
         <PageHeader label="Organisation" title="Team & Staff" subtitle={`${coaches.length} staff member${coaches.length!==1?'s':''} across departments`} action={<button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>}/>
 

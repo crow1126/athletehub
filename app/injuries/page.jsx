@@ -168,6 +168,14 @@ export default function InjuriesPage() {
 
   return (
     <Layout>
+      <style>{`
+  @media(max-width:768px){
+    div[style*="32px 40px"]{padding:14px 12px!important}
+    div[style*="repeat(3,1fr)"]{grid-template-columns:1fr!important}
+    div[style*="2.2fr 1.8fr"]{grid-template-columns:1fr!important}
+    div[style*="1fr 1fr;gap:14"]{grid-template-columns:1fr!important}
+  }
+`}</style>
       <div style={{ maxWidth:1280,margin:'0 auto',padding:'32px 40px' }}>
         <PageHeader label="Medical Records" title="Injury Register" subtitle={`${activeCnt} active · ${recovCnt} recovered`}
           action={<button className="btn-blue" onClick={openAdd} style={{ background:'linear-gradient(135deg,#C0392B,#E74C3C)',boxShadow:'0 4px 14px rgba(231,76,60,0.35)' }}>+ Log Injury</button>}/>

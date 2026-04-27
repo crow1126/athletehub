@@ -120,6 +120,13 @@ export default function ReportsPage() {
 
   return (
     <Layout>
+      <style>{`
+  @media(max-width:768px){
+    div[style*="32px 40px 60px"]{padding:14px 12px 40px!important}
+    div[style*="repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
+    div[style*="repeat(3,1fr)"]{grid-template-columns:1fr!important}
+  }
+`}</style>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 40px 60px' }}>
         <PageHeader label="Analytics & Exports" title="Reports" subtitle="Generate and download Excel reports for any time period" />
 

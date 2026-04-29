@@ -1,5 +1,6 @@
 import './globals.css'
 import AuthGuard from '@/components/AuthGuard'
+import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = {
   title: 'AthleteHub — Ghana Football Operating System',

@@ -1,4 +1,3 @@
-'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
@@ -6,7 +5,14 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-const POSITIONS  = ['Forward','Midfielder','Defender','Goalkeeper']
+const POSITION_GROUPS = {
+  'Goalkeeper':  ['GK'],
+  'Defenders':   ['CB','RB','LB','RWB','LWB'],
+  'Midfielders': ['CDM','CM','CAM','RM','LM'],
+  'Forwards':    ['RW','LW','CF','SS','ST'],
+}
+const ALL_POSITIONS = Object.values(POSITION_GROUPS).flat()
+
 const REGIONS    = ['Greater Accra','Ashanti','Western','Eastern','Volta','Brong-Ahafo','Northern','Upper East','Upper West','Central']
 const AV_COLORS  = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
 const EMPTY      = { name:'',age:'',position:'',strong_foot:'',region:'',club:'',phone:'',height:'',weight:'',coach_id:'' }
@@ -159,9 +165,13 @@ export default function AthletesPage() {
             style={{ ...inp, maxWidth:300 }}
             onFocus={e=>e.target.style.borderColor='var(--blue)'}
             onBlur={e=>e.target.style.borderColor='var(--border)'} />
-          <select value={posFilter} onChange={e=>setPosFilter(e.target.value)} style={{ ...inp, maxWidth:160 }}>
+          <select value={posFilter} onChange={e=>setPosFilter(e.target.value)} style={{ ...inp, maxWidth:180 }}>
             <option value="">All Positions</option>
-            {POSITIONS.map(p=><option key={p}>{p}</option>)}
+            {Object.entries(POSITION_GROUPS).map(([group, positions]) => (
+              <optgroup key={group} label={group}>
+                {positions.map(p=><option key={p} value={p}>{p}</option>)}
+              </optgroup>
+            ))}
           </select>
           <select value={statFilter} onChange={e=>setStatFilter(e.target.value)} style={{ ...inp, maxWidth:140 }}>
             <option value="">All Statuses</option>
@@ -201,7 +211,7 @@ export default function AthletesPage() {
                   <span style={{ fontSize:11, color:'var(--text3)' }}>{ath.club||'—'}</span>
                 </div>
               </div>
-              <div className="ath-hide"><Badge status={ath.position||'Forward'} type="sport"/></div>
+              <div className="ath-hide" style={{ fontSize:12, fontWeight:700, color:'var(--blue-dark)', background:'var(--blue-light)', padding:'3px 8px', borderRadius:6, width:'fit-content' }}>{ath.position||'—'}</div>
               <div className="ath-hide" style={{ fontSize:13, color:'var(--text)' }}>{ath.club||'—'}</div>
               <div className="ath-hide" style={{ fontSize:13, color:'var(--text2)' }}>{ath.region||'—'}</div>
               <div className="ath-hide" style={{ fontSize:12, color:'var(--text2)' }}>{ath.coaches?.name?.replace('Coach ','')||'—'}</div>
@@ -235,7 +245,6 @@ export default function AthletesPage() {
                 <div style={{ background:'var(--danger-light)', border:'1px solid rgba(231,76,60,0.25)', borderRadius:'var(--r-md)', padding:'10px 14px', fontSize:13, color:'var(--danger)', fontWeight:600 }}>⚠ {formError}</div>
               )}
 
-              {/* Photo */}
               <div>
                 <label style={lbl}>Profile Photo</label>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
@@ -259,17 +268,24 @@ export default function AthletesPage() {
               </div>
 
               <div className="modal-g2">
-                <div><label style={lbl}>Age</label><input type="number" min="14" max="50" value={form.age} onChange={e=>set('age')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+                <div>
+                  <label style={lbl}>Age</label>
+                  <input type="number" min="14" max="50" value={form.age} onChange={e=>set('age')(e.target.value)} style={inp}
+                    onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/>
+                </div>
                 <div>
                   <label style={lbl}>Position *</label>
                   <select value={form.position} onChange={e=>set('position')(e.target.value)} style={inp}>
-                    <option value="">Select…</option>
-                    {POSITIONS.map(p=><option key={p}>{p}</option>)}
+                    <option value="">Select position…</option>
+                    {Object.entries(POSITION_GROUPS).map(([group, positions]) => (
+                      <optgroup key={group} label={`── ${group} ──`}>
+                        {positions.map(p=><option key={p} value={p}>{p}</option>)}
+                      </optgroup>
+                    ))}
                   </select>
                 </div>
               </div>
 
-              {/* Strong Foot */}
               <div>
                 <label style={lbl}>Strong Foot</label>
                 <select value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>

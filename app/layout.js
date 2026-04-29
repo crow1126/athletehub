@@ -1,5 +1,6 @@
 import './globals.css'
 import AuthGuard from '@/components/AuthGuard'
+import { Analytics } from '@vercel/analytics/next'
 
 export const metadata = {
   title: 'AthleteHub — Ghana Football Operating System',
@@ -19,6 +20,7 @@ export default function RootLayout({ children }) {
         <AuthGuard>
           {children}
         </AuthGuard>
+        <Analytics />
       </body>
     </html>
   )

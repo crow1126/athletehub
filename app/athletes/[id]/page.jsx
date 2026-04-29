@@ -8,6 +8,16 @@ import { useParams } from 'next/navigation'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6']
 
+const POSITION_CATEGORY = {
+  GK:  'Goalkeeper',
+  CB:  'Defender',  RB:  'Defender',  LB:  'Defender',
+  RWB: 'Defender',  LWB: 'Defender',
+  CDM: 'Midfielder', CM: 'Midfielder', CAM: 'Midfielder',
+  RM:  'Midfielder', LM: 'Midfielder',
+  RW:  'Forward',   LW:  'Forward',   CF:  'Forward',
+  SS:  'Forward',   ST:  'Forward',
+}
+
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
 export default function AthleteDetail() {
@@ -23,9 +33,7 @@ export default function AthleteDetail() {
         supabase.from('athletes').select('*, coaches(name)').eq('id', id).single(),
         supabase.from('injuries').select('*').eq('athlete_id', id).order('date_of_injury', { ascending: false }),
       ])
-      setAth(a)
-      setInjuries(i || [])
-      setLoading(false)
+      setAth(a); setInjuries(i || []); setLoading(false)
     }
     load()
   }, [id])
@@ -47,37 +55,46 @@ export default function AthleteDetail() {
     </Layout>
   )
 
-  const showPhoto = ath.photo_url && !imgError
+  const showPhoto    = ath.photo_url && !imgError
+  const posCategory  = POSITION_CATEGORY[ath.position] || null
 
-  // Strong foot display
   const strongFootLabel = ath.strong_foot
-    ? ath.strong_foot === 'both'
-      ? '🦶 Both Feet'
-      : ath.strong_foot === 'left'
-        ? '🦶 Left Foot'
-        : '🦶 Right Foot'
+    ? ath.strong_foot === 'both' ? '🦶 Both Feet'
+    : ath.strong_foot === 'left' ? '🦶 Left Foot'
+    : '🦶 Right Foot'
     : '—'
 
   const fields = [
-    ['Position',    ath.position  || '—'],
+    ['Position',    ath.position ? `${ath.position}${posCategory ? ` — ${posCategory}` : ''}` : '—'],
     ['Strong Foot', strongFootLabel],
-    ['Club',        ath.club      || '—'],
-    ['Region',      ath.region    || '—'],
-    ['Age',         ath.age       ? `${ath.age} yrs`   : '—'],
-    ['Height',      ath.height    ? `${ath.height} cm` : '—'],
-    ['Weight',      ath.weight    ? `${ath.weight} kg` : '—'],
-    ['Phone',       ath.phone     || '—'],
+    ['Club',        ath.club         || '—'],
+    ['Region',      ath.region       || '—'],
+    ['Age',         ath.age          ? `${ath.age} yrs`   : '—'],
+    ['Height',      ath.height       ? `${ath.height} cm` : '—'],
+    ['Weight',      ath.weight       ? `${ath.weight} kg` : '—'],
+    ['Phone',       ath.phone        || '—'],
     ['Coach',       ath.coaches?.name || '—'],
-    ['Joined',      ath.joined_date   || '—'],
+    ['Joined',      ath.joined_date  || '—'],
   ]
 
   return (
     <Layout>
-      <div style={{ maxWidth:1280, margin:'0 auto', padding:'32px 40px' }}>
+      <style>{`
+        .ath-detail-outer{max-width:1280px;margin:0 auto;padding:32px 40px}
+        .ath-detail-grid{display:grid;grid-template-columns:1fr 1.8fr;gap:20px;align-items:start}
+        .ath-detail-bar{margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
+        @media(max-width:768px){
+          .ath-detail-outer{padding:16px 12px!important}
+          .ath-detail-grid{grid-template-columns:1fr!important}
+          .ath-detail-bar{flex-wrap:wrap;gap:10px}
+        }
+      `}</style>
 
-        <div style={{ marginBottom:20, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+      <div className="ath-detail-outer">
+
+        <div className="ath-detail-bar">
           <Link href="/athletes" style={{ fontSize:13, color:'var(--blue)', fontWeight:600 }}>← Back to Athletes</Link>
-          <Link href={`/athletes/${id}/report`} style={{ background:'linear-gradient(135deg,#2E6FC4,#4A90E2)', color:'#fff', padding:'9px 20px', borderRadius:'var(--r-md)', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, boxShadow:'var(--shadow-blue)' }}>
+          <Link href={`/athletes/${id}/report`} style={{ background:'linear-gradient(135deg,#2E6FC4,#4A90E2)', color:'#fff', padding:'9px 20px', borderRadius:'var(--r-md)', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, boxShadow:'var(--shadow-blue)', textDecoration:'none' }}>
             📄 Generate Report
           </Link>
         </div>
@@ -94,12 +111,22 @@ export default function AthleteDetail() {
           )}
           <div style={{ flex:1 }}>
             <div style={{ fontSize:11, color:'rgba(255,255,255,0.65)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>Athlete Profile</div>
-            <h1 style={{ fontSize:'clamp(24px,4vw,36px)', fontWeight:800, color:'#fff', marginBottom:10, letterSpacing:'-0.02em' }}>{ath.name}</h1>
-            <div style={{ display:'flex', gap:10, alignItems:'center', flexWrap:'wrap' }}>
-              <span style={{ fontSize:14, color:'rgba(255,255,255,0.8)', fontWeight:500 }}>{ath.position}</span>
-              {ath.club && <><span style={{ color:'rgba(255,255,255,0.4)' }}>·</span><span style={{ fontSize:14, color:'rgba(255,255,255,0.8)' }}>{ath.club}</span></>}
+            <h1 style={{ fontSize:'clamp(22px,4vw,36px)', fontWeight:800, color:'#fff', marginBottom:10, letterSpacing:'-0.02em' }}>{ath.name}</h1>
+            <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
+              {ath.position && (
+                <span style={{ fontSize:14, fontWeight:800, color:'#fff', background:'rgba(255,255,255,0.2)', padding:'3px 12px', borderRadius:99, border:'1px solid rgba(255,255,255,0.3)' }}>
+                  {ath.position}
+                </span>
+              )}
+              {posCategory && (
+                <span style={{ fontSize:12, color:'rgba(255,255,255,0.7)' }}>{posCategory}</span>
+              )}
+              {ath.club && (
+                <><span style={{ color:'rgba(255,255,255,0.4)' }}>·</span>
+                <span style={{ fontSize:13, color:'rgba(255,255,255,0.8)' }}>{ath.club}</span></>
+              )}
               {ath.strong_foot && (
-                <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)', background:'rgba(255,255,255,0.15)', padding:'2px 10px', borderRadius:99 }}>
+                <span style={{ fontSize:12, color:'rgba(255,255,255,0.75)', background:'rgba(255,255,255,0.12)', padding:'2px 10px', borderRadius:99 }}>
                   {ath.strong_foot === 'left' ? '🦶 Left' : ath.strong_foot === 'right' ? '🦶 Right' : '🦶 Both'}
                 </span>
               )}
@@ -108,7 +135,8 @@ export default function AthleteDetail() {
           </div>
         </div>
 
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1.8fr', gap:20, alignItems:'start' }}>
+        <div className="ath-detail-grid">
+
           {/* Profile details */}
           <div className="card fade-up fade-up-1" style={{ padding:24 }}>
             <h2 style={{ fontSize:16, fontWeight:700, marginBottom:18, paddingBottom:12, borderBottom:'1px solid var(--border)' }}>Profile Details</h2>

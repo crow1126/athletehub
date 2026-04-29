@@ -1,3 +1,4 @@
+'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'

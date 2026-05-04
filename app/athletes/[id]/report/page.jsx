@@ -311,7 +311,7 @@ export default function AthleteReport() {
         <div className="doc-header">
           <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:18 }}>
             <div>
-              <div style={{ fontSize:10,letterSpacing:'0.2em',color:'rgba(255,255,255,0.5)',textTransform:'uppercase',marginBottom:4 }}>AthleteHub — Ghana Football Operating System</div>
+              <div style={{ fontSize:10,letterSpacing:'0.2em',color:'rgba(255,255,255,0.5)',textTransform:'uppercase',marginBottom:4 }}>Apex Track</div>
               <div style={{ fontSize:22,fontWeight:900,letterSpacing:'0.02em',marginBottom:2 }}>ATHLETE PERFORMANCE REPORT</div>
               <div style={{ fontSize:11,color:'rgba(255,255,255,0.6)',letterSpacing:'0.06em' }}>CONFIDENTIAL · FOR OFFICIAL USE ONLY</div>
             </div>
@@ -558,7 +558,7 @@ export default function AthleteReport() {
 
         {/* ── Document Footer ── */}
         <div className="page-footer">
-          <span>AthleteHub FOS · Ghana Football Operating System</span>
+          <span>Apex Track · Football Performance Platform</span>
           <span>Report Ref: {reportNum}</span>
           <span>Generated: {today} · CONFIDENTIAL</span>
         </div>

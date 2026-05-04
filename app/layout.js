@@ -3,7 +3,7 @@ import AuthGuard from '@/components/AuthGuard'
 import { Analytics } from "@vercel/analytics/next"
 
 export const metadata = {
-  title: 'AthleteHub — Ghana Football Operating System',
+  title: 'Apex Track',
   description: 'Complete football management platform',
 }
 

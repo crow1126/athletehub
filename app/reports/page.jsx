@@ -98,7 +98,7 @@ export default function ReportsPage() {
       const link   = document.createElement('a')
       const period = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
       link.href     = url
-      link.download = `GhanaFootball_${period}_${reportId}_report.xlsx`
+      link.download = `ApexTrack_${period}_${reportId}_report.xlsx`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)

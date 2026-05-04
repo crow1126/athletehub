@@ -108,10 +108,12 @@ export default function Layout({ children }) {
       )
     }
     return (
-      <div style={{ width:size, height:size, borderRadius:12, background:`linear-gradient(135deg, ${teamColor}, ${teamColor}BB)`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px ${teamColor}40` }}>
-        <span style={{ fontSize:size * 0.35, fontWeight:800, color:'#fff', letterSpacing:'-0.02em' }}>
-          {teamShort?.slice(0,2) || initials}
-        </span>
+      <div style={{ width:size, height:size, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px ${teamColor}40`, border:'1px solid #DDEAFF' }}>
+        <img
+          src="/apex-track-logo.svg"
+          alt="Apex Track"
+          style={{ width:size * 0.78, height:size * 0.78, objectFit:'contain' }}
+        />
       </div>
     )
   }
@@ -126,7 +128,7 @@ export default function Layout({ children }) {
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ClubLogo size={32} />
             <div>
-              <div style={{ fontSize:13, fontWeight:800, color:'#1A2E4A' }}>{teamName || 'AthleteHub'}</div>
+              <div style={{ fontSize:13, fontWeight:800, color:'#1A2E4A' }}>{teamName || 'Apex Track'}</div>
               <div style={{ fontSize:10, color:'#7A9CC4', textTransform:'capitalize' }}>{role}</div>
             </div>
           </div>
@@ -215,8 +217,8 @@ export default function Layout({ children }) {
           <ClubLogo size={44} />
           {expanded && (
             <div style={{ overflow:'hidden', whiteSpace:'nowrap' }}>
-              <div style={{ fontWeight:800, fontSize:14, color:'#1A2E4A', overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'AthleteHub'}</div>
-              <div style={{ fontSize:10, color:'#7A9CC4', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2 }}>{teamShort || 'FOS'}</div>
+              <div style={{ fontWeight:800, fontSize:14, color:'#1A2E4A', overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontSize:10, color:'#7A9CC4', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2 }}>{teamShort || 'AT'}</div>
             </div>
           )}
         </div>

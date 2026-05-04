@@ -88,14 +88,16 @@ export default function LoginPage() {
           <div style={{ position:'absolute', bottom:-60, left:-60, width:240, height:240, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
           <div style={{ position:'relative', zIndex:2 }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
-              <div style={{ width:46, height:46, borderRadius:13, background:'rgba(255,255,255,0.18)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>📊</div>
+              <div style={{ width:46, height:46, borderRadius:13, background:'rgba(255,255,255,0.18)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <img src="/apex-track-logo.svg" alt="Apex Track" style={{ width:30, height:30, objectFit:'contain' }} />
+              </div>
               <div>
-                <div style={{ fontWeight:800, fontSize:19, color:'#fff' }}>Athlete<span style={{ color:'#93C5FD' }}>Hub</span></div>
-                <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Ghana Football FOS</div>
+                <div style={{ fontWeight:800, fontSize:19, color:'#fff' }}>Apex <span style={{ color:'#93C5FD' }}>Track</span></div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Football Performance Platform</div>
               </div>
             </div>
             <h1 style={{ fontSize:40, fontWeight:800, color:'#fff', lineHeight:1.15, marginBottom:14, letterSpacing:'-0.02em' }}>
-              Football<br/>Operating<br/><span style={{ color:'#93C5FD' }}>System</span>
+              Elite Football<br/>Performance<br/><span style={{ color:'#93C5FD' }}>Tracking</span>
             </h1>
             <p style={{ fontSize:14, color:'rgba(255,255,255,0.6)', lineHeight:1.7, marginBottom:40, maxWidth:340 }}>
               Multi-club platform — athlete management, performance analytics, and sports science.
@@ -120,7 +122,7 @@ export default function LoginPage() {
           <div style={{ width:'100%', maxWidth:360, animation:'fadeUp 0.35s ease both' }}>
             <div style={{ marginBottom:28 }}>
               <h2 style={{ fontSize:26, fontWeight:800, color:'#1A2332', marginBottom:7, letterSpacing:'-0.02em' }}>Welcome back</h2>
-              <p style={{ fontSize:14, color:'#96A3B0' }}>Sign in to your AthleteHub account</p>
+              <p style={{ fontSize:14, color:'#96A3B0' }}>Sign in to your Apex Track account</p>
             </div>
 
             {disabled && (

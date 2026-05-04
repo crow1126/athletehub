@@ -212,7 +212,7 @@ export async function POST(req) {
       status: 200,
       headers: {
         'Content-Type':        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename="GhanaFootball_${fileLabel}_${type}_report.xlsx"`,
+        'Content-Disposition': `attachment; filename="ApexTrack_${fileLabel}_${type}_report.xlsx"`,
         'Cache-Control':       'no-store',
       },
     })

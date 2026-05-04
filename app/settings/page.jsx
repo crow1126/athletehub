@@ -726,7 +726,7 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="system-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:24 }}>
-                  {[['Platform','AthleteHub FOS v2.0'],['Database','Supabase PostgreSQL'],['Framework','Next.js 16'],['Auth','Supabase Auth (JWT)'],['Security','Multi-tenant RLS'],['Region','West EU (London)']].map(([label,value])=>(
+                  {[['Platform','Apex Track v2.0'],['Database','Supabase PostgreSQL'],['Framework','Next.js 16'],['Auth','Supabase Auth (JWT)'],['Security','Multi-tenant RLS'],['Region','West EU (London)']].map(([label,value])=>(
                     <div key={label} style={{ background:'var(--surface2)',borderRadius:'var(--r-md)',padding:'14px 18px',border:'1px solid var(--border)' }}>
                       <div style={{ fontSize:10,color:'var(--text3)',fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:5 }}>{label}</div>
                       <div style={{ fontSize:14,fontWeight:600,color:'var(--text)' }}>{value}</div>

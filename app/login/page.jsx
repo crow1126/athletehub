@@ -62,7 +62,15 @@ export default function LoginPage() {
     }
   }
 
-  const F = { width:'100%', padding:'12px 16px', border:'1.5px solid #E8ECF0', borderRadius:10, fontSize:16, outline:'none', fontFamily:'Plus Jakarta Sans,sans-serif', color:'#1A2332', background:'#F8FAFB', boxSizing:'border-box', transition:'border-color 0.15s', WebkitAppearance:'none' }
+  const F = {
+    width: '100%', padding: '12px 16px',
+    border: '1.5px solid #D9C4B5', borderRadius: 10,
+    fontSize: 16, outline: 'none',
+    fontFamily: 'Plus Jakarta Sans,sans-serif',
+    color: '#381932', background: '#FFF3E6',
+    boxSizing: 'border-box', transition: 'border-color 0.15s',
+    WebkitAppearance: 'none',
+  }
 
   return (
     <>
@@ -70,8 +78,8 @@ export default function LoginPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         .login-wrap { min-height:100vh; display:flex; font-family:'Plus Jakarta Sans',sans-serif; }
-        .login-left { flex:1; background:linear-gradient(135deg,#1A3A6C 0%,#2E6FC4 50%,#4A90E2 100%); display:flex; flex-direction:column; justify-content:center; padding:60px 80px; position:relative; overflow:hidden; }
-        .login-right { width:460px; display:flex; align-items:center; justify-content:center; padding:44px; background:#fff; }
+        .login-left { flex:1; background:linear-gradient(135deg,#250F21 0%,#381932 55%,#4E2445 100%); display:flex; flex-direction:column; justify-content:center; padding:60px 80px; position:relative; overflow:hidden; }
+        .login-right { width:460px; display:flex; align-items:center; justify-content:center; padding:44px; background:#FFF3E6; }
         @media (max-width: 768px) {
           .login-wrap { flex-direction:column; }
           .login-left { padding:28px 24px 24px; flex:none; }
@@ -83,23 +91,24 @@ export default function LoginPage() {
       `}</style>
 
       <div className="login-wrap">
+        {/* Left panel — Plum */}
         <div className="login-left">
-          <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,255,255,0.06)' }}/>
-          <div style={{ position:'absolute', bottom:-60, left:-60, width:240, height:240, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }}/>
+          <div style={{ position:'absolute', top:-80, right:-80, width:320, height:320, borderRadius:'50%', background:'rgba(255,243,230,0.05)' }}/>
+          <div style={{ position:'absolute', bottom:-60, left:-60, width:240, height:240, borderRadius:'50%', background:'rgba(255,243,230,0.03)' }}/>
           <div style={{ position:'relative', zIndex:2 }}>
             <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
-              <div style={{ width:46, height:46, borderRadius:13, background:'rgba(255,255,255,0.18)', border:'2px solid rgba(255,255,255,0.3)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+              <div style={{ width:46, height:46, borderRadius:13, background:'rgba(255,243,230,0.15)', border:'2px solid rgba(255,243,230,0.25)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                 <img src="/apex-track-logo.svg" alt="Apex Track" style={{ width:30, height:30, objectFit:'contain' }} />
               </div>
               <div>
-                <div style={{ fontWeight:800, fontSize:19, color:'#fff' }}>Apex <span style={{ color:'#93C5FD' }}>Track</span></div>
-                <div style={{ fontSize:10, color:'rgba(255,255,255,0.5)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Football Performance Platform</div>
+                <div style={{ fontWeight:800, fontSize:19, color:'#FFF3E6' }}>Apex <span style={{ color:'#D9A87A' }}>Track</span></div>
+                <div style={{ fontSize:10, color:'rgba(255,243,230,0.45)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Football Performance Platform</div>
               </div>
             </div>
-            <h1 style={{ fontSize:40, fontWeight:800, color:'#fff', lineHeight:1.15, marginBottom:14, letterSpacing:'-0.02em' }}>
-              Elite Football<br/>Performance<br/><span style={{ color:'#93C5FD' }}>Tracking</span>
+            <h1 style={{ fontSize:40, fontWeight:800, color:'#FFF3E6', lineHeight:1.15, marginBottom:14, letterSpacing:'-0.02em' }}>
+              Elite Football<br/>Performance<br/><span style={{ color:'#D9A87A' }}>Tracking</span>
             </h1>
-            <p style={{ fontSize:14, color:'rgba(255,255,255,0.6)', lineHeight:1.7, marginBottom:40, maxWidth:340 }}>
+            <p style={{ fontSize:14, color:'rgba(255,243,230,0.55)', lineHeight:1.7, marginBottom:40, maxWidth:340 }}>
               Multi-club platform — athlete management, performance analytics, and sports science.
             </p>
             <div className="login-features" style={{ display:'flex', flexDirection:'column', gap:12 }}>
@@ -110,53 +119,54 @@ export default function LoginPage() {
                 ['🔑','Role-based access — admin, coach, physio, scout'],
               ].map(([icon,label]) => (
                 <div key={label} style={{ display:'flex', alignItems:'center', gap:12 }}>
-                  <div style={{ width:34, height:34, borderRadius:9, background:'rgba(255,255,255,0.14)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{icon}</div>
-                  <span style={{ fontSize:13, color:'rgba(255,255,255,0.75)', fontWeight:500 }}>{label}</span>
+                  <div style={{ width:34, height:34, borderRadius:9, background:'rgba(255,243,230,0.12)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 }}>{icon}</div>
+                  <span style={{ fontSize:13, color:'rgba(255,243,230,0.7)', fontWeight:500 }}>{label}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
+        {/* Right panel — Milk */}
         <div className="login-right">
           <div style={{ width:'100%', maxWidth:360, animation:'fadeUp 0.35s ease both' }}>
             <div style={{ marginBottom:28 }}>
-              <h2 style={{ fontSize:26, fontWeight:800, color:'#1A2332', marginBottom:7, letterSpacing:'-0.02em' }}>Welcome back</h2>
-              <p style={{ fontSize:14, color:'#96A3B0' }}>Sign in to your Apex Track account</p>
+              <h2 style={{ fontSize:26, fontWeight:800, color:'#381932', marginBottom:7, letterSpacing:'-0.02em' }}>Welcome back</h2>
+              <p style={{ fontSize:14, color:'#7A4E6A' }}>Sign in to your Apex Track account</p>
             </div>
 
             {disabled && (
-              <div style={{ background:'#FDEDEC', border:'1px solid rgba(231,76,60,0.25)', borderRadius:10, padding:'11px 14px', marginBottom:18, fontSize:13, color:'#C0392B', fontWeight:600 }}>
+              <div style={{ background:'#F9E8E8', border:'1px solid rgba(180,50,50,0.2)', borderRadius:10, padding:'11px 14px', marginBottom:18, fontSize:13, color:'#8B2020', fontWeight:600 }}>
                 🚫 Your account has been disabled. Contact your club administrator.
               </div>
             )}
 
             <form onSubmit={handleLogin} style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <div>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#5A6778', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Email Address</label>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#7A4E6A', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Email Address</label>
                 <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" autoComplete="email" style={F}
-                  onFocus={e=>e.target.style.borderColor='#4A90E2'}
-                  onBlur={e=>e.target.style.borderColor='#E8ECF0'} />
+                  onFocus={e=>e.target.style.borderColor='#381932'}
+                  onBlur={e=>e.target.style.borderColor='#D9C4B5'} />
               </div>
               <div>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#5A6778', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Password</label>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#7A4E6A', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Password</label>
                 <div style={{ position:'relative' }}>
                   <input type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" style={{ ...F, paddingRight:44 }}
-                    onFocus={e=>e.target.style.borderColor='#4A90E2'}
-                    onBlur={e=>e.target.style.borderColor='#E8ECF0'} />
-                  <button type="button" onClick={()=>setShowPass(v=>!v)} style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#96A3B0', padding:0, lineHeight:1, minHeight:'auto' }}>
+                    onFocus={e=>e.target.style.borderColor='#381932'}
+                    onBlur={e=>e.target.style.borderColor='#D9C4B5'} />
+                  <button type="button" onClick={()=>setShowPass(v=>!v)} style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#7A4E6A', padding:0, lineHeight:1, minHeight:'auto' }}>
                     {showPass?'🙈':'👁️'}
                   </button>
                 </div>
               </div>
 
               {error && (
-                <div style={{ background:'#FDEDEC', border:'1px solid rgba(231,76,60,0.2)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#C0392B', fontWeight:600, whiteSpace:'pre-line', lineHeight:1.6 }}>
+                <div style={{ background:'#F9E8E8', border:'1px solid rgba(180,50,50,0.18)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#8B2020', fontWeight:600, whiteSpace:'pre-line', lineHeight:1.6 }}>
                   ⚠️ {error}
                 </div>
               )}
 
-              <button type="submit" disabled={loading} style={{ background:loading?'#96A3B0':'linear-gradient(135deg,#2E6FC4,#4A90E2)', color:'#fff', border:'none', padding:'15px', borderRadius:10, fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(74,144,226,0.3)', fontFamily:'Plus Jakarta Sans,sans-serif', width:'100%', marginTop:4, touchAction:'manipulation', minHeight:52 }}>
+              <button type="submit" disabled={loading} style={{ background: loading ? '#7A4E6A' : 'linear-gradient(135deg,#381932,#4E2445)', color:'#FFF3E6', border:'none', padding:'15px', borderRadius:10, fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(56,25,50,0.35)', fontFamily:'Plus Jakarta Sans,sans-serif', width:'100%', marginTop:4, touchAction:'manipulation', minHeight:52 }}>
                 {loading?'Signing in…':'Sign In →'}
               </button>
             </form>

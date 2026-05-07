@@ -18,7 +18,6 @@ const ALL_NAV = [
   { href:'/settings',    label:'Settings',    page:'settings'    },
 ]
 
-// Bottom nav shows only the most important 5 links on mobile
 const MOBILE_NAV = ['dashboard','athletes','schedule','injuries','settings']
 
 const ICONS = {
@@ -36,15 +35,29 @@ const ICONS = {
   close:       <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
 }
 
+// ── Palette ──────────────────────────────────────────────────────────────────
+const C = {
+  milk:      '#FFF3E6',
+  milkDark:  '#F5E6D3',
+  milkMuted: '#EDD9C8',
+  plum:      '#381932',
+  plumLight: '#4E2445',
+  plumDeep:  '#250F21',
+  border:    '#D9C4B5',
+  text:      '#381932',
+  text2:     '#7A4E6A',
+  text3:     '#9E7A8E',
+}
+
 export default function Layout({ children }) {
   const path   = usePathname()
   const router = useRouter()
-  const [profile,   setProfile]   = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [expanded,  setExpanded]  = useState(false)
-  const [mobileMenu,setMobileMenu]= useState(false)
-  const [logoError, setLogoError] = useState(false)
-  const [isMobile,  setIsMobile]  = useState(false)
+  const [profile,    setProfile]    = useState(null)
+  const [loading,    setLoading]    = useState(true)
+  const [expanded,   setExpanded]   = useState(false)
+  const [mobileMenu, setMobileMenu] = useState(false)
+  const [logoError,  setLogoError]  = useState(false)
+  const [isMobile,   setIsMobile]   = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -53,7 +66,6 @@ export default function Layout({ children }) {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  // Close mobile menu on route change
   useEffect(() => { setMobileMenu(false) }, [path])
 
   useEffect(() => {
@@ -86,14 +98,14 @@ export default function Layout({ children }) {
   const navLinks  = ALL_NAV.filter(n => allowed.includes(n.page))
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const teamName  = profile?.teams?.name       || null
-  const teamShort = profile?.teams?.short_name  || null
-  const teamLogo  = profile?.teams?.logo_url    || null
-  const teamColor = profile?.teams?.primary_color || '#4A90E2'
+  const teamName  = profile?.teams?.name        || null
+  const teamShort = profile?.teams?.short_name   || null
+  const teamLogo  = profile?.teams?.logo_url     || null
+  const teamColor = profile?.teams?.primary_color || C.plum
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#EEF4FF' }}>
-      <div style={{ width:36, height:36, border:'3px solid #BDD4FF', borderTopColor:'#4A90E2', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.milk }}>
+      <div style={{ width:36, height:36, border:`3px solid ${C.milkMuted}`, borderTopColor: C.plum, borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -104,72 +116,68 @@ export default function Layout({ children }) {
     if (teamLogo && !logoError) {
       return (
         <img src={teamLogo} alt={teamName || 'Club'} onError={() => setLogoError(true)}
-          style={{ width:size, height:size, borderRadius:12, objectFit:'contain', background:'#fff', padding:4, flexShrink:0, border:'1px solid #DDEAFF' }} />
+          style={{ width:size, height:size, borderRadius:12, objectFit:'contain', background: C.milk, padding:4, flexShrink:0, border:`1px solid ${C.border}` }} />
       )
     }
     return (
-      <div style={{ width:size, height:size, borderRadius:12, background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px ${teamColor}40`, border:'1px solid #DDEAFF' }}>
-        <img
-          src="/apex-track-logo.svg"
-          alt="Apex Track"
-          style={{ width:size * 0.78, height:size * 0.78, objectFit:'contain' }}
-        />
+      <div style={{ width:size, height:size, borderRadius:12, background: C.milk, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(56,25,50,0.2)`, border:`1px solid ${C.border}` }}>
+        <img src="/apex-track-logo.svg" alt="Apex Track" style={{ width:size * 0.78, height:size * 0.78, objectFit:'contain' }} />
       </div>
     )
   }
 
-  // ── MOBILE LAYOUT ──────────────────────────────────────────────────────────
+  // ── MOBILE ──────────────────────────────────────────────────────────────────
   if (isMobile) {
     return (
-      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background:'#EEF4FF', fontFamily:'Plus Jakarta Sans, sans-serif' }}>
+      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background: C.milk, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 
         {/* Mobile top bar */}
-        <header style={{ height:56, background:'#F0F6FF', borderBottom:'1px solid #DDEAFF', display:'flex', alignItems:'center', padding:'0 16px', justifyContent:'space-between', position:'sticky', top:0, zIndex:200 }}>
+        <header style={{ height:56, background: C.milkDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 16px', justifyContent:'space-between', position:'sticky', top:0, zIndex:200 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ClubLogo size={32} />
             <div>
-              <div style={{ fontSize:13, fontWeight:800, color:'#1A2E4A' }}>{teamName || 'Apex Track'}</div>
-              <div style={{ fontSize:10, color:'#7A9CC4', textTransform:'capitalize' }}>{role}</div>
+              <div style={{ fontSize:13, fontWeight:800, color: C.plum }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontSize:10, color: C.text2, textTransform:'capitalize' }}>{role}</div>
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ fontSize:11, background:'#E0ECFF', color:'#3B6BA0', borderRadius:99, padding:'4px 10px', fontWeight:600, border:'1px solid #DDEAFF' }}>
+            <div style={{ fontSize:11, background: C.milkMuted, color: C.plumLight, borderRadius:99, padding:'4px 10px', fontWeight:600, border:`1px solid ${C.border}` }}>
               {ALL_NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'Dashboard'}
             </div>
             <button onClick={() => setMobileMenu(v => !v)}
-              style={{ background:'none', border:'none', cursor:'pointer', color:'#3B6BA0', padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              style={{ background:'none', border:'none', cursor:'pointer', color: C.plum, padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
               {mobileMenu ? ICONS.close : ICONS.menu}
             </button>
           </div>
         </header>
 
-        {/* Mobile slide-down full menu */}
+        {/* Mobile slide-down menu */}
         {mobileMenu && (
-          <div style={{ position:'fixed', top:56, left:0, right:0, bottom:0, zIndex:150, background:'rgba(0,0,0,0.4)' }} onClick={() => setMobileMenu(false)}>
-            <div style={{ background:'#F0F6FF', borderBottom:'1px solid #DDEAFF', padding:'12px 0', maxHeight:'80vh', overflowY:'auto' }}
+          <div style={{ position:'fixed', top:56, left:0, right:0, bottom:0, zIndex:150, background:'rgba(56,25,50,0.4)' }} onClick={() => setMobileMenu(false)}>
+            <div style={{ background: C.milkDark, borderBottom:`1px solid ${C.border}`, padding:'12px 0', maxHeight:'80vh', overflowY:'auto' }}
               onClick={e => e.stopPropagation()}>
               {navLinks.map(({ href, label, page }) => {
                 const active = path === href || path.startsWith(href + '/')
                 return (
                   <Link key={href} href={href}
-                    style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: active ? '#4A90E2' : '#3B6BA0', fontWeight: active ? 700 : 500, fontSize:15, textDecoration:'none', background: active ? '#E0ECFF' : 'transparent', borderLeft: active ? '3px solid #4A90E2' : '3px solid transparent' }}>
-                    <span style={{ color: active ? '#4A90E2' : '#7A9CC4' }}>{ICONS[page]}</span>
+                    style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: active ? C.plum : C.text2, fontWeight: active ? 700 : 500, fontSize:15, textDecoration:'none', background: active ? C.milkMuted : 'transparent', borderLeft: active ? `3px solid ${C.plum}` : '3px solid transparent' }}>
+                    <span style={{ color: active ? C.plum : C.text3 }}>{ICONS[page]}</span>
                     {label}
                   </Link>
                 )
               })}
-              <div style={{ padding:'16px 20px', borderTop:'1px solid #DDEAFF', marginTop:8 }}>
+              <div style={{ padding:'16px 20px', borderTop:`1px solid ${C.border}`, marginTop:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
-                  <div style={{ width:36, height:36, borderRadius:'50%', background:`linear-gradient(135deg, ${teamColor}, ${teamColor}BB)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color:'#fff' }}>
+                  <div style={{ width:36, height:36, borderRadius:'50%', background:`linear-gradient(135deg, ${C.plum}, ${C.plumLight})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color: C.milk }}>
                     {initials}
                   </div>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:700, color:'#1A2E4A' }}>{profile?.full_name || 'Admin'}</div>
-                    <div style={{ fontSize:11, color:'#7A9CC4' }}>{profile?.email}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color: C.plum }}>{profile?.full_name || 'Admin'}</div>
+                    <div style={{ fontSize:11, color: C.text2 }}>{profile?.email}</div>
                   </div>
                 </div>
                 <button onClick={handleSignOut}
-                  style={{ width:'100%', background:'rgba(74,144,226,0.1)', color:'#4A90E2', border:'1px solid rgba(74,144,226,0.2)', borderRadius:8, padding:'10px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                  style={{ width:'100%', background:`rgba(56,25,50,0.08)`, color: C.plum, border:`1px solid rgba(56,25,50,0.2)`, borderRadius:8, padding:'10px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
                   Sign Out
                 </button>
               </div>
@@ -177,19 +185,16 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        {/* Page content */}
-        <main style={{ flex:1, paddingBottom:72 }}>
-          {children}
-        </main>
+        <main style={{ flex:1, paddingBottom:72 }}>{children}</main>
 
-        {/* Mobile bottom nav bar */}
-        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background:'#F0F6FF', borderTop:'1px solid #DDEAFF', display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)' }}>
+        {/* Mobile bottom nav */}
+        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.milkDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)' }}>
           {mobileNav.map(({ href, label, page }) => {
             const active = path === href || path.startsWith(href + '/')
             return (
               <Link key={href} href={href}
-                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 12px', textDecoration:'none', color: active ? '#4A90E2' : '#7A9CC4', flex:1 }}>
-                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:10, background: active ? '#E0ECFF' : 'transparent', transition:'all 0.15s' }}>
+                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 12px', textDecoration:'none', color: active ? C.plum : C.text3, flex:1 }}>
+                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:10, background: active ? C.milkMuted : 'transparent', transition:'all 0.15s' }}>
                   {ICONS[page]}
                 </span>
                 <span style={{ fontSize:10, fontWeight: active ? 700 : 500 }}>{label}</span>
@@ -198,40 +203,42 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#BDD4FF;border-radius:4px}`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:${C.milkMuted};border-radius:4px}`}</style>
       </div>
     )
   }
 
-  // ── DESKTOP LAYOUT ─────────────────────────────────────────────────────────
+  // ── DESKTOP ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display:'flex', minHeight:'100vh', background:'#EEF4FF', fontFamily:'Plus Jakarta Sans, sans-serif' }}>
+    <div style={{ display:'flex', minHeight:'100vh', background: C.milk, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 
       {/* Sidebar */}
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => setExpanded(false)}
-        style={{ width:sideW, flexShrink:0, background:'#F0F6FF', display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:100, borderRight:'1px solid #DDEAFF', transition:'width 0.22s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', boxShadow:'2px 0 16px rgba(74,144,226,0.08)' }}>
+        style={{ width:sideW, flexShrink:0, background: C.milkDark, display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:100, borderRight:`1px solid ${C.border}`, transition:'width 0.22s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', boxShadow:`2px 0 16px rgba(56,25,50,0.08)` }}>
 
-        <div style={{ padding:'14px 0', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', paddingLeft: expanded ? 14 : 0, borderBottom:'1px solid #DDEAFF', minHeight:72, flexShrink:0, gap: expanded ? 12 : 0, transition:'all 0.22s' }}>
+        {/* Sidebar header */}
+        <div style={{ padding:'14px 0', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', paddingLeft: expanded ? 14 : 0, borderBottom:`1px solid ${C.border}`, minHeight:72, flexShrink:0, gap: expanded ? 12 : 0, transition:'all 0.22s' }}>
           <ClubLogo size={44} />
           {expanded && (
             <div style={{ overflow:'hidden', whiteSpace:'nowrap' }}>
-              <div style={{ fontWeight:800, fontSize:14, color:'#1A2E4A', overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>
-              <div style={{ fontSize:10, color:'#7A9CC4', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2 }}>{teamShort || 'AT'}</div>
+              <div style={{ fontWeight:800, fontSize:14, color: C.plum, overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontSize:10, color: C.text2, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2 }}>{teamShort || 'AT'}</div>
             </div>
           )}
         </div>
 
+        {/* Nav links */}
         <nav style={{ flex:1, padding:'10px 0', overflowY:'auto', overflowX:'hidden' }}>
           {navLinks.map(({ href, label, page }) => {
             const active = path === href || path.startsWith(href + '/')
             return (
               <Link key={href} href={href}
-                style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', paddingLeft: expanded ? 16 : 0, justifyContent: expanded ? 'flex-start' : 'center', margin:'2px 8px', borderRadius:10, background: active ? 'linear-gradient(135deg, #4A90E2, #3B7DD8)' : 'transparent', color: active ? '#fff' : '#5A7BA0', fontWeight: active ? 600 : 500, fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0, boxShadow: active ? '0 4px 12px rgba(74,144,226,0.35)' : 'none' }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.background = '#E0ECFF' }}
+                style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', paddingLeft: expanded ? 16 : 0, justifyContent: expanded ? 'flex-start' : 'center', margin:'2px 8px', borderRadius:10, background: active ? `linear-gradient(135deg, ${C.plum}, ${C.plumLight})` : 'transparent', color: active ? C.milk : C.text2, fontWeight: active ? 600 : 500, fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0, boxShadow: active ? `0 4px 12px rgba(56,25,50,0.3)` : 'none' }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.milkMuted }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
-                <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color: active ? '#fff' : '#5A7BA0', minWidth:20 }}>
+                <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color: active ? C.milk : C.text2, minWidth:20 }}>
                   {ICONS[page] || ICONS.dashboard}
                 </span>
                 {expanded && <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{label}</span>}
@@ -240,29 +247,30 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        <div style={{ padding:'12px 0', borderTop:'1px solid #DDEAFF', flexShrink:0 }}>
+        {/* User profile / sign out */}
+        <div style={{ padding:'12px 0', borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
           {expanded ? (
             <div style={{ padding:'0 12px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, background:'#E8F0FF', borderRadius:10, padding:'10px 12px' }}>
-                <div style={{ width:34, height:34, borderRadius:'50%', background:`linear-gradient(135deg, ${teamColor}, ${teamColor}BB)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color:'#fff', flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, background: C.milkMuted, borderRadius:10, padding:'10px 12px' }}>
+                <div style={{ width:34, height:34, borderRadius:'50%', background:`linear-gradient(135deg, ${C.plum}, ${C.plumLight})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color: C.milk, flexShrink:0 }}>
                   {initials}
                 </div>
                 <div style={{ flex:1, overflow:'hidden' }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:'#1A2E4A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile?.full_name || 'Admin'}</div>
-                  <div style={{ fontSize:10, color:'#7A9CC4', textTransform:'capitalize', marginTop:1 }}>{role}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color: C.plum, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile?.full_name || 'Admin'}</div>
+                  <div style={{ fontSize:10, color: C.text2, textTransform:'capitalize', marginTop:1 }}>{role}</div>
                 </div>
               </div>
               <button onClick={handleSignOut}
-                style={{ width:'100%', background:'rgba(74,144,226,0.1)', color:'#4A90E2', border:'1px solid rgba(74,144,226,0.2)', borderRadius:8, padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', transition:'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(74,144,226,0.2)'; e.currentTarget.style.color = '#2E6FC4' }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(74,144,226,0.1)'; e.currentTarget.style.color = '#4A90E2' }}>
+                style={{ width:'100%', background:`rgba(56,25,50,0.08)`, color: C.plum, border:`1px solid rgba(56,25,50,0.18)`, borderRadius:8, padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', transition:'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = `rgba(56,25,50,0.16)`; e.currentTarget.style.color = C.plumDeep }}
+                onMouseLeave={e => { e.currentTarget.style.background = `rgba(56,25,50,0.08)`; e.currentTarget.style.color = C.plum }}>
                 Sign Out
               </button>
             </div>
           ) : (
             <div style={{ display:'flex', justifyContent:'center' }}>
               <button onClick={handleSignOut} title={`${profile?.full_name || 'Admin'} · Sign Out`}
-                style={{ width:44, height:44, borderRadius:'50%', background:`linear-gradient(135deg,${teamColor},${teamColor}BB)`, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, fontWeight:800, color:'#fff', transition:'all 0.15s', boxShadow:`0 2px 8px ${teamColor}40` }}
+                style={{ width:44, height:44, borderRadius:'50%', background:`linear-gradient(135deg, ${C.plum}, ${C.plumLight})`, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, fontWeight:800, color: C.milk, transition:'all 0.15s', boxShadow:`0 2px 8px rgba(56,25,50,0.3)` }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
                 {initials}
@@ -274,33 +282,33 @@ export default function Layout({ children }) {
 
       {/* Main content */}
       <div style={{ marginLeft:sideW, flex:1, display:'flex', flexDirection:'column', minHeight:'100vh', transition:'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
-        <header style={{ height:56, background:'#F0F6FF', borderBottom:'1px solid #DDEAFF', display:'flex', alignItems:'center', padding:'0 28px', justifyContent:'space-between', position:'sticky', top:0, zIndex:50 }}>
-          <div style={{ fontSize:16, fontWeight:700, color:'#1A2E4A' }}>
+        <header style={{ height:56, background: C.milkDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 28px', justifyContent:'space-between', position:'sticky', top:0, zIndex:50 }}>
+          <div style={{ fontSize:16, fontWeight:700, color: C.plum }}>
             {ALL_NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'Dashboard'}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:16 }}>
             {teamName && (
-              <div style={{ display:'flex', alignItems:'center', gap:7, background:'#E0ECFF', borderRadius:99, padding:'5px 12px', border:'1px solid #DDEAFF' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:7, background: C.milkMuted, borderRadius:99, padding:'5px 12px', border:`1px solid ${C.border}` }}>
                 {teamLogo && !logoError
                   ? <img src={teamLogo} alt={teamName} onError={() => setLogoError(true)} style={{ width:18, height:18, objectFit:'contain', borderRadius:4 }} />
-                  : <div style={{ width:18, height:18, borderRadius:4, background:teamColor, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, color:'#fff' }}>{teamShort?.slice(0,2)}</div>
+                  : <div style={{ width:18, height:18, borderRadius:4, background: C.plum, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, color: C.milk }}>{teamShort?.slice(0,2)}</div>
                 }
-                <span style={{ fontSize:12, color:'#3B6BA0', fontWeight:600 }}>{teamName}</span>
+                <span style={{ fontSize:12, color: C.plumLight, fontWeight:600 }}>{teamName}</span>
               </div>
             )}
-            <div style={{ fontSize:12, color:'#7A9CC4', fontWeight:500 }}>
+            <div style={{ fontSize:12, color: C.text2, fontWeight:500 }}>
               {new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' })}
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:6, background:'#E0ECFF', borderRadius:99, padding:'5px 12px', border:'1px solid #DDEAFF' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:6, background: C.milkMuted, borderRadius:99, padding:'5px 12px', border:`1px solid ${C.border}` }}>
               <div style={{ width:7, height:7, borderRadius:'50%', background:'#27AE60', boxShadow:'0 0 5px #27AE60' }} />
-              <span style={{ fontSize:12, color:'#3B6BA0', fontWeight:600 }}>Live</span>
+              <span style={{ fontSize:12, color: C.plumLight, fontWeight:600 }}>Live</span>
             </div>
           </div>
         </header>
         <main style={{ flex:1 }}>{children}</main>
       </div>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#BDD4FF;border-radius:4px}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:${C.milkMuted};border-radius:4px}`}</style>
     </div>
   )
 }

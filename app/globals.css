@@ -1,54 +1,38 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MILK & PLUM THEME — Tailwind v4
-   Milk:  #FFF3E6  |  Plum: #381932
+   MILK & PLUM THEME
+   Milk: #FFF3E6  |  Plum: #381932
    ============================================================ */
 
-@theme {
-  /* Brand colours */
-  --color-milk:             #FFF3E6;
-  --color-milk-dark:        #F5E6D3;
-  --color-milk-muted:       #EDD9C8;
+:root {
+  --milk:        #FFF3E6;
+  --milk-dark:   #F5E6D3;
+  --milk-muted:  #EDD9C8;
 
-  --color-plum:             #381932;
-  --color-plum-light:       #4E2445;
-  --color-plum-deep:        #250F21;
+  --plum:        #381932;
+  --plum-light:  #4E2445;
+  --plum-deep:   #250F21;
 
-  /* Semantic tokens */
-  --color-background:       #FFF3E6;
-  --color-foreground:       #381932;
+  --text:        #381932;
+  --text2:       #7A4E6A;
+  --text3:       #9E7A8E;
 
-  --color-card:             #FFFFFF;
-  --color-card-foreground:  #381932;
-
-  --color-primary:          #381932;
-  --color-primary-foreground: #FFF3E6;
-
-  --color-secondary:        #F5E6D3;
-  --color-secondary-foreground: #381932;
-
-  --color-muted:            #EDD9C8;
-  --color-muted-foreground: #7A4E6A;
-
-  --color-accent:           #4E2445;
-  --color-accent-foreground: #FFF3E6;
-
-  --color-border:           #D9C4B5;
-  --color-input:            #EDD9C8;
-  --color-ring:             #381932;
+  --border:      #D9C4B5;
 }
 
-/* ── Base styles ── */
-@layer base {
-  body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-  }
+/* Base */
+*, *::before, *::after { box-sizing: border-box; }
 
-  /* Styled scrollbar */
-  ::-webkit-scrollbar        { width: 6px; }
-  ::-webkit-scrollbar-track  { background: var(--color-milk-dark); }
-  ::-webkit-scrollbar-thumb  { background: var(--color-plum-light); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--color-plum); }
+body {
+  background-color: var(--milk);
+  color: var(--text);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  margin: 0;
 }
+
+/* Scrollbar */
+::-webkit-scrollbar        { width: 6px; }
+::-webkit-scrollbar-track  { background: var(--milk-dark); }
+::-webkit-scrollbar-thumb  { background: var(--plum-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--plum); }

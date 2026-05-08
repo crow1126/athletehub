@@ -1,38 +1,107 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MILK & PLUM THEME
+   MILK & PLUM THEME — Apex Track
    Milk: #FFF3E6  |  Plum: #381932
    ============================================================ */
 
 :root {
-  --milk:        #FFF3E6;
-  --milk-dark:   #F5E6D3;
-  --milk-muted:  #EDD9C8;
+  /* ── Brand ── */
+  --milk:         #FFF3E6;
+  --milk-dark:    #F5E6D3;
+  --milk-muted:   #EDD9C8;
+  --plum:         #381932;
+  --plum-light:   #4E2445;
+  --plum-deep:    #250F21;
 
-  --plum:        #381932;
-  --plum-light:  #4E2445;
-  --plum-deep:   #250F21;
+  /* ── Typography ── */
+  --font:         'Plus Jakarta Sans', sans-serif;
+  --text:         #381932;
+  --text2:        #7A4E6A;
+  --text3:        #9E7A8E;
 
-  --text:        #381932;
-  --text2:       #7A4E6A;
-  --text3:       #9E7A8E;
+  /* ── Surfaces (milk tones replace white/grey) ── */
+  --surface:      #FFF3E6;
+  --surface2:     #F5E6D3;
 
-  --border:      #D9C4B5;
+  /* ── Borders ── */
+  --border:       #D9C4B5;
+
+  /* ── Primary action — was blue, now plum ── */
+  --blue:         #381932;
+  --blue-light:   #EDD9C8;
+  --blue-dark:    #250F21;
+
+  /* ── Shadows ── */
+  --shadow-sm:    0 1px 4px rgba(56,25,50,0.08);
+  --shadow-md:    0 4px 16px rgba(56,25,50,0.14);
+  --shadow-lg:    0 8px 32px rgba(56,25,50,0.18);
+
+  /* ── Radius ── */
+  --r-sm:         6px;
+  --r-md:         10px;
+  --r-lg:         14px;
+  --r-xl:         20px;
+
+  /* ── Transitions ── */
+  --transition:   all 0.15s ease;
+
+  /* ── Status colours ── */
+  --success:       #1B7A3E;
+  --success-light: #E8F8EE;
+  --danger:        #C0392B;
+  --danger-light:  #FDEDEC;
+  --warning:       #B7770D;
+  --warning-light: #FEF9E7;
 }
 
-/* Base */
-*, *::before, *::after { box-sizing: border-box; }
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background-color: var(--milk);
   color: var(--text);
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  margin: 0;
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar */
-::-webkit-scrollbar        { width: 6px; }
+/* ── Card utility ── */
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Button utility ── */
+.btn-blue {
+  background: linear-gradient(135deg, #381932, #4E2445);
+  color: #FFF3E6;
+  border: none;
+  border-radius: var(--r-md);
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(56,25,50,0.25);
+}
+.btn-blue:hover {
+  opacity: 0.88;
+  box-shadow: 0 6px 18px rgba(56,25,50,0.32);
+}
+
+/* ── Animations ── */
+@keyframes spin   { to { transform: rotate(360deg); } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+.fade-up   { animation: fadeUp 0.3s ease both; }
+.fade-up-1 { animation: fadeUp 0.3s ease 0.06s both; }
+.fade-up-2 { animation: fadeUp 0.3s ease 0.12s both; }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track  { background: var(--milk-dark); }
 ::-webkit-scrollbar-thumb  { background: var(--plum-light); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--plum); }

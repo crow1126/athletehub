@@ -16,6 +16,7 @@ const ALL_NAV = [
   { href:'/contracts',   label:'Contracts',   page:'contracts'   },
   { href:'/reports',     label:'Reports',     page:'reports'     },
   { href:'/settings',    label:'Settings',    page:'settings'    },
+  { href:'/billing',     label:'Billing',     page:'billing'     },
 ]
 
 const MOBILE_NAV = ['dashboard','athletes','schedule','injuries','settings']
@@ -31,11 +32,11 @@ const ICONS = {
   contracts:   <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>,
   reports:     <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>,
   settings:    <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  billing:     <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>,
   menu:        <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
   close:       <svg width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
 }
 
-// ── Palette ──────────────────────────────────────────────────────────────────
 const C = {
   milk:      '#FFF3E6',
   milkDark:  '#F5E6D3',
@@ -101,7 +102,6 @@ export default function Layout({ children }) {
   const teamName  = profile?.teams?.name        || null
   const teamShort = profile?.teams?.short_name   || null
   const teamLogo  = profile?.teams?.logo_url     || null
-  const teamColor = profile?.teams?.primary_color || C.plum
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.milk }}>
@@ -131,7 +131,6 @@ export default function Layout({ children }) {
     return (
       <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background: C.milk, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 
-        {/* Mobile top bar */}
         <header style={{ height:56, background: C.milkDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 16px', justifyContent:'space-between', position:'sticky', top:0, zIndex:200 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ClubLogo size={32} />
@@ -151,7 +150,6 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        {/* Mobile slide-down menu */}
         {mobileMenu && (
           <div style={{ position:'fixed', top:56, left:0, right:0, bottom:0, zIndex:150, background:'rgba(56,25,50,0.4)' }} onClick={() => setMobileMenu(false)}>
             <div style={{ background: C.milkDark, borderBottom:`1px solid ${C.border}`, padding:'12px 0', maxHeight:'80vh', overflowY:'auto' }}
@@ -187,7 +185,6 @@ export default function Layout({ children }) {
 
         <main style={{ flex:1, paddingBottom:72 }}>{children}</main>
 
-        {/* Mobile bottom nav */}
         <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.milkDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)' }}>
           {mobileNav.map(({ href, label, page }) => {
             const active = path === href || path.startsWith(href + '/')
@@ -212,13 +209,11 @@ export default function Layout({ children }) {
   return (
     <div style={{ display:'flex', minHeight:'100vh', background: C.milk, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 
-      {/* Sidebar */}
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => setExpanded(false)}
         style={{ width:sideW, flexShrink:0, background: C.milkDark, display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:100, borderRight:`1px solid ${C.border}`, transition:'width 0.22s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', boxShadow:`2px 0 16px rgba(56,25,50,0.08)` }}>
 
-        {/* Sidebar header */}
         <div style={{ padding:'14px 0', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', paddingLeft: expanded ? 14 : 0, borderBottom:`1px solid ${C.border}`, minHeight:72, flexShrink:0, gap: expanded ? 12 : 0, transition:'all 0.22s' }}>
           <ClubLogo size={44} />
           {expanded && (
@@ -229,15 +224,15 @@ export default function Layout({ children }) {
           )}
         </div>
 
-        {/* Nav links */}
         <nav style={{ flex:1, padding:'10px 0', overflowY:'auto', overflowX:'hidden' }}>
           {navLinks.map(({ href, label, page }) => {
-            const active = path === href || path.startsWith(href + '/')
+            const active    = path === href || path.startsWith(href + '/')
+            const isBilling = page === 'billing'
             return (
               <Link key={href} href={href}
-                style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', paddingLeft: expanded ? 16 : 0, justifyContent: expanded ? 'flex-start' : 'center', margin:'2px 8px', borderRadius:10, background: active ? `linear-gradient(135deg, ${C.plum}, ${C.plumLight})` : 'transparent', color: active ? C.milk : C.text2, fontWeight: active ? 600 : 500, fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0, boxShadow: active ? `0 4px 12px rgba(56,25,50,0.3)` : 'none' }}
+                style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', paddingLeft: expanded ? 16 : 0, justifyContent: expanded ? 'flex-start' : 'center', margin:'2px 8px', borderRadius:10, background: active ? `linear-gradient(135deg, ${C.plum}, ${C.plumLight})` : isBilling && !active ? 'rgba(56,25,50,0.04)' : 'transparent', color: active ? C.milk : C.text2, fontWeight: active ? 600 : 500, fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0, boxShadow: active ? `0 4px 12px rgba(56,25,50,0.3)` : 'none', border: isBilling && !active ? `1px solid ${C.border}` : '1px solid transparent' }}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.milkMuted }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent' }}>
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = isBilling ? 'rgba(56,25,50,0.04)' : 'transparent' }}>
                 <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color: active ? C.milk : C.text2, minWidth:20 }}>
                   {ICONS[page] || ICONS.dashboard}
                 </span>
@@ -247,7 +242,6 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        {/* User profile / sign out */}
         <div style={{ padding:'12px 0', borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
           {expanded ? (
             <div style={{ padding:'0 12px' }}>
@@ -280,7 +274,6 @@ export default function Layout({ children }) {
         </div>
       </aside>
 
-      {/* Main content */}
       <div style={{ marginLeft:sideW, flex:1, display:'flex', flexDirection:'column', minHeight:'100vh', transition:'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
         <header style={{ height:56, background: C.milkDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 28px', justifyContent:'space-between', position:'sticky', top:0, zIndex:50 }}>
           <div style={{ fontSize:16, fontWeight:700, color: C.plum }}>

@@ -102,16 +102,32 @@ function BillingContent(){
           {display_name:'Team ID',variable_name:'team_id',value:profile.team_id},
         ]},
         channels:['card','mobile_money','bank'],
-        onClose(){setPaying(false);flash('Payment window closed.','error')},
-        async callback(response){
-          try{
-            const res=await fetch('/api/billing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({team_id:profile.team_id,plan:selPlan,payment_method:'paystack',payment_ref:response.reference,notes:`Paystack — ${response.reference}`,requested_by:profile.id})})
-            const data=await res.json()
-            if(!res.ok){flash(data.error||'Activation failed. Contact support with ref: '+response.reference,'error');setPaying(false);return}
-            flash(`✅ Payment successful! ${plan.label} plan is now active.`,'success')
-            await load();setTab('overview')
-          }catch(e){flash('Payment received but activation failed. Ref: '+response.reference,'error')}
-          setPaying(false)
+        onClose: function(){ setPaying(false); flash('Payment window closed.','error') },
+        callback: function(response){
+          // Paystack requires a regular function — handle async inside
+          fetch('/api/billing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              team_id:        profile.team_id,
+              plan:           selPlan,
+              payment_method: 'paystack',
+              payment_ref:    response.reference,
+              notes:          'Paystack — ' + response.reference,
+              requested_by:   profile.id,
+            }),
+          })
+          .then(res => res.json())
+          .then(data => {
+            if(data.error){ flash('Activation failed. Contact support with ref: ' + response.reference, 'error'); setPaying(false); return }
+            flash('✅ Payment successful! ' + plan.label + ' plan is now active.', 'success')
+            load().then(() => setTab('overview'))
+            setPaying(false)
+          })
+          .catch(() => {
+            flash('Payment received but activation failed. Ref: ' + response.reference, 'error')
+            setPaying(false)
+          })
         },
       })
       handler.openIframe()

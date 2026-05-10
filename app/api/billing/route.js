@@ -2,9 +2,12 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse }  from 'next/server'
 
+// Use service role if available, otherwise fall back to anon key
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
+  supabaseKey
 )
 
 const PLANS = {
@@ -34,20 +37,23 @@ export async function POST(req) {
     const body = await req.json()
     const { team_id, plan, payment_method, payment_ref, notes, requested_by } = body
 
-    if (!team_id || !plan) return NextResponse.json({ error: 'team_id and plan required' }, { status: 400 })
-    if (!PLANS[plan])      return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
+    console.log('Billing POST:', { team_id, plan, payment_method, payment_ref })
 
-    const p       = PLANS[plan]
-    const now     = new Date()
-    const end     = new Date(now); end.setDate(end.getDate() + 30)
+    if (!team_id || !plan) return NextResponse.json({ error: 'team_id and plan required' }, { status: 400 })
+    if (!PLANS[plan])      return NextResponse.json({ error: 'Invalid plan: ' + plan }, { status: 400 })
+
+    const p   = PLANS[plan]
+    const now = new Date()
+    const end = new Date(now); end.setDate(end.getDate() + 30)
 
     // Check if subscription exists
-    const { data: existing } = await supabase
-      .from('subscriptions').select('id').eq('team_id', team_id).single()
+    const { data: existing, error: fetchErr } = await supabase
+      .from('subscriptions').select('id').eq('team_id', team_id).maybeSingle()
+
+    console.log('Existing sub:', existing, 'fetchErr:', fetchErr)
 
     let sub, subErr
     if (existing) {
-      // Update existing
       const result = await supabase.from('subscriptions')
         .update({
           plan, status:'active',
@@ -63,7 +69,6 @@ export async function POST(req) {
         .select().single()
       sub = result.data; subErr = result.error
     } else {
-      // Insert new
       const result = await supabase.from('subscriptions')
         .insert({
           team_id, plan, status:'active',
@@ -78,10 +83,12 @@ export async function POST(req) {
       sub = result.data; subErr = result.error
     }
 
-    if (subErr) return NextResponse.json({ error: subErr.message }, { status: 500 })
+    console.log('Sub result:', sub, 'subErr:', subErr)
+
+    if (subErr) return NextResponse.json({ error: subErr.message, details: subErr }, { status: 500 })
 
     // Log billing event
-    await supabase.from('billing_events').insert({
+    const { error: evErr } = await supabase.from('billing_events').insert({
       team_id, type:'payment', plan,
       amount_ghs:  p.price_ghs,
       payment_ref: payment_ref || null,
@@ -89,8 +96,11 @@ export async function POST(req) {
       created_by:  requested_by || null,
     })
 
+    console.log('Billing event error:', evErr)
+
     return NextResponse.json({ ok: true, subscription: sub })
   } catch (e) {
+    console.error('Billing POST error:', e)
     return NextResponse.json({ error: e.message }, { status: 500 })
   }
 }

@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
@@ -42,7 +42,7 @@ function loadPaystack(){
   })
 }
 
-export default function BillingPage(){
+function BillingContent(){
   const searchParams  = useSearchParams()
   const upgradeReason = searchParams.get('reason')
   const blockedModule = searchParams.get('module')
@@ -332,5 +332,19 @@ export default function BillingPage(){
         )}
       </div>
     </Layout>
+  )
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh' }}>
+          <div style={{ width:36, height:36, border:'4px solid var(--milk-muted)', borderTopColor:'var(--plum)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
+        </div>
+      </Layout>
+    }>
+      <BillingContent />
+    </Suspense>
   )
 }

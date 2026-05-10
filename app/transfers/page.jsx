@@ -74,12 +74,13 @@ export default function TransfersPage() {
       setProfile(p)
       setIsAdmin(p?.role==='admin'||p?.role==='superadmin'||p?.role==='coach')
 
-      const [{ data:t },{ data:a }] = await Promise.all([
+      const [{ data:t, error:tErr },{ data:a }] = await Promise.all([
         supabase.from('transfers')
           .select('*, athletes(id,name,photo_url,position,nationality)')
-          .order('transfer_date', {ascending:false}),
+          .order('created_at', {ascending:false}),
         supabase.from('athletes').select('id,name,photo_url,position,club').order('name'),
       ])
+      console.log('Transfers:', t, 'Error:', tErr)
       setTransfers(t||[])
       setAthletes(a||[])
     } catch(e){ console.error(e) }

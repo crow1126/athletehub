@@ -9,13 +9,20 @@ export default function LoginPage() {
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState('')
   const [showPass, setShowPass] = useState(false)
-  const [disabled, setDisabled] = useState(false)
+  const [disabled,    setDisabled]    = useState(false)
+  const [subExpired,  setSubExpired]  = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
       if (params.get('reason') === 'disabled') setDisabled(true)
+      if (params.get('reason') === 'subscription_expired') {
+        setSubExpired(true)
+        // Sign out so the session check below doesn't redirect back to dashboard
+        supabase.auth.signOut()
+        return
+      }
     }
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
@@ -138,6 +145,16 @@ export default function LoginPage() {
             {disabled && (
               <div style={{ background:'#F9E8E8', border:'1px solid rgba(180,50,50,0.2)', borderRadius:10, padding:'11px 14px', marginBottom:18, fontSize:13, color:'#8B2020', fontWeight:600 }}>
                 🚫 Your account has been disabled. Contact your club administrator.
+              </div>
+            )}
+
+            {subExpired && (
+              <div style={{ background:'#FEF9E7', border:'1px solid rgba(183,119,13,0.3)', borderRadius:10, padding:'14px 16px', marginBottom:18 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:'#B7770D', marginBottom:4 }}>🔒 Subscription Cancelled</div>
+                <div style={{ fontSize:13, color:'#7A5A0A', lineHeight:1.6 }}>
+                  Your club's Apex Track subscription has been cancelled by the administrator.<br/>
+                  Please contact your club admin to restore access.
+                </div>
               </div>
             )}
 

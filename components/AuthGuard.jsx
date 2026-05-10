@@ -54,9 +54,13 @@ export default function AuthGuard({ children }) {
             (sub.plan !== 'trial' && new Date(sub.current_period_end) < new Date())
 
           if (isExpired) {
-            router.replace(profile.role === 'admin' || profile.role === 'superadmin'
-              ? '/billing?reason=expired'
-              : '/login?reason=subscription_expired')
+            if (profile.role === 'admin' || profile.role === 'superadmin') {
+              router.replace('/billing?reason=expired')
+            } else {
+              // Sign out first to prevent redirect loop between dashboard and login
+              await supabase.auth.signOut()
+              router.replace('/login?reason=subscription_expired')
+            }
             return
           }
 

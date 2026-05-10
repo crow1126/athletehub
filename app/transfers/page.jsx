@@ -74,14 +74,33 @@ export default function TransfersPage() {
       setProfile(p)
       setIsAdmin(p?.role==='admin'||p?.role==='superadmin'||p?.role==='coach')
 
-      const [{ data:t, error:tErr },{ data:a }] = await Promise.all([
-        supabase.from('transfers')
-          .select('*, athletes(id,name,photo_url,position,nationality)')
-          .order('created_at', {ascending:false}),
-        supabase.from('athletes').select('id,name,photo_url,position,club').order('name'),
-      ])
-      console.log('Transfers:', t, 'Error:', tErr)
-      setTransfers(t||[])
+      // Fetch transfers first, then athletes separately to avoid join issues
+      const { data:t, error:tErr } = await supabase
+        .from('transfers')
+        .select('*')
+        .order('transfer_date', {ascending:false})
+
+      console.log('Transfers raw:', t, 'Error:', tErr)
+
+      let transfersWithAthletes = t || []
+
+      // If we got transfers, fetch athlete details separately
+      if (t && t.length > 0) {
+        const athleteIds = [...new Set(t.map(tr => tr.athlete_id).filter(Boolean))]
+        const { data:athData } = await supabase
+          .from('athletes')
+          .select('id,name,photo_url,position,nationality')
+          .in('id', athleteIds)
+
+        const athMap = {}
+        ;(athData||[]).forEach(a => { athMap[a.id] = a })
+        transfersWithAthletes = t.map(tr => ({ ...tr, athletes: athMap[tr.athlete_id] || null }))
+      }
+
+      setTransfers(transfersWithAthletes)
+
+      const { data:a } = await supabase
+        .from('athletes').select('id,name,photo_url,position,club').order('name')
       setAthletes(a||[])
     } catch(e){ console.error(e) }
     setLoading(false)

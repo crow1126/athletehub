@@ -38,16 +38,16 @@ const ICONS = {
 }
 
 const C = {
-  milk:      '#FFF3E6',
-  milkDark:  '#F5E6D3',
-  milkMuted: '#EDD9C8',
-  plum:      '#381932',
-  plumLight: '#4E2445',
-  plumDeep:  '#250F21',
-  border:    '#D9C4B5',
-  text:      '#381932',
-  text2:     '#7A4E6A',
-  text3:     '#9E7A8E',
+  floral:     '#FFFCF6',
+  floralDark: '#F5F0E8',
+  floralMuted:'#EAE4D8',
+  lagoon:     '#006A6A',
+  lagoonLight:'#008080',
+  lagoonDeep: '#004F4F',
+  border:    '#C8E0E0',
+  text:      '#003D3D',
+  text2:     '#2D6B6B',
+  text3:     '#5A9494',
 }
 
 export default function Layout({ children }) {
@@ -104,8 +104,8 @@ export default function Layout({ children }) {
   const teamLogo  = profile?.teams?.logo_url     || null
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.milk }}>
-      <div style={{ width:36, height:36, border:`3px solid ${C.milkMuted}`, borderTopColor: C.plum, borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.floral }}>
+      <div style={{ width:36, height:36, border:`3px solid ${C.floralMuted}`, borderTopColor: C.lagoon, borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   )
@@ -116,11 +116,11 @@ export default function Layout({ children }) {
     if (teamLogo && !logoError) {
       return (
         <img src={teamLogo} alt={teamName || 'Club'} onError={() => setLogoError(true)}
-          style={{ width:size, height:size, borderRadius:12, objectFit:'contain', background: C.milk, padding:4, flexShrink:0, border:`1px solid ${C.border}` }} />
+          style={{ width:size, height:size, borderRadius:12, objectFit:'contain', background: C.floral, padding:4, flexShrink:0, border:`1px solid ${C.border}` }} />
       )
     }
     return (
-      <div style={{ width:size, height:size, borderRadius:12, background: C.milk, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(56,25,50,0.2)`, border:`1px solid ${C.border}` }}>
+      <div style={{ width:size, height:size, borderRadius:12, background: C.floral, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(0,106,106,0.2)`, border:`1px solid ${C.border}` }}>
         <img src="/apex-track-logo.svg" alt="Apex Track" style={{ width:size * 0.78, height:size * 0.78, objectFit:'contain' }} />
       </div>
     )
@@ -129,53 +129,53 @@ export default function Layout({ children }) {
   // ── MOBILE ──────────────────────────────────────────────────────────────────
   if (isMobile) {
     return (
-      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background: C.milk, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
+      <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background: C.floral, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 
-        <header style={{ height:56, background: C.milkDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 16px', justifyContent:'space-between', position:'sticky', top:0, zIndex:200 }}>
+        <header style={{ height:56, background: C.floralDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 16px', justifyContent:'space-between', position:'sticky', top:0, zIndex:200 }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ClubLogo size={32} />
             <div>
-              <div style={{ fontSize:13, fontWeight:800, color: C.plum }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontSize:13, fontWeight:800, color: C.lagoon }}>{teamName || 'Apex Track'}</div>
               <div style={{ fontSize:10, color: C.text2, textTransform:'capitalize' }}>{role}</div>
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-            <div style={{ fontSize:11, background: C.milkMuted, color: C.plumLight, borderRadius:99, padding:'4px 10px', fontWeight:600, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:11, background: C.floralMuted, color: C.lagoonLight, borderRadius:99, padding:'4px 10px', fontWeight:600, border:`1px solid ${C.border}` }}>
               {ALL_NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'Dashboard'}
             </div>
             <button onClick={() => setMobileMenu(v => !v)}
-              style={{ background:'none', border:'none', cursor:'pointer', color: C.plum, padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
+              style={{ background:'none', border:'none', cursor:'pointer', color: C.lagoon, padding:4, display:'flex', alignItems:'center', justifyContent:'center' }}>
               {mobileMenu ? ICONS.close : ICONS.menu}
             </button>
           </div>
         </header>
 
         {mobileMenu && (
-          <div style={{ position:'fixed', top:56, left:0, right:0, bottom:0, zIndex:150, background:'rgba(56,25,50,0.4)' }} onClick={() => setMobileMenu(false)}>
-            <div style={{ background: C.milkDark, borderBottom:`1px solid ${C.border}`, padding:'12px 0', maxHeight:'80vh', overflowY:'auto' }}
+          <div style={{ position:'fixed', top:56, left:0, right:0, bottom:0, zIndex:150, background:'rgba(0,106,106,0.4)' }} onClick={() => setMobileMenu(false)}>
+            <div style={{ background: C.floralDark, borderBottom:`1px solid ${C.border}`, padding:'12px 0', maxHeight:'80vh', overflowY:'auto' }}
               onClick={e => e.stopPropagation()}>
               {navLinks.map(({ href, label, page }) => {
                 const active = path === href || path.startsWith(href + '/')
                 return (
                   <Link key={href} href={href}
-                    style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: active ? C.plum : C.text2, fontWeight: active ? 700 : 500, fontSize:15, textDecoration:'none', background: active ? C.milkMuted : 'transparent', borderLeft: active ? `3px solid ${C.plum}` : '3px solid transparent' }}>
-                    <span style={{ color: active ? C.plum : C.text3 }}>{ICONS[page]}</span>
+                    style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: active ? C.lagoon : C.text2, fontWeight: active ? 700 : 500, fontSize:15, textDecoration:'none', background: active ? C.floralMuted : 'transparent', borderLeft: active ? `3px solid ${C.lagoon}` : '3px solid transparent' }}>
+                    <span style={{ color: active ? C.lagoon : C.text3 }}>{ICONS[page]}</span>
                     {label}
                   </Link>
                 )
               })}
               <div style={{ padding:'16px 20px', borderTop:`1px solid ${C.border}`, marginTop:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
-                  <div style={{ width:36, height:36, borderRadius:'50%', background:`linear-gradient(135deg, ${C.plum}, ${C.plumLight})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color: C.milk }}>
+                  <div style={{ width:36, height:36, borderRadius:'50%', background:`linear-gradient(135deg, ${C.lagoon}, ${C.lagoonLight})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, color: C.floral }}>
                     {initials}
                   </div>
                   <div>
-                    <div style={{ fontSize:13, fontWeight:700, color: C.plum }}>{profile?.full_name || 'Admin'}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color: C.lagoon }}>{profile?.full_name || 'Admin'}</div>
                     <div style={{ fontSize:11, color: C.text2 }}>{profile?.email}</div>
                   </div>
                 </div>
                 <button onClick={handleSignOut}
-                  style={{ width:'100%', background:`rgba(56,25,50,0.08)`, color: C.plum, border:`1px solid rgba(56,25,50,0.2)`, borderRadius:8, padding:'10px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
+                  style={{ width:'100%', background:`rgba(0,106,106,0.08)`, color: C.lagoon, border:`1px solid rgba(0,106,106,0.2)`, borderRadius:8, padding:'10px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif' }}>
                   Sign Out
                 </button>
               </div>
@@ -185,13 +185,13 @@ export default function Layout({ children }) {
 
         <main style={{ flex:1, paddingBottom:72 }}>{children}</main>
 
-        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.milkDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)' }}>
+        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.floralDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)' }}>
           {mobileNav.map(({ href, label, page }) => {
             const active = path === href || path.startsWith(href + '/')
             return (
               <Link key={href} href={href}
-                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 12px', textDecoration:'none', color: active ? C.plum : C.text3, flex:1 }}>
-                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:10, background: active ? C.milkMuted : 'transparent', transition:'all 0.15s' }}>
+                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 12px', textDecoration:'none', color: active ? C.lagoon : C.text3, flex:1 }}>
+                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:10, background: active ? C.floralMuted : 'transparent', transition:'all 0.15s' }}>
                   {ICONS[page]}
                 </span>
                 <span style={{ fontSize:10, fontWeight: active ? 700 : 500 }}>{label}</span>
@@ -200,25 +200,25 @@ export default function Layout({ children }) {
           })}
         </nav>
 
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:${C.milkMuted};border-radius:4px}`}</style>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:${C.floralMuted};border-radius:4px}`}</style>
       </div>
     )
   }
 
   // ── DESKTOP ─────────────────────────────────────────────────────────────────
   return (
-    <div style={{ display:'flex', minHeight:'100vh', background: C.milk, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
+    <div style={{ display:'flex', minHeight:'100vh', background: C.floral, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => setExpanded(false)}
-        style={{ width:sideW, flexShrink:0, background: C.milkDark, display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:100, borderRight:`1px solid ${C.border}`, transition:'width 0.22s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', boxShadow:`2px 0 16px rgba(56,25,50,0.08)` }}>
+        style={{ width:sideW, flexShrink:0, background: C.floralDark, display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:100, borderRight:`1px solid ${C.border}`, transition:'width 0.22s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', boxShadow:`2px 0 16px rgba(0,106,106,0.08)` }}>
 
         <div style={{ padding:'14px 0', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', paddingLeft: expanded ? 14 : 0, borderBottom:`1px solid ${C.border}`, minHeight:72, flexShrink:0, gap: expanded ? 12 : 0, transition:'all 0.22s' }}>
           <ClubLogo size={44} />
           {expanded && (
             <div style={{ overflow:'hidden', whiteSpace:'nowrap' }}>
-              <div style={{ fontWeight:800, fontSize:14, color: C.plum, overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontWeight:800, fontSize:14, color: C.lagoon, overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>
               <div style={{ fontSize:10, color: C.text2, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2 }}>{teamShort || 'AT'}</div>
             </div>
           )}
@@ -230,10 +230,10 @@ export default function Layout({ children }) {
             const isBilling = page === 'billing'
             return (
               <Link key={href} href={href}
-                style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', paddingLeft: expanded ? 16 : 0, justifyContent: expanded ? 'flex-start' : 'center', margin:'2px 8px', borderRadius:10, background: active ? `linear-gradient(135deg, ${C.plum}, ${C.plumLight})` : isBilling && !active ? 'rgba(56,25,50,0.04)' : 'transparent', color: active ? C.milk : C.text2, fontWeight: active ? 600 : 500, fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0, boxShadow: active ? `0 4px 12px rgba(56,25,50,0.3)` : 'none', border: isBilling && !active ? `1px solid ${C.border}` : '1px solid transparent' }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.milkMuted }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.background = isBilling ? 'rgba(56,25,50,0.04)' : 'transparent' }}>
-                <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color: active ? C.milk : C.text2, minWidth:20 }}>
+                style={{ display:'flex', alignItems:'center', gap:12, padding:'11px 0', paddingLeft: expanded ? 16 : 0, justifyContent: expanded ? 'flex-start' : 'center', margin:'2px 8px', borderRadius:10, background: active ? `linear-gradient(135deg, ${C.lagoon}, ${C.lagoonLight})` : isBilling && !active ? 'rgba(0,106,106,0.04)' : 'transparent', color: active ? C.floral : C.text2, fontWeight: active ? 600 : 500, fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0, boxShadow: active ? `0 4px 12px rgba(0,106,106,0.3)` : 'none', border: isBilling && !active ? `1px solid ${C.border}` : '1px solid transparent' }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.background = C.floralMuted }}
+                onMouseLeave={e => { if (!active) e.currentTarget.style.background = isBilling ? 'rgba(0,106,106,0.04)' : 'transparent' }}>
+                <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', color: active ? C.floral : C.text2, minWidth:20 }}>
                   {ICONS[page] || ICONS.dashboard}
                 </span>
                 {expanded && <span style={{ overflow:'hidden', textOverflow:'ellipsis' }}>{label}</span>}
@@ -245,26 +245,26 @@ export default function Layout({ children }) {
         <div style={{ padding:'12px 0', borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
           {expanded ? (
             <div style={{ padding:'0 12px' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, background: C.milkMuted, borderRadius:10, padding:'10px 12px' }}>
-                <div style={{ width:34, height:34, borderRadius:'50%', background:`linear-gradient(135deg, ${C.plum}, ${C.plumLight})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color: C.milk, flexShrink:0 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10, background: C.floralMuted, borderRadius:10, padding:'10px 12px' }}>
+                <div style={{ width:34, height:34, borderRadius:'50%', background:`linear-gradient(135deg, ${C.lagoon}, ${C.lagoonLight})`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, color: C.floral, flexShrink:0 }}>
                   {initials}
                 </div>
                 <div style={{ flex:1, overflow:'hidden' }}>
-                  <div style={{ fontSize:12, fontWeight:700, color: C.plum, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile?.full_name || 'Admin'}</div>
+                  <div style={{ fontSize:12, fontWeight:700, color: C.lagoon, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile?.full_name || 'Admin'}</div>
                   <div style={{ fontSize:10, color: C.text2, textTransform:'capitalize', marginTop:1 }}>{role}</div>
                 </div>
               </div>
               <button onClick={handleSignOut}
-                style={{ width:'100%', background:`rgba(56,25,50,0.08)`, color: C.plum, border:`1px solid rgba(56,25,50,0.18)`, borderRadius:8, padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', transition:'all 0.15s' }}
-                onMouseEnter={e => { e.currentTarget.style.background = `rgba(56,25,50,0.16)`; e.currentTarget.style.color = C.plumDeep }}
-                onMouseLeave={e => { e.currentTarget.style.background = `rgba(56,25,50,0.08)`; e.currentTarget.style.color = C.plum }}>
+                style={{ width:'100%', background:`rgba(0,106,106,0.08)`, color: C.lagoon, border:`1px solid rgba(0,106,106,0.18)`, borderRadius:8, padding:'8px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'Plus Jakarta Sans,sans-serif', transition:'all 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.background = `rgba(0,106,106,0.16)`; e.currentTarget.style.color = C.lagoonDeep }}
+                onMouseLeave={e => { e.currentTarget.style.background = `rgba(0,106,106,0.08)`; e.currentTarget.style.color = C.lagoon }}>
                 Sign Out
               </button>
             </div>
           ) : (
             <div style={{ display:'flex', justifyContent:'center' }}>
               <button onClick={handleSignOut} title={`${profile?.full_name || 'Admin'} · Sign Out`}
-                style={{ width:44, height:44, borderRadius:'50%', background:`linear-gradient(135deg, ${C.plum}, ${C.plumLight})`, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, fontWeight:800, color: C.milk, transition:'all 0.15s', boxShadow:`0 2px 8px rgba(56,25,50,0.3)` }}
+                style={{ width:44, height:44, borderRadius:'50%', background:`linear-gradient(135deg, ${C.lagoon}, ${C.lagoonLight})`, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:12, fontWeight:800, color: C.floral, transition:'all 0.15s', boxShadow:`0 2px 8px rgba(0,106,106,0.3)` }}
                 onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
                 onMouseLeave={e => e.currentTarget.style.opacity = '1'}>
                 {initials}
@@ -275,33 +275,33 @@ export default function Layout({ children }) {
       </aside>
 
       <div style={{ marginLeft:sideW, flex:1, display:'flex', flexDirection:'column', minHeight:'100vh', transition:'margin-left 0.22s cubic-bezier(0.4,0,0.2,1)' }}>
-        <header style={{ height:56, background: C.milkDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 28px', justifyContent:'space-between', position:'sticky', top:0, zIndex:50 }}>
-          <div style={{ fontSize:16, fontWeight:700, color: C.plum }}>
+        <header style={{ height:56, background: C.floralDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 28px', justifyContent:'space-between', position:'sticky', top:0, zIndex:50 }}>
+          <div style={{ fontSize:16, fontWeight:700, color: C.lagoon }}>
             {ALL_NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'Dashboard'}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:16 }}>
             {teamName && (
-              <div style={{ display:'flex', alignItems:'center', gap:7, background: C.milkMuted, borderRadius:99, padding:'5px 12px', border:`1px solid ${C.border}` }}>
+              <div style={{ display:'flex', alignItems:'center', gap:7, background: C.floralMuted, borderRadius:99, padding:'5px 12px', border:`1px solid ${C.border}` }}>
                 {teamLogo && !logoError
                   ? <img src={teamLogo} alt={teamName} onError={() => setLogoError(true)} style={{ width:18, height:18, objectFit:'contain', borderRadius:4 }} />
-                  : <div style={{ width:18, height:18, borderRadius:4, background: C.plum, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, color: C.milk }}>{teamShort?.slice(0,2)}</div>
+                  : <div style={{ width:18, height:18, borderRadius:4, background: C.lagoon, display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:800, color: C.floral }}>{teamShort?.slice(0,2)}</div>
                 }
-                <span style={{ fontSize:12, color: C.plumLight, fontWeight:600 }}>{teamName}</span>
+                <span style={{ fontSize:12, color: C.lagoonLight, fontWeight:600 }}>{teamName}</span>
               </div>
             )}
             <div style={{ fontSize:12, color: C.text2, fontWeight:500 }}>
               {new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' })}
             </div>
-            <div style={{ display:'flex', alignItems:'center', gap:6, background: C.milkMuted, borderRadius:99, padding:'5px 12px', border:`1px solid ${C.border}` }}>
+            <div style={{ display:'flex', alignItems:'center', gap:6, background: C.floralMuted, borderRadius:99, padding:'5px 12px', border:`1px solid ${C.border}` }}>
               <div style={{ width:7, height:7, borderRadius:'50%', background:'#27AE60', boxShadow:'0 0 5px #27AE60' }} />
-              <span style={{ fontSize:12, color: C.plumLight, fontWeight:600 }}>Live</span>
+              <span style={{ fontSize:12, color: C.lagoonLight, fontWeight:600 }}>Live</span>
             </div>
           </div>
         </header>
         <main style={{ flex:1 }}>{children}</main>
       </div>
 
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:${C.milkMuted};border-radius:4px}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:${C.floralMuted};border-radius:4px}`}</style>
     </div>
   )
 }

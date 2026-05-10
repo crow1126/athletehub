@@ -5,7 +5,7 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
-const AV_COLORS = ['#381932','#4E2445','#7A4E6A','#9E7A8E','#250F21','#5C3058']
+const AV_COLORS = ['#006A6A','#008080','#2D6B6B','#5A9494','#004F4F','#5C3058']
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
 function AthleteAvatar({ ath, size=40, index=0 }) {
@@ -14,19 +14,19 @@ function AthleteAvatar({ ath, size=40, index=0 }) {
     return <img src={ath.photo_url} alt={ath?.name} onError={()=>setErr(true)} style={{ width:size,height:size,borderRadius:'50%',objectFit:'cover',border:'2px solid rgba(255,255,255,0.3)',flexShrink:0 }}/>
   }
   return (
-    <div style={{ width:size,height:size,borderRadius:'50%',flexShrink:0,background:AV_COLORS[index%AV_COLORS.length],display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.32,fontWeight:800,color:'#FFF3E6',border:'2px solid rgba(255,255,255,0.2)' }}>
+    <div style={{ width:size,height:size,borderRadius:'50%',flexShrink:0,background:AV_COLORS[index%AV_COLORS.length],display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.32,fontWeight:800,color:'#FFFCF6',border:'2px solid rgba(255,255,255,0.2)' }}>
       {initials(ath?.name)}
     </div>
   )
 }
 
 const SESSION_COLORS = {
-  'Squad Training':'#4E2445','Strength & Conditioning':'#27AE60','Tactical Drills':'#7A4E6A',
-  'Recovery Session':'#26C6DA','Match Preparation':'#381932','Friendly Match':'#EF5350',
-  'Fitness Test':'#B7770D','Video Analysis':'#9E7A8E',
+  'Squad Training':'#008080','Strength & Conditioning':'#27AE60','Tactical Drills':'#2D6B6B',
+  'Recovery Session':'#26C6DA','Match Preparation':'#006A6A','Friendly Match':'#EF5350',
+  'Fitness Test':'#B7770D','Video Analysis':'#5A9494',
 }
 
-function MiniChart({ data=[40,55,48,62,58,72,68,75,70,80], color='#381932' }) {
+function MiniChart({ data=[40,55,48,62,58,72,68,75,70,80], color='#006A6A' }) {
   const max=Math.max(...data), min=Math.min(...data)
   const w=280, h=70, pad=8
   const pts=data.map((v,i)=>{
@@ -133,32 +133,32 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Hero banner — Plum gradient ── */}
-      <div className="dash-hero" style={{ background:'linear-gradient(135deg,#250F21 0%,#381932 55%,#4E2445 100%)', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute',top:-60,right:-60,width:280,height:280,borderRadius:'50%',background:'rgba(255,243,230,0.07)' }}/>
-        <div style={{ position:'absolute',bottom:-40,right:180,width:180,height:180,borderRadius:'50%',background:'rgba(255,243,230,0.04)' }}/>
+      <div className="dash-hero" style={{ background:'linear-gradient(135deg,#004F4F 0%,#006A6A 55%,#008080 100%)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute',top:-60,right:-60,width:280,height:280,borderRadius:'50%',background:'rgba(255,252,246,0.07)' }}/>
+        <div style={{ position:'absolute',bottom:-40,right:180,width:180,height:180,borderRadius:'50%',background:'rgba(255,252,246,0.04)' }}/>
 
         <div style={{ position:'relative', maxWidth:1280, margin:'0 auto' }}>
-          <div style={{ fontSize:12,color:'rgba(255,243,230,0.6)',fontWeight:500,marginBottom:4 }}>
+          <div style={{ fontSize:12,color:'rgba(255,252,246,0.6)',fontWeight:500,marginBottom:4 }}>
             {greet} · {today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}
           </div>
-          <h1 style={{ fontSize:22,fontWeight:800,color:'#FFF3E6',marginBottom:14,letterSpacing:'-0.02em' }}>
+          <h1 style={{ fontSize:22,fontWeight:800,color:'#FFFCF6',marginBottom:14,letterSpacing:'-0.02em' }}>
             Welcome, <span style={{ color:'#D9A87A' }}>{profile?.full_name||'Admin'}</span>
           </h1>
 
           {todaySess.length>0 && (
-            <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,243,230,0.15)',border:'1px solid rgba(255,243,230,0.25)',borderRadius:99,padding:'6px 14px',marginBottom:14,backdropFilter:'blur(8px)' }}>
+            <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,252,246,0.15)',border:'1px solid rgba(255,252,246,0.25)',borderRadius:99,padding:'6px 14px',marginBottom:14,backdropFilter:'blur(8px)' }}>
               <span style={{ fontSize:13 }}>📅</span>
-              <span style={{ fontSize:12,color:'rgba(255,243,230,0.95)',fontWeight:600 }}>{todaySess.length} session{todaySess.length>1?'s':''} today</span>
+              <span style={{ fontSize:12,color:'rgba(255,252,246,0.95)',fontWeight:600 }}>{todaySess.length} session{todaySess.length>1?'s':''} today</span>
             </div>
           )}
 
           <div className="dash-stats" style={{ display:'grid', gap:10 }}>
             {stats.map(s=>(
-              <div key={s.label} style={{ background:'rgba(255,243,230,0.14)',backdropFilter:'blur(12px)',borderRadius:12,padding:'14px 16px',border:'1px solid rgba(255,243,230,0.22)' }}>
+              <div key={s.label} style={{ background:'rgba(255,252,246,0.14)',backdropFilter:'blur(12px)',borderRadius:12,padding:'14px 16px',border:'1px solid rgba(255,252,246,0.22)' }}>
                 <div style={{ fontSize:20,marginBottom:6 }}>{s.icon}</div>
-                <div style={{ fontSize:24,fontWeight:900,color:'#FFF3E6',lineHeight:1,marginBottom:3 }}>{s.value}</div>
-                <div style={{ fontSize:11,color:'rgba(255,243,230,0.85)',fontWeight:600 }}>{s.label}</div>
-                <div style={{ fontSize:10,color:'rgba(255,243,230,0.5)',marginTop:1 }}>{s.note}</div>
+                <div style={{ fontSize:24,fontWeight:900,color:'#FFFCF6',lineHeight:1,marginBottom:3 }}>{s.value}</div>
+                <div style={{ fontSize:11,color:'rgba(255,252,246,0.85)',fontWeight:600 }}>{s.label}</div>
+                <div style={{ fontSize:10,color:'rgba(255,252,246,0.5)',marginTop:1 }}>{s.note}</div>
               </div>
             ))}
           </div>
@@ -220,14 +220,14 @@ export default function Dashboard() {
                 <div key={s.id} style={{ display:'flex',alignItems:'center',gap:12,padding:'12px 16px',borderBottom:'1px solid var(--border)',transition:'var(--transition)' }}
                   onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                   onMouseLeave={e=>e.currentTarget.style.background=''}>
-                  <div className="dash-session-date" style={{ minWidth:80,textAlign:'center',padding:'7px 10px',borderRadius:10,background:isToday?'var(--milk-muted)':'var(--surface2)',border:isToday?'1px solid rgba(56,25,50,0.3)':'1px solid var(--border)',flexShrink:0 }}>
+                  <div className="dash-session-date" style={{ minWidth:80,textAlign:'center',padding:'7px 10px',borderRadius:10,background:isToday?'var(--milk-muted)':'var(--surface2)',border:isToday?'1px solid rgba(0,106,106,0.3)':'1px solid var(--border)',flexShrink:0 }}>
                     <div style={{ fontSize:12,fontWeight:800,color:'var(--plum)',lineHeight:1.2 }}>{s.time}</div>
                     <div style={{ fontSize:10,fontWeight:600,color:isToday?'var(--plum)':'var(--text3)',textTransform:'uppercase',letterSpacing:'0.05em',marginTop:2 }}>{isToday?'TODAY':s.date}</div>
                   </div>
                   <div style={{ flex:1,minWidth:0 }}>
                     <div style={{ display:'flex',alignItems:'center',gap:6,marginBottom:2,flexWrap:'wrap' }}>
                       <span style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{s.title}</span>
-                      <span style={{ fontSize:10,fontWeight:700,background:(SESSION_COLORS[s.type]||'#381932')+'20',color:SESSION_COLORS[s.type]||'#381932',padding:'2px 7px',borderRadius:6,whiteSpace:'nowrap' }}>{s.type}</span>
+                      <span style={{ fontSize:10,fontWeight:700,background:(SESSION_COLORS[s.type]||'#006A6A')+'20',color:SESSION_COLORS[s.type]||'#006A6A',padding:'2px 7px',borderRadius:6,whiteSpace:'nowrap' }}>{s.type}</span>
                     </div>
                     <div style={{ fontSize:11,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>📍 {s.venue} · ⏱ {s.duration}min</div>
                   </div>
@@ -244,11 +244,11 @@ export default function Dashboard() {
           <div className="card fade-up" style={{ padding:'16px 18px' }}>
             <h2 style={{ fontSize:14,fontWeight:700,marginBottom:3 }}>Performance Overview</h2>
             <p style={{ fontSize:11,color:'var(--text3)',marginBottom:10 }}>Squad trends — last 10 matches</p>
-            <MiniChart data={[45,52,48,60,55,68,64,72,70,78]} color="#381932"/>
-            <MiniChart data={[30,38,35,42,50,44,56,52,60,58]} color="#7A4E6A"/>
+            <MiniChart data={[45,52,48,60,55,68,64,72,70,78]} color="#006A6A"/>
+            <MiniChart data={[30,38,35,42,50,44,56,52,60,58]} color="#2D6B6B"/>
             <MiniChart data={[60,55,62,58,52,65,60,68,65,72]} color="#B7770D"/>
             <div style={{ display:'flex',gap:12,marginTop:8,flexWrap:'wrap' }}>
-              {[['#381932','Performance'],['#7A4E6A','Endurance'],['#B7770D','Strength']].map(([c,l])=>(
+              {[['#006A6A','Performance'],['#2D6B6B','Endurance'],['#B7770D','Strength']].map(([c,l])=>(
                 <div key={l} style={{ display:'flex',alignItems:'center',gap:4,fontSize:11,color:'var(--text2)',fontWeight:600 }}>
                   <span style={{ width:10,height:3,borderRadius:2,background:c,display:'inline-block' }}/>{l}
                 </div>
@@ -258,9 +258,9 @@ export default function Dashboard() {
 
           {/* Medical alerts */}
           <div className="card fade-up fade-up-1" style={{ padding:0,overflow:'hidden' }}>
-            <div style={{ background:'linear-gradient(90deg,#250F21,#381932)',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
-              <h3 style={{ fontSize:14,fontWeight:700,color:'#FFF3E6' }}>🩺 Medical Alerts</h3>
-              <Link href="/injuries" style={{ fontSize:11,color:'rgba(255,243,230,0.85)',fontWeight:600,background:'rgba(255,243,230,0.15)',padding:'3px 10px',borderRadius:99,textDecoration:'none' }}>View all</Link>
+            <div style={{ background:'linear-gradient(90deg,#004F4F,#006A6A)',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+              <h3 style={{ fontSize:14,fontWeight:700,color:'#FFFCF6' }}>🩺 Medical Alerts</h3>
+              <Link href="/injuries" style={{ fontSize:11,color:'rgba(255,252,246,0.85)',fontWeight:600,background:'rgba(255,252,246,0.15)',padding:'3px 10px',borderRadius:99,textDecoration:'none' }}>View all</Link>
             </div>
             <div style={{ padding:'6px 0' }}>
               {activeInj.length===0?(

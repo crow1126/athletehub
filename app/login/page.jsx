@@ -64,10 +64,10 @@ export default function LoginPage() {
 
   const F = {
     width: '100%', padding: '12px 16px',
-    border: '1.5px solid #D9C4B5', borderRadius: 10,
+    border: '1.5px solid #C8E0E0', borderRadius: 10,
     fontSize: 16, outline: 'none',
     fontFamily: 'Plus Jakarta Sans,sans-serif',
-    color: '#381932', background: '#FFF3E6',
+    color: '#006A6A', background: '#FFFCF6',
     boxSizing: 'border-box', transition: 'border-color 0.15s',
     WebkitAppearance: 'none',
   }
@@ -78,8 +78,8 @@ export default function LoginPage() {
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
         .login-wrap { min-height:100vh; display:flex; font-family:'Plus Jakarta Sans',sans-serif; }
-        .login-left { flex:1; background:linear-gradient(135deg,#250F21 0%,#381932 55%,#4E2445 100%); display:flex; flex-direction:column; justify-content:center; padding:60px 80px; position:relative; overflow:hidden; }
-        .login-right { width:460px; display:flex; align-items:center; justify-content:center; padding:44px; background:#FFF3E6; }
+        .login-left { flex:1; background:linear-gradient(135deg,#004F4F 0%,#006A6A 55%,#008080 100%); display:flex; flex-direction:column; justify-content:center; padding:60px 80px; position:relative; overflow:hidden; }
+        .login-right { width:460px; display:flex; align-items:center; justify-content:center; padding:44px; background:#FFFCF6; }
         @media (max-width: 768px) {
           .login-wrap { flex-direction:column; }
           .login-left { padding:28px 24px 24px; flex:none; }
@@ -101,12 +101,12 @@ export default function LoginPage() {
                 <img src="/apex-track-logo.svg" alt="Apex Track" style={{ width:30, height:30, objectFit:'contain' }} />
               </div>
               <div>
-                <div style={{ fontWeight:800, fontSize:19, color:'#FFF3E6' }}>Apex <span style={{ color:'#D9A87A' }}>Track</span></div>
+                <div style={{ fontWeight:800, fontSize:19, color:'#FFFCF6' }}>Apex <span style={{ color:'#7ECACA' }}>Track</span></div>
                 <div style={{ fontSize:10, color:'rgba(255,243,230,0.45)', letterSpacing:'0.1em', textTransform:'uppercase' }}>Football Performance Platform</div>
               </div>
             </div>
-            <h1 style={{ fontSize:40, fontWeight:800, color:'#FFF3E6', lineHeight:1.15, marginBottom:14, letterSpacing:'-0.02em' }}>
-              Elite Football<br/>Performance<br/><span style={{ color:'#D9A87A' }}>Tracking</span>
+            <h1 style={{ fontSize:40, fontWeight:800, color:'#FFFCF6', lineHeight:1.15, marginBottom:14, letterSpacing:'-0.02em' }}>
+              Elite Football<br/>Performance<br/><span style={{ color:'#7ECACA' }}>Tracking</span>
             </h1>
             <p style={{ fontSize:14, color:'rgba(255,243,230,0.55)', lineHeight:1.7, marginBottom:40, maxWidth:340 }}>
               Multi-club platform — athlete management, performance analytics, and sports science.
@@ -131,8 +131,8 @@ export default function LoginPage() {
         <div className="login-right">
           <div style={{ width:'100%', maxWidth:360, animation:'fadeUp 0.35s ease both' }}>
             <div style={{ marginBottom:28 }}>
-              <h2 style={{ fontSize:26, fontWeight:800, color:'#381932', marginBottom:7, letterSpacing:'-0.02em' }}>Welcome back</h2>
-              <p style={{ fontSize:14, color:'#7A4E6A' }}>Sign in to your Apex Track account</p>
+              <h2 style={{ fontSize:26, fontWeight:800, color:'#006A6A', marginBottom:7, letterSpacing:'-0.02em' }}>Welcome back</h2>
+              <p style={{ fontSize:14, color:'#2D6B6B' }}>Sign in to your Apex Track account</p>
             </div>
 
             {disabled && (
@@ -143,18 +143,18 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} style={{ display:'flex', flexDirection:'column', gap:16 }}>
               <div>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#7A4E6A', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Email Address</label>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#2D6B6B', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Email Address</label>
                 <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" autoComplete="email" style={F}
-                  onFocus={e=>e.target.style.borderColor='#381932'}
-                  onBlur={e=>e.target.style.borderColor='#D9C4B5'} />
+                  onFocus={e=>e.target.style.borderColor='#006A6A'}
+                  onBlur={e=>e.target.style.borderColor='#C8E0E0'} />
               </div>
               <div>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#7A4E6A', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Password</label>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#2D6B6B', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Password</label>
                 <div style={{ position:'relative' }}>
                   <input type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" style={{ ...F, paddingRight:44 }}
-                    onFocus={e=>e.target.style.borderColor='#381932'}
-                    onBlur={e=>e.target.style.borderColor='#D9C4B5'} />
-                  <button type="button" onClick={()=>setShowPass(v=>!v)} style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#7A4E6A', padding:0, lineHeight:1, minHeight:'auto' }}>
+                    onFocus={e=>e.target.style.borderColor='#006A6A'}
+                    onBlur={e=>e.target.style.borderColor='#C8E0E0'} />
+                  <button type="button" onClick={()=>setShowPass(v=>!v)} style={{ position:'absolute', right:13, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#2D6B6B', padding:0, lineHeight:1, minHeight:'auto' }}>
                     {showPass?'🙈':'👁️'}
                   </button>
                 </div>
@@ -166,7 +166,7 @@ export default function LoginPage() {
                 </div>
               )}
 
-              <button type="submit" disabled={loading} style={{ background: loading ? '#7A4E6A' : 'linear-gradient(135deg,#381932,#4E2445)', color:'#FFF3E6', border:'none', padding:'15px', borderRadius:10, fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(56,25,50,0.35)', fontFamily:'Plus Jakarta Sans,sans-serif', width:'100%', marginTop:4, touchAction:'manipulation', minHeight:52 }}>
+              <button type="submit" disabled={loading} style={{ background: loading ? '#2D6B6B' : 'linear-gradient(135deg,#006A6A,#008080)', color:'#FFFCF6', border:'none', padding:'15px', borderRadius:10, fontSize:16, fontWeight:700, cursor:loading?'not-allowed':'pointer', boxShadow:'0 4px 14px rgba(0,106,106,0.35)', fontFamily:'Plus Jakarta Sans,sans-serif', width:'100%', marginTop:4, touchAction:'manipulation', minHeight:52 }}>
                 {loading?'Signing in…':'Sign In →'}
               </button>
             </form>

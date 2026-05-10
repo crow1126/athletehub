@@ -1,52 +1,44 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MILK & PLUM THEME — Apex Track
-   Milk: #FFF3E6  |  Plum: #381932
+   BLUE LAGOON & FLORAL WHITE THEME — Apex Track
+   Blue Lagoon: #006A6A  |  Floral White: #FFFCF6
    ============================================================ */
 
 :root {
-  /* ── Brand ── */
-  --milk:         #FFF3E6;
-  --milk-dark:    #F5E6D3;
-  --milk-muted:   #EDD9C8;
-  --plum:         #381932;
-  --plum-light:   #4E2445;
-  --plum-deep:    #250F21;
+  --lagoon:        #006A6A;
+  --lagoon-light:  #008080;
+  --lagoon-deep:   #004F4F;
+  --lagoon-pale:   #E0F0F0;
 
-  /* ── Typography ── */
-  --font:         'Plus Jakarta Sans', sans-serif;
-  --text:         #381932;
-  --text2:        #7A4E6A;
-  --text3:        #9E7A8E;
+  --floral:        #FFFCF6;
+  --floral-dark:   #F5F0E8;
+  --floral-muted:  #EAE4D8;
 
-  /* ── Surfaces (milk tones replace white/grey) ── */
-  --surface:      #FFF3E6;
-  --surface2:     #F5E6D3;
+  --font:   'Plus Jakarta Sans', sans-serif;
+  --text:   #003D3D;
+  --text2:  #2D6B6B;
+  --text3:  #5A9494;
 
-  /* ── Borders ── */
-  --border:       #D9C4B5;
+  --surface:   #FFFCF6;
+  --surface2:  #F5F0E8;
+  --border:    #C8E0E0;
 
-  /* ── Primary action — was blue, now plum ── */
-  --blue:         #381932;
-  --blue-light:   #EDD9C8;
-  --blue-dark:    #250F21;
+  --blue:       #006A6A;
+  --blue-light: #E0F0F0;
+  --blue-dark:  #004F4F;
 
-  /* ── Shadows ── */
-  --shadow-sm:    0 1px 4px rgba(56,25,50,0.08);
-  --shadow-md:    0 4px 16px rgba(56,25,50,0.14);
-  --shadow-lg:    0 8px 32px rgba(56,25,50,0.18);
+  --shadow-sm:  0 1px 4px rgba(0,106,106,0.08);
+  --shadow-md:  0 4px 16px rgba(0,106,106,0.14);
+  --shadow-lg:  0 8px 32px rgba(0,106,106,0.18);
 
-  /* ── Radius ── */
-  --r-sm:         6px;
-  --r-md:         10px;
-  --r-lg:         14px;
-  --r-xl:         20px;
+  --r-sm:  6px;
+  --r-md:  10px;
+  --r-lg:  14px;
+  --r-xl:  20px;
 
-  /* ── Transitions ── */
-  --transition:   all 0.15s ease;
+  --transition: all 0.15s ease;
 
-  /* ── Status colours ── */
   --success:       #1B7A3E;
   --success-light: #E8F8EE;
   --danger:        #C0392B;
@@ -55,28 +47,25 @@
   --warning-light: #FEF9E7;
 }
 
-/* ── Reset ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background-color: var(--milk);
+  background-color: var(--floral);
   color: var(--text);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
 }
 
-/* ── Card utility ── */
 .card {
-  background: #fff;
+  background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-sm);
 }
 
-/* ── Button utility ── */
 .btn-blue {
-  background: linear-gradient(135deg, #381932, #4E2445);
-  color: #FFF3E6;
+  background: linear-gradient(135deg, #006A6A, #008080);
+  color: #FFFCF6;
   border: none;
   border-radius: var(--r-md);
   padding: 10px 20px;
@@ -85,23 +74,18 @@ body {
   cursor: pointer;
   font-family: var(--font);
   transition: var(--transition);
-  box-shadow: 0 4px 12px rgba(56,25,50,0.25);
+  box-shadow: 0 4px 12px rgba(0,106,106,0.25);
 }
-.btn-blue:hover {
-  opacity: 0.88;
-  box-shadow: 0 6px 18px rgba(56,25,50,0.32);
-}
+.btn-blue:hover { opacity: 0.88; }
 
-/* ── Animations ── */
-@keyframes spin   { to { transform: rotate(360deg); } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes spin    { to { transform: rotate(360deg); } }
+@keyframes fadeUp  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 
 .fade-up   { animation: fadeUp 0.3s ease both; }
 .fade-up-1 { animation: fadeUp 0.3s ease 0.06s both; }
 .fade-up-2 { animation: fadeUp 0.3s ease 0.12s both; }
 
-/* ── Scrollbar ── */
 ::-webkit-scrollbar        { width: 6px; height: 6px; }
-::-webkit-scrollbar-track  { background: var(--milk-dark); }
-::-webkit-scrollbar-thumb  { background: var(--plum-light); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--plum); }
+::-webkit-scrollbar-track  { background: var(--floral-dark); }
+::-webkit-scrollbar-thumb  { background: var(--lagoon-light); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--lagoon); }

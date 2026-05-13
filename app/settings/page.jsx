@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase'
 
 const ROLES = ['admin','coach','physio','analyst','scout','player']
 const ROLE_COLORS = {
-  admin:'#381932', coach:'#27AE60', physio:'#E67E22',
-  analyst:'#9B59B6', scout:'#1ABC9C', player:'#7A4E6A',
+  admin:'#006A6A', coach:'#27AE60', physio:'#E67E22',
+  analyst:'#9B59B6', scout:'#1ABC9C', player:'#2D6B6B',
 }
 const ROLE_LABELS = {
   admin:   'Full system access — all modules',
@@ -18,19 +18,20 @@ const ROLE_LABELS = {
   player:  'Dashboard only',
 }
 
+const GM_ICON = (
+  <span className="gm-icon" aria-hidden="true">
+    <svg viewBox="0 0 16 19" xmlns="http://www.w3.org/2000/svg">
+      <path d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"/>
+    </svg>
+  </span>
+)
+
 function initials(n) { return (n||'A').slice(0,2).toUpperCase() }
 
-const inp = {
-  width:'100%', padding:'10px 14px',
-  background:'var(--surface2)', border:'1px solid var(--border)',
-  borderRadius:'var(--r-md)', fontSize:14, outline:'none',
-  color:'var(--text)', fontFamily:'var(--font)',
-}
-const lbl = {
-  display:'block', fontSize:11, fontWeight:600,
-  letterSpacing:'0.08em', textTransform:'uppercase',
-  color:'var(--text3)', marginBottom:6,
-}
+const inp = { width:'100%', padding:'10px 14px', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', fontSize:14, outline:'none', color:'var(--text)', fontFamily:'var(--font)' }
+const lbl = { display:'block', fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text3)', marginBottom:6 }
+const onFocus = e => e.target.style.borderColor = 'var(--blue)'
+const onBlur  = e => e.target.style.borderColor = 'var(--border)'
 
 export default function SettingsPage() {
   const [profile,       setProfile]       = useState(null)
@@ -44,12 +45,10 @@ export default function SettingsPage() {
   const [msg,           setMsg]           = useState({ text:'', type:'' })
   const [profileForm,   setProfileForm]   = useState({ full_name:'', phone:'' })
   const [pwForm,        setPwForm]        = useState({ newPw:'', confirm:'' })
-
   const [issueForm,     setIssueForm]     = useState({ coach_id:'', email:'', password:'', role:'physio', notes:'' })
   const [issueSaving,   setIssueSaving]   = useState(false)
   const [issueMsg,      setIssueMsg]      = useState({ text:'', type:'' })
   const [showIssueForm, setShowIssueForm] = useState(false)
-
   const [recoverForm,   setRecoverForm]   = useState({ login_id:'', new_password:'', confirm_password:'' })
   const [recoverSaving, setRecoverSaving] = useState(false)
   const [recoverMsg,    setRecoverMsg]    = useState({ text:'', type:'' })
@@ -101,11 +100,11 @@ export default function SettingsPage() {
     setSaving(true)
     try {
       const { data:{ session } } = await supabase.auth.getSession()
-      if (!session?.user?.id) { flash('Session expired. Please log in again.','error'); setSaving(false); return }
+      if (!session?.user?.id) { flash('Session expired.','error'); setSaving(false); return }
       const res = await fetch('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:session.user.id, action:'change_own_password', new_password:pwForm.newPw }) })
       const data = await res.json()
       if (!res.ok) { flash('Failed: '+(data.error||'Unknown error'),'error'); setSaving(false); return }
-      flash('Password changed! You will be signed out now. Please log in again with your new password.')
+      flash('Password changed! Signing you out now…')
       setPwForm({ newPw:'', confirm:'' })
       setTimeout(async () => { await supabase.auth.signOut(); window.location.href = '/login' }, 2500)
     } catch(e) { flash('Error: '+e.message,'error') }
@@ -134,7 +133,7 @@ export default function SettingsPage() {
   async function recoverLogin() {
     if (!recoverForm.login_id)                                     { flashRecover('Select a staff member.','error'); return }
     if (!recoverForm.new_password)                                 { flashRecover('New password is required.','error'); return }
-    if (recoverForm.new_password.length < 8)                       { flashRecover('Password must be at least 8 characters.','error'); return }
+    if (recoverForm.new_password.length < 8)                       { flashRecover('Min 8 characters.','error'); return }
     if (recoverForm.new_password !== recoverForm.confirm_password) { flashRecover('Passwords do not match.','error'); return }
     setRecoverSaving(true); setRecoverMsg({ text:'',type:'' })
     try {
@@ -145,11 +144,11 @@ export default function SettingsPage() {
       if (byEmail?.id) userId = byEmail.id
       if (!userId) { const u = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase()); if (u?.id) userId = u.id }
       if (!userId && login.coaches?.name) { const u = allUsers.find(u => u.full_name?.toLowerCase() === login.coaches.name.toLowerCase()); if (u?.id) userId = u.id }
-      if (!userId) { flashRecover(`Cannot find the system account for ${login.coaches?.name||login.email}.\n\nGo to Supabase → Authentication → Users and check the email is exactly: ${login.email}`, 'error'); setRecoverSaving(false); return }
+      if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. Check Supabase Auth.`, 'error'); setRecoverSaving(false); return }
       const res = await fetch('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
       if (!res.ok) { flashRecover(data.error||'Reset failed.','error'); setRecoverSaving(false); return }
-      flashRecover(`✅ Password reset for ${login.coaches?.name||login.email}!\n📧 Email: ${login.email}\n🔑 New Password: ${recoverForm.new_password}\n\nShare these credentials securely.`, 'success')
+      flashRecover(`✅ Password reset for ${login.coaches?.name||login.email}!\n📧 ${login.email}\n🔑 ${recoverForm.new_password}`, 'success')
       setRecoverForm({ login_id:'', new_password:'', confirm_password:'' }); await loadAll()
     } catch(err) { flashRecover('Error: '+err.message,'error') }
     setRecoverSaving(false)
@@ -159,18 +158,18 @@ export default function SettingsPage() {
     if (!confirm('Revoke this login? The user will be signed out immediately.')) return
     const login = staffLogins.find(l => l.id === loginId)
     const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase() || u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase())
-    if (!user?.id) { await supabase.from('staff_logins').update({ is_active:false }).eq('id',loginId); flash('Login revoked in records (auth account not found).'); await loadAll(); return }
+    if (!user?.id) { await supabase.from('staff_logins').update({ is_active:false }).eq('id',loginId); flash('Login revoked in records.'); await loadAll(); return }
     const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'revoke' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
-    flash('✅ Login revoked. User has been signed out immediately.'); await loadAll()
+    flash('✅ Login revoked.'); await loadAll()
   }
 
   async function reactivateLogin(loginId) {
     if (!confirm('Reactivate this login?')) return
     const login = staffLogins.find(l => l.id === loginId)
     const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase() || u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase())
-    if (!user?.id) { await supabase.from('staff_logins').update({ is_active:true }).eq('id',loginId); flash('Login reactivated in records.'); await loadAll(); return }
+    if (!user?.id) { await supabase.from('staff_logins').update({ is_active:true }).eq('id',loginId); flash('Login reactivated.'); await loadAll(); return }
     const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
@@ -187,7 +186,7 @@ export default function SettingsPage() {
     const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, action:current?'revoke':'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
-    flash(current ? '✅ User disabled and signed out.' : '✅ User enabled.'); await loadAll()
+    flash(current ? '✅ User disabled.' : '✅ User enabled.'); await loadAll()
   }
 
   const TABS = [
@@ -208,14 +207,10 @@ export default function SettingsPage() {
   if (loading) return (
     <Layout>
       <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'60vh' }}>
-        <div style={{ width:36,height:36,border:'4px solid var(--milk-muted)',borderTopColor:'var(--plum)',borderRadius:'50%',animation:'spin 0.7s linear infinite' }}/>
+        <div style={{ width:36,height:36,border:'4px solid var(--border)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite' }}/>
       </div>
     </Layout>
   )
-
-  /* ── shared input focus handlers mapped to plum ── */
-  const onFocus = e => e.target.style.borderColor = 'var(--plum)'
-  const onBlur  = e => e.target.style.borderColor = 'var(--border)'
 
   return (
     <Layout>
@@ -224,29 +219,27 @@ export default function SettingsPage() {
 
         <style>{`
           .settings-wrap { display:grid; grid-template-columns:230px 1fr; gap:24px; align-items:start; }
-          .settings-tabs-list { display:flex; flex-direction:column; }
           .settings-content { padding:30px; }
           @media(max-width:768px){
             .settings-wrap { grid-template-columns:1fr !important; gap:12px !important; }
             .settings-profile-header { display:none !important; }
             .settings-tabs-list { flex-direction:row !important; overflow-x:auto !important; gap:4px !important; padding:8px !important; scrollbar-width:none !important; }
             .settings-tabs-list::-webkit-scrollbar { display:none !important; }
-            .settings-tab-btn { width:auto !important; white-space:nowrap !important; flex-shrink:0 !important; text-align:center !important; padding:8px 14px !important; margin-bottom:0 !important; }
+            .settings-tab-btn { width:auto !important; white-space:nowrap !important; flex-shrink:0 !important; padding:8px 14px !important; margin-bottom:0 !important; }
             .settings-content { padding:16px !important; }
-            .settings-grid-2 { grid-template-columns:1fr !important; }
             .issue-grid { grid-template-columns:1fr !important; }
             .recover-grid { grid-template-columns:1fr !important; }
             .logins-table-header { display:none !important; }
             .logins-table-row { display:flex !important; flex-direction:column !important; gap:6px !important; padding:14px !important; }
             .users-table-header { display:none !important; }
-            .users-table-row { display:flex !important; flex-wrap:wrap !important; gap:8px !important; align-items:center !important; padding:12px 14px !important; }
+            .users-table-row { display:flex !important; flex-wrap:wrap !important; gap:8px !important; padding:12px 14px !important; }
             .system-grid { grid-template-columns:1fr !important; }
           }
         `}</style>
 
         <div className="settings-wrap">
 
-          {/* ── Sidebar ── */}
+          {/* Sidebar */}
           <div className="card" style={{ padding:10 }}>
             <div className="settings-profile-header" style={{ textAlign:'center',padding:'16px 12px',borderBottom:'1px solid var(--border)',marginBottom:10 }}>
               <div style={{ width:54,height:54,borderRadius:'50%',background:`linear-gradient(135deg,${ROLE_COLORS[profile?.role||'admin']},${ROLE_COLORS[profile?.role||'admin']}99)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:800,color:'#fff',margin:'0 auto 10px' }}>
@@ -258,18 +251,18 @@ export default function SettingsPage() {
                 {profile?.role||'user'}
               </span>
             </div>
-            <div className="settings-tabs-list">
+            <div className="settings-tabs-list" style={{ display:'flex',flexDirection:'column' }}>
               {TABS.map(t => (
                 <button key={t.id} onClick={() => { setTab(t.id); setMsg({ text:'',type:'' }); setIssueMsg({ text:'',type:'' }); setRecoverMsg({ text:'',type:'' }) }}
                   className="settings-tab-btn"
-                  style={{ width:'100%',padding:'10px 14px',background:tab===t.id?'var(--blue-light)':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'var(--plum)':'var(--text2)',cursor:'pointer',textAlign:'left',transition:'var(--transition)',marginBottom:2,fontFamily:'var(--font)',display:'block' }}>
+                  style={{ width:'100%',padding:'10px 14px',background:tab===t.id?'var(--blue-light)':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'var(--blue)':'var(--text2)',cursor:'pointer',textAlign:'left',transition:'var(--transition)',marginBottom:2,fontFamily:'var(--font)' }}>
                   {t.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Content panel ── */}
+          {/* Content */}
           <div className="card settings-content">
 
             {/* MY PROFILE */}
@@ -283,8 +276,8 @@ export default function SettingsPage() {
                   <div><label style={lbl}>Club / Team</label><input value={profile?.teams?.name||'No team assigned'} disabled style={{ ...inp,opacity:0.55,cursor:'not-allowed' }}/></div>
                   <div><label style={lbl}>Phone</label><input value={profileForm.phone} onChange={e=>setProfileForm(f=>({...f,phone:e.target.value}))} style={inp} placeholder="+233 24 000 0000" onFocus={onFocus} onBlur={onBlur}/></div>
                   <MsgBox m={msg}/>
-                  <button onClick={saveProfile} disabled={saving} className="btn-blue" style={{ width:'fit-content',padding:'11px 28px',opacity:saving?0.7:1 }}>
-                    {saving?'Saving…':'Save Changes'}
+                  <button onClick={saveProfile} disabled={saving} className="gm-btn" style={{ width:'fit-content',opacity:saving?0.7:1 }}>
+                    {saving?'Saving…':'Save Changes'} {!saving&&GM_ICON}
                   </button>
                 </div>
               </div>
@@ -295,16 +288,16 @@ export default function SettingsPage() {
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Security</h2>
                 {!isAdmin ? (
-                  <div style={{ background:'var(--blue-light)',border:'1px solid rgba(56,25,50,0.2)',borderRadius:'var(--r-lg)',padding:'24px 28px' }}>
+                  <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'24px 28px' }}>
                     <div style={{ fontSize:26,marginBottom:12 }}>🔒</div>
-                    <h3 style={{ fontSize:16,fontWeight:700,color:'var(--plum)',marginBottom:8 }}>Password changes are managed by your admin</h3>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'var(--blue)',marginBottom:8 }}>Password changes are managed by your admin</h3>
                     <p style={{ fontSize:14,color:'var(--text2)',lineHeight:1.7,marginBottom:18 }}>
-                      For security, staff accounts cannot change their own passwords. Contact your club administrator if you need your password changed or have forgotten it.
+                      For security, staff accounts cannot change their own passwords. Contact your club administrator if you need your password changed.
                     </p>
-                    <div style={{ background:'rgba(255,255,255,0.7)',borderRadius:'var(--r-md)',padding:'14px 18px',border:'1px solid rgba(56,25,50,0.12)' }}>
+                    <div style={{ background:'rgba(255,255,255,0.7)',borderRadius:'var(--r-md)',padding:'14px 18px',border:'1px solid rgba(0,106,106,0.12)' }}>
                       <div style={{ fontSize:11,fontWeight:700,color:'var(--text3)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:8 }}>Your admin can</div>
                       <div style={{ fontSize:13,color:'var(--text2)',lineHeight:2 }}>
-                        <div>🔓 See and reset your password via <strong>Settings → Recover Logins</strong></div>
+                        <div>🔓 Reset your password via <strong>Settings → Recover Logins</strong></div>
                         <div>🚫 Revoke or restore your account access</div>
                         <div>👤 Update your role and permissions</div>
                       </div>
@@ -317,8 +310,8 @@ export default function SettingsPage() {
                       <div><label style={lbl}>New Password</label><input type="password" value={pwForm.newPw} onChange={e=>setPwForm(f=>({...f,newPw:e.target.value}))} style={inp} placeholder="Minimum 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
                       <div><label style={lbl}>Confirm New Password</label><input type="password" value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f,confirm:e.target.value}))} style={inp} placeholder="Repeat password" onFocus={onFocus} onBlur={onBlur}/></div>
                       <MsgBox m={msg}/>
-                      <button onClick={changePassword} disabled={saving} className="btn-blue" style={{ width:'fit-content',padding:'11px 28px',opacity:saving?0.7:1 }}>
-                        {saving ? '⏳ Changing password…' : 'Update Password'}
+                      <button onClick={changePassword} disabled={saving} className="gm-btn" style={{ width:'fit-content',opacity:saving?0.7:1 }}>
+                        {saving?'⏳ Changing…':'Update Password'} {!saving&&GM_ICON}
                       </button>
                     </div>
                   </>
@@ -332,22 +325,23 @@ export default function SettingsPage() {
                 <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
                   <div>
                     <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Issue Staff Logins</h2>
-                    <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'var(--plum)' }}>{profile?.teams?.name||'No team'}</strong></p>
+                    <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'var(--blue)' }}>{profile?.teams?.name||'No team'}</strong></p>
                   </div>
-                  <button onClick={()=>{ setShowIssueForm(!showIssueForm); setIssueMsg({ text:'',type:'' }) }} className="btn-blue" style={{ padding:'9px 18px',flexShrink:0 }}>
-                    {showIssueForm ? '✕ Cancel' : '+ Issue New Login'}
+                  <button onClick={()=>{ setShowIssueForm(!showIssueForm); setIssueMsg({ text:'',type:'' }) }}
+                    className={showIssueForm ? 'gm-btn danger' : 'gm-btn outline'} style={{ flexShrink:0 }}>
+                    {showIssueForm ? '✕ Cancel' : '+ Issue New Login'} {GM_ICON}
                   </button>
                 </div>
 
                 {showIssueForm && (
-                  <div style={{ background:'var(--blue-light)',border:'1px solid rgba(56,25,50,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
-                    <h3 style={{ fontSize:16,fontWeight:700,color:'var(--plum)',marginBottom:18 }}>🔑 New Login Credentials</h3>
+                  <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'var(--blue)',marginBottom:18 }}>🔑 New Login Credentials</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
                         <label style={lbl}>Staff Member *</label>
                         <select value={issueForm.coach_id} onChange={e=>setIssueForm(f=>({...f,coach_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
                           <option value="">— Select a staff member —</option>
-                          {allStaff.length===0 ? <option disabled>No staff found — add staff in Teams tab first</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
+                          {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
                         </select>
                       </div>
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
@@ -366,15 +360,15 @@ export default function SettingsPage() {
                       </div>
                       <div><label style={lbl}>Notes (optional)</label><input value={issueForm.notes} onChange={e=>setIssueForm(f=>({...f,notes:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Temporary credentials" onFocus={onFocus} onBlur={onBlur}/></div>
                       <MsgBox m={issueMsg}/>
-                      <button onClick={issueLogin} disabled={issueSaving||!profile?.team_id} className="btn-blue" style={{ width:'fit-content',padding:'11px 28px',opacity:(issueSaving||!profile?.team_id)?0.7:1 }}>
-                        {issueSaving ? '⏳ Creating…' : '🔑 Issue Login Now'}
+                      <button onClick={issueLogin} disabled={issueSaving||!profile?.team_id} className="gm-btn" style={{ width:'fit-content',opacity:(issueSaving||!profile?.team_id)?0.7:1 }}>
+                        {issueSaving?'⏳ Creating…':'🔑 Issue Login Now'} {!issueSaving&&GM_ICON}
                       </button>
                     </div>
                   </div>
                 )}
                 {!showIssueForm && <MsgBox m={issueMsg}/>}
 
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,marginTop:showIssueForm?0:8 }}>
+                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,marginTop:8 }}>
                   <h3 style={{ fontSize:16,fontWeight:700,margin:0 }}>Issued Logins ({staffLogins.length})</h3>
                   <span style={{ fontSize:12,color:'var(--text3)' }}>{staffLogins.filter(l=>l.is_active).length} active · {staffLogins.filter(l=>!l.is_active).length} revoked</span>
                 </div>
@@ -408,17 +402,15 @@ export default function SettingsPage() {
                                 {showPassword[login.id] ? '🙈' : '👁'}
                               </button>
                             </>
-                          ) : (
-                            <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>Not stored</span>
-                          )}
+                          ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>Not stored</span>}
                         </div>
-                        <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,letterSpacing:'0.06em',textTransform:'uppercase' }}>{login.role}</span></div>
+                        <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
                         <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
                         <div><span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'● Active':'○ Revoked'}</span></div>
-                        <div style={{ display:'flex',gap:4,flexWrap:'wrap' }}>
+                        <div>
                           {login.is_active
-                            ?<button onClick={()=>revokeLogin(login.id)} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'5px 10px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>🚫 Revoke</button>
-                            :<button onClick={()=>reactivateLogin(login.id)} style={{ background:'var(--success-light)',color:'var(--success)',border:'none',padding:'5px 10px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>✅ Restore</button>
+                            ? <button onClick={()=>revokeLogin(login.id)} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke {GM_ICON}</button>
+                            : <button onClick={()=>reactivateLogin(login.id)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore {GM_ICON}</button>
                           }
                         </div>
                       </div>
@@ -432,19 +424,17 @@ export default function SettingsPage() {
             {tab === 'recover' && isAdmin && (
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Recover Staff Logins</h2>
-                <p style={{ fontSize:14,color:'var(--text3)',marginBottom:24 }}>
-                  Reset a staff member's forgotten password. You can also see their current stored password in the <strong>Issue Logins</strong> tab by clicking the 👁 icon.
-                </p>
-                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(56,25,50,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
-                  <h3 style={{ fontSize:16,fontWeight:700,color:'var(--plum)',marginBottom:18 }}>🔓 Set New Password for Staff</h3>
+                <p style={{ fontSize:14,color:'var(--text3)',marginBottom:24 }}>Reset a staff member's forgotten password. See current stored passwords in the Issue Logins tab.</p>
+                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
+                  <h3 style={{ fontSize:16,fontWeight:700,color:'var(--blue)',marginBottom:18 }}>🔓 Set New Password for Staff</h3>
                   <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
                     <div>
                       <label style={lbl}>Staff Member *</label>
                       <select value={recoverForm.login_id} onChange={e=>setRecoverForm(f=>({...f,login_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
                         <option value="">— Select a staff member —</option>
                         {staffLogins.filter(l=>l.is_active).length===0
-                          ?<option disabled>No active logins found</option>
-                          :staffLogins.filter(l=>l.is_active).map(l=>(
+                          ? <option disabled>No active logins found</option>
+                          : staffLogins.filter(l=>l.is_active).map(l=>(
                             <option key={l.id} value={l.id}>{l.coaches?.name||'—'} · {l.email} · {l.role}</option>
                           ))
                         }
@@ -453,18 +443,18 @@ export default function SettingsPage() {
                         const login = staffLogins.find(l=>l.id===recoverForm.login_id)
                         if (!login) return null
                         return (
-                          <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(56,25,50,0.15)' }}>
+                          <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(0,106,106,0.15)' }}>
                             <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
-                              <span style={{ fontSize:12,color:'var(--plum)' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
-                              <span style={{ fontSize:12,color:'var(--plum)' }}>📧 {login.email}</span>
-                              <span style={{ fontSize:12,color:'var(--plum)',textTransform:'capitalize' }}>🎭 {login.role}</span>
+                              <span style={{ fontSize:12,color:'var(--blue)' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
+                              <span style={{ fontSize:12,color:'var(--blue)' }}>📧 {login.email}</span>
+                              <span style={{ fontSize:12,color:'var(--blue)',textTransform:'capitalize' }}>🎭 {login.role}</span>
                             </div>
                             {login.plain_password && (
-                              <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--milk-muted)',borderRadius:6,border:'1px solid var(--border)' }}>
-                                <span style={{ fontSize:11,fontWeight:700,color:'var(--plum)' }}>Current password:</span>
+                              <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--floral-muted)',borderRadius:6,border:'1px solid var(--border)' }}>
+                                <span style={{ fontSize:11,fontWeight:700,color:'var(--blue)' }}>Current password:</span>
                                 <span style={{ fontFamily:'monospace',fontSize:13,color:'var(--text)',fontWeight:600 }}>{showPassword['recover_'+login.id] ? login.plain_password : '••••••••'}</span>
                                 <button onClick={()=>setShowPassword(p=>({...p,['recover_'+login.id]:!p['recover_'+login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:2 }}>{showPassword['recover_'+login.id] ? '🙈' : '👁'}</button>
-                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(56,25,50,0.1)',border:'1px solid rgba(56,25,50,0.2)',color:'var(--plum)',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>📋 Copy</button>
+                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'var(--blue)',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>📋 Copy</button>
                               </div>
                             )}
                             {!login.plain_password && <div style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>No stored password — set a new one below.</div>}
@@ -477,8 +467,8 @@ export default function SettingsPage() {
                       <div><label style={lbl}>Confirm Password *</label><input type="text" value={recoverForm.confirm_password} onChange={e=>setRecoverForm(f=>({...f,confirm_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Repeat password" onFocus={onFocus} onBlur={onBlur}/></div>
                     </div>
                     <MsgBox m={recoverMsg}/>
-                    <button onClick={recoverLogin} disabled={recoverSaving} className="btn-blue" style={{ width:'fit-content',padding:'11px 28px',opacity:recoverSaving?0.7:1 }}>
-                      {recoverSaving ? '⏳ Resetting…' : '🔓 Reset Password Now'}
+                    <button onClick={recoverLogin} disabled={recoverSaving} className="gm-btn" style={{ width:'fit-content',opacity:recoverSaving?0.7:1 }}>
+                      {recoverSaving?'⏳ Resetting…':'🔓 Reset Password Now'} {!recoverSaving&&GM_ICON}
                     </button>
                   </div>
                 </div>
@@ -495,9 +485,9 @@ export default function SettingsPage() {
                       const selected = recoverForm.login_id === login.id
                       return (
                         <div key={login.id} onClick={()=>setRecoverForm(f=>({...f,login_id:login.id}))}
-                          style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',cursor:'pointer',background:selected?'var(--milk-muted)':i%2===0?'var(--surface)':'var(--surface2)' }}
-                          onMouseEnter={e=>{ if(!selected)e.currentTarget.style.background='var(--surface2)' }}
-                          onMouseLeave={e=>{ if(!selected)e.currentTarget.style.background=i%2===0?'var(--surface)':'var(--surface2)' }}>
+                          style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'var(--blue-light)':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
+                          onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
+                          onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
                           <div style={{ display:'flex',alignItems:'center',gap:7 }}>
                             {selected && <span style={{ fontSize:14 }}>✅</span>}
                             <div>
@@ -530,7 +520,7 @@ export default function SettingsPage() {
               <div>
                 <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20 }}>
                   <div><h2 style={{ fontSize:20,fontWeight:700,marginBottom:4 }}>User Management</h2><p style={{ fontSize:13,color:'var(--text3)' }}>All users in: <strong>{profile?.teams?.name||'—'}</strong></p></div>
-                  <span style={{ fontSize:12,background:'var(--blue-light)',color:'var(--plum)',padding:'6px 14px',borderRadius:99,fontWeight:700 }}>{allUsers.length} users</span>
+                  <span style={{ fontSize:12,background:'var(--blue-light)',color:'var(--blue)',padding:'6px 14px',borderRadius:99,fontWeight:700 }}>{allUsers.length} users</span>
                 </div>
                 <MsgBox m={msg}/>
                 {allUsers.length===0 ? <p style={{ fontSize:13,color:'var(--text3)',fontStyle:'italic',marginTop:12 }}>No users yet.</p> : (
@@ -549,7 +539,12 @@ export default function SettingsPage() {
                         <div style={{ fontSize:12,color:'var(--text3)',wordBreak:'break-all' }}>{u.email||'—'}</div>
                         <div><select value={u.role||'coach'} onChange={e=>updateUserRole(u.id,e.target.value)} style={{ padding:'5px 10px',border:'1px solid var(--border)',borderRadius:'var(--r-sm)',fontSize:12,background:'var(--surface2)',color:'var(--text)',fontFamily:'var(--font)',cursor:'pointer',outline:'none' }}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></div>
                         <div><span style={{ fontSize:10,fontWeight:700,background:u.is_active!==false?'var(--success-light)':'var(--danger-light)',color:u.is_active!==false?'var(--success)':'var(--danger)',padding:'3px 10px',borderRadius:99 }}>{u.is_active!==false?'Active':'Disabled'}</span></div>
-                        <div><button onClick={()=>toggleUserActive(u.id,u.is_active!==false)} style={{ background:u.is_active!==false?'var(--danger-light)':'var(--success-light)',color:u.is_active!==false?'var(--danger)':'var(--success)',border:'none',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>{u.is_active!==false?'Disable':'Enable'}</button></div>
+                        <div>
+                          {u.is_active!==false
+                            ? <button onClick={()=>toggleUserActive(u.id,true)}  className="gm-btn danger"  style={{ padding:'5px 10px',fontSize:11 }}>Disable {GM_ICON}</button>
+                            : <button onClick={()=>toggleUserActive(u.id,false)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Enable {GM_ICON}</button>
+                          }
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -561,8 +556,8 @@ export default function SettingsPage() {
             {tab === 'system' && isAdmin && (
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:22 }}>System Information</h2>
-                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(56,25,50,0.2)',borderRadius:'var(--r-lg)',padding:'18px 22px',marginBottom:22 }}>
-                  <div style={{ fontSize:13,fontWeight:700,color:'var(--plum)',marginBottom:10 }}>🏟 Your Club</div>
+                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'18px 22px',marginBottom:22 }}>
+                  <div style={{ fontSize:13,fontWeight:700,color:'var(--blue)',marginBottom:10 }}>🏟 Your Club</div>
                   <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }}>
                     {[['Club Name',profile?.teams?.name||'—'],['Short Name',profile?.teams?.short_name||'—'],['Team ID',profile?.team_id||'—'],['Your Role',profile?.role||'—']].map(([label,value])=>(
                       <div key={label} style={{ background:'rgba(255,255,255,0.7)',borderRadius:'var(--r-sm)',padding:'10px 14px' }}>
@@ -580,10 +575,10 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(56,25,50,0.15)',borderRadius:'var(--r-lg)',padding:'20px 24px' }}>
-                  <h3 style={{ fontSize:15,fontWeight:700,color:'var(--plum)',marginBottom:14 }}>Role Permission Matrix</h3>
+                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.15)',borderRadius:'var(--r-lg)',padding:'20px 24px' }}>
+                  <h3 style={{ fontSize:15,fontWeight:700,color:'var(--blue)',marginBottom:14 }}>Role Permission Matrix</h3>
                   {Object.entries(ROLE_LABELS).map(([role,desc])=>(
-                    <div key={role} style={{ display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(56,25,50,0.08)' }}>
+                    <div key={role} style={{ display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(0,106,106,0.08)' }}>
                       <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[role]+'25',color:ROLE_COLORS[role],padding:'3px 12px',borderRadius:99,letterSpacing:'0.08em',textTransform:'uppercase',flexShrink:0,minWidth:76,textAlign:'center' }}>{role}</span>
                       <span style={{ fontSize:13,color:'var(--text2)' }}>{desc}</span>
                     </div>

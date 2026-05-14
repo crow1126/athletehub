@@ -22,15 +22,37 @@ function initials(n){ return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2)
 
 function Avatar({ athlete, size=38, index=0 }) {
   const [err, setErr] = useState(false)
-  if (athlete?.photo_url && !err) {
-    return <img src={athlete.photo_url} alt={athlete.name} onError={()=>setErr(true)}
-      style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid var(--border)' }}/>
+
+  // Build a stable URL; append cache-buster only once to avoid infinite re-renders
+  const photoUrl = athlete?.photo_url || null
+
+  if (photoUrl && !err) {
+    return (
+      <img
+        src={photoUrl}
+        alt={athlete?.name || ''}
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+        onError={() => setErr(true)}
+        style={{
+          width: size, height: size,
+          borderRadius: '50%',
+          objectFit: 'cover',
+          flexShrink: 0,
+          border: '2px solid var(--border)',
+          background: AV_COLORS[index % AV_COLORS.length],
+        }}
+      />
+    )
   }
+
   return (
-    <div style={{ width:size, height:size, borderRadius:'50%', flexShrink:0,
-      background:AV_COLORS[index%AV_COLORS.length],
-      display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize:size*0.32, fontWeight:800, color:'#FFFCF6' }}>
+    <div style={{
+      width: size, height: size, borderRadius: '50%', flexShrink: 0,
+      background: AV_COLORS[index % AV_COLORS.length],
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.32, fontWeight: 800, color: '#FFFCF6',
+    }}>
       {initials(athlete?.name)}
     </div>
   )
@@ -74,7 +96,6 @@ export default function TransfersPage() {
       setProfile(p)
       setIsAdmin(p?.role==='admin'||p?.role==='superadmin'||p?.role==='coach')
 
-      // Fetch transfers first, then athletes separately to avoid join issues
       const { data:t, error:tErr } = await supabase
         .from('transfers')
         .select('*')
@@ -84,13 +105,14 @@ export default function TransfersPage() {
 
       let transfersWithAthletes = t || []
 
-      // If we got transfers, fetch athlete details separately
       if (t && t.length > 0) {
         const athleteIds = [...new Set(t.map(tr => tr.athlete_id).filter(Boolean))]
         const { data:athData } = await supabase
           .from('athletes')
-          .select('id,name,photo_url,position,nationality')
+          .select('id,name,photo_url,position,nationality,club')
           .in('id', athleteIds)
+
+        console.log('Athlete data for transfer log:', athData)
 
         const athMap = {}
         ;(athData||[]).forEach(a => { athMap[a.id] = a })
@@ -135,7 +157,6 @@ export default function TransfersPage() {
       const {error} = await supabase.from('transfers').insert(payload)
       if (error) { flash(error.message,'error'); setSaving(false); return }
 
-      // Update athlete's current_club and transfer_status
       const statusMap = {
         sold:'sold', bought:'contracted', free_agent:'free_agent',
         loan_out:'on_loan', loan_in:'contracted', return_from_loan:'contracted',
@@ -159,7 +180,6 @@ export default function TransfersPage() {
     await load()
   }
 
-  // Auto-fill clubs based on transfer type
   function handleTypeChange(type) {
     const teamName = profile?.teams?.name || ''
     let from = '', to = ''
@@ -177,7 +197,6 @@ export default function TransfersPage() {
     return matchFilter && matchSearch
   })
 
-  // Stats
   const totalSold   = transfers.filter(t=>t.transfer_type==='sold').length
   const totalBought = transfers.filter(t=>t.transfer_type==='bought').length
   const totalFee    = transfers.filter(t=>t.transfer_type==='sold'&&!t.is_free).reduce((s,t)=>s+(t.fee_ghs||0),0)
@@ -204,7 +223,6 @@ export default function TransfersPage() {
           )}
         </div>
 
-        {/* Flash */}
         {msg.text && (
           <div style={{padding:'12px 16px',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,marginBottom:20,background:msg.type==='error'?'var(--danger-light)':'var(--success-light)',color:msg.type==='error'?'var(--danger)':'var(--success)',border:`1px solid ${msg.type==='error'?'rgba(192,57,43,0.2)':'rgba(27,122,62,0.2)'}`}}>
             {msg.text}
@@ -338,7 +356,7 @@ export default function TransfersPage() {
                 onMouseEnter={e=>e.currentTarget.style.background='var(--blue-light)'}
                 onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)'}>
 
-                {/* Player */}
+                {/* Player — photo + name */}
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
                   <Avatar athlete={t.athletes} size={36} index={i}/>
                   <div>
@@ -387,7 +405,6 @@ export default function TransfersPage() {
           })}
         </div>
 
-        {/* Note about historical records */}
         <div style={{marginTop:16,padding:'12px 16px',background:'var(--blue-light)',borderRadius:'var(--r-md)',border:'1px solid var(--border)',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
           💡 <strong>Historical records are preserved.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain in the system and are still visible on their athlete profile page.
         </div>

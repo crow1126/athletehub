@@ -1,183 +1,820 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Layout from '@/components/Layout'
-import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 
-const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6']
-
-const POSITION_CATEGORY = {
-  GK:  'Goalkeeper',
-  CB:  'Defender',  RB:  'Defender',  LB:  'Defender',
-  RWB: 'Defender',  LWB: 'Defender',
-  CDM: 'Midfielder', CM: 'Midfielder', CAM: 'Midfielder',
-  RM:  'Midfielder', LM: 'Midfielder',
-  RW:  'Forward',   LW:  'Forward',   CF:  'Forward',
-  SS:  'Forward',   ST:  'Forward',
-}
-
+const AV_COLORS = ['#1A365D','#2B6CB0','#1B7A3E','#553C9A']
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
-export default function AthleteDetail() {
-  const { id } = useParams()
-  const [ath,      setAth]      = useState(null)
-  const [injuries, setInjuries] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [imgError, setImgError] = useState(false)
+function AthletePhoto({ ath, size=80 }) {
+  const [err, setErr] = useState(false)
+  if (ath?.photo_url && !err) {
+    return (
+      <img
+        src={ath.photo_url}
+        alt={ath?.name || ''}
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+        onError={() => setErr(true)}
+        style={{
+          width: size, height: size,
+          borderRadius: 6,
+          objectFit: 'cover',
+          border: '3px solid rgba(255,255,255,0.4)',
+          flexShrink: 0,
+          background: '#1A365D',
+        }}
+      />
+    )
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: 6, flexShrink: 0,
+      background: 'rgba(255,255,255,0.15)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.3, fontWeight: 800, color: '#fff',
+      border: '3px solid rgba(255,255,255,0.3)',
+      letterSpacing: '0.05em',
+    }}>
+      {initials(ath?.name)}
+    </div>
+  )
+}
+
+const TRANSFER_TYPE_LABELS = {
+  sold: 'Sold', bought: 'Bought', free_agent: 'Free Agent',
+  loan_out: 'Loan Out', loan_in: 'Loan In', return_from_loan: 'Return from Loan',
+}
+const TRANSFER_TYPE_COLORS = {
+  sold:            { bg:'#FED7D7', color:'#742A2A' },
+  bought:          { bg:'#C6F6D5', color:'#276749' },
+  free_agent:      { bg:'#FEFCBF', color:'#744210' },
+  loan_out:        { bg:'#BEE3F8', color:'#1A365D' },
+  loan_in:         { bg:'#E9D8FD', color:'#44337A' },
+  return_from_loan:{ bg:'#B2F5EA', color:'#234E52' },
+}
+
+const SEVERITY_COLORS = {
+  Mild:     { bg:'#C6F6D5', color:'#276749' },
+  Moderate: { bg:'#FEFCBF', color:'#744210' },
+  Severe:   { bg:'#FED7D7', color:'#742A2A' },
+}
+
+export default function AthleteReport() {
+  const { id }  = useParams()
+  const router  = useRouter()
+  const [ath,       setAth]       = useState(null)
+  const [injuries,  setInjuries]  = useState([])
+  const [perf,      setPerf]      = useState([])
+  const [contracts, setContracts] = useState([])
+  const [transfers, setTransfers] = useState([])
+  const [loading,   setLoading]   = useState(true)
 
   useEffect(() => {
     async function load() {
-      const [{ data: a }, { data: i }] = await Promise.all([
-        supabase.from('athletes').select('*, coaches(name)').eq('id', id).single(),
-        supabase.from('injuries').select('*').eq('athlete_id', id).order('date_of_injury', { ascending: false }),
+      const [{ data:a },{ data:i },{ data:p },{ data:c },{ data:tr }] = await Promise.all([
+        supabase.from('athletes').select('*,coaches(name)').eq('id',id).single(),
+        supabase.from('injuries').select('*').eq('athlete_id',id).order('date_of_injury',{ ascending:false }),
+        supabase.from('performance_stats').select('*').eq('athlete_id',id).order('match_date',{ ascending:false }),
+        supabase.from('contracts').select('*').eq('athlete_id',id).order('created_at',{ ascending:false }),
+        supabase.from('transfers').select('*').eq('athlete_id',id).order('transfer_date',{ ascending:false }),
       ])
-      setAth(a); setInjuries(i || []); setLoading(false)
+      setAth(a)
+      setInjuries(i||[])
+      setPerf(p||[])
+      setContracts(c||[])
+      setTransfers(tr||[])
+      setLoading(false)
     }
     load()
   }, [id])
 
   if (loading) return (
-    <Layout>
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'60vh' }}>
-        <div style={{ width:36, height:36, border:'4px solid var(--blue-light)', borderTopColor:'var(--blue)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+    <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#f0f0f0' }}>
+      <div style={{ textAlign:'center' }}>
+        <div style={{ width:40,height:40,border:'3px solid #E2E8F0',borderTopColor:'#2B6CB0',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto 12px' }}/>
+        <p style={{ fontFamily:'sans-serif',fontSize:13,color:'#718096' }}>Loading athlete report…</p>
       </div>
-    </Layout>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </div>
   )
 
   if (!ath) return (
-    <Layout>
-      <div style={{ maxWidth:1280, margin:'0 auto', padding:'32px 40px' }}>
-        <p style={{ color:'var(--danger)', marginBottom:12 }}>Athlete not found.</p>
-        <Link href="/athletes" style={{ color:'var(--blue)', fontWeight:600 }}>← Back to Athletes</Link>
-      </div>
-    </Layout>
+    <div style={{ padding:40, fontFamily:'sans-serif' }}>
+      <p>Athlete not found.</p>
+      <button onClick={()=>router.back()} style={{ marginTop:12,color:'#2B6CB0',background:'none',border:'none',cursor:'pointer',fontSize:14 }}>← Back</button>
+    </div>
   )
 
-  const showPhoto    = ath.photo_url && !imgError
-  const posCategory  = POSITION_CATEGORY[ath.position] || null
+  // Derived stats
+  const totalGoals   = perf.reduce((s,p)=>s+(p.goals||0),0)
+  const totalAssists = perf.reduce((s,p)=>s+(p.assists||0),0)
+  const totalMatches = perf.length
+  const avgRating    = totalMatches ? (perf.reduce((s,p)=>s+parseFloat(p.rating||0),0)/totalMatches).toFixed(1) : '—'
+  const totalXG      = perf.reduce((s,p)=>s+parseFloat(p.xg||0),0).toFixed(2)
+  const totalXA      = perf.reduce((s,p)=>s+parseFloat(p.xa||0),0).toFixed(2)
+  const totalDist    = perf.reduce((s,p)=>s+parseFloat(p.distance_km||0),0).toFixed(0)
+  const avgPass      = totalMatches ? (perf.reduce((s,p)=>s+parseFloat(p.pass_accuracy||0),0)/totalMatches).toFixed(0) : '—'
 
-  const strongFootLabel = ath.strong_foot
-    ? ath.strong_foot === 'both' ? '🦶 Both Feet'
-    : ath.strong_foot === 'left' ? '🦶 Left Foot'
-    : '🦶 Right Foot'
-    : '—'
+  const activeCont  = contracts.find(c=>c.status==='Active')
+  const activeInj   = injuries.filter(i=>i.status==='Active')
 
-  const fields = [
-    ['Position',    ath.position ? `${ath.position}${posCategory ? ` — ${posCategory}` : ''}` : '—'],
-    ['Strong Foot', strongFootLabel],
-    ['Club',        ath.club         || '—'],
-    ['Region',      ath.region       || '—'],
-    ['Age',         ath.age          ? `${ath.age} yrs`   : '—'],
-    ['Height',      ath.height       ? `${ath.height} cm` : '—'],
-    ['Weight',      ath.weight       ? `${ath.weight} kg` : '—'],
-    ['Phone',       ath.phone        || '—'],
-    ['Coach',       ath.coaches?.name || '—'],
-    ['Joined',      ath.joined_date  || '—'],
-  ]
+  const today     = new Date().toLocaleDateString('en-GB',{ day:'numeric',month:'long',year:'numeric' })
+  const reportNum = `ATH-${(id||'').slice(0,8).toUpperCase()}-${new Date().getFullYear()}`
+
+  // Transfer fee totals
+  const totalTransferFeeIn  = transfers.filter(t=>['bought','loan_in','return_from_loan'].includes(t.transfer_type)&&!t.is_free).reduce((s,t)=>s+(t.fee_ghs||0),0)
+  const totalTransferFeeOut = transfers.filter(t=>['sold','loan_out'].includes(t.transfer_type)&&!t.is_free).reduce((s,t)=>s+(t.fee_ghs||0),0)
 
   return (
-    <Layout>
+    <>
       <style>{`
-        .ath-detail-outer{max-width:1280px;margin:0 auto;padding:32px 40px}
-        .ath-detail-grid{display:grid;grid-template-columns:1fr 1.8fr;gap:20px;align-items:start}
-        .ath-detail-bar{margin-bottom:20px;display:flex;justify-content:space-between;align-items:center}
-        @media(max-width:768px){
-          .ath-detail-outer{padding:16px 12px!important}
-          .ath-detail-grid{grid-template-columns:1fr!important}
-          .ath-detail-bar{flex-wrap:wrap;gap:10px}
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+          font-family: 'Georgia', 'Times New Roman', serif;
+          background: #dde3ec;
+          color: #1A202C;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
+
+        /* ── Toolbar ── */
+        .print-toolbar {
+          position: fixed;
+          top: 0; left: 0; right: 0;
+          height: 54px;
+          background: #1A365D;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 0 24px;
+          z-index: 9999;
+          box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+        }
+
+        /* ── A4 wrapper ── */
+        .a4-document {
+          width: 210mm;
+          margin: 70px auto 48px;
+          background: #fff;
+          box-shadow: 0 6px 40px rgba(0,0,0,0.22);
+        }
+
+        @media print {
+          .print-toolbar { display: none !important; }
+          body { background: white; }
+          .a4-document {
+            width: 100%;
+            margin: 0;
+            box-shadow: none;
+          }
+          @page {
+            size: A4 portrait;
+            margin: 12mm 14mm 14mm;
+          }
+          .page-break { page-break-before: always; }
+          .no-break    { page-break-inside: avoid; }
+        }
+
+        /* ══ COVER HEADER ══ */
+        .doc-header {
+          background: linear-gradient(160deg, #0D2340 0%, #1A365D 45%, #2B6CB0 100%);
+          color: #fff;
+          padding: 30px 32px 26px;
+          position: relative;
+          overflow: hidden;
+        }
+        .doc-header::after {
+          content: '';
+          position: absolute;
+          right: -60px; bottom: -60px;
+          width: 220px; height: 220px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.04);
+        }
+
+        /* ══ BODY ══ */
+        .doc-body {
+          padding: 24px 32px 28px;
+        }
+
+        /* ══ SECTION TITLES ══ */
+        .section-title {
+          font-family: 'Arial', sans-serif;
+          font-size: 10px;
+          font-weight: 700;
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: #fff;
+          background: #1A365D;
+          padding: 6px 14px;
+          margin-bottom: 10px;
+          margin-top: 22px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .section-title:first-child { margin-top: 0; }
+        .section-badge {
+          font-size: 9px;
+          font-weight: 700;
+          padding: 2px 10px;
+          border-radius: 2px;
+          background: rgba(255,255,255,0.2);
+          letter-spacing: 0.06em;
+        }
+
+        /* ══ TABLES ══ */
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 10.5px;
+          font-family: 'Arial', sans-serif;
+        }
+        th {
+          background: #EBF4FF;
+          color: #1A365D;
+          font-size: 8.5px;
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          padding: 6px 9px;
+          text-align: left;
+          border: 1px solid #CBD5E0;
+        }
+        td {
+          padding: 6px 9px;
+          border: 1px solid #E2E8F0;
+          vertical-align: middle;
+          font-size: 10.5px;
+          color: #2D3748;
+        }
+        tr:nth-child(even) td { background: #F7FAFC; }
+        tr:last-child td { border-bottom: 2px solid #CBD5E0; }
+
+        /* ══ STAT BOXES ══ */
+        .stat-row {
+          display: grid;
+          grid-template-columns: repeat(6, 1fr);
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+        .stat-box {
+          border: 1px solid #CBD5E0;
+          border-top: 3px solid #2B6CB0;
+          padding: 10px 8px 8px;
+          text-align: center;
+          background: #fff;
+        }
+        .stat-value {
+          font-family: 'Arial', sans-serif;
+          font-size: 22px;
+          font-weight: 900;
+          color: #1A365D;
+          line-height: 1;
+          margin-bottom: 5px;
+        }
+        .stat-label {
+          font-family: 'Arial', sans-serif;
+          font-size: 7.5px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #718096;
+        }
+
+        /* ══ INFO GRID ══ */
+        .info-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          border: 1px solid #CBD5E0;
+          border-right: none;
+          border-bottom: none;
+        }
+        .info-cell {
+          padding: 9px 12px;
+          border-right: 1px solid #CBD5E0;
+          border-bottom: 1px solid #CBD5E0;
+        }
+        .info-label {
+          font-family: 'Arial', sans-serif;
+          font-size: 7.5px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          color: #718096;
+          margin-bottom: 3px;
+        }
+        .info-value {
+          font-family: 'Arial', sans-serif;
+          font-size: 11px;
+          font-weight: 700;
+          color: #1A365D;
+        }
+
+        /* ══ BADGE ══ */
+        .badge {
+          display: inline-block;
+          padding: 2px 9px;
+          border-radius: 2px;
+          font-family: 'Arial', sans-serif;
+          font-size: 8.5px;
+          font-weight: 700;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        /* ══ ALERT ══ */
+        .alert-banner {
+          background: #FFF5F5;
+          border: 1px solid #FC8181;
+          border-left: 5px solid #E53E3E;
+          padding: 10px 16px;
+          margin-bottom: 18px;
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          font-family: 'Arial', sans-serif;
+        }
+
+        /* ══ CONTRACT BOX ══ */
+        .contract-card {
+          border: 1px solid #CBD5E0;
+          border-top: 3px solid #1B7A3E;
+          padding: 12px 16px 10px;
+          margin-bottom: 8px;
+          background: #F7FAFC;
+        }
+
+        /* ══ PERF SUMMARY ══ */
+        .perf-summary {
+          background: #EBF4FF;
+          border: 1px solid #BEE3F8;
+          border-left: 4px solid #2B6CB0;
+          padding: 10px 16px;
+          margin-bottom: 10px;
+          display: flex;
+          gap: 22px;
+          flex-wrap: wrap;
+          font-family: 'Arial', sans-serif;
+          font-size: 10.5px;
+        }
+
+        /* ══ FOOTER ══ */
+        .doc-footer {
+          border-top: 2px solid #1A365D;
+          padding: 10px 32px;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-family: 'Arial', sans-serif;
+          font-size: 8.5px;
+          color: #718096;
+          letter-spacing: 0.04em;
+          margin-top: 12px;
+          background: #F7FAFC;
+        }
+
+        /* ══ SIG BLOCK ══ */
+        .sig-block {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 24px;
+          margin-top: 28px;
+          padding-top: 16px;
+          border-top: 1px dashed #CBD5E0;
+        }
+        .sig-line {
+          border-bottom: 1px solid #2D3748;
+          height: 34px;
+          margin-bottom: 5px;
+        }
+        .sig-label {
+          font-family: 'Arial', sans-serif;
+          font-size: 8px;
+          color: #718096;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
       `}</style>
 
-      <div className="ath-detail-outer">
-
-        <div className="ath-detail-bar">
-          <Link href="/athletes" style={{ fontSize:13, color:'var(--blue)', fontWeight:600 }}>← Back to Athletes</Link>
-          <Link href={`/athletes/${id}/report`} style={{ background:'linear-gradient(135deg,#2E6FC4,#4A90E2)', color:'#fff', padding:'9px 20px', borderRadius:'var(--r-md)', fontSize:13, fontWeight:700, display:'flex', alignItems:'center', gap:6, boxShadow:'var(--shadow-blue)', textDecoration:'none' }}>
-            📄 Generate Report
-          </Link>
+      {/* ── Toolbar ── */}
+      <div className="print-toolbar">
+        <div style={{ display:'flex',alignItems:'center',gap:14 }}>
+          <button onClick={()=>router.back()} style={{ background:'rgba(255,255,255,0.12)',color:'#fff',border:'1px solid rgba(255,255,255,0.25)',padding:'7px 14px',borderRadius:5,fontSize:12,cursor:'pointer',fontFamily:'sans-serif' }}>
+            ← Back
+          </button>
+          <span style={{ color:'rgba(255,255,255,0.65)',fontSize:12,fontFamily:'sans-serif' }}>
+            Athlete Report · <strong style={{ color:'#fff' }}>{ath.name}</strong>
+          </span>
         </div>
+        <div style={{ display:'flex',alignItems:'center',gap:10 }}>
+          <span style={{ color:'rgba(255,255,255,0.5)',fontSize:11,fontFamily:'monospace' }}>{reportNum}</span>
+          <button onClick={()=>window.print()} style={{ background:'#fff',color:'#1A365D',border:'none',padding:'9px 24px',borderRadius:5,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'sans-serif',boxShadow:'0 2px 10px rgba(0,0,0,0.2)' }}>
+            🖨 Print / Save PDF
+          </button>
+        </div>
+      </div>
 
-        {/* Hero card */}
-        <div className="card fade-up" style={{ background:'linear-gradient(135deg,#1A3A6C 0%,#2E6FC4 50%,#4A90E2 100%)', borderRadius:'var(--r-xl)', padding:'28px 32px', marginBottom:22, display:'flex', gap:24, alignItems:'center', flexWrap:'wrap' }}>
-          {showPhoto ? (
-            <img src={ath.photo_url} alt={ath.name} onError={()=>setImgError(true)}
-              style={{ width:90, height:90, borderRadius:'50%', objectFit:'cover', border:'4px solid rgba(255,255,255,0.4)', flexShrink:0 }}/>
-          ) : (
-            <div style={{ width:90, height:90, borderRadius:'50%', flexShrink:0, background:AV_COLORS[0], display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, fontWeight:800, color:'#fff', border:'4px solid rgba(255,255,255,0.3)' }}>
-              {initials(ath.name)}
+      {/* ── A4 Document ── */}
+      <div className="a4-document">
+
+        {/* ══════════ COVER HEADER ══════════ */}
+        <div className="doc-header">
+          {/* Org + Report title */}
+          <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
+            <div>
+              <div style={{ fontFamily:'Arial',fontSize:9,letterSpacing:'0.22em',color:'rgba(255,255,255,0.45)',textTransform:'uppercase',marginBottom:4 }}>
+                Apex Track · Football Performance Platform
+              </div>
+              <div style={{ fontFamily:'Arial',fontSize:24,fontWeight:900,letterSpacing:'0.01em',lineHeight:1.1,marginBottom:3 }}>
+                ATHLETE PERFORMANCE REPORT
+              </div>
+              <div style={{ fontFamily:'Arial',fontSize:10,color:'rgba(255,255,255,0.5)',letterSpacing:'0.1em',textTransform:'uppercase' }}>
+                Confidential · For Official Use Only
+              </div>
             </div>
-          )}
-          <div style={{ flex:1 }}>
-            <div style={{ fontSize:11, color:'rgba(255,255,255,0.65)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:6 }}>Athlete Profile</div>
-            <h1 style={{ fontSize:'clamp(22px,4vw,36px)', fontWeight:800, color:'#fff', marginBottom:10, letterSpacing:'-0.02em' }}>{ath.name}</h1>
-            <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-              {ath.position && (
-                <span style={{ fontSize:14, fontWeight:800, color:'#fff', background:'rgba(255,255,255,0.2)', padding:'3px 12px', borderRadius:99, border:'1px solid rgba(255,255,255,0.3)' }}>
-                  {ath.position}
-                </span>
-              )}
-              {posCategory && (
-                <span style={{ fontSize:12, color:'rgba(255,255,255,0.7)' }}>{posCategory}</span>
-              )}
-              {ath.club && (
-                <><span style={{ color:'rgba(255,255,255,0.4)' }}>·</span>
-                <span style={{ fontSize:13, color:'rgba(255,255,255,0.8)' }}>{ath.club}</span></>
-              )}
-              {ath.strong_foot && (
-                <span style={{ fontSize:12, color:'rgba(255,255,255,0.75)', background:'rgba(255,255,255,0.12)', padding:'2px 10px', borderRadius:99 }}>
-                  {ath.strong_foot === 'left' ? '🦶 Left' : ath.strong_foot === 'right' ? '🦶 Right' : '🦶 Both'}
-                </span>
-              )}
-              <Badge status={ath.status}/>
+            <div style={{ textAlign:'right',flexShrink:0 }}>
+              <div style={{ fontFamily:'Arial',fontSize:8,color:'rgba(255,255,255,0.4)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:3 }}>Report Reference</div>
+              <div style={{ fontFamily:'monospace',fontSize:13,fontWeight:700,color:'#fff',letterSpacing:'0.08em',marginBottom:10 }}>{reportNum}</div>
+              <div style={{ fontFamily:'Arial',fontSize:8,color:'rgba(255,255,255,0.4)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:3 }}>Date Issued</div>
+              <div style={{ fontFamily:'Arial',fontSize:11,color:'rgba(255,255,255,0.85)' }}>{today}</div>
             </div>
           </div>
-        </div>
 
-        <div className="ath-detail-grid">
+          {/* Athlete identity card */}
+          <div style={{ display:'flex',alignItems:'center',gap:20,background:'rgba(255,255,255,0.08)',borderRadius:5,padding:'16px 20px',border:'1px solid rgba(255,255,255,0.14)' }}>
+            <AthletePhoto ath={ath} size={76}/>
 
-          {/* Profile details */}
-          <div className="card fade-up fade-up-1" style={{ padding:24 }}>
-            <h2 style={{ fontSize:16, fontWeight:700, marginBottom:18, paddingBottom:12, borderBottom:'1px solid var(--border)' }}>Profile Details</h2>
-            <dl>
-              {fields.map(([label, value]) => (
-                <div key={label} style={{ display:'flex', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid var(--border)', fontSize:14, gap:12 }}>
-                  <dt style={{ color:'var(--text3)', fontWeight:500, fontSize:13, flexShrink:0 }}>{label}</dt>
-                  <dd style={{ fontWeight:600, color:'var(--text)', textAlign:'right' }}>{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          {/* Injury history */}
-          <div className="card fade-up fade-up-2" style={{ padding:24 }}>
-            <h2 style={{ fontSize:16, fontWeight:700, marginBottom:18, paddingBottom:12, borderBottom:'1px solid var(--border)' }}>Injury History</h2>
-            {injuries.length===0 ? (
-              <p style={{ color:'var(--text3)', fontSize:13, fontStyle:'italic' }}>No injury records on file.</p>
-            ) : (
-              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                {injuries.map(inj => (
-                  <div key={inj.id} style={{ background:inj.status==='Active'?'var(--danger-light)':'var(--surface2)', border:`1px solid ${inj.status==='Active'?'rgba(231,76,60,0.2)':'var(--border)'}`, borderLeft:`4px solid ${inj.status==='Active'?'var(--danger)':'var(--success)'}`, borderRadius:'0 var(--r-md) var(--r-md) 0', padding:'14px 18px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8, gap:10 }}>
-                      <span style={{ fontWeight:700, fontSize:14, color:'var(--text)' }}>{inj.injury_type}</span>
-                      <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                        <Badge status={inj.severity}/>
-                        <Badge status={inj.status}/>
-                      </div>
-                    </div>
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:6, marginBottom:inj.notes?10:0 }}>
-                      <div style={{ fontSize:12, color:'var(--text2)' }}>📅 Injured: {inj.date_of_injury}</div>
-                      <div style={{ fontSize:12, color:'var(--text2)' }}>🏃 Return: {inj.expected_return||'TBD'}</div>
-                    </div>
-                    {inj.notes && <p style={{ fontSize:12, color:'var(--text2)', fontStyle:'italic', borderTop:'1px solid rgba(0,0,0,0.06)', paddingTop:8, margin:0 }}>{inj.notes}</p>}
+            <div style={{ flex:1 }}>
+              <div style={{ fontFamily:'Arial',fontSize:21,fontWeight:900,letterSpacing:'-0.01em',marginBottom:7,lineHeight:1 }}>{ath.name}</div>
+              <div style={{ display:'flex',gap:16,flexWrap:'wrap',alignItems:'center' }}>
+                {[
+                  ['Position',  ath.position || '—'],
+                  ['Club',      ath.club      || '—'],
+                  ['Region',    ath.region    || '—'],
+                  ['Status',    ath.status    || '—'],
+                  ['Nationality',ath.nationality||'—'],
+                ].map(([label,value]) => (
+                  <div key={label}>
+                    <div style={{ fontFamily:'Arial',fontSize:7.5,color:'rgba(255,255,255,0.4)',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:2 }}>{label}</div>
+                    <div style={{ fontFamily:'Arial',fontSize:11.5,fontWeight:700,color:
+                      label==='Status'&&value==='Injured'?'#FC8181':
+                      label==='Status'&&value==='Active'?'#68D391':
+                      'rgba(255,255,255,0.92)'
+                    }}>{value}</div>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+
+            {/* Right panel: contract + transfer summary */}
+            <div style={{ borderLeft:'1px solid rgba(255,255,255,0.15)',paddingLeft:20,flexShrink:0,minWidth:130 }}>
+              {activeCont ? (
+                <>
+                  <div style={{ fontFamily:'Arial',fontSize:7.5,color:'rgba(255,255,255,0.4)',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:3 }}>Contract Status</div>
+                  <div style={{ fontFamily:'Arial',fontSize:11,fontWeight:700,color:'#68D391',marginBottom:4 }}>● Active Contract</div>
+                  <div style={{ fontFamily:'Arial',fontSize:9.5,color:'rgba(255,255,255,0.6)',marginBottom:1 }}>{activeCont.contract_start}</div>
+                  <div style={{ fontFamily:'Arial',fontSize:9.5,color:'rgba(255,255,255,0.6)' }}>↳ {activeCont.contract_end}</div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontFamily:'Arial',fontSize:7.5,color:'rgba(255,255,255,0.4)',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:3 }}>Contract Status</div>
+                  <div style={{ fontFamily:'Arial',fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.45)' }}>No Active Contract</div>
+                </>
+              )}
+              {transfers.length > 0 && (
+                <div style={{ marginTop:10 }}>
+                  <div style={{ fontFamily:'Arial',fontSize:7.5,color:'rgba(255,255,255,0.4)',letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:3 }}>Transfer Record</div>
+                  <div style={{ fontFamily:'Arial',fontSize:11,fontWeight:700,color:'rgba(255,255,255,0.85)' }}>{transfers.length} movement{transfers.length!==1?'s':''}</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* ══════════ DOCUMENT BODY ══════════ */}
+        <div className="doc-body">
+
+          {/* Active injury alert */}
+          {activeInj.length > 0 && (
+            <div className="alert-banner">
+              <span style={{ fontSize:18,lineHeight:1 }}>⚠</span>
+              <div>
+                <div style={{ fontSize:11,fontWeight:700,color:'#C53030',marginBottom:2 }}>ACTIVE INJURY ALERT</div>
+                <div style={{ fontSize:10.5,color:'#742A2A' }}>
+                  {activeInj.map(i=>i.injury_type).join(', ')} · Expected Return: {activeInj[0]?.expected_return||'TBD'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── CAREER PERFORMANCE STATISTICS ── */}
+          <div className="section-title no-break">
+            Career Performance Statistics
+            <span className="section-badge">{totalMatches} Matches</span>
+          </div>
+          <div className="stat-row">
+            {[
+              { label:'Matches Played', value:totalMatches,  accent:'#2B6CB0' },
+              { label:'Goals',          value:totalGoals,    accent:'#276749' },
+              { label:'Assists',        value:totalAssists,  accent:'#553C9A' },
+              { label:'Avg Rating',     value:avgRating,     accent:'#C05621' },
+              { label:'Total xG',       value:totalXG,       accent:'#C53030' },
+              { label:'Dist (km)',      value:totalDist,     accent:'#2C7A7B' },
+            ].map(s => (
+              <div key={s.label} className="stat-box" style={{ borderTopColor:s.accent }}>
+                <div className="stat-value" style={{ color:s.accent }}>{s.value}</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:8,marginBottom:4 }}>
+            {[
+              { label:'Total xA',        value:totalXA,             accent:'#6B46C1' },
+              { label:'Avg Pass %',      value:avgPass==='—'?'—':`${avgPass}%`, accent:'#1B7A3E' },
+              { label:'Total Shots',     value:perf.reduce((s,p)=>s+(p.shots||0),0), accent:'#C05621' },
+              { label:'Career Minutes',  value:perf.reduce((s,p)=>s+(p.minutes_played||0),0)+"'", accent:'#2D6B6B' },
+            ].map(s => (
+              <div key={s.label} className="stat-box" style={{ borderTopColor:s.accent }}>
+                <div className="stat-value" style={{ fontSize:17,color:s.accent }}>{s.value}</div>
+                <div className="stat-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── PERSONAL INFORMATION ── */}
+          <div className="section-title no-break">Personal Information</div>
+          <div className="info-grid">
+            {[
+              ['Full Name',       ath.name            || '—'],
+              ['Date of Birth',   ath.dob             || '—'],
+              ['Age',             ath.age ? `${ath.age} years` : '—'],
+              ['Nationality',     ath.nationality     || '—'],
+              ['Height',          ath.height ? `${ath.height} cm` : '—'],
+              ['Weight',          ath.weight ? `${ath.weight} kg` : '—'],
+              ['Preferred Foot',  ath.strong_foot || ath.preferred_foot || '—'],
+              ['Phone',           ath.phone           || '—'],
+              ['Position',        ath.position        || '—'],
+              ['Current Club',    ath.club || ath.current_club || '—'],
+              ['Region',          ath.region          || '—'],
+              ['Assigned Coach',  ath.coaches?.name   || '—'],
+            ].map(([label,value]) => (
+              <div key={label} className="info-cell">
+                <div className="info-label">{label}</div>
+                <div className="info-value">{value}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* ── CONTRACT INFORMATION ── */}
+          <div className="section-title no-break">
+            Contract Information
+            <span className="section-badge">{contracts.length} Contract{contracts.length!==1?'s':''}</span>
+          </div>
+          {contracts.length === 0 ? (
+            <p style={{ fontFamily:'Arial',fontSize:11,color:'#718096',fontStyle:'italic',padding:'8px 0' }}>No contract records on file.</p>
+          ) : contracts.map((c,ci) => (
+            <div key={c.id} className="contract-card no-break">
+              <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8 }}>
+                <div style={{ fontFamily:'Arial',fontSize:12.5,fontWeight:700,color:'#1A365D' }}>
+                  {c.contract_start||'—'} → {c.contract_end||'—'}
+                </div>
+                <div style={{ display:'flex',gap:8,alignItems:'center' }}>
+                  {ci===0&&c.status==='Active'&&(
+                    <span style={{ fontFamily:'Arial',fontSize:9,fontWeight:700,color:'#276749' }}>● CURRENT</span>
+                  )}
+                  <span className="badge" style={{ background:c.status==='Active'?'#C6F6D5':'#E2E8F0',color:c.status==='Active'?'#276749':'#718096' }}>
+                    {c.status}
+                  </span>
+                </div>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Weekly Wage (GHS)</th>
+                    <th>Signing Fee (GHS)</th>
+                    <th>Release Clause</th>
+                    <th>Goal Bonus</th>
+                    <th>Appearance Bonus</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight:700,color:'#276749' }}>GHS {parseFloat(c.weekly_wage||0).toLocaleString()}</td>
+                    <td>GHS {parseFloat(c.signing_fee||0).toLocaleString()}</td>
+                    <td>{c.release_clause?`GHS ${parseFloat(c.release_clause).toLocaleString()}`:'—'}</td>
+                    <td>GHS {parseFloat(c.bonus_goals||0).toLocaleString()}</td>
+                    <td>GHS {parseFloat(c.bonus_appearances||0).toLocaleString()}</td>
+                  </tr>
+                </tbody>
+              </table>
+              {c.notes && <div style={{ fontFamily:'Arial',fontSize:9.5,color:'#718096',marginTop:6,fontStyle:'italic' }}>Note: {c.notes}</div>}
+            </div>
+          ))}
+
+          {/* ── TRANSFER HISTORY ── */}
+          <div className="section-title no-break" style={{ background:'#2D6B6B' }}>
+            Transfer History
+            <span className="section-badge">{transfers.length} Record{transfers.length!==1?'s':''}</span>
+          </div>
+          {transfers.length === 0 ? (
+            <p style={{ fontFamily:'Arial',fontSize:11,color:'#718096',fontStyle:'italic',padding:'8px 0' }}>No transfer records on file.</p>
+          ) : (
+            <div className="no-break">
+              {/* Transfer summary */}
+              {(totalTransferFeeIn > 0 || totalTransferFeeOut > 0) && (
+                <div style={{ display:'flex',gap:24,marginBottom:10,padding:'8px 14px',background:'#E6F0F0',border:'1px solid #B2D8D8',borderLeft:'4px solid #2D6B6B',fontFamily:'Arial',fontSize:10.5 }}>
+                  {totalTransferFeeOut>0 && <span><strong>Fees Received:</strong> GHS {totalTransferFeeOut.toLocaleString()}</span>}
+                  {totalTransferFeeIn>0  && <span><strong>Fees Paid:</strong> GHS {totalTransferFeeIn.toLocaleString()}</span>}
+                  <span><strong>Total Movements:</strong> {transfers.length}</span>
+                </div>
+              )}
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>From Club</th>
+                    <th>To Club</th>
+                    <th>Fee (GHS)</th>
+                    <th>Contract Period</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transfers.map(tr => {
+                    const tc = TRANSFER_TYPE_COLORS[tr.transfer_type] || { bg:'#E2E8F0',color:'#4A5568' }
+                    return (
+                      <tr key={tr.id}>
+                        <td style={{ whiteSpace:'nowrap',fontWeight:600 }}>
+                          {tr.transfer_date ? new Date(tr.transfer_date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'}
+                        </td>
+                        <td>
+                          <span className="badge" style={{ background:tc.bg,color:tc.color }}>
+                            {TRANSFER_TYPE_LABELS[tr.transfer_type]||tr.transfer_type}
+                          </span>
+                        </td>
+                        <td style={{ fontWeight:600 }}>{tr.from_club||'—'}</td>
+                        <td style={{ fontWeight:600 }}>{tr.to_club||'—'}</td>
+                        <td>
+                          {tr.is_free
+                            ? <span style={{ color:'#718096',fontStyle:'italic' }}>Free</span>
+                            : tr.fee_ghs
+                              ? <span style={{ fontWeight:700,color:'#276749' }}>GHS {Number(tr.fee_ghs).toLocaleString()}</span>
+                              : <span style={{ color:'#718096',fontStyle:'italic' }}>Undisclosed</span>
+                          }
+                        </td>
+                        <td style={{ fontSize:9.5,color:'#4A5568' }}>
+                          {tr.contract_start||tr.contract_end
+                            ? `${tr.contract_start||'—'} → ${tr.contract_end||'—'}`
+                            : '—'}
+                        </td>
+                        <td style={{ color:'#718096',fontStyle:'italic',fontSize:9.5 }}>{tr.notes||'—'}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* ── MEDICAL / INJURY HISTORY ── */}
+          <div className="section-title no-break" style={{ marginTop:22 }}>
+            Medical & Injury History
+            {activeInj.length > 0 && (
+              <span className="section-badge" style={{ background:'#FC8181',color:'#fff' }}>
+                {activeInj.length} ACTIVE
+              </span>
+            )}
+          </div>
+          {injuries.length === 0 ? (
+            <p style={{ fontFamily:'Arial',fontSize:11,color:'#276749',fontStyle:'italic',padding:'8px 0' }}>
+              ✓ No injury records on file. Clean medical history.
+            </p>
+          ) : (
+            <table className="no-break">
+              <thead>
+                <tr>
+                  <th>Injury Type</th>
+                  <th>Severity</th>
+                  <th>Date of Injury</th>
+                  <th>Expected Return</th>
+                  <th>Status</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {injuries.map(inj => {
+                  const sc = SEVERITY_COLORS[inj.severity] || SEVERITY_COLORS.Mild
+                  const isAct = inj.status==='Active'
+                  return (
+                    <tr key={inj.id} style={{ background:isAct?'#FFF5F5':'inherit' }}>
+                      <td style={{ fontWeight:600 }}>{inj.injury_type}</td>
+                      <td><span className="badge" style={{ background:sc.bg,color:sc.color }}>{inj.severity}</span></td>
+                      <td>{inj.date_of_injury||'—'}</td>
+                      <td>{inj.expected_return||'TBD'}</td>
+                      <td>
+                        <span className="badge" style={{ background:isAct?'#FED7D7':'#C6F6D5',color:isAct?'#742A2A':'#276749' }}>
+                          {inj.status}
+                        </span>
+                      </td>
+                      <td style={{ color:'#718096',fontStyle:'italic',fontSize:9.5 }}>{inj.notes||'—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          )}
+
+          {/* ── MATCH PERFORMANCE HISTORY ── */}
+          <div className="section-title page-break" style={{ marginTop:22 }}>
+            Match Performance History
+            <span className="section-badge">{totalMatches} Matches</span>
+          </div>
+          {perf.length === 0 ? (
+            <p style={{ fontFamily:'Arial',fontSize:11,color:'#718096',fontStyle:'italic',padding:'8px 0' }}>No performance records logged yet.</p>
+          ) : (
+            <>
+              <div className="perf-summary">
+                <span><strong>Goals:</strong> {totalGoals}</span>
+                <span><strong>Assists:</strong> {totalAssists}</span>
+                <span><strong>Avg Rating:</strong> {avgRating}/10</span>
+                <span><strong>xG:</strong> {totalXG}</span>
+                <span><strong>xA:</strong> {totalXA}</span>
+                <span><strong>Avg Pass%:</strong> {avgPass}{avgPass!=='—'?'%':''}</span>
+                <span><strong>Total Dist:</strong> {totalDist} km</span>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Opponent</th>
+                    <th>Min</th>
+                    <th>G</th>
+                    <th>A</th>
+                    <th>xG</th>
+                    <th>xA</th>
+                    <th>Shots</th>
+                    <th>Pass%</th>
+                    <th>Dist</th>
+                    <th>Rating</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {perf.slice(0,30).map(p => {
+                    const rating = parseFloat(p.rating||0)
+                    const rColor = rating>=7?'#276749':rating>=5?'#744210':'#742A2A'
+                    return (
+                      <tr key={p.id}>
+                        <td style={{ whiteSpace:'nowrap' }}>{p.match_date||'—'}</td>
+                        <td style={{ fontWeight:500 }}>{p.opponent||'—'}</td>
+                        <td>{p.minutes_played||0}'</td>
+                        <td style={{ fontWeight:700,color:'#276749',textAlign:'center' }}>{p.goals||0}</td>
+                        <td style={{ fontWeight:700,color:'#553C9A',textAlign:'center' }}>{p.assists||0}</td>
+                        <td>{parseFloat(p.xg||0).toFixed(2)}</td>
+                        <td>{parseFloat(p.xa||0).toFixed(2)}</td>
+                        <td style={{ textAlign:'center' }}>{p.shots||0}</td>
+                        <td>{p.pass_accuracy||0}%</td>
+                        <td>{p.distance_km||0} km</td>
+                        <td style={{ fontWeight:700,color:rColor,textAlign:'center' }}>{p.rating||0}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {perf.length > 30 && (
+                <p style={{ fontFamily:'Arial',fontSize:9.5,color:'#718096',marginTop:6,fontStyle:'italic',textAlign:'center' }}>
+                  Showing most recent 30 of {perf.length} records. Full history available in the system.
+                </p>
+              )}
+            </>
+          )}
+
+          {/* ── SIGNATURE BLOCK ── */}
+          <div className="sig-block">
+            {['Prepared By','Reviewed By','Authorised By'].map(label => (
+              <div key={label}>
+                <div className="sig-line"/>
+                <div className="sig-label">{label}</div>
+                <div style={{ fontFamily:'Arial',fontSize:8.5,color:'#A0AEC0',marginTop:2 }}>Name · Title · Date</div>
+              </div>
+            ))}
+          </div>
+
+        </div>
+
+        {/* ══ DOCUMENT FOOTER ══ */}
+        <div className="doc-footer">
+          <span>Apex Track · Football Performance Platform</span>
+          <span>Report Ref: {reportNum}</span>
+          <span>Generated: {today} · CONFIDENTIAL — Do Not Distribute</span>
+        </div>
+
       </div>
-    </Layout>
+    </>
   )
 }

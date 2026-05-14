@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
 import Badge from '@/components/Badge'
+import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
@@ -102,28 +103,28 @@ export default function Dashboard() {
   )
 
   const stats = [
-    { label:'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:'👥' },
-    { label:'Staff',     value:coaches.length,  note:'on team',        icon:'🎽' },
-    { label:'Events',    value:upcoming.length, note:'next 7 days',    icon:'📅' },
-    { label:'Injuries',  value:activeInj.length,note:'active',         icon:'🩺' },
-    { label:'Today',     value:todaySess.length,note:'sessions',       icon:'⚡' },
+    { label:'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:'👥', accent:'#008080' },
+    { label:'Staff',     value:coaches.length,  note:'on team',       icon:'🎽', accent:'#4A90E2' },
+    { label:'Events',    value:upcoming.length, note:'next 7 days',   icon:'📅', accent:'#27AE60' },
+    { label:'Injuries',  value:activeInj.length,note:'active',        icon:'🩺', accent:'#E74C3C' },
+    { label:'Today',     value:todaySess.length,note:'sessions',      icon:'⚡', accent:'#B7770D' },
   ]
 
   return (
     <Layout>
       <style>{`
         .dash-hero { padding:32px 40px 26px; }
-        .dash-stats { grid-template-columns:repeat(5,1fr); }
+        .dash-stats-row { grid-template-columns:repeat(5,1fr); }
         .dash-grid { grid-template-columns:65% 35%; }
         .dash-athletes-cols { grid-template-columns:2.2fr 1fr 0.9fr 1fr 0.8fr; }
         .dash-athletes-header { display:grid !important; }
         @media(max-width:900px) {
-          .dash-stats { grid-template-columns:repeat(3,1fr) !important; }
+          .dash-stats-row { grid-template-columns:repeat(3,1fr) !important; }
           .dash-grid { grid-template-columns:1fr !important; }
         }
         @media(max-width:768px) {
           .dash-hero { padding:20px 16px 18px !important; }
-          .dash-stats { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
+          .dash-stats-row { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
           .dash-grid { gap:14px !important; padding:14px 12px 0 !important; }
           .dash-athletes-cols { grid-template-columns:1fr auto !important; }
           .dash-athletes-header { display:none !important; }
@@ -132,7 +133,7 @@ export default function Dashboard() {
         }
       `}</style>
 
-      {/* ── Hero banner — Plum gradient ── */}
+      {/* ── Hero banner ── */}
       <div className="dash-hero" style={{ background:'linear-gradient(135deg,#004F4F 0%,#006A6A 55%,#008080 100%)', position:'relative', overflow:'hidden' }}>
         <div style={{ position:'absolute',top:-60,right:-60,width:280,height:280,borderRadius:'50%',background:'rgba(255,252,246,0.07)' }}/>
         <div style={{ position:'absolute',bottom:-40,right:180,width:180,height:180,borderRadius:'50%',background:'rgba(255,252,246,0.04)' }}/>
@@ -146,22 +147,27 @@ export default function Dashboard() {
           </h1>
 
           {todaySess.length>0 && (
-            <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,252,246,0.15)',border:'1px solid rgba(255,252,246,0.25)',borderRadius:99,padding:'6px 14px',marginBottom:14,backdropFilter:'blur(8px)' }}>
+            <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,252,246,0.15)',border:'1px solid rgba(255,252,246,0.25)',borderRadius:99,padding:'6px 14px',backdropFilter:'blur(8px)' }}>
               <span style={{ fontSize:13 }}>📅</span>
               <span style={{ fontSize:12,color:'rgba(255,252,246,0.95)',fontWeight:600 }}>{todaySess.length} session{todaySess.length>1?'s':''} today</span>
             </div>
           )}
+        </div>
+      </div>
 
-          <div className="dash-stats" style={{ display:'grid', gap:10 }}>
-            {stats.map(s=>(
-              <div key={s.label} style={{ background:'rgba(255,252,246,0.14)',backdropFilter:'blur(12px)',borderRadius:12,padding:'14px 16px',border:'1px solid rgba(255,252,246,0.22)' }}>
-                <div style={{ fontSize:20,marginBottom:6 }}>{s.icon}</div>
-                <div style={{ fontSize:24,fontWeight:900,color:'#FFFCF6',lineHeight:1,marginBottom:3 }}>{s.value}</div>
-                <div style={{ fontSize:11,color:'rgba(255,252,246,0.85)',fontWeight:600 }}>{s.label}</div>
-                <div style={{ fontSize:10,color:'rgba(255,252,246,0.5)',marginTop:1 }}>{s.note}</div>
-              </div>
-            ))}
-          </div>
+      {/* ── Stat Cards — below hero on white bg ── */}
+      <div style={{ maxWidth:1280, margin:'0 auto', padding:'20px 40px 0' }}>
+        <div className="dash-stats-row" style={{ display:'grid', gap:12 }}>
+          {stats.map(s => (
+            <StatCard
+              key={s.label}
+              label={s.label}
+              value={s.value}
+              note={s.note}
+              icon={s.icon}
+              accent={s.accent}
+            />
+          ))}
         </div>
       </div>
 

@@ -3,10 +3,9 @@ import { useState } from 'react'
 
 export default function StatCard({ label, value, note, icon, accent, trend, href }) {
   const [hovered, setHovered] = useState(false)
+  const ac = accent || '#008080'
 
-  const accentColor = accent || '#008080'
-
-  const card = (
+  const inner = (
     <div
       className="fade-up"
       onMouseEnter={() => setHovered(true)}
@@ -14,72 +13,53 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
       style={{
         position: 'relative',
         overflow: 'hidden',
-        padding: '20px 20px 18px',
-        borderRadius: 20,
+        padding: '18px 18px 16px',
+        borderRadius: 18,
         background: hovered
-          ? `linear-gradient(145deg, rgba(255,255,255,0.92) 0%, ${accentColor}18 55%, ${accentColor}12 100%)`
-          : `linear-gradient(145deg, rgba(255,255,255,0.82) 0%, ${accentColor}10 55%, ${accentColor}0a 100%)`,
-        backdropFilter: 'blur(18px)',
-        WebkitBackdropFilter: 'blur(18px)',
-        border: `1px solid ${hovered ? `${accentColor}35` : 'rgba(255,255,255,0.72)'}`,
+          ? `linear-gradient(145deg, #ffffff 0%, ${ac}1a 60%, ${ac}0f 100%)`
+          : `linear-gradient(145deg, #f9fafa 0%, ${ac}12 60%, ${ac}08 100%)`,
+        border: `1px solid ${hovered ? ac + '40' : ac + '22'}`,
         boxShadow: hovered
-          ? `0 10px 36px ${accentColor}20, 0 2px 8px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.9)`
-          : `0 4px 18px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.85)`,
+          ? `0 8px 28px ${ac}22, 0 2px 8px rgba(0,0,0,0.06)`
+          : `0 2px 10px rgba(0,0,0,0.05), 0 1px 3px rgba(0,0,0,0.04)`,
         transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
         transition: 'all 0.22s ease',
         cursor: href ? 'pointer' : 'default',
-        textDecoration: 'none',
-        display: 'block',
         fontFamily: 'var(--font)',
       }}
     >
-      {/* Decorative glow blob */}
+      {/* Decorative blob */}
       <div style={{
         position: 'absolute',
-        top: -28,
-        right: -28,
-        width: 100,
-        height: 100,
+        top: -24, right: -24,
+        width: 80, height: 80,
         borderRadius: '50%',
-        background: `${accentColor}14`,
+        background: `${ac}18`,
         pointerEvents: 'none',
-        transition: 'opacity 0.22s',
-        opacity: hovered ? 1 : 0.6,
-      }}/>
+      }} />
 
-      {/* Top row: icon + trend */}
+      {/* Icon + trend row */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14, position: 'relative' }}>
-        {/* Icon pill */}
         <div style={{
-          width: 44,
-          height: 44,
+          width: 42, height: 42,
           borderRadius: '50%',
-          background: `linear-gradient(135deg, ${accentColor}22, ${accentColor}14)`,
-          border: `1.5px solid ${accentColor}30`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 20,
-          flexShrink: 0,
-          boxShadow: `0 2px 10px ${accentColor}18`,
+          background: `${ac}18`,
+          border: `1.5px solid ${ac}30`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 19,
+          boxShadow: `0 2px 8px ${ac}18`,
         }}>
           {icon}
         </div>
 
-        {/* Trend badge */}
         {trend && (
           <div style={{
-            fontSize: 11,
-            fontWeight: 700,
-            color: trend.startsWith('+') ? '#0e8a3e' : '#c0392b',
-            background: trend.startsWith('+') ? 'rgba(14,138,62,0.1)' : 'rgba(192,57,43,0.1)',
-            border: `1px solid ${trend.startsWith('+') ? 'rgba(14,138,62,0.2)' : 'rgba(192,57,43,0.2)'}`,
-            padding: '4px 9px',
-            borderRadius: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 3,
-            backdropFilter: 'blur(6px)',
+            fontSize: 10, fontWeight: 700,
+            color: trend.startsWith('+') ? '#0a7a35' : '#c0392b',
+            background: trend.startsWith('+') ? 'rgba(10,122,53,0.1)' : 'rgba(192,57,43,0.1)',
+            border: `1px solid ${trend.startsWith('+') ? 'rgba(10,122,53,0.2)' : 'rgba(192,57,43,0.2)'}`,
+            padding: '3px 8px', borderRadius: 20,
+            display: 'flex', alignItems: 'center', gap: 2,
           }}>
             {trend.startsWith('+') ? '↑' : '↓'} {trend}
           </div>
@@ -88,11 +68,9 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
 
       {/* Value */}
       <div style={{
-        fontSize: 30,
-        fontWeight: 900,
+        fontSize: 30, fontWeight: 900,
         color: '#111',
-        lineHeight: 1,
-        marginBottom: 5,
+        lineHeight: 1, marginBottom: 4,
         letterSpacing: '-0.03em',
         position: 'relative',
       }}>
@@ -101,56 +79,41 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
 
       {/* Label */}
       <div style={{
-        fontSize: 13,
-        color: '#555',
+        fontSize: 12, color: '#555',
         fontWeight: 500,
-        marginBottom: note ? 5 : 0,
+        marginBottom: note ? 8 : 0,
         position: 'relative',
       }}>
         {label}
       </div>
 
-      {/* Note */}
+      {/* Note pill */}
       {note && (
         <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          fontSize: 11,
-          fontWeight: 600,
-          color: accentColor,
-          background: `${accentColor}12`,
-          border: `1px solid ${accentColor}22`,
-          padding: '3px 9px',
-          borderRadius: 20,
+          display: 'inline-flex', alignItems: 'center',
+          fontSize: 10, fontWeight: 700,
+          color: ac,
+          background: `${ac}12`,
+          border: `1px solid ${ac}25`,
+          padding: '2px 9px', borderRadius: 20,
           position: 'relative',
         }}>
           {note}
         </div>
       )}
 
-      {/* Bottom accent bar */}
+      {/* Bottom accent bar on hover */}
       <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
+        position: 'absolute', bottom: 0, left: 0, right: 0,
         height: 3,
-        background: `linear-gradient(90deg, ${accentColor}50, ${accentColor}18)`,
-        borderRadius: '0 0 20px 20px',
+        background: `linear-gradient(90deg, ${ac}70, ${ac}15)`,
+        borderRadius: '0 0 18px 18px',
         opacity: hovered ? 1 : 0,
         transition: 'opacity 0.22s ease',
-      }}/>
+      }} />
     </div>
   )
 
-  if (href) {
-    return (
-      <a href={href} style={{ textDecoration: 'none', display: 'block' }}>
-        {card}
-      </a>
-    )
-  }
-
-  return card
+  if (href) return <a href={href} style={{ textDecoration: 'none', display: 'block' }}>{inner}</a>
+  return inner
 }

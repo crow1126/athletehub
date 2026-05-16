@@ -98,8 +98,8 @@ export default function LandingPage() {
     supabase.auth.getSession().then(async ({ data:{ session } }) => {
       if (session) {
         try {
-          const { data:profile } = await supabase.from('profiles').select('is_active').eq('id',session.user.id).single()
-          if (profile?.is_active !== false) router.replace('/dashboard')
+          const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
+          if (profile?.is_active !== false) if (profile?.role === 'superadmin') { router.replace('/superadmin') } else { router.replace('/dashboard') }
         } catch {}
       }
     }).catch(()=>{})
@@ -126,13 +126,13 @@ export default function LandingPage() {
         setLoading(false); return
       }
       if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
-      const { data:profile } = await supabase.from('profiles').select('is_active').eq('id',data.user.id).single()
+      const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',data.user.id).single()
       if (profile?.is_active === false) {
         await supabase.auth.signOut()
         setError('Your account has been disabled by your administrator.')
         setLoading(false); return
       }
-      router.replace('/dashboard')
+      if (profile?.role === 'superadmin') { router.replace('/superadmin') } else { router.replace('/dashboard') }
     } catch(err) {
       setError(err.message?.includes('fetch') ? 'Cannot connect. Check your internet and try again.' : (err.message||'Unexpected error.'))
       setLoading(false)
@@ -730,3 +730,5 @@ export default function LandingPage() {
     </>
   )
 }
+
+

@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
-// ── helpers ──────────────────────────────────────────────────────────
 const TABLES = ['profiles', 'athletes', 'teams', 'sessions', 'injuries', 'transfers']
 
 const PILL = {
@@ -52,30 +51,32 @@ function Btn({ onClick, children, style={}, disabled=false }) {
   )
 }
 
-// ── main component ────────────────────────────────────────────────────
 export default function SuperadminPage() {
   const router = useRouter()
-  const [authOk,    setAuthOk]    = useState(false)
-  const [section,   setSection]   = useState('overview')
-  const [profiles,  setProfiles]  = useState([])
-  const [dbRows,    setDbRows]    = useState([])
-  const [dbCols,    setDbCols]    = useState([])
-  const [dbTable,   setDbTable]   = useState('profiles')
-  const [dbLoading, setDbLoading] = useState(false)
-  const [filter,    setFilter]    = useState('all')
-  const [search,    setSearch]    = useState('')
-  const [loading,   setLoading]   = useState(true)
-  const [toast,     setToast]     = useState(null)
-  const [acting,    setActing]    = useState(false)
-  const [selected,  setSelected]  = useState(null)
-  const [logoUrl,   setLogoUrl]   = useState('')
-  const [rejReason, setRejReason] = useState('')
-  const [sqlQuery,  setSqlQuery]  = useState('SELECT * FROM profiles LIMIT 50;')
-  const [sqlResult, setSqlResult] = useState(null)
-  const [sqlError,  setSqlError]  = useState('')
-  const [stats,     setStats]     = useState({ total:0, pending:0, approved:0, rejected:0, clubs:0 })
+  const [authOk,      setAuthOk]      = useState(false)
+  const [section,     setSection]     = useState('overview')
+  const [profiles,    setProfiles]    = useState([])
+  const [dbRows,      setDbRows]      = useState([])
+  const [dbCols,      setDbCols]      = useState([])
+  const [dbTable,     setDbTable]     = useState('profiles')
+  const [dbLoading,   setDbLoading]   = useState(false)
+  const [filter,      setFilter]      = useState('all')
+  const [search,      setSearch]      = useState('')
+  const [loading,     setLoading]     = useState(true)
+  const [toast,       setToast]       = useState(null)
+  const [acting,      setActing]      = useState(false)
+  const [selected,    setSelected]    = useState(null)
+  const [logoUrl,     setLogoUrl]     = useState('')
+  const [logoPreview, setLogoPreview] = useState('')
+  const [logoFile,    setLogoFile]    = useState(null)
+  const [logoUploading, setLogoUploading] = useState(false)
+  const [rejReason,   setRejReason]   = useState('')
+  const [sqlQuery,    setSqlQuery]    = useState('SELECT * FROM profiles LIMIT 50;')
+  const [sqlResult,   setSqlResult]   = useState(null)
+  const [sqlError,    setSqlError]    = useState('')
+  const [stats,       setStats]       = useState({ total:0, pending:0, approved:0, rejected:0, clubs:0 })
 
-  // ── auth guard ──
+  // auth guard
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data:{ session } }) => {
       if (!session) { router.replace('/login'); return }
@@ -85,7 +86,7 @@ export default function SuperadminPage() {
     })
   }, [])
 
-  // ── load profiles ──
+  // load profiles
   const loadProfiles = useCallback(async () => {
     setLoading(true)
     const { data } = await supabase
@@ -106,7 +107,7 @@ export default function SuperadminPage() {
 
   useEffect(() => { if (authOk) loadProfiles() }, [authOk, loadProfiles])
 
-  // ── load db table ──
+  // load db table
   const loadTable = useCallback(async (tbl) => {
     setDbLoading(true)
     setDbRows([]); setDbCols([])
@@ -125,7 +126,36 @@ export default function SuperadminPage() {
     setTimeout(() => setToast(null), 3500)
   }
 
-  // ── approve ──
+  function openReview(p) {
+    setSelected(p)
+    setLogoUrl(p.club_logo_url || '')
+    setLogoPreview(p.club_logo_url || '')
+    setLogoFile(null)
+    setRejReason('')
+  }
+
+  // handle logo file pick — upload immediately to storage
+  async function handleLogoFile(e) {
+    const file = e.target.files[0]
+    if (!file || !selected) return
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+    setLogoUploading(true)
+    try {
+      const ext  = file.name.split('.').pop()
+      const path = `club-logos/${selected.id}.${ext}`
+      const { error } = await supabase.storage.from('athlete-photos').upload(path, file, { upsert:true })
+      if (error) throw error
+      const url = supabase.storage.from('athlete-photos').getPublicUrl(path).data.publicUrl
+      setLogoUrl(url)
+      showToast('Logo uploaded!')
+    } catch (err) {
+      showToast('Upload failed: ' + (err.message || 'Unknown error'), 'error')
+    }
+    setLogoUploading(false)
+  }
+
+  // approve
   async function handleApprove() {
     if (!selected) return
     setActing(true)
@@ -145,22 +175,22 @@ export default function SuperadminPage() {
           'Authorization':`Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify({
-          full_name: selected.full_name,
-          email: selected.email,
-          club_name: selected.club_name,
+          full_name:     selected.full_name,
+          email:         selected.email,
+          club_name:     selected.club_name,
           club_logo_url: logoUrl || null,
         }),
       })
-      showToast(`✅ ${selected.full_name} approved — welcome email sent!`)
+      showToast('Approved — welcome email sent!')
       setSelected(null)
       loadProfiles()
     } catch (err) {
-      showToast('❌ ' + (err.message||'Approval failed'), 'error')
+      showToast('Approval failed: ' + (err.message || ''), 'error')
     }
     setActing(false)
   }
 
-  // ── reject ──
+  // reject
   async function handleReject() {
     if (!selected || !rejReason.trim()) { showToast('Enter a rejection reason', 'error'); return }
     setActing(true)
@@ -171,28 +201,27 @@ export default function SuperadminPage() {
         rejection_reason: rejReason.trim(),
       }).eq('id', selected.id)
       if (error) throw error
-      showToast(`Rejected — ${selected.full_name}`)
+      showToast('Rejected — ' + selected.full_name)
       setSelected(null); loadProfiles()
-    } catch (err) { showToast('❌ ' + (err.message||'Failed'), 'error') }
+    } catch (err) { showToast('Failed: ' + (err.message || ''), 'error') }
     setActing(false)
   }
 
-  // ── delete user ──
+  // delete
   async function handleDelete(p) {
-    if (!confirm(`Delete ${p.full_name}? This cannot be undone.`)) return
+    if (!confirm('Delete ' + p.full_name + '? This cannot be undone.')) return
     await supabase.from('profiles').delete().eq('id', p.id)
-    showToast(`Deleted ${p.full_name}`)
+    showToast('Deleted ' + p.full_name)
     loadProfiles()
   }
 
-  // ── toggle active ──
+  // toggle active
   async function toggleActive(p) {
     await supabase.from('profiles').update({ is_active: !p.is_active }).eq('id', p.id)
-    showToast(`${p.full_name} ${!p.is_active?'activated':'deactivated'}`)
+    showToast(p.full_name + ' ' + (!p.is_active ? 'activated' : 'deactivated'))
     loadProfiles()
   }
 
-  // ── filtered users ──
   const filtered = profiles.filter(p => {
     const q = search.toLowerCase()
     const matchQ = !search || [p.full_name,p.email,p.club_name].some(v=>v?.toLowerCase().includes(q))
@@ -200,7 +229,6 @@ export default function SuperadminPage() {
     return matchQ && matchF
   })
 
-  // ── styles ──
   const S = {
     shell:    { display:'flex', height:'100vh', fontFamily:"'Plus Jakarta Sans',sans-serif", background:'#F2F7F7', overflow:'hidden' },
     sidebar:  { width:210, background:'#002828', display:'flex', flexDirection:'column', flexShrink:0 },
@@ -227,7 +255,7 @@ export default function SuperadminPage() {
   )
 
   const NAV = [
-    { id:'overview',  label:'Overview',       icon:'⬛' },
+    { id:'overview',  label:'Overview',       icon:'📊' },
     { id:'users',     label:'Users',          icon:'👥', badge: stats.pending || null },
     { id:'clubs',     label:'Clubs',          icon:'🏟️' },
     { id:'database',  label:'Database',       icon:'🗄️' },
@@ -271,8 +299,8 @@ export default function SuperadminPage() {
             <div style={{ fontSize:11, color:'rgba(255,252,246,0.3)', marginBottom:6 }}>Signed in as</div>
             <div style={{ fontSize:12, color:'rgba(255,252,246,0.6)', fontWeight:600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>samuelwobil11@gmail.com</div>
             <div onClick={()=>supabase.auth.signOut().then(()=>router.replace('/login'))}
-              style={{ marginTop:10, fontSize:12, color:'rgba(255,252,246,0.35)', cursor:'pointer', display:'flex', alignItems:'center', gap:5 }}>
-              ← Sign out
+              style={{ marginTop:10, fontSize:12, color:'rgba(255,252,246,0.35)', cursor:'pointer' }}>
+              Sign out
             </div>
           </div>
         </div>
@@ -282,14 +310,14 @@ export default function SuperadminPage() {
           <div style={S.topbar}>
             <div style={{ fontSize:15, fontWeight:800, color:'#003D3D' }}>{NAV.find(n=>n.id===section)?.label}</div>
             <div style={{ display:'flex', gap:8 }}>
-              <Btn onClick={loadProfiles} style={{ background:'#F0FAF9', color:'#006A6A', border:'1px solid #C8E8E4' }}>↻ Refresh</Btn>
-              <Btn onClick={()=>router.push('/dashboard')} style={{ background:'#003D3D', color:'#FFFCF6' }}>← Dashboard</Btn>
+              <Btn onClick={loadProfiles} style={{ background:'#F0FAF9', color:'#006A6A', border:'1px solid #C8E8E4' }}>Refresh</Btn>
+              <Btn onClick={()=>router.push('/dashboard')} style={{ background:'#003D3D', color:'#FFFCF6' }}>Dashboard</Btn>
             </div>
           </div>
 
           <div style={S.content}>
 
-            {/* ── OVERVIEW ── */}
+            {/* OVERVIEW */}
             {section==='overview' && (
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={S.statGrid}>
@@ -309,7 +337,7 @@ export default function SuperadminPage() {
                 <div style={S.card}>
                   <div style={S.cardHdr}><span style={{ fontSize:13, fontWeight:700, color:'#003D3D' }}>Pending registrations</span></div>
                   {profiles.filter(p=>p.registration_status==='pending').length===0 ? (
-                    <div style={{ padding:32, textAlign:'center', color:'#5A9494', fontSize:13 }}>🎉 No pending registrations</div>
+                    <div style={{ padding:32, textAlign:'center', color:'#5A9494', fontSize:13 }}>No pending registrations</div>
                   ) : profiles.filter(p=>p.registration_status==='pending').map(p => (
                     <div key={p.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 18px', borderBottom:'1px solid #F0F8F8' }}>
                       <Avatar name={p.full_name} size={36} />
@@ -318,19 +346,18 @@ export default function SuperadminPage() {
                         <div style={{ fontSize:11, color:'#5A9494' }}>{p.club_name||p.email}</div>
                       </div>
                       <div style={{ fontSize:11, color:'#5A9494' }}>{new Date(p.created_at).toLocaleDateString()}</div>
-                      <Btn onClick={()=>{ setSelected(p); setLogoUrl(p.club_logo_url||''); setRejReason(''); setSection('users') }}
-                        style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
+                      <Btn onClick={()=>{ openReview(p); setSection('users') }} style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* ── USERS ── */}
+            {/* USERS */}
             {section==='users' && (
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap', alignItems:'center' }}>
-                  <input style={{ ...S.input, width:220 }} placeholder="Search name, club, email…" value={search} onChange={e=>setSearch(e.target.value)} />
+                  <input style={{ ...S.input, width:220 }} placeholder="Search name, club, email..." value={search} onChange={e=>setSearch(e.target.value)} />
                   {['all','pending','approved','rejected'].map(f => (
                     <Btn key={f} onClick={()=>setFilter(f)}
                       style={{ background:filter===f?'#006A6A':'#fff', color:filter===f?'#FFFCF6':'#5A9494', border:'1px solid #D0E8E8', textTransform:'capitalize' }}>
@@ -345,14 +372,16 @@ export default function SuperadminPage() {
                     </thead>
                     <tbody>
                       {loading ? (
-                        <tr><td colSpan={6} style={{ ...S.td, textAlign:'center', padding:32, color:'#5A9494' }}>Loading…</td></tr>
+                        <tr><td colSpan={6} style={{ ...S.td, textAlign:'center', padding:32, color:'#5A9494' }}>Loading...</td></tr>
                       ) : filtered.length===0 ? (
                         <tr><td colSpan={6} style={{ ...S.td, textAlign:'center', padding:32, color:'#5A9494' }}>No users found</td></tr>
                       ) : filtered.map(p => (
                         <tr key={p.id}>
                           <td style={S.td}>
                             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                              <Avatar name={p.full_name} size={32} />
+                              {p.club_logo_url
+                                ? <img src={p.club_logo_url} alt="" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover', border:'2px solid #E0EEEE', flexShrink:0 }}/>
+                                : <Avatar name={p.full_name} size={32} />}
                               <div>
                                 <div style={{ fontWeight:700, color:'#003D3D' }}>{p.full_name}</div>
                                 <div style={{ fontSize:11, color:'#5A9494' }}>{p.club_name||'—'}</div>
@@ -370,8 +399,7 @@ export default function SuperadminPage() {
                           </td>
                           <td style={S.td}>
                             <div style={{ display:'flex', gap:6 }}>
-                              <Btn onClick={()=>{ setSelected(p); setLogoUrl(p.club_logo_url||''); setRejReason('') }}
-                                style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
+                              <Btn onClick={()=>openReview(p)} style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
                               <Btn onClick={()=>handleDelete(p)} style={{ background:'#F9E8E8', color:'#8B2020' }}>Delete</Btn>
                             </div>
                           </td>
@@ -383,7 +411,7 @@ export default function SuperadminPage() {
               </div>
             )}
 
-            {/* ── CLUBS ── */}
+            {/* CLUBS */}
             {section==='clubs' && (
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={S.card}>
@@ -406,8 +434,7 @@ export default function SuperadminPage() {
                           <td style={{ ...S.td, fontSize:12, color:'#5A9494' }}>{p.email}</td>
                           <td style={S.td}><Pill status={p.registration_status||'pending'} /></td>
                           <td style={S.td}>
-                            <Btn onClick={()=>{ setSelected(p); setLogoUrl(p.club_logo_url||''); setRejReason(''); setSection('users') }}
-                              style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
+                            <Btn onClick={()=>{ openReview(p); setSection('users') }} style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
                           </td>
                         </tr>
                       ))}
@@ -417,7 +444,7 @@ export default function SuperadminPage() {
               </div>
             )}
 
-            {/* ── DATABASE ── */}
+            {/* DATABASE */}
             {section==='database' && (
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={{ display:'flex', gap:10, marginBottom:14, flexWrap:'wrap' }}>
@@ -431,10 +458,10 @@ export default function SuperadminPage() {
                 <div style={S.card}>
                   <div style={S.cardHdr}>
                     <span style={{ fontSize:13, fontWeight:700, color:'#003D3D', fontFamily:'monospace' }}>{dbTable}</span>
-                    <Btn onClick={()=>loadTable(dbTable)} style={{ background:'#F0FAF9', color:'#006A6A' }}>↻ Reload</Btn>
+                    <Btn onClick={()=>loadTable(dbTable)} style={{ background:'#F0FAF9', color:'#006A6A' }}>Reload</Btn>
                   </div>
                   {dbLoading ? (
-                    <div style={{ padding:32, textAlign:'center', color:'#5A9494' }}>Loading…</div>
+                    <div style={{ padding:32, textAlign:'center', color:'#5A9494' }}>Loading...</div>
                   ) : dbRows.length===0 ? (
                     <div style={{ padding:32, textAlign:'center', color:'#5A9494' }}>No rows or table not accessible</div>
                   ) : (
@@ -456,8 +483,6 @@ export default function SuperadminPage() {
                     </div>
                   )}
                 </div>
-
-                {/* SQL editor */}
                 <div style={S.card}>
                   <div style={S.cardHdr}><span style={{ fontSize:13, fontWeight:700, color:'#003D3D' }}>SQL Editor</span></div>
                   <div style={{ padding:16 }}>
@@ -479,7 +504,7 @@ export default function SuperadminPage() {
               </div>
             )}
 
-            {/* ── FUNCTIONS ── */}
+            {/* FUNCTIONS */}
             {section==='functions' && (
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={S.card}>
@@ -502,7 +527,7 @@ export default function SuperadminPage() {
                             <Btn onClick={async()=>{
                               const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/${f.name}`
                               const r = await fetch(url, { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` }, body:JSON.stringify({ test:true }) })
-                              showToast(r.ok ? `✅ ${f.name} responded ${r.status}` : `⚠️ ${f.name} returned ${r.status}`, r.ok?'success':'error')
+                              showToast(r.ok ? f.name + ' responded ' + r.status : f.name + ' returned ' + r.status, r.ok?'success':'error')
                             }} style={{ background:'#F0FAF9', color:'#006A6A' }}>Test ping</Btn>
                           </td>
                         </tr>
@@ -526,17 +551,17 @@ export default function SuperadminPage() {
               </div>
             )}
 
-            {/* ── SETTINGS ── */}
+            {/* SETTINGS */}
             {section==='settings' && (
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={S.card}>
                   <div style={S.cardHdr}><span style={{ fontSize:13, fontWeight:700, color:'#003D3D' }}>App configuration</span></div>
                   <div style={{ padding:20, display:'flex', flexDirection:'column', gap:18 }}>
                     {[
-                      { label:'App name',                  val:'Apex Track',                              hint:'Displayed across the platform' },
-                      { label:'Admin notification email',  val:'samuelwobil11@gmail.com',                 hint:'Receives new registration alerts' },
-                      { label:'App URL',                   val:'https://athletehub-seven.vercel.app',     hint:'Used in email links' },
-                      { label:'Supabase project ref',      val:'nivgcxbobofxoszvijhp',                    hint:'Read-only' },
+                      { label:'App name',                 val:'Apex Track',                           hint:'Displayed across the platform' },
+                      { label:'Admin notification email', val:'samuelwobil11@gmail.com',              hint:'Receives new registration alerts' },
+                      { label:'App URL',                  val:'https://athletehub-seven.vercel.app',  hint:'Used in email links' },
+                      { label:'Supabase project ref',     val:'nivgcxbobofxoszvijhp',                 hint:'Read-only' },
                     ].map(s => (
                       <div key={s.label} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:18, borderBottom:'1px solid #F0F8F8' }}>
                         <div>
@@ -558,11 +583,13 @@ export default function SuperadminPage() {
         </div>
       </div>
 
-      {/* ── REVIEW MODAL ── */}
+      {/* REVIEW MODAL */}
       {selected && (
         <div style={{ position:'fixed', inset:0, background:'rgba(0,20,20,0.65)', backdropFilter:'blur(6px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}
           onClick={e=>{ if(e.target===e.currentTarget) setSelected(null) }}>
           <div style={{ background:'#FFFCF6', borderRadius:20, width:'100%', maxWidth:480, maxHeight:'92vh', overflow:'auto', boxShadow:'0 32px 80px rgba(0,20,20,0.4)' }}>
+
+            {/* Modal header */}
             <div style={{ background:'linear-gradient(135deg,#004F4F,#008080)', padding:'18px 22px', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
               <div>
                 <div style={{ fontSize:11, color:'rgba(255,252,246,0.5)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:3 }}>Review Registration</div>
@@ -570,15 +597,18 @@ export default function SuperadminPage() {
               </div>
               <button onClick={()=>setSelected(null)} style={{ background:'rgba(255,252,246,0.15)', border:'none', width:32, height:32, borderRadius:'50%', fontSize:18, cursor:'pointer', color:'#FFFCF6' }}>×</button>
             </div>
+
             <div style={{ padding:22, display:'flex', flexDirection:'column', gap:16 }}>
+
+              {/* Info grid */}
               <div style={{ background:'#F0FAF9', border:'1px solid #C8E8E4', borderRadius:12, padding:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
                 {[
-                  ['Club',    selected.club_name||'—'],
-                  ['Email',   selected.email],
-                  ['Role',    selected.role||'admin'],
-                  ['Status',  selected.registration_status||'pending'],
-                  ['Active',  selected.is_active?'Yes':'No'],
-                  ['Joined',  new Date(selected.created_at).toLocaleDateString()],
+                  ['Club',   selected.club_name||'—'],
+                  ['Email',  selected.email],
+                  ['Role',   selected.role||'admin'],
+                  ['Status', selected.registration_status||'pending'],
+                  ['Active', selected.is_active?'Yes':'No'],
+                  ['Joined', new Date(selected.created_at).toLocaleDateString()],
                 ].map(([k,v])=>(
                   <div key={k}>
                     <div style={{ fontSize:10, fontWeight:700, color:'#5A9494', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:2 }}>{k}</div>
@@ -587,12 +617,44 @@ export default function SuperadminPage() {
                 ))}
               </div>
 
+              {/* Club Logo — file upload + URL */}
               <div>
-                <div style={{ fontSize:11, fontWeight:700, color:'#2D6B6B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Club Logo URL</div>
-                <input value={logoUrl} onChange={e=>setLogoUrl(e.target.value)} placeholder="https://..." style={{ ...S.input, width:'100%' }} />
-                {logoUrl && <img src={logoUrl} alt="" style={{ width:48, height:48, borderRadius:'50%', objectFit:'cover', marginTop:8, border:'2px solid #E0EEEE' }}/>}
+                <div style={{ fontSize:11, fontWeight:700, color:'#2D6B6B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>Club Logo</div>
+                <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                  {/* Preview */}
+                  <div style={{ width:60, height:60, borderRadius:'50%', background:'#E8F5F5', border:'2px dashed #B8D8D8', overflow:'hidden', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    {logoPreview
+                      ? <img src={logoPreview} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                      : <span style={{ fontSize:24 }}>🏟️</span>
+                    }
+                  </div>
+                  <div style={{ flex:1 }}>
+                    {/* File upload button */}
+                    <label htmlFor="logo-file-input" style={{ display:'inline-block', background:'#E8F0FA', color:'#1A4A8A', border:'1px solid rgba(26,74,138,0.2)', padding:'7px 14px', borderRadius:8, fontSize:12, fontWeight:600, cursor:'pointer', marginBottom:8 }}>
+                      {logoUploading ? 'Uploading...' : logoPreview ? 'Change Logo' : 'Upload Logo'}
+                    </label>
+                    <input
+                      id="logo-file-input"
+                      type="file"
+                      accept="image/*"
+                      style={{ display:'none' }}
+                      onChange={handleLogoFile}
+                    />
+                    {/* URL input */}
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ fontSize:11, color:'#5A9494', flexShrink:0 }}>or URL:</span>
+                      <input
+                        value={logoUrl}
+                        onChange={e=>{ setLogoUrl(e.target.value); setLogoPreview(e.target.value); setLogoFile(null) }}
+                        placeholder="https://..."
+                        style={{ ...S.input, flex:1, fontSize:12 }}
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
 
+              {/* Rejection reason */}
               {selected.registration_status!=='approved' && (
                 <div>
                   <div style={{ fontSize:11, fontWeight:700, color:'#8B2020', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Rejection Reason (required to reject)</div>
@@ -602,13 +664,14 @@ export default function SuperadminPage() {
                 </div>
               )}
 
+              {/* Action buttons */}
               <div style={{ display:'flex', gap:10 }}>
                 <Btn onClick={()=>setSelected(null)} style={{ flex:1, background:'#F0F8F8', color:'#5A9494', border:'1px solid #D0E8E8', padding:'11px' }}>Cancel</Btn>
                 {selected.registration_status!=='rejected' && (
-                  <Btn onClick={handleReject} disabled={acting} style={{ flex:1, background:'#F9E8E8', color:'#8B2020', padding:'11px' }}>✕ Reject</Btn>
+                  <Btn onClick={handleReject} disabled={acting} style={{ flex:1, background:'#F9E8E8', color:'#8B2020', padding:'11px' }}>Reject</Btn>
                 )}
-                <Btn onClick={handleApprove} disabled={acting} style={{ flex:2, background:'linear-gradient(135deg,#006A6A,#008080)', color:'#FFFCF6', padding:'11px', boxShadow:'0 4px 14px rgba(0,106,106,0.25)' }}>
-                  {acting ? 'Processing…' : selected.registration_status==='approved' ? '✓ Update & Resend' : '✓ Approve & Email'}
+                <Btn onClick={handleApprove} disabled={acting || logoUploading} style={{ flex:2, background:'linear-gradient(135deg,#006A6A,#008080)', color:'#FFFCF6', padding:'11px', boxShadow:'0 4px 14px rgba(0,106,106,0.25)' }}>
+                  {acting ? 'Processing...' : selected.registration_status==='approved' ? 'Update & Resend' : 'Approve & Email'}
                 </Btn>
               </div>
             </div>

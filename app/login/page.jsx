@@ -128,8 +128,8 @@ export default function LandingPage() {
       if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
       const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',data.user.id).single()
       if (profile?.is_active === false) {
-        await supabase.auth.signOut()
-        setError('Your account has been disabled by your administrator.')
+  await supabase.auth.signOut()
+  setError('Your account is pending approval. You will receive an email once approved.')
         setLoading(false); return
       }
       if (profile?.role === 'superadmin') { router.replace('/superadmin') } else { router.replace('/dashboard') }

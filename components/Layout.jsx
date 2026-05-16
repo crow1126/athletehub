@@ -78,7 +78,8 @@ export default function Layout({ children }) {
         if (!session) { router.replace('/login'); return }
         const { data } = await supabase
           .from('profiles')
-          .select('*, teams(id, name, short_name, primary_color, logo_url)')
+          // ── KEY FIX: added club_name and club_logo_url to the select ──
+          .select('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)')
           .eq('id', session.user.id)
           .single()
         setProfile(data
@@ -101,9 +102,13 @@ export default function Layout({ children }) {
   const navLinks  = ALL_NAV.filter(n => allowed.includes(n.page))
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const teamName  = profile?.teams?.name        || null
-  const teamShort = profile?.teams?.short_name   || null
-  const teamLogo  = profile?.teams?.logo_url     || null
+
+  const teamName  = profile?.teams?.name      || profile?.club_name  || null
+  const teamShort = profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : null)
+  // ── KEY FIX: prefer club_logo_url from profiles, fall back to teams.logo_url ──
+  const teamLogo  = (profile?.club_logo_url && !profile.club_logo_url.startsWith('data:'))
+    ? profile.club_logo_url
+    : (profile?.teams?.logo_url || null)
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.floral }}>
@@ -128,7 +133,7 @@ export default function Layout({ children }) {
     )
   }
 
-  // ── MOBILE ──────────────────────────────────────────────────────────────────
+  // ── MOBILE ──
   if (isMobile) {
     return (
       <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background: C.floral, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
@@ -207,7 +212,7 @@ export default function Layout({ children }) {
     )
   }
 
-  // ── DESKTOP ─────────────────────────────────────────────────────────────────
+  // ── DESKTOP ──
   return (
     <div style={{ display:'flex', minHeight:'100vh', background: C.floral, fontFamily:'Plus Jakarta Sans, sans-serif' }}>
 

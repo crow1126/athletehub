@@ -69,7 +69,12 @@ export default function Dashboard() {
     async function load() {
       const { data:{ session } } = await supabase.auth.getSession()
       if (session) {
-        const { data:p } = await supabase.from('profiles').select('*,teams(id,name,short_name,primary_color)').eq('id',session.user.id).single()
+        // ── KEY FIX: fetch club_name and club_logo_url from profiles ──
+        const { data:p } = await supabase
+          .from('profiles')
+          .select('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+          .eq('id', session.user.id)
+          .single()
         setProfile(p)
         setIsAdmin(p?.role==='admin'||p?.role==='superadmin')
       }
@@ -93,6 +98,12 @@ export default function Dashboard() {
   const todaySess = sessions.filter(s=>s.date===todayStr)
   const upcoming  = sessions.filter(s=>s.date>=todayStr&&new Date(s.date)<=next7).sort((a,b)=>a.date.localeCompare(b.date)||a.time.localeCompare(b.time)).slice(0,4)
   const greet     = today.getHours()<12?'Good morning':today.getHours()<17?'Good afternoon':'Good evening'
+
+  // Resolve club name and logo — prefer profiles fields, fall back to teams
+  const clubName = profile?.club_name || profile?.teams?.name || null
+  const clubLogo = (profile?.club_logo_url && !profile.club_logo_url.startsWith('data:'))
+    ? profile.club_logo_url
+    : (profile?.teams?.logo_url || null)
 
   if (loading) return (
     <Layout>
@@ -139,12 +150,29 @@ export default function Dashboard() {
         <div style={{ position:'absolute',bottom:-40,right:180,width:180,height:180,borderRadius:'50%',background:'rgba(255,252,246,0.04)' }}/>
 
         <div style={{ position:'relative', maxWidth:1280, margin:'0 auto' }}>
-          <div style={{ fontSize:12,color:'rgba(255,252,246,0.6)',fontWeight:500,marginBottom:4 }}>
+          <div style={{ fontSize:12,color:'rgba(255,252,246,0.6)',fontWeight:500,marginBottom:8 }}>
             {greet} · {today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}
           </div>
-          <h1 style={{ fontSize:22,fontWeight:800,color:'#FFFCF6',marginBottom:14,letterSpacing:'-0.02em' }}>
-            Welcome, <span style={{ color:'#D9A87A' }}>{profile?.full_name||'Admin'}</span>
-          </h1>
+
+          {/* Club logo + name row in hero */}
+          <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:14 }}>
+            {clubLogo && (
+              <img src={clubLogo} alt={clubName||'Club'}
+                style={{ width:52, height:52, borderRadius:12, objectFit:'contain', background:'rgba(255,252,246,0.15)', border:'2px solid rgba(255,252,246,0.25)', padding:4, flexShrink:0 }}
+                onError={e=>e.target.style.display='none'}
+              />
+            )}
+            <div>
+              {clubName && (
+                <div style={{ fontSize:12, color:'rgba(255,252,246,0.6)', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:2 }}>
+                  {clubName}
+                </div>
+              )}
+              <h1 style={{ fontSize:22,fontWeight:800,color:'#FFFCF6',letterSpacing:'-0.02em' }}>
+                Welcome, <span style={{ color:'#D9A87A' }}>{profile?.full_name||'Admin'}</span>
+              </h1>
+            </div>
+          </div>
 
           {todaySess.length>0 && (
             <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,252,246,0.15)',border:'1px solid rgba(255,252,246,0.25)',borderRadius:99,padding:'6px 14px',backdropFilter:'blur(8px)' }}>
@@ -155,18 +183,11 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Stat Cards — below hero on white bg ── */}
+      {/* ── Stat Cards ── */}
       <div style={{ maxWidth:1280, margin:'0 auto', padding:'20px 40px 0' }}>
         <div className="dash-stats-row" style={{ display:'grid', gap:12 }}>
           {stats.map(s => (
-            <StatCard
-              key={s.label}
-              label={s.label}
-              value={s.value}
-              note={s.note}
-              icon={s.icon}
-              accent={s.accent}
-            />
+            <StatCard key={s.label} label={s.label} value={s.value} note={s.note} icon={s.icon} accent={s.accent}/>
           ))}
         </div>
       </div>

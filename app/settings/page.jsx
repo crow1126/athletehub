@@ -61,7 +61,7 @@ export default function SettingsPage() {
     try {
       const { data:{ session } } = await supabase.auth.getSession()
       if (!session) { setLoading(false); return }
-      const { data:p } = await supabase.from('profiles').select('*, teams(id,name,short_name)').eq('id', session.user.id).single()
+      const { data:p } = await supabase.from('profiles').select('*, team_id, teams(id,name,short_name)').eq('id', session.user.id).single()
       const prof = p || { full_name: session.user.email, role: 'admin' }
       setProfile({ ...prof, email: session.user.email })
       setProfileForm({ full_name: prof.full_name||'', phone: prof.phone||'' })

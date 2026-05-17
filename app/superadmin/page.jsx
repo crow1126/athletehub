@@ -174,51 +174,85 @@ export default function SuperadminPage() {
   }
 
   async function handleApprove() {
-    if (!selected) return
-    // Guard: don't save base64 or blob URLs to database
-    const finalLogoUrl = (logoUrl && !logoUrl.startsWith('data:') && !logoUrl.startsWith('blob:'))
-      ? logoUrl
-      : null
+  if (!selected) return
+  const finalLogoUrl = (logoUrl && !logoUrl.startsWith('data:') && !logoUrl.startsWith('blob:'))
+    ? logoUrl : null
 
-    setActing(true)
-    try {
-      const { error } = await supabase.from('profiles').update({
-        is_active: true,
-        registration_status: 'approved',
-        approved_at: new Date().toISOString(),
-        club_logo_url: finalLogoUrl,
-      }).eq('id', selected.id)
-      if (error) throw error
+  setActing(true)
+  try {
+    // Step 1 — Find or create the team
+    let teamId = null
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-welcome`, {
-        method:'POST',
-        headers:{
-          'Content-Type':'application/json',
-          'Authorization':`Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
-        },
-        body: JSON.stringify({
-          full_name:     selected.full_name,
-          email:         selected.email,
-          club_name:     selected.club_name,
-          club_logo_url: finalLogoUrl,
-        }),
-      })
+    if (selected.club_name) {
+      // Check if team already exists
+      const { data: existingTeam } = await supabase
+        .from('teams')
+        .select('id')
+        .ilike('name', selected.club_name.trim())
+        .maybeSingle()
 
-      if (!res.ok) {
-        const errText = await res.text()
-        console.warn('Welcome email failed:', errText)
-        showToast('Approved! (Email may have failed — check Resend dashboard)')
+      if (existingTeam?.id) {
+        teamId = existingTeam.id
       } else {
-        showToast('✅ Approved — welcome email sent to ' + selected.email)
-      }
+        // Create the team
+        const { data: newTeam, error: teamError } = await supabase
+          .from('teams')
+          .insert([{
+            name: selected.club_name.trim(),
+            short_name: selected.club_name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 4),
+            logo_url: finalLogoUrl || null,
+          }])
+          .select()
+          .single()
 
-      setSelected(null)
-      loadProfiles()
-    } catch (err) {
-      showToast('Failed: ' + (err.message||''), 'error')
+        if (teamError) {
+          console.warn('Team creation failed:', teamError.message)
+        } else {
+          teamId = newTeam.id
+        }
+      }
     }
-    setActing(false)
+
+    // Step 2 — Approve the profile and assign team
+    const { error } = await supabase.from('profiles').update({
+      is_active: true,
+      registration_status: 'approved',
+      approved_at: new Date().toISOString(),
+      club_logo_url: finalLogoUrl,
+      team_id: teamId,
+    }).eq('id', selected.id)
+
+    if (error) throw error
+
+    // Step 3 — Send welcome email
+    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-welcome`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({
+        full_name: selected.full_name,
+        email: selected.email,
+        club_name: selected.club_name,
+        club_logo_url: finalLogoUrl,
+      }),
+    })
+
+    if (!res.ok) {
+      console.warn('Welcome email failed')
+      showToast('✅ Approved & team assigned! (Email may have failed)')
+    } else {
+      showToast('✅ Approved — team assigned & welcome email sent!')
+    }
+
+    setSelected(null)
+    loadProfiles()
+  } catch (err) {
+    showToast('Failed: ' + (err.message || ''), 'error')
   }
+  setActing(false)
+}
 
   async function handleReject() {
     if (!selected || !rejReason.trim()) { showToast('Enter a rejection reason', 'error'); return }

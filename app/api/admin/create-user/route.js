@@ -31,11 +31,24 @@ export async function POST(req) {
   try {
     const { email, password, full_name, role, coach_id, team_id, notes } = await req.json()
 
-    if (!email || !password || !team_id) {
-      return NextResponse.json({ error: 'email, password and team_id are required' }, { status: 400 })
+    if (!email || !password) {
+      return NextResponse.json({ error: 'email and password are required' }, { status: 400 })
     }
 
-    // 1. Create auth user via REST
+    const db = getDb()
+
+    // Resolve team_id — use passed value or look up from coach record
+    let resolvedTeamId = team_id || null
+    if (!resolvedTeamId && coach_id) {
+      const { data: coach } = await db
+        .from('coaches')
+        .select('team_id')
+        .eq('id', coach_id)
+        .single()
+      resolvedTeamId = coach?.team_id || null
+    }
+
+    // 1. Create auth user
     const newUser = await adminFetch('users', 'POST', {
       email,
       password,
@@ -43,13 +56,11 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
-    const db = getDb()
-
     // 2. Create profile
     const { error: profileError } = await db
       .from('profiles')
       .upsert(
-        { id: userId, full_name, role: role || 'physio', team_id, is_active: true, email },
+        { id: userId, full_name, role: role || 'physio', team_id: resolvedTeamId, is_active: true, email },
         { onConflict: 'id' }
       )
     if (profileError) console.error('Profile error:', profileError.message)
@@ -62,7 +73,7 @@ export async function POST(req) {
           coach_id,
           email,
           role:           role || 'physio',
-          team_id,
+          team_id:        resolvedTeamId,
           is_active:      true,
           notes:          notes || null,
           plain_password: password,

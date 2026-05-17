@@ -69,7 +69,7 @@ export default function SettingsPage() {
       setIsAdmin(admin)
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins }] = await Promise.all([
-          supabase.from('profiles').select('id,full_name,role,is_active,email').order('created_at',{ ascending:false }),
+          supabase.from('profiles').select('id,full_name,role,is_active,email').neq('role','superadmin').order('created_at',{ ascending:false }),
           supabase.from('coaches').select('id,name,staff_type,email,is_active').order('name'),
           supabase.from('staff_logins').select('*,coaches(name,staff_type)').order('created_at',{ ascending:false }),
         ])

@@ -116,7 +116,7 @@ export default function SettingsPage() {
     if (!issueForm.email.trim())        { flashIssue('Email is required.','error'); return }
     if (!issueForm.email.includes('@')) { flashIssue('Enter a valid email.','error'); return }
     if (issueForm.password.length < 8)  { flashIssue('Password: min 8 characters.','error'); return }
-    if (!profile?.team_id)             { flashIssue('Your account has no team assigned.','error'); return }
+    // team_id check removed — team is assigned on approval automatically
     setIssueSaving(true); setIssueMsg({ text:'',type:'' })
     try {
       const staff = allStaff.find(s => s.id === issueForm.coach_id)
@@ -360,7 +360,7 @@ export default function SettingsPage() {
                       </div>
                       <div><label style={lbl}>Notes (optional)</label><input value={issueForm.notes} onChange={e=>setIssueForm(f=>({...f,notes:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Temporary credentials" onFocus={onFocus} onBlur={onBlur}/></div>
                       <MsgBox m={issueMsg}/>
-                      <button onClick={issueLogin} disabled={issueSaving||!profile?.team_id} className="gm-btn" style={{ width:'fit-content',opacity:(issueSaving||!profile?.team_id)?0.7:1 }}>
+                      <button onClick={issueLogin} disabled={issueSaving} className="gm-btn" style={{ width:'fit-content',opacity:issueSaving?0.7:1 }}>
                         {issueSaving?'⏳ Creating…':'🔑 Issue Login Now'} {!issueSaving&&GM_ICON}
                       </button>
                     </div>

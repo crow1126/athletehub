@@ -483,11 +483,11 @@ export default function SuperadminPage() {
               <div style={{ animation:'fadeUp 0.25s ease' }}>
                 <div style={S.statGrid}>
                   {[
-                    { label:'Total users',      val:stats.total,    color:'#008080' },
-                    { label:'Pending approval', val:stats.pending,  color:'#B7770D' },
-                    { label:'Approved',         val:stats.approved, color:'#27AE60' },
-                    { label:'Rejected',         val:stats.rejected, color:'#E74C3C' },
-                    { label:'Clubs registered', val:stats.clubs,    color:'#6A4CB7' },
+                    { label:'👥 Total users',      val:stats.total,    color:'#008080' },
+                    { label:'⏳ Pending approval', val:stats.pending,  color:'#B7770D' },
+                    { label:'✅ Approved',         val:stats.approved, color:'#27AE60' },
+                    { label:'🚫 Rejected',         val:stats.rejected, color:'#E74C3C' },
+                    { label:'🛡️ Clubs registered', val:stats.clubs,    color:'#6A4CB7' },
                   ].map(s => (
                     <div key={s.label} style={S.statCard}>
                       <div style={{ fontSize:11, color:'#5A9494', marginBottom:6, fontWeight:600 }}>{s.label}</div>

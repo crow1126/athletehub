@@ -1,6 +1,13 @@
+import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import AuthGuard from '@/components/AuthGuard'
 import { Analytics } from "@vercel/analytics/next"
+
+const jakarta = Plus_Jakarta_Sans({ 
+  subsets: ['latin'],
+  variable: '--font-jakarta',
+  display: 'swap',
+})
 
 export const metadata = {
   title: 'Apex Track',
@@ -20,8 +27,8 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={jakarta.variable}>
+      <body className="antialiased">
         <AuthGuard>
           {children}
         </AuthGuard>

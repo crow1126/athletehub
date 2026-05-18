@@ -15,7 +15,7 @@
   --floral-dark:   #F5F0E8;
   --floral-muted:  #EAE4D8;
 
-  --font:   'Plus Jakarta Sans', sans-serif;
+  --font:   var(--font-jakarta), sans-serif;
   --text:   #003D3D;
   --text2:  #2D6B6B;
   --text3:  #5A9494;

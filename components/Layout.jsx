@@ -6,18 +6,18 @@ import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 
 const ALL_NAV = [
-  { href:'/dashboard',   label:'Dashboard',   page:'dashboard'   },
-  { href:'/athletes',    label:'Athletes',    page:'athletes'    },
-  { href:'/coaches',     label:'Teams',       page:'coaches'     },
-  { href:'/schedule',    label:'Schedule',    page:'schedule'    },
-  { href:'/injuries',    label:'Medical',     page:'injuries'    },
-  { href:'/performance', label:'Performance', page:'performance' },
-  { href:'/scouting',    label:'Scouting',    page:'scouting'    },
-  { href:'/contracts',   label:'Contracts',   page:'contracts'   },
-  { href:'/reports',     label:'Reports',     page:'reports'     },
-  { href:'/settings',    label:'Settings',    page:'settings'    },
-  { href:'/transfers',   label:'Transfers',   page:'transfers'   },
-  { href:'/billing',     label:'Billing',     page:'billing'     },
+  { href:'/dashboard',   label:'🏠 Dashboard',   page:'dashboard'   },
+  { href:'/athletes',    label:'🏃‍♂️ Athletes',    page:'athletes'    },
+  { href:'/coaches',     label:'🛡️ Teams',       page:'coaches'     },
+  { href:'/schedule',    label:'📅 Schedule',    page:'schedule'    },
+  { href:'/injuries',    label:'🏥 Medical',     page:'injuries'    },
+  { href:'/performance', label:'⚡ Performance', page:'performance' },
+  { href:'/scouting',    label:'🔍 Scouting',    page:'scouting'    },
+  { href:'/contracts',   label:'📄 Contracts',   page:'contracts'   },
+  { href:'/reports',     label:'📊 Reports',     page:'reports'     },
+  { href:'/settings',    label:'⚙️ Settings',    page:'settings'    },
+  { href:'/transfers',   label:'🔄 Transfers',   page:'transfers'   },
+  { href:'/billing',     label:'💳 Billing',     page:'billing'     },
 ]
 
 const MOBILE_NAV = ['dashboard','athletes','schedule','injuries','settings']

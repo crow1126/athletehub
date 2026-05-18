@@ -180,7 +180,7 @@ export default function SuperadminPage() {
 
   setActing(true)
   try {
-    // Step 1 — Find or create the team
+    // Step 1 — Find or create the team (in case auto-provision missed it)
     let teamId = null
 
     if (selected.club_name) {
@@ -193,6 +193,10 @@ export default function SuperadminPage() {
 
       if (existingTeam?.id) {
         teamId = existingTeam.id
+        // Update logo if provided
+        if (finalLogoUrl) {
+          await supabase.from('teams').update({ logo_url: finalLogoUrl }).eq('id', teamId)
+        }
       } else {
         // Create the team
         const { data: newTeam, error: teamError } = await supabase
@@ -209,6 +213,27 @@ export default function SuperadminPage() {
           console.warn('Team creation failed:', teamError.message)
         } else {
           teamId = newTeam.id
+        }
+      }
+
+      // Ensure trial subscription exists
+      if (teamId) {
+        const { data: existingSub } = await supabase
+          .from('subscriptions')
+          .select('id')
+          .eq('team_id', teamId)
+          .maybeSingle()
+
+        if (!existingSub) {
+          const trialEnd = new Date()
+          trialEnd.setDate(trialEnd.getDate() + 30)
+          await supabase.from('subscriptions').insert([{
+            team_id: teamId,
+            plan: 'trial',
+            status: 'active',
+            trial_ends_at: trialEnd.toISOString(),
+            current_period_end: trialEnd.toISOString(),
+          }])
         }
       }
     }
@@ -302,18 +327,30 @@ export default function SuperadminPage() {
         }
       }
 
-      const { error:profileError } = await supabase.from('profiles').upsert({
-        id: userId,
-        email: newEmail.trim().toLowerCase(),
-        full_name: newName.trim(),
-        club_name: newClub.trim(),
-        role: 'admin',
-        is_active: true,
-        registration_status: 'approved',
-        approved_at: new Date().toISOString(),
-        club_logo_url: finalLogoUrl,
-      })
-      if (profileError) throw profileError
+      // Auto-provision team and subscription via the new API
+      try {
+        const provRes = await fetch('/api/signup-provision', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: userId,
+            full_name: newName.trim(),
+            club_name: newClub.trim(),
+            email: newEmail.trim().toLowerCase(),
+          }),
+        })
+        const provData = await provRes.json()
+        if (!provRes.ok) console.warn('Auto-provision warning:', provData.error)
+      } catch (provErr) {
+        console.warn('Auto-provision failed:', provErr.message)
+      }
+
+      // Update profile with logo if uploaded
+      if (finalLogoUrl) {
+        await supabase.from('profiles').update({
+          club_logo_url: finalLogoUrl,
+        }).eq('id', userId)
+      }
 
       await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-welcome`, {
         method:'POST',
@@ -321,7 +358,7 @@ export default function SuperadminPage() {
         body: JSON.stringify({ full_name:newName.trim(), email:newEmail.trim().toLowerCase(), club_name:newClub.trim(), club_logo_url:finalLogoUrl }),
       })
 
-      showToast('✅ Admin created and welcome email sent!')
+      showToast('✅ Admin created — team & trial provisioned, welcome email sent!')
       setAddModal(false)
       setNewName(''); setNewEmail(''); setNewPassword(''); setNewClub('')
       setNewLogoUrl(''); setNewLogoPreview(''); setNewLogoFile(null)
@@ -459,16 +496,20 @@ export default function SuperadminPage() {
                   ))}
                 </div>
                 <div style={S.card}>
-                  <div style={S.cardHdr}><span style={{ fontSize:13, fontWeight:700, color:'#003D3D' }}>Pending registrations</span></div>
-                  {profiles.filter(p=>p.registration_status==='pending').length===0 ? (
-                    <div style={{ padding:32, textAlign:'center', color:'#5A9494', fontSize:13 }}>🎉 No pending registrations</div>
-                  ) : profiles.filter(p=>p.registration_status==='pending').map(p => (
+                  <div style={S.cardHdr}>
+                    <span style={{ fontSize:13, fontWeight:700, color:'#003D3D' }}>Recent Registrations</span>
+                    <span style={{ fontSize:11, color:'#5A9494' }}>Auto-provisioned with team & trial</span>
+                  </div>
+                  {profiles.slice(0, 10).length===0 ? (
+                    <div style={{ padding:32, textAlign:'center', color:'#5A9494', fontSize:13 }}>🎉 No registrations yet</div>
+                  ) : profiles.slice(0, 10).map(p => (
                     <div key={p.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 18px', borderBottom:'1px solid #F0F8F8' }}>
                       <Avatar name={p.full_name} size={36} />
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:13, fontWeight:700, color:'#003D3D' }}>{p.full_name}</div>
                         <div style={{ fontSize:11, color:'#5A9494' }}>{p.club_name||p.email}</div>
                       </div>
+                      <Pill status={p.registration_status||'approved'} />
                       <div style={{ fontSize:11, color:'#5A9494' }}>{new Date(p.created_at).toLocaleDateString()}</div>
                       <Btn onClick={()=>{ openReview(p); setSection('users') }} style={{ background:'#E8F0FA', color:'#1A4A8A' }}>Review</Btn>
                     </div>
@@ -795,12 +836,12 @@ export default function SuperadminPage() {
                 </div>
               </div>
               <div style={{ background:'#F0FAF9', border:'1px solid #C8E8E4', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#5A9494' }}>
-                Account will be created as <strong style={{ color:'#006A6A' }}>approved admin</strong> — welcome email sent automatically.
+                Account will be created as <strong style={{ color:'#006A6A' }}>approved admin</strong> — team, 30-day trial & welcome email provisioned automatically.
               </div>
               <div style={{ display:'flex', gap:10 }}>
                 <Btn onClick={()=>setAddModal(false)} style={{ flex:1, background:'#F0F8F8', color:'#5A9494', border:'1px solid #D0E8E8', padding:'11px' }}>Cancel</Btn>
                 <Btn onClick={handleAddAdmin} disabled={addingAdmin} style={{ flex:2, background:'linear-gradient(135deg,#006A6A,#008080)', color:'#FFFCF6', padding:'11px', boxShadow:'0 4px 14px rgba(0,106,106,0.25)' }}>
-                  {addingAdmin ? 'Creating...' : 'Create Admin & Send Email'}
+                  {addingAdmin ? 'Creating...' : 'Create Admin & Provision Team'}
                 </Btn>
               </div>
             </div>

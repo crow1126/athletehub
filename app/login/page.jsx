@@ -126,10 +126,16 @@ export default function LandingPage() {
         setLoading(false); return
       }
       if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
-      const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',data.user.id).single()
+      const { data:profile } = await supabase.from('profiles').select('is_active, role, registration_status').eq('id',data.user.id).single()
       if (profile?.is_active === false) {
-  await supabase.auth.signOut()
-  setError('Your account is pending approval. You will receive an email once approved.')
+        await supabase.auth.signOut()
+        if (profile?.registration_status === 'rejected') {
+          setError('Your account has been disabled. Contact your administrator for assistance.')
+        } else if (profile?.registration_status === 'pending') {
+          setError('Your account is being set up. Please try again in a moment.')
+        } else {
+          setError('Your account is currently inactive. Contact your administrator.')
+        }
         setLoading(false); return
       }
       if (profile?.role === 'superadmin') { router.replace('/superadmin') } else { router.replace('/dashboard') }
@@ -143,6 +149,7 @@ export default function LandingPage() {
     e.preventDefault(); setError(''); setSuccess('')
     if (!fullName.trim()) { setError('Full name is required.'); return }
     if (!email.trim())    { setError('Email address is required.'); return }
+    if (!clubName.trim()) { setError('Club / organisation name is required.'); return }
     if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
     try {
@@ -152,7 +159,24 @@ export default function LandingPage() {
       })
       if (authError) { setError(authError.message); setLoading(false); return }
       if (data?.user) {
-        setSuccess('Account created! Check your email to confirm, then sign in.')
+        // Auto-provision: create team, trial subscription, activate account
+        try {
+          const provRes = await fetch('/api/signup-provision', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              full_name: fullName.trim(),
+              club_name: clubName.trim(),
+              email: email.trim().toLowerCase(),
+            }),
+          })
+          const provData = await provRes.json()
+          if (!provRes.ok) console.warn('Auto-provision warning:', provData.error)
+        } catch (provErr) {
+          console.warn('Auto-provision failed (non-blocking):', provErr.message)
+        }
+        setSuccess('Account created! Check your email to confirm, then sign in. Your 30-day free trial starts now.')
         setTab('login'); setPassword(''); setFullName(''); setClubName('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }

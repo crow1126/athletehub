@@ -1,0 +1,154 @@
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+function getDb() {
+  return createClient(SUPABASE_URL, SERVICE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+}
+
+/**
+ * POST /api/signup-provision
+ *
+ * Called after supabase.auth.signUp() succeeds.
+ * Automatically provisions: team → subscription → profile activation.
+ *
+ * Body: { user_id, full_name, club_name, email }
+ */
+export async function POST(req) {
+  try {
+    const { user_id, full_name, club_name, email } = await req.json()
+
+    if (!user_id) {
+      return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+    }
+
+    const db = getDb()
+    let teamId = null
+    let assignedRole = 'admin'
+
+    // ── Step 1: Find or create team ──────────────────────────────────────
+    if (club_name && club_name.trim()) {
+      const trimmedClub = club_name.trim()
+
+      // Check if a team with this name already exists (case-insensitive)
+      const { data: existingTeam } = await db
+        .from('teams')
+        .select('id, name')
+        .ilike('name', trimmedClub)
+        .maybeSingle()
+
+      if (existingTeam?.id) {
+        // Team exists — join as coach (not admin)
+        teamId = existingTeam.id
+        assignedRole = 'coach'
+      } else {
+        // Create new team
+        const shortName = trimmedClub
+          .split(' ')
+          .map(w => w[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 4)
+
+        const { data: newTeam, error: teamError } = await db
+          .from('teams')
+          .insert([{
+            name: trimmedClub,
+            short_name: shortName,
+          }])
+          .select()
+          .single()
+
+        if (teamError) {
+          console.error('Team creation failed:', teamError.message)
+        } else {
+          teamId = newTeam.id
+        }
+      }
+    }
+
+    // ── Step 2: Create trial subscription ────────────────────────────────
+    if (teamId) {
+      // Check if subscription already exists for this team
+      const { data: existingSub } = await db
+        .from('subscriptions')
+        .select('id')
+        .eq('team_id', teamId)
+        .maybeSingle()
+
+      if (!existingSub) {
+        const trialEnd = new Date()
+        trialEnd.setDate(trialEnd.getDate() + 30)
+
+        const { error: subError } = await db
+          .from('subscriptions')
+          .insert([{
+            team_id: teamId,
+            plan: 'trial',
+            status: 'active',
+            trial_ends_at: trialEnd.toISOString(),
+            current_period_end: trialEnd.toISOString(),
+          }])
+
+        if (subError) {
+          console.error('Subscription creation failed:', subError.message)
+        }
+      }
+    }
+
+    // ── Step 3: Activate the profile ─────────────────────────────────────
+    const { error: profileError } = await db
+      .from('profiles')
+      .upsert({
+        id: user_id,
+        full_name: full_name || email,
+        email: email,
+        club_name: club_name?.trim() || null,
+        role: assignedRole,
+        is_active: true,
+        registration_status: 'approved',
+        approved_at: new Date().toISOString(),
+        team_id: teamId,
+      }, { onConflict: 'id' })
+
+    if (profileError) {
+      console.error('Profile update failed:', profileError.message)
+      return NextResponse.json({ error: 'Profile update failed: ' + profileError.message }, { status: 500 })
+    }
+
+    // ── Step 4: Send welcome email (non-blocking) ────────────────────────
+    try {
+      await fetch(`${SUPABASE_URL}/functions/v1/send-welcome`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          full_name: full_name || email,
+          email: email,
+          club_name: club_name?.trim() || null,
+        }),
+      })
+    } catch (emailErr) {
+      console.warn('Welcome email failed (non-blocking):', emailErr.message)
+    }
+
+    return NextResponse.json({
+      success: true,
+      team_id: teamId,
+      role: assignedRole,
+      plan: 'trial',
+      message: teamId
+        ? `Team provisioned with 30-day trial. Role: ${assignedRole}`
+        : 'Account activated (no club specified)',
+    })
+  } catch (err) {
+    console.error('Signup provision error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}

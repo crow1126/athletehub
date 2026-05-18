@@ -72,6 +72,8 @@ export default function LandingPage() {
   const [password,   setPassword]  = useState('')
   const [fullName,   setFullName]  = useState('')
   const [clubName,   setClubName]  = useState('')
+  const [clubLogo,   setClubLogo]  = useState(null)
+  const [logoPreview, setLogoPreview] = useState('')
   const [showPass,   setShowPass]  = useState(false)
   const [loading,    setLoading]   = useState(false)
   const [error,      setError]     = useState('')
@@ -159,6 +161,21 @@ export default function LandingPage() {
       })
       if (authError) { setError(authError.message); setLoading(false); return }
       if (data?.user) {
+        // Upload club logo if provided
+        let logoUrl = null
+        if (clubLogo) {
+          try {
+            const ext = clubLogo.name.split('.').pop()
+            const path = `club-logos/${data.user.id}.${ext}`
+            const { error: uploadErr } = await supabase.storage.from('athlete-photos').upload(path, clubLogo, { upsert: true })
+            if (!uploadErr) {
+              logoUrl = supabase.storage.from('athlete-photos').getPublicUrl(path).data.publicUrl
+            }
+          } catch (uploadErr) {
+            console.warn('Logo upload failed (non-blocking):', uploadErr.message)
+          }
+        }
+
         // Auto-provision: create team, trial subscription, activate account
         try {
           const provRes = await fetch('/api/signup-provision', {
@@ -169,6 +186,7 @@ export default function LandingPage() {
               full_name: fullName.trim(),
               club_name: clubName.trim(),
               email: email.trim().toLowerCase(),
+              logo_url: logoUrl,
             }),
           })
           const provData = await provRes.json()
@@ -177,7 +195,7 @@ export default function LandingPage() {
           console.warn('Auto-provision failed (non-blocking):', provErr.message)
         }
         setSuccess('Account created! Check your email to confirm, then sign in. Your 30-day free trial starts now.')
-        setTab('login'); setPassword(''); setFullName(''); setClubName('')
+        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setClubLogo(null); setLogoPreview('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }
     setLoading(false)
@@ -696,6 +714,30 @@ export default function LandingPage() {
                   <div>
                     <label className="auth-field-label">Club / Organisation</label>
                     <input type="text" value={clubName} onChange={e=>setClubName(e.target.value)} placeholder="e.g. Asante Kotoko SC" style={inp} onFocus={focusInp} onBlur={blurInp}/>
+                  </div>
+                  <div>
+                    <label className="auth-field-label">Club Logo <span style={{fontWeight:400,textTransform:'none',letterSpacing:0,fontSize:10,color:'#8AAEAE'}}>(optional)</span></label>
+                    <div style={{display:'flex',alignItems:'center',gap:12}}>
+                      <div style={{width:48,height:48,borderRadius:'50%',background:'#E8F5F5',border:'2px dashed #B8D8D8',overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                        {logoPreview
+                          ? <img src={logoPreview} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          : <span style={{fontSize:20,color:'#8AAEAE'}}>🏟️</span>
+                        }
+                      </div>
+                      <div style={{flex:1}}>
+                        <label htmlFor="signup-logo" style={{display:'inline-block',background:'#E8F0FA',color:'#1A4A8A',border:'1px solid rgba(26,74,138,0.2)',padding:'7px 14px',borderRadius:8,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s'}}>
+                          {logoPreview ? '✓ Change Logo' : '📁 Upload Logo'}
+                        </label>
+                        <input id="signup-logo" type="file" accept="image/*" style={{display:'none'}} onChange={e=>{
+                          const f = e.target.files[0]
+                          if (!f) return
+                          if (f.size > 2 * 1024 * 1024) { setError('Logo must be under 2MB.'); return }
+                          setClubLogo(f)
+                          setLogoPreview(URL.createObjectURL(f))
+                        }}/>
+                        {logoPreview && <button type="button" onClick={()=>{setClubLogo(null);setLogoPreview('')}} style={{marginLeft:8,background:'none',border:'none',color:'#8B2020',fontSize:11,cursor:'pointer',fontFamily:'inherit',fontWeight:600}}>✕ Remove</button>}
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="auth-field-label">Email Address</label>

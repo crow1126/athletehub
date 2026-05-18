@@ -20,7 +20,7 @@ function getDb() {
  */
 export async function POST(req) {
   try {
-    const { user_id, full_name, club_name, email } = await req.json()
+    const { user_id, full_name, club_name, email, logo_url } = await req.json()
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
@@ -59,6 +59,7 @@ export async function POST(req) {
           .insert([{
             name: trimmedClub,
             short_name: shortName,
+            logo_url: logo_url || null,
           }])
           .select()
           .single()
@@ -108,6 +109,7 @@ export async function POST(req) {
         full_name: full_name || email,
         email: email,
         club_name: club_name?.trim() || null,
+        club_logo_url: logo_url || null,
         role: assignedRole,
         is_active: true,
         registration_status: 'approved',

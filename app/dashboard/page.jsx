@@ -5,6 +5,7 @@ import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { Users, Shield, Calendar, Activity, Zap } from 'lucide-react'
 
 const AV_COLORS = ['#006A6A','#008080','#2D6B6B','#5A9494','#004F4F','#5C3058']
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -113,12 +114,13 @@ export default function Dashboard() {
     </Layout>
   )
 
+  const iconProps = { size: 18, strokeWidth: 2 }
   const stats = [
-    { label:'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:'👥', accent:'#008080' },
-    { label:'Staff',     value:coaches.length,  note:'on team',       icon:'🎽', accent:'#4A90E2' },
-    { label:'Events',    value:upcoming.length, note:'next 7 days',   icon:'📅', accent:'#27AE60' },
-    { label:'Injuries',  value:activeInj.length,note:'active',        icon:'🩺', accent:'#E74C3C' },
-    { label:'Today',     value:todaySess.length,note:'sessions',      icon:'⚡', accent:'#B7770D' },
+    { label:'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:<Users {...iconProps}/>, accent:'var(--lagoon)' },
+    { label:'Staff',     value:coaches.length,  note:'on team',       icon:<Shield {...iconProps}/>, accent:'#4A90E2' },
+    { label:'Events',    value:upcoming.length, note:'next 7 days',   icon:<Calendar {...iconProps}/>, accent:'var(--success)' },
+    { label:'Injuries',  value:activeInj.length,note:'active',        icon:<Activity {...iconProps}/>, accent:'var(--danger)' },
+    { label:'Today',     value:todaySess.length,note:'sessions',      icon:<Zap {...iconProps}/>, accent:'var(--warning)' },
   ]
 
   return (
@@ -145,39 +147,39 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Hero banner ── */}
-      <div className="dash-hero" style={{ background:'linear-gradient(135deg,#004F4F 0%,#006A6A 55%,#008080 100%)', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute',top:-60,right:-60,width:280,height:280,borderRadius:'50%',background:'rgba(255,252,246,0.07)' }}/>
-        <div style={{ position:'absolute',bottom:-40,right:180,width:180,height:180,borderRadius:'50%',background:'rgba(255,252,246,0.04)' }}/>
+      <div className="dash-hero" style={{ background:'linear-gradient(135deg, #0F172A 0%, #0F766E 100%)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute',top:-100,right:-50,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%)' }}/>
+        <div style={{ position:'absolute',bottom:-50,left:100,width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 70%)' }}/>
 
         <div style={{ position:'relative', maxWidth:1280, margin:'0 auto' }}>
-          <div style={{ fontSize:12,color:'rgba(255,252,246,0.6)',fontWeight:500,marginBottom:8 }}>
+          <div style={{ fontSize:13,color:'rgba(248, 250, 252, 0.7)',fontWeight:500,marginBottom:12 }}>
             {greet} · {today.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'})}
           </div>
 
           {/* Club logo + name row in hero */}
-          <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:14 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:16 }}>
             {clubLogo && (
               <img src={clubLogo} alt={clubName||'Club'}
-                style={{ width:52, height:52, borderRadius:12, objectFit:'contain', background:'rgba(255,252,246,0.15)', border:'2px solid rgba(255,252,246,0.25)', padding:4, flexShrink:0 }}
+                style={{ width:56, height:56, borderRadius:14, objectFit:'contain', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', padding:4, flexShrink:0, backdropFilter:'blur(4px)' }}
                 onError={e=>e.target.style.display='none'}
               />
             )}
             <div>
               {clubName && (
-                <div style={{ fontSize:12, color:'rgba(255,252,246,0.6)', fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:2 }}>
+                <div style={{ fontSize:12, color:'rgba(248, 250, 252, 0.6)', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>
                   {clubName}
                 </div>
               )}
-              <h1 style={{ fontSize:22,fontWeight:800,color:'#FFFCF6',letterSpacing:'-0.02em' }}>
-                Welcome, <span style={{ color:'#D9A87A' }}>{profile?.full_name||'Admin'}</span>
+              <h1 style={{ fontSize:26,fontWeight:800,color:'#FFFFFF',letterSpacing:'-0.02em' }}>
+                Welcome, <span style={{ color:'var(--lagoon-light)' }}>{profile?.full_name||'Admin'}</span>
               </h1>
             </div>
           </div>
 
           {todaySess.length>0 && (
-            <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,252,246,0.15)',border:'1px solid rgba(255,252,246,0.25)',borderRadius:99,padding:'6px 14px',backdropFilter:'blur(8px)' }}>
-              <span style={{ fontSize:13 }}>📅</span>
-              <span style={{ fontSize:12,color:'rgba(255,252,246,0.95)',fontWeight:600 }}>{todaySess.length} session{todaySess.length>1?'s':''} today</span>
+            <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:99,padding:'6px 14px',backdropFilter:'blur(8px)', boxShadow:'0 4px 12px rgba(0,0,0,0.1)' }}>
+              <Calendar size={14} color="#FFF"/>
+              <span style={{ fontSize:12,color:'#FFF',fontWeight:600 }}>{todaySess.length} session{todaySess.length>1?'s':''} today</span>
             </div>
           )}
         </div>

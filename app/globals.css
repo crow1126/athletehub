@@ -1,59 +1,64 @@
 @import "tailwindcss";
 
 /* ============================================================
-   BLUE LAGOON & FLORAL WHITE THEME — Apex Track
-   Blue Lagoon: #006A6A  |  Floral White: #FFFCF6
+   MODERN SAAS THEME — Apex Track
+   Crisp Whites, Soft Slates, and Elegant Teal Accents
    ============================================================ */
 
 :root {
-  --lagoon:        #006A6A;
-  --lagoon-light:  #008080;
-  --lagoon-deep:   #004F4F;
-  --lagoon-pale:   #E0F0F0;
+  /* Brand Accents (Teal) */
+  --lagoon:        #0D9488; /* Teal 600 */
+  --lagoon-light:  #14B8A6; /* Teal 500 */
+  --lagoon-deep:   #0F766E; /* Teal 700 */
+  --lagoon-pale:   #F0FDFA; /* Teal 50 */
+  --lagoon-alpha:  rgba(13, 148, 136, 0.1);
 
-  --floral:        #FFFCF6;
-  --floral-dark:   #F5F0E8;
-  --floral-muted:  #EAE4D8;
+  /* Neutrals (Slate) */
+  --floral:        #F8FAFC; /* Slate 50 - App Background */
+  --floral-dark:   #FFFFFF; /* White - Surfaces/Cards */
+  --floral-muted:  #F1F5F9; /* Slate 100 - Hover states */
+  
+  --border:        #E2E8F0; /* Slate 200 */
+  --border-light:  #F1F5F9;
 
-  --font:   var(--font-jakarta), sans-serif;
-  --text:   #003D3D;
-  --text2:  #2D6B6B;
-  --text3:  #5A9494;
+  /* Typography */
+  --font:   var(--font-jakarta), system-ui, sans-serif;
+  --text:   #0F172A; /* Slate 900 - Headings */
+  --text2:  #334155; /* Slate 700 - Body */
+  --text3:  #64748B; /* Slate 500 - Muted/Secondary */
 
-  --surface:   #FFFCF6;
-  --surface2:  #F5F0E8;
-  --border:    #C8E0E0;
+  /* Modern Soft Shadows */
+  --shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  --shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.15);
 
-  --blue:       #006A6A;
-  --blue-light: #E0F0F0;
-  --blue-dark:  #004F4F;
+  /* Border Radii */
+  --r-sm:  8px;
+  --r-md:  12px;
+  --r-lg:  16px;
+  --r-xl:  24px;
 
-  --shadow-sm:  0 1px 4px rgba(0,106,106,0.08);
-  --shadow-md:  0 4px 16px rgba(0,106,106,0.14);
-  --shadow-lg:  0 8px 32px rgba(0,106,106,0.18);
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
-  --r-sm:  6px;
-  --r-md:  10px;
-  --r-lg:  14px;
-  --r-xl:  20px;
-
-  --transition: all 0.15s ease;
-
-  --success:       #1B7A3E;
-  --success-light: #E8F8EE;
-  --danger:        #C0392B;
-  --danger-light:  #FDEDEC;
-  --warning:       #B7770D;
-  --warning-light: #FEF9E7;
+  /* Status Colors */
+  --success:       #059669; /* Emerald 600 */
+  --success-light: #D1FAE5; /* Emerald 100 */
+  --danger:        #E11D48; /* Rose 600 */
+  --danger-light:  #FFE4E6; /* Rose 100 */
+  --warning:       #D97706; /* Amber 600 */
+  --warning-light: #FEF3C7; /* Amber 100 */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   background-color: var(--floral);
-  color: var(--text);
+  color: var(--text2);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .card {
@@ -61,22 +66,46 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+.card:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .btn-blue {
-  background: linear-gradient(135deg, #006A6A, #008080);
-  color: #FFFCF6;
+  background: var(--lagoon);
+  color: #FFFFFF;
   border: none;
   border-radius: var(--r-md);
-  padding: 10px 20px;
+  padding: 10px 18px;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  font-family: var(--font);
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.2);
   transition: var(--transition);
-  box-shadow: 0 4px 12px rgba(0,106,106,0.25);
 }
-.btn-blue:hover { opacity: 0.88; }
+.btn-blue:hover {
+  background: var(--lagoon-deep);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.3);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-outline:hover {
+  background: var(--floral-muted);
+  color: var(--text);
+  border-color: var(--border-light);
+}
 
 @keyframes spin    { to { transform: rotate(360deg); } }
 @keyframes fadeUp  { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }

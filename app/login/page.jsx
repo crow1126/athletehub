@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { BarChart3, Activity, Users, Calendar, Search, Lock, FileText, DollarSign, ActivitySquare, Shield } from 'lucide-react'
 
 /* ── Animated canvas orbs ── */
 function OrbCanvas() {
@@ -48,15 +49,16 @@ const REVIEWS = [
   { name:'Ama Asante', role:'Performance Analyst, Dreams FC', avatar:'AA', text:'Match logs and squad reports used to take hours. Now it\'s minutes. The platform just works.', rating:5 },
 ]
 
+const iconProps = { size: 24, strokeWidth: 1.5, color: '#14B8A6' }
 const FEATURES = [
-  { icon:'📊', title:'xG & xA Analytics', desc:'Expected goals and assists modelling with match-by-match breakdowns and squad-level trend views.' },
-  { icon:'🩺', title:'Injury Hub', desc:'Full injury lifecycle tracking — onset, treatment, recovery timeline and return-to-play clearance.' },
-  { icon:'👥', title:'Squad Management', desc:'Complete athlete registry with positions, physical data, coach assignments and status badges.' },
-  { icon:'📅', title:'Training Scheduler', desc:'Session planner with type categorisation, venue booking, duration tracking and coach assignments.' },
-  { icon:'🔍', title:'Scouting Module', desc:'Prospect tracking, trial management, and comparison tools to build your transfer shortlist.' },
-  { icon:'🔒', title:'Role-based Access', desc:'Superadmin, admin, coach and analyst roles — each with tailored data access and permissions.' },
-  { icon:'📄', title:'Reports', desc:'Automated performance, medical and squad reports exportable for board and technical staff use.' },
-  { icon:'💰', title:'Transfer Log', desc:'Track incoming, outgoing and loan transactions with fee records and contract status.' },
+  { icon:<BarChart3 {...iconProps}/>, title:'xG & xA Analytics', desc:'Expected goals and assists modelling with match-by-match breakdowns and squad-level trend views.' },
+  { icon:<Activity {...iconProps}/>, title:'Injury Hub', desc:'Full injury lifecycle tracking — onset, treatment, recovery timeline and return-to-play clearance.' },
+  { icon:<Users {...iconProps}/>, title:'Squad Management', desc:'Complete athlete registry with positions, physical data, coach assignments and status badges.' },
+  { icon:<Calendar {...iconProps}/>, title:'Training Scheduler', desc:'Session planner with type categorisation, venue booking, duration tracking and coach assignments.' },
+  { icon:<Search {...iconProps}/>, title:'Scouting Module', desc:'Prospect tracking, trial management, and comparison tools to build your transfer shortlist.' },
+  { icon:<Lock {...iconProps}/>, title:'Role-based Access', desc:'Superadmin, admin, coach and analyst roles — each with tailored data access and permissions.' },
+  { icon:<FileText {...iconProps}/>, title:'Reports', desc:'Automated performance, medical and squad reports exportable for board and technical staff use.' },
+  { icon:<DollarSign {...iconProps}/>, title:'Transfer Log', desc:'Track incoming, outgoing and loan transactions with fee records and contract status.' },
 ]
 
 const STATS = [
@@ -235,93 +237,95 @@ export default function LandingPage() {
         .lp-nav {
           position:fixed; top:0; left:0; right:0; z-index:100;
           display:flex; align-items:center; justify-content:space-between;
-          padding:0 40px; height:64px;
-          transition:background 0.3s, box-shadow 0.3s, backdrop-filter 0.3s;
+          padding:0 40px; height:80px;
+          transition:background 0.3s, box-shadow 0.3s, backdrop-filter 0.3s, height 0.3s;
         }
         .lp-nav.solid {
-          background:rgba(0,40,40,0.92);
+          background:rgba(15, 23, 42, 0.95);
           backdrop-filter:blur(16px);
-          box-shadow:0 1px 0 rgba(255,252,246,0.08);
+          box-shadow:0 1px 0 rgba(255,255,255,0.05);
+          height:64px;
         }
-        .nav-logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
         .nav-logo-icon {
           width:36px; height:36px; border-radius:10px;
-          background:linear-gradient(135deg,#004F4F,#008080);
+          background:transparent;
           display:flex; align-items:center; justify-content:center;
-          font-size:16px; border:1.5px solid rgba(0,128,128,0.5);
+          font-size:16px; border:none;
         }
-        .nav-logo-text { font-size:16px; font-weight:800; color:#FFFCF6; letter-spacing:-0.02em; }
-        .nav-logo-text span { color:#7ECACA; font-weight:400; }
-        .nav-links { display:flex; align-items:center; gap:28px; }
-        .nav-link { font-size:13px; font-weight:500; color:rgba(255,252,246,0.6); text-decoration:none; transition:color 0.2s; cursor:pointer; background:none; border:none; font-family:inherit; }
-        .nav-link:hover { color:#FFFCF6; }
+        .nav-logo-text { font-size:18px; font-weight:800; color:#FFFFFF; letter-spacing:-0.03em; }
+        .nav-logo-text span { color:#14B8A6; font-weight:700; }
+        .nav-links { display:flex; align-items:center; gap:32px; }
+        .nav-link { font-size:14px; font-weight:600; color:rgba(248, 250, 252, 0.7); text-decoration:none; transition:color 0.2s; cursor:pointer; background:none; border:none; font-family:inherit; }
+        .nav-link:hover { color:#FFFFFF; }
         .nav-cta {
-          background:linear-gradient(135deg,#006A6A,#008080);
-          color:#FFFCF6; border:none; border-radius:99px;
-          padding:9px 22px; font-size:13px; font-weight:700;
+          background:#14B8A6;
+          color:#FFFFFF; border:none; border-radius:99px;
+          padding:10px 24px; font-size:14px; font-weight:700;
           cursor:pointer; font-family:inherit;
-          transition:opacity 0.2s, transform 0.2s;
-          box-shadow:0 4px 14px rgba(0,106,106,0.35);
+          transition:all 0.2s;
+          box-shadow:0 4px 14px rgba(20, 184, 166, 0.3);
         }
-        .nav-cta:hover { opacity:0.9; transform:translateY(-1px); }
+        .nav-cta:hover { background:#0D9488; transform:translateY(-1px); box-shadow:0 6px 20px rgba(20, 184, 166, 0.4); }
         .nav-mobile-btn { display:none; background:none; border:none; color:#FFFCF6; font-size:22px; cursor:pointer; padding:4px; }
 
         /* ── HERO ── */
         .hero {
           position:relative; overflow:hidden;
           min-height:100vh;
-          background:linear-gradient(145deg,#001E1E 0%,#002828 35%,#003D3D 65%,#004F4F 100%);
+          background:#0F172A; /* Slate 900 */
           display:flex; flex-direction:column;
           align-items:center; justify-content:center;
-          padding:100px 40px 80px; text-align:center;
+          padding:120px 40px 80px; text-align:center;
         }
         .hero-grid {
           position:absolute; inset:0;
-          background-image:linear-gradient(rgba(0,128,128,0.07) 1px,transparent 1px),linear-gradient(90deg,rgba(0,128,128,0.07) 1px,transparent 1px);
-          background-size:64px 64px; pointer-events:none;
+          background-image:radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%),
+                           linear-gradient(rgba(20, 184, 166, 0.05) 1px, transparent 1px),
+                           linear-gradient(90deg, rgba(20, 184, 166, 0.05) 1px, transparent 1px);
+          background-size:100% 100%, 64px 64px, 64px 64px;
+          background-position: top center, 0 0, 0 0;
+          pointer-events:none;
         }
         .hero-eyebrow {
           display:inline-flex; align-items:center; gap:10px;
-          background:rgba(0,128,128,0.15); border:1px solid rgba(0,128,128,0.3);
+          background:rgba(20, 184, 166, 0.1); border:1px solid rgba(20, 184, 166, 0.2);
           border-radius:99px; padding:6px 16px 6px 8px;
           margin-bottom:28px;
           opacity:0; animation:fadeUp 0.7s ease 0.3s forwards;
         }
-        .hero-eyebrow-dot { width:8px; height:8px; border-radius:50%; background:#7ECACA; flex-shrink:0; animation:float0 2s ease-in-out infinite; }
-        .hero-eyebrow-text { font-size:11px; font-weight:600; letter-spacing:0.15em; text-transform:uppercase; color:#7ECACA; }
+        .hero-eyebrow-dot { width:8px; height:8px; border-radius:50%; background:#14B8A6; flex-shrink:0; animation:float0 2s ease-in-out infinite; box-shadow: 0 0 10px rgba(20, 184, 166, 0.5); }
+        .hero-eyebrow-text { font-size:12px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:#14B8A6; }
         .hero-h1 {
-          font-size:clamp(42px,7vw,88px); font-weight:800; line-height:1.0;
-          letter-spacing:-0.03em; color:#FFFCF6; margin-bottom:4px;
+          font-size:clamp(46px,8vw,96px); font-weight:800; line-height:1.05;
+          letter-spacing:-0.03em; color:#FFFFFF; margin-bottom:12px;
           opacity:0; animation:fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.45s forwards;
         }
-        .hero-h1 .teal { color:#7ECACA; }
-        .hero-h1 .outline { color:transparent; -webkit-text-stroke:1.5px rgba(255,252,246,0.2); }
+        .hero-h1 .teal { color:#14B8A6; }
+        .hero-h1 .outline { color:transparent; -webkit-text-stroke:2px rgba(255,255,255,0.15); }
         .hero-sub {
-          font-size:clamp(14px,1.6vw,17px); font-weight:400; line-height:1.8;
-          color:rgba(255,252,246,0.5); max-width:520px; margin:20px auto 36px;
-          opacity:0; animation:fadeUp 0.8s ease 0.75s forwards;
+          font-size:clamp(16px,2vw,20px); line-height:1.6; color:rgba(248, 250, 252, 0.7);
+          max-width:680px; margin:0 auto 40px; font-weight:500;
+          opacity:0; animation:fadeUp 0.9s ease 0.55s forwards;
         }
         .hero-btns {
           display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
           opacity:0; animation:fadeUp 0.7s ease 0.9s forwards;
         }
         .hero-btn-primary {
-          background:linear-gradient(135deg,#006A6A,#008080);
-          color:#FFFCF6; border:none; border-radius:99px;
-          padding:14px 32px; font-size:14px; font-weight:700;
-          cursor:pointer; font-family:inherit;
-          box-shadow:0 6px 20px rgba(0,106,106,0.4);
-          transition:all 0.22s ease;
+          background:#14B8A6; color:#fff; border:none; border-radius:99px;
+          padding:16px 36px; font-size:16px; font-weight:700; cursor:pointer;
+          box-shadow: 0 10px 25px -5px rgba(20, 184, 166, 0.4);
+          transition:all 0.2s ease; font-family:inherit;
         }
-        .hero-btn-primary:hover { transform:translateY(-2px); box-shadow:0 10px 28px rgba(0,106,106,0.5); }
+        .hero-btn-primary:hover { transform:translateY(-2px); box-shadow: 0 15px 30px -5px rgba(20, 184, 166, 0.5); background:#0D9488; }
+        
         .hero-btn-secondary {
-          background:rgba(255,252,246,0.08); color:#FFFCF6;
-          border:1px solid rgba(255,252,246,0.18); border-radius:99px;
-          padding:14px 28px; font-size:14px; font-weight:600;
-          cursor:pointer; font-family:inherit;
-          transition:all 0.22s ease; backdrop-filter:blur(8px);
+          background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.15);
+          border-radius:99px; padding:16px 36px; font-size:16px; font-weight:700;
+          cursor:pointer; transition:all 0.2s ease; backdrop-filter:blur(10px); font-family:inherit;
         }
-        .hero-btn-secondary:hover { background:rgba(255,252,246,0.14); border-color:rgba(255,252,246,0.3); }
+        .hero-btn-secondary:hover { background:rgba(255,255,255,0.1); transform:translateY(-2px); }
 
         /* Hero floating stat cards */
         .hero-floats {
@@ -423,28 +427,27 @@ export default function LandingPage() {
         .review-role { font-size:11px; color:#5A9494; margin-top:1px; }
 
         /* ── AUTH SECTION ── */
-        .auth-section { padding:100px 40px; background:linear-gradient(180deg,#003D3D,#002828); }
+        .auth-section { padding:100px 40px; background:#0F172A; } /* Slate 900 */
         .auth-wrap { max-width:960px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:start; }
         .auth-left {}
         .auth-card {
-          background:#FFFCF6; border-radius:22px; overflow:hidden;
-          box-shadow:0 24px 64px rgba(0,30,30,0.35), 0 4px 16px rgba(0,30,30,0.2);
-          border:1px solid rgba(0,106,106,0.15);
+          background:#FFFFFF; border-radius:24px; overflow:hidden;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
+          border:1px solid #F1F5F9;
         }
-        .auth-tabs { display:flex; border-bottom:1px solid #E0F0F0; }
+        .auth-tabs { display:flex; border-bottom:1px solid #E2E8F0; }
         .auth-tab {
-          flex:1; padding:16px; text-align:center;
-          font-size:13px; font-weight:700; cursor:pointer;
+          flex:1; padding:18px; text-align:center;
+          font-size:14px; font-weight:700; cursor:pointer;
           border:none; background:none; font-family:inherit;
-          color:#5A9494; transition:all 0.2s ease;
-          letter-spacing:0.02em;
+          color:#64748B; transition:all 0.2s ease;
         }
-        .auth-tab.active { color:#003D3D; border-bottom:2px solid #006A6A; background:#fff; }
-        .auth-tab:not(.active):hover { color:#003D3D; background:rgba(0,106,106,0.04); }
-        .auth-form { padding:28px 28px 24px; display:flex; flex-direction:column; gap:16px; }
-        .auth-field-label { display:block; font-size:10.5px; font-weight:700; color:#2D6B6B; letter-spacing:0.09em; text-transform:uppercase; margin-bottom:6px; }
-        .auth-trust { display:flex; align-items:center; justify-content:center; gap:18px; padding:14px 20px; border-top:1px solid #E8F5F5; }
-        .auth-trust-item { display:flex; align-items:center; gap:5px; font-size:11px; color:#5A9494; font-weight:500; }
+        .auth-tab.active { color:#0F172A; border-bottom:2px solid #14B8A6; background:#FFFFFF; }
+        .auth-tab:not(.active):hover { color:#0F172A; background:#F8FAFC; }
+        .auth-form { padding:32px 32px 28px; display:flex; flex-direction:column; gap:20px; }
+        .auth-field-label { display:block; font-size:11px; font-weight:700; color:#475569; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:8px; }
+        .auth-trust { display:flex; align-items:center; justify-content:center; gap:24px; padding:16px 24px; border-top:1px solid #F1F5F9; background:#F8FAFC; }
+        .auth-trust-item { display:flex; align-items:center; gap:6px; font-size:12px; color:#64748B; font-weight:600; }
 
         /* ── FOOTER ── */
         .footer { background:#001E1E; padding:48px 40px 32px; }
@@ -505,7 +508,7 @@ export default function LandingPage() {
       {/* ── NAVBAR ── */}
       <nav className={`lp-nav ${navSolid?'solid':''}`}>
         <a className="nav-logo" href="#">
-          <div className="nav-logo-icon">⚽</div>
+          <div className="nav-logo-icon" style={{ background: 'transparent', border: 'none', display: 'flex' }}><ActivitySquare size={28} color="#14B8A6" strokeWidth={2.5}/></div>
           <div>
             <div className="nav-logo-text">Apex <span>Track</span></div>
           </div>
@@ -530,15 +533,15 @@ export default function LandingPage() {
         {/* Floating stat cards (desktop) */}
         <div className="hero-floats">
           <div className="hf-card" style={{top:'22%',left:'6%',animation:'float0 3.5s ease-in-out 0s infinite'}}>
-            <div className="hf-icon">⚽</div>
+            <div className="hf-icon" style={{ background: 'transparent', border: 'none' }}><Users size={24} color="#14B8A6"/></div>
             <div><div className="hf-label">Active Athletes</div><div className="hf-val">248</div></div>
           </div>
           <div className="hf-card" style={{top:'55%',left:'4%',animation:'float1 4s ease-in-out 0.4s infinite'}}>
-            <div className="hf-icon">📊</div>
+            <div className="hf-icon" style={{ background: 'transparent', border: 'none' }}><BarChart3 size={24} color="#14B8A6"/></div>
             <div><div className="hf-label">Avg Match Rating</div><div className="hf-val">7.4</div></div>
           </div>
           <div className="hf-card" style={{top:'30%',right:'5%',animation:'float2 3.8s ease-in-out 0.8s infinite'}}>
-            <div className="hf-icon">🩺</div>
+            <div className="hf-icon" style={{ background: 'transparent', border: 'none' }}><Activity size={24} color="#14B8A6"/></div>
             <div><div className="hf-label">Injury Recovery</div><div className="hf-val">94%</div></div>
           </div>
         </div>

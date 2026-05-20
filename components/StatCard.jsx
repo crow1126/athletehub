@@ -116,4 +116,4 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
 
   if (href) return <a href={href} style={{ textDecoration: 'none', display: 'block' }}>{inner}</a>
   return inner
-}//
+}

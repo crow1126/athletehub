@@ -507,13 +507,9 @@ export default function LandingPage() {
 
       {/* ── NAVBAR ── */}
       <nav className={`lp-nav ${navSolid?'solid':''}`}>
-        <a className="nav-logo" href="#">
-          <div className="nav-logo-icon" style={{ background: 'transparent', border: 'none', display: 'flex' }}>
-            <img src="/logo.png" alt="Apex Track Logo" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain' }} />
-          </div>
-          <div>
-            <div className="nav-logo-text">Apex <span>Track</span></div>
-          </div>
+        <a className="nav-logo" href="#" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img src="/logo.png" alt="Apex Track Logo" style={{ height: '42px', width: 'auto', borderRadius: '8px', objectFit: 'contain' }} />
+          <div className="nav-logo-text">Apex <span>Track</span></div>
         </a>
         <div className="nav-links">
           {['Features','Stats','Reviews'].map(l=>(
@@ -662,8 +658,8 @@ export default function LandingPage() {
               </div>
 
               {/* Logo row */}
-              <div style={{padding:'20px 28px 0',display:'flex',alignItems:'center',gap:10}}>
-                <div style={{width:36,height:36,borderRadius:10,background:'linear-gradient(135deg,#004F4F,#008080)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15}}>⚽</div>
+              <div style={{padding:'24px 28px 4px',display:'flex',alignItems:'center',gap:12}}>
+                <img src="/logo.png" alt="Apex Track Logo" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain', border: '1px solid rgba(0,106,106,0.12)' }} />
                 <div>
                   <div style={{fontSize:15,fontWeight:800,color:'#006A6A',letterSpacing:'-0.02em'}}>Apex <span style={{color:'#2D6B6B',fontWeight:400}}>Track</span></div>
                   <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:'#5A9494'}}>Performance Platform</div>

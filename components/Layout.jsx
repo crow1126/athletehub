@@ -134,8 +134,8 @@ export default function Layout({ children }) {
       )
     }
     return (
-      <div style={{ width:size, height:size, borderRadius:12, background: C.floral, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(0,106,106,0.2)`, border:`1px solid ${C.border}` }}>
-        <img src="/logo.png" alt="Apex Track" style={{ width:size * 0.78, height:size * 0.78, objectFit:'contain', borderRadius:'4px' }} />
+      <div style={{ width:size, height:size, borderRadius:12, background: C.floral, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(0,106,106,0.12)`, border:`1px solid ${C.border}` }}>
+        <img src="/logo.png" alt="Apex Track" style={{ width:'85%', height:'85%', objectFit:'contain', borderRadius:'4px' }} />
       </div>
     )
   }
@@ -225,8 +225,8 @@ export default function Layout({ children }) {
         onMouseLeave={() => setExpanded(false)}
         style={{ width:sideW, flexShrink:0, background: C.floralDark, display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, bottom:0, zIndex:100, borderRight:`1px solid ${C.border}`, transition:'width 0.22s cubic-bezier(0.4,0,0.2,1)', overflow:'hidden', boxShadow:`var(--shadow-lg)` }}>
 
-        <div style={{ padding:'20px 0', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', paddingLeft: expanded ? 20 : 0, borderBottom:`1px solid ${C.border}`, minHeight:80, flexShrink:0, gap: expanded ? 12 : 0, transition:'all 0.22s' }}>
-          <ClubLogo size={40} />
+        <div style={{ padding:'20px 0', display:'flex', alignItems:'center', justifyContent: expanded ? 'flex-start' : 'center', paddingLeft: expanded ? 16 : 0, borderBottom:`1px solid ${C.border}`, minHeight:80, flexShrink:0, gap: expanded ? 12 : 0, transition:'all 0.22s' }}>
+          <ClubLogo size={44} />
           {expanded && (
             <div style={{ overflow:'hidden', whiteSpace:'nowrap', animation: 'fadeUp 0.3s ease' }}>
               <div style={{ fontWeight:800, fontSize:15, color: C.text, overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>

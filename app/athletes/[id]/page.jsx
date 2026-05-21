@@ -13,8 +13,6 @@ function AthletePhoto({ ath, size=80 }) {
       <img
         src={ath.photo_url}
         alt={ath?.name || ''}
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
         onError={() => setErr(true)}
         style={{
           width: size, height: size,

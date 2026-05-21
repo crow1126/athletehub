@@ -508,7 +508,9 @@ export default function LandingPage() {
       {/* ── NAVBAR ── */}
       <nav className={`lp-nav ${navSolid?'solid':''}`}>
         <a className="nav-logo" href="#">
-          <div className="nav-logo-icon" style={{ background: 'transparent', border: 'none', display: 'flex' }}><ActivitySquare size={28} color="#14B8A6" strokeWidth={2.5}/></div>
+          <div className="nav-logo-icon" style={{ background: 'transparent', border: 'none', display: 'flex' }}>
+            <img src="/logo.png" alt="Apex Track Logo" style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'contain' }} />
+          </div>
           <div>
             <div className="nav-logo-text">Apex <span>Track</span></div>
           </div>

@@ -31,8 +31,6 @@ function Avatar({ athlete, size=38, index=0 }) {
       <img
         src={photoUrl}
         alt={athlete?.name || ''}
-        crossOrigin="anonymous"
-        referrerPolicy="no-referrer"
         onError={() => setErr(true)}
         style={{
           width: size, height: size,
@@ -258,6 +256,30 @@ export default function TransfersPage() {
                   {athletes.map(a=><option key={a.id} value={a.id}>{a.name} {a.position?`(${a.position})`:''}</option>)}
                 </select>
               </div>
+
+              {form.athlete_id && (
+                <div style={{
+                  gridColumn: '1 / -1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 16,
+                  padding: '16px 20px',
+                  background: 'var(--blue-light)',
+                  borderRadius: 'var(--r-md)',
+                  border: '1px solid rgba(20, 184, 166, 0.2)',
+                  marginBottom: 8
+                }}>
+                  <Avatar athlete={athletes.find(a => String(a.id) === String(form.athlete_id))} size={60} index={0} />
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                      Selected Athlete: {athletes.find(a => String(a.id) === String(form.athlete_id))?.name}
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.5 }}>
+                      💡 <strong>Historical records are stored.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain preserved in the system and are still visible on their athlete profile page.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label style={lbl}>Transfer Type *</label>

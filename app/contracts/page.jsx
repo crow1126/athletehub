@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const STATUS_OPTS   = ['Active','Expired','Terminated','Negotiating']
 const STATUS_COLORS = {
@@ -44,12 +45,15 @@ export default function ContractsPage() {
   const [form,      setForm]      = useState(EMPTY)
   const [filter,    setFilter]    = useState('All')
   const [formError, setFormError] = useState('')
+  const [teamId,    setTeamId]    = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    const { teamId: currentTeamId } = await getTenantProfile()
+    setTeamId(currentTeamId)
     const [{ data: c }, { data: a }] = await Promise.all([
-      supabase.from('contracts').select('*, athletes(id, name, position, club, photo_url)').order('created_at', { ascending: false }),
-      supabase.from('athletes').select('id, name, position, club, photo_url').order('name'),
+      scopeTeam(supabase.from('contracts').select('*, athletes(id, name, position, club, photo_url)'), currentTeamId).order('created_at', { ascending: false }),
+      scopeTeam(supabase.from('athletes').select('id, name, position, club, photo_url'), currentTeamId).order('name'),
     ])
     setContracts(c || [])
     setAthletes(a  || [])
@@ -70,9 +74,11 @@ export default function ContractsPage() {
   async function handleSave() {
     setFormError('')
     if (!form.athlete_id) { setFormError('Please select an athlete.'); return }
+    if (!teamId) { setFormError('Your account is not assigned to a team.'); return }
     setSaving(true)
     const payload = {
       athlete_id:     form.athlete_id,
+      team_id:        teamId,
       contract_start: form.contract_start || null,
       contract_end:   form.contract_end   || null,
       weekly_wage:    parseFloat(form.weekly_wage)    || 0,
@@ -84,7 +90,7 @@ export default function ContractsPage() {
       notes:          form.notes || null,
     }
     if (editId) {
-      const { error } = await supabase.from('contracts').update(payload).eq('id', editId)
+      const { error } = await scopeTeam(supabase.from('contracts').update(payload).eq('id', editId), teamId)
       if (error) { setFormError('Update failed: ' + error.message); setSaving(false); return }
     } else {
       const { error } = await supabase.from('contracts').insert([payload])
@@ -96,7 +102,7 @@ export default function ContractsPage() {
   async function handleDelete(id) {
     if (!confirm('Delete this contract? This cannot be undone.')) return
     setDeleting(id)
-    const { error } = await supabase.from('contracts').delete().eq('id', id)
+    const { error } = await scopeTeam(supabase.from('contracts').delete().eq('id', id), teamId)
     if (error) alert('Delete failed: ' + error.message)
     else fetchData()
     setDeleting(null)

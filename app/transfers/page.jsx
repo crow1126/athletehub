@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
+import { scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
 
 const TRANSFER_TYPES = ['All','sold','bought','free_agent','loan_out','loan_in','return_from_loan']
@@ -97,6 +98,7 @@ export default function TransfersPage() {
       const { data:t, error:tErr } = await supabase
         .from('transfers')
         .select('*')
+        .eq('team_id', p?.team_id || '00000000-0000-0000-0000-000000000000')
         .order('transfer_date', {ascending:false})
 
       console.log('Transfers raw:', t, 'Error:', tErr)
@@ -108,6 +110,7 @@ export default function TransfersPage() {
         const { data:athData } = await supabase
           .from('athletes')
           .select('id,name,photo_url,position,club')
+          .eq('team_id', p?.team_id || '00000000-0000-0000-0000-000000000000')
           .in('id', athleteIds)
 
         console.log('Athlete data for transfer log:', athData)
@@ -120,7 +123,7 @@ export default function TransfersPage() {
       setTransfers(transfersWithAthletes)
 
       const { data:a } = await supabase
-        .from('athletes').select('id,name,photo_url,position,club').order('name')
+        .from('athletes').select('id,name,photo_url,position,club').eq('team_id', p?.team_id || '00000000-0000-0000-0000-000000000000').order('name')
       setAthletes(a||[])
     } catch(e){ console.error(e) }
     setLoading(false)
@@ -133,6 +136,7 @@ export default function TransfersPage() {
     if (!form.from_club.trim()) { flash('Enter the selling/releasing club.','error'); return }
     if (!form.to_club.trim())   { flash('Enter the destination club.','error'); return }
     if (!form.transfer_date) { flash('Enter the transfer date.','error'); return }
+    if (!profile?.team_id) { flash('Your account is not assigned to a team.','error'); return }
 
     setSaving(true)
     try {
@@ -159,10 +163,10 @@ export default function TransfersPage() {
         sold:'sold', bought:'contracted', free_agent:'free_agent',
         loan_out:'on_loan', loan_in:'contracted', return_from_loan:'contracted',
       }
-      await supabase.from('athletes').update({
+      await scopeTeam(supabase.from('athletes').update({
         current_club:    form.to_club.trim(),
         transfer_status: statusMap[form.transfer_type] || 'contracted',
-      }).eq('id', form.athlete_id)
+      }).eq('id', form.athlete_id), profile.team_id)
 
       flash('✅ Transfer recorded successfully.')
       setForm(EMPTY_FORM)
@@ -174,7 +178,7 @@ export default function TransfersPage() {
 
   async function handleDelete(id) {
     if (!confirm('Delete this transfer record?')) return
-    await supabase.from('transfers').delete().eq('id',id)
+    await scopeTeam(supabase.from('transfers').delete().eq('id',id), profile?.team_id)
     await load()
   }
 

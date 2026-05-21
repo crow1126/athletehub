@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
 
 const POSITION_GROUPS = {
@@ -51,12 +52,15 @@ export default function AthletesPage() {
   const [posFilter,   setPosFilter]   = useState('')
   const [statFilter,  setStatFilter]  = useState('')
   const [formError,   setFormError]   = useState('')
+  const [teamId,      setTeamId]      = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
+    const { teamId: currentTeamId } = await getTenantProfile()
+    setTeamId(currentTeamId)
     const [{ data:a }, { data:c }] = await Promise.all([
-      supabase.from('athletes').select('*, coaches(name)').order('created_at', { ascending:false }),
-      supabase.from('coaches').select('id, name').order('name'),
+      scopeTeam(supabase.from('athletes').select('*, coaches(name)'), currentTeamId).order('created_at', { ascending:false }),
+      scopeTeam(supabase.from('coaches').select('id, name'), currentTeamId).order('name'),
     ])
     setAthletes(a||[]); setCoaches(c||[]); setLoading(false)
   }, [])
@@ -93,24 +97,26 @@ export default function AthletesPage() {
     setFormError('')
     if (!form.name.trim()) { setFormError('Full name is required.'); return }
     if (!form.position)    { setFormError('Position is required.'); return }
+    if (!teamId)           { setFormError('Your account is not assigned to a team.'); return }
     setSaving(true)
     const payload = {
       name:form.name.trim(), age:parseInt(form.age)||null, position:form.position||null,
       strong_foot:form.strong_foot||null,
       region:form.region||null, club:form.club||null, phone:form.phone||null,
       height:parseInt(form.height)||null, weight:parseInt(form.weight)||null, coach_id:form.coach_id||null,
+      team_id:teamId,
     }
     if (editId) {
       const url = await uploadPhoto(editId)
       if (url) payload.photo_url = url
-      const { error } = await supabase.from('athletes').update(payload).eq('id', editId)
+      const { error } = await scopeTeam(supabase.from('athletes').update(payload).eq('id', editId), teamId)
       if (error) { setFormError('Update failed: '+error.message); setSaving(false); return }
       setShowForm(false); fetchData()
     } else {
       const { data, error } = await supabase.from('athletes').insert([{ ...payload, status:'Active' }]).select().single()
       if (error) { setFormError('Save failed: '+error.message); setSaving(false); return }
       const url = await uploadPhoto(data.id)
-      if (url) await supabase.from('athletes').update({ photo_url:url }).eq('id', data.id)
+      if (url) await scopeTeam(supabase.from('athletes').update({ photo_url:url }).eq('id', data.id), teamId)
       setShowForm(false); setForm(EMPTY); fetchData()
     }
     setSaving(false)
@@ -119,8 +125,8 @@ export default function AthletesPage() {
   async function handleDelete(id, name) {
     if (!confirm(`Remove ${name} from the roster? This cannot be undone.`)) return
     setDeleting(id)
-    await supabase.from('injuries').delete().eq('athlete_id', id)
-    const { error } = await supabase.from('athletes').delete().eq('id', id)
+    await scopeTeam(supabase.from('injuries').delete().eq('athlete_id', id), teamId)
+    const { error } = await scopeTeam(supabase.from('athletes').delete().eq('id', id), teamId)
     if (error) alert('Delete failed: '+error.message)
     else fetchData()
     setDeleting(null)

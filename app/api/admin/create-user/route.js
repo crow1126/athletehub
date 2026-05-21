@@ -1,32 +1,29 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
 
-const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_KEY   = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-// ── Direct REST helpers (bypasses auth.admin SDK issues) ──────────────────
 async function adminFetch(path, method = 'GET', body = null) {
   const res = await fetch(`${SUPABASE_URL}/auth/v1/admin/${path}`, {
     method,
     headers: {
-      'Content-Type':  'application/json',
-      'apikey':        SERVICE_KEY,
-      'Authorization': `Bearer ${SERVICE_KEY}`,
+      'Content-Type': 'application/json',
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
     },
     ...(body ? { body: JSON.stringify(body) } : {}),
   })
+
   const data = await res.json()
   if (!res.ok) throw new Error(data.message || data.error || 'Auth API error')
   return data
 }
 
 function getDb() {
-  return createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  })
+  return createServiceClient()
 }
 
-// ── POST: Create a new staff login ────────────────────────────────────────
 export async function POST(req) {
   try {
     const { email, password, full_name, role, coach_id, team_id, notes } = await req.json()
@@ -36,19 +33,35 @@ export async function POST(req) {
     }
 
     const db = getDb()
+    const requester = await getRequester(req, db)
+    if (requester.error) {
+      return NextResponse.json({ error: requester.error }, { status: requester.status })
+    }
 
-    // Resolve team_id — use passed value or look up from coach record
-    let resolvedTeamId = team_id || null
-    if (!resolvedTeamId && coach_id) {
-      const { data: coach } = await db
+    const safeRole = role === 'superadmin' ? 'physio' : (role || 'physio')
+    let resolvedTeamId = requester.profile.role === 'superadmin'
+      ? (team_id || null)
+      : requester.profile.team_id
+
+    if (coach_id) {
+      let coachQuery = db
         .from('coaches')
         .select('team_id')
         .eq('id', coach_id)
-        .single()
-      resolvedTeamId = coach?.team_id || null
+
+      if (resolvedTeamId) coachQuery = coachQuery.eq('team_id', resolvedTeamId)
+
+      const { data: coach } = await coachQuery.single()
+      if (!coach) {
+        return NextResponse.json({ error: 'Coach is not available for this team' }, { status: 403 })
+      }
+      resolvedTeamId = coach.team_id || null
     }
 
-    // 1. Create auth user
+    if (!resolvedTeamId || !canManageTeam(requester.profile, resolvedTeamId)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     const newUser = await adminFetch('users', 'POST', {
       email,
       password,
@@ -56,29 +69,35 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
-    // 2. Create profile
     const { error: profileError } = await db
       .from('profiles')
       .upsert(
-        { id: userId, full_name, role: role || 'physio', team_id: resolvedTeamId, is_active: true, email },
+        { id: userId, full_name, role: safeRole, team_id: resolvedTeamId, is_active: true, email },
         { onConflict: 'id' }
       )
-    if (profileError) console.error('Profile error:', profileError.message)
 
-    // 3. Log in staff_logins
+    if (profileError) {
+      console.error('Profile error:', profileError.message)
+      return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
+    }
+
     if (coach_id) {
       const { error: loginError } = await db
         .from('staff_logins')
         .insert([{
           coach_id,
           email,
-          role:           role || 'physio',
-          team_id:        resolvedTeamId,
-          is_active:      true,
-          notes:          notes || null,
+          role: safeRole,
+          team_id: resolvedTeamId,
+          is_active: true,
+          notes: notes || null,
           plain_password: password,
         }])
-      if (loginError) console.error('Staff login log error:', loginError.message)
+
+      if (loginError) {
+        console.error('Staff login log error:', loginError.message)
+        return NextResponse.json({ error: 'Failed to create staff login record' }, { status: 500 })
+      }
     }
 
     return NextResponse.json({ success: true, user_id: userId })
@@ -88,89 +107,121 @@ export async function POST(req) {
   }
 }
 
-// ── PATCH: revoke / reactivate / reset_password / change_own_password ─────
 export async function PATCH(req) {
   try {
     const db = getDb()
     const body = await req.json()
     const { user_id, login_id, action, new_password } = body
 
-    console.log('📥 PATCH action:', action, '| user_id:', user_id)
+    if (!user_id) {
+      return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+    }
 
-    if (!user_id) return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
+    const requester = await getRequester(req, db)
+    if (requester.error) {
+      return NextResponse.json({ error: requester.error }, { status: requester.status })
+    }
 
-    // ── REVOKE ─────────────────────────────────────────────────────────────
-    if (action === 'revoke') {
-      // Ban via REST
-      await adminFetch(`users/${user_id}`, 'PUT', { ban_duration: '876600h' })
+    let targetProfile = null
+    let targetTeamId = null
 
-      // Force sign out all sessions
-      try { await adminFetch(`users/${user_id}/logout`, 'POST', { scope: 'global' }) } catch(e) { /* non-fatal */ }
+    if (action === 'change_own_password') {
+      if (requester.profile.id !== user_id) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    } else {
+      const { data: profile } = await db
+        .from('profiles')
+        .select('id,email,team_id')
+        .eq('id', user_id)
+        .single()
 
-      // Mark profile inactive
-      await db.from('profiles').update({ is_active: false }).eq('id', user_id)
+      targetProfile = profile
+      targetTeamId = profile?.team_id || null
 
-      // Mark login record inactive
+      if (!targetTeamId || !canManageTeam(requester.profile, targetTeamId)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+
       if (login_id) {
-        await db.from('staff_logins').update({ is_active: false }).eq('id', login_id)
-      } else {
-        const user = await adminFetch(`users/${user_id}`)
-        if (user?.email) {
-          await db.from('staff_logins').update({ is_active: false }).eq('email', user.email)
+        const { data: login } = await db
+          .from('staff_logins')
+          .select('id,team_id')
+          .eq('id', login_id)
+          .single()
+
+        if (!login || login.team_id !== targetTeamId) {
+          return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
         }
+      }
+    }
+
+    if (action === 'revoke') {
+      await adminFetch(`users/${user_id}`, 'PUT', { ban_duration: '876600h' })
+      try {
+        await adminFetch(`users/${user_id}/logout`, 'POST', { scope: 'global' })
+      } catch (error) {
+        console.warn('Logout warning:', error.message)
+      }
+
+      await db.from('profiles').update({ is_active: false }).eq('id', user_id).eq('team_id', targetTeamId)
+
+      if (login_id) {
+        await db.from('staff_logins').update({ is_active: false }).eq('id', login_id).eq('team_id', targetTeamId)
+      } else if (targetProfile?.email) {
+        await db.from('staff_logins').update({ is_active: false }).eq('email', targetProfile.email).eq('team_id', targetTeamId)
       }
 
       return NextResponse.json({ success: true, message: 'Login revoked and user signed out immediately.' })
     }
 
-    // ── REACTIVATE ──────────────────────────────────────────────────────────
     if (action === 'reactivate') {
       await adminFetch(`users/${user_id}`, 'PUT', { ban_duration: 'none' })
 
-      await db.from('profiles').update({ is_active: true }).eq('id', user_id)
+      await db.from('profiles').update({ is_active: true }).eq('id', user_id).eq('team_id', targetTeamId)
 
       if (login_id) {
-        await db.from('staff_logins').update({ is_active: true }).eq('id', login_id)
-      } else {
-        const user = await adminFetch(`users/${user_id}`)
-        if (user?.email) {
-          await db.from('staff_logins').update({ is_active: true }).eq('email', user.email)
-        }
+        await db.from('staff_logins').update({ is_active: true }).eq('id', login_id).eq('team_id', targetTeamId)
+      } else if (targetProfile?.email) {
+        await db.from('staff_logins').update({ is_active: true }).eq('email', targetProfile.email).eq('team_id', targetTeamId)
       }
 
       return NextResponse.json({ success: true, message: 'Login reactivated.' })
     }
 
-    // ── RESET PASSWORD ──────────────────────────────────────────────────────
     if (action === 'reset_password') {
       if (!new_password || new_password.length < 8) {
         return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
       }
 
       await adminFetch(`users/${user_id}`, 'PUT', { password: new_password })
+      try {
+        await adminFetch(`users/${user_id}/logout`, 'POST', { scope: 'global' })
+      } catch (error) {
+        console.warn('Logout warning:', error.message)
+      }
 
-      try { await adminFetch(`users/${user_id}/logout`, 'POST', { scope: 'global' }) } catch(e) { /* non-fatal */ }
-
-      const user = await adminFetch(`users/${user_id}`)
-      if (user?.email) {
-        await db.from('staff_logins').update({ plain_password: new_password }).eq('email', user.email)
+      if (targetProfile?.email) {
+        await db.from('staff_logins').update({ plain_password: new_password }).eq('email', targetProfile.email).eq('team_id', targetTeamId)
       }
       if (login_id) {
-        await db.from('staff_logins').update({ plain_password: new_password }).eq('id', login_id)
+        await db.from('staff_logins').update({ plain_password: new_password }).eq('id', login_id).eq('team_id', targetTeamId)
       }
 
       return NextResponse.json({ success: true, message: 'Password reset successfully.' })
     }
 
-    // ── CHANGE OWN PASSWORD ─────────────────────────────────────────────────
     if (action === 'change_own_password') {
       if (!new_password || new_password.length < 8) {
         return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
       }
 
       await adminFetch(`users/${user_id}`, 'PUT', { password: new_password })
-
-      try { await adminFetch(`users/${user_id}/logout`, 'POST', { scope: 'global' }) } catch(e) { /* non-fatal */ }
+      try {
+        await adminFetch(`users/${user_id}/logout`, 'POST', { scope: 'global' })
+      } catch (error) {
+        console.warn('Logout warning:', error.message)
+      }
 
       return NextResponse.json({ success: true, message: 'Password changed successfully.' })
     }

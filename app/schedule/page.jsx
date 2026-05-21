@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -26,12 +27,15 @@ export default function SchedulePage() {
   const [saving,     setSaving]     = useState(false)
   const [deleting,   setDeleting]   = useState(null)
   const [view,       setView]       = useState('month')
+  const [teamId,     setTeamId]     = useState(null)
 
   const fetchData = useCallback(async () => {
+    const { teamId: currentTeamId } = await getTenantProfile()
+    setTeamId(currentTeamId)
     const [{ data: s }, { data: c }, { data: a }] = await Promise.all([
-      supabase.from('training_sessions').select('*').order('date', { ascending: true }),
-      supabase.from('coaches').select('id,name'),
-      supabase.from('athletes').select('id,name'),
+      scopeTeam(supabase.from('training_sessions').select('*'), currentTeamId).order('date', { ascending: true }),
+      scopeTeam(supabase.from('coaches').select('id,name'), currentTeamId),
+      scopeTeam(supabase.from('athletes').select('id,name'), currentTeamId),
     ])
     setSessions(s || []); setCoaches(c || []); setAthletes(a || [])
   }, [])
@@ -55,10 +59,11 @@ export default function SchedulePage() {
   async function handleSave() {
     if (!form.date) return alert('Date is required.')
     if (!form.title.trim()) return alert('Session title is required.')
+    if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
-    const payload = { ...form, duration: parseInt(form.duration) || 90 }
+    const payload = { ...form, duration: parseInt(form.duration) || 90, team_id: teamId }
     if (editId) {
-      const { error } = await supabase.from('training_sessions').update(payload).eq('id', editId)
+      const { error } = await scopeTeam(supabase.from('training_sessions').update(payload).eq('id', editId), teamId)
       if (error) alert(error.message)
       else { setShowForm(false); fetchData() }
     } else {
@@ -72,7 +77,7 @@ export default function SchedulePage() {
   async function handleDelete(id) {
     if (!confirm('Delete this session?')) return
     setDeleting(id)
-    const { error } = await supabase.from('training_sessions').delete().eq('id', id)
+    const { error } = await scopeTeam(supabase.from('training_sessions').delete().eq('id', id), teamId)
     if (error) alert(error.message)
     else fetchData()
     setDeleting(null)

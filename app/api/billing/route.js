@@ -1,14 +1,8 @@
 // app/api/billing/route.js
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse }  from 'next/server'
+import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
 
-// Use service role if available, otherwise fall back to anon key
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  supabaseKey
-)
+const supabase = createServiceClient()
 
 const PLANS = {
   starter: { athlete_limit:40,   staff_limit:3,   price_ghs:350  },
@@ -22,6 +16,12 @@ export async function GET(req) {
   const { searchParams } = new URL(req.url)
   const team_id = searchParams.get('team_id')
   if (!team_id) return NextResponse.json({ error: 'team_id required' }, { status: 400 })
+
+  const requester = await getRequester(req, supabase)
+  if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
+  if (!canManageTeam(requester.profile, team_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const [{ data: sub }, { data: history }] = await Promise.all([
     supabase.from('subscriptions').select('*').eq('team_id', team_id).single(),
@@ -41,6 +41,12 @@ export async function POST(req) {
 
     if (!team_id || !plan) return NextResponse.json({ error: 'team_id and plan required' }, { status: 400 })
     if (!PLANS[plan])      return NextResponse.json({ error: 'Invalid plan: ' + plan }, { status: 400 })
+
+    const requester = await getRequester(req, supabase)
+    if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
+    if (!canManageTeam(requester.profile, team_id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const p   = PLANS[plan]
     const now = new Date()
@@ -93,7 +99,7 @@ export async function POST(req) {
       amount_ghs:  p.price_ghs,
       payment_ref: payment_ref || null,
       notes,
-      created_by:  requested_by || null,
+      created_by:  requester.profile.id,
     })
 
     console.log('Billing event error:', evErr)
@@ -111,12 +117,18 @@ export async function PATCH(req) {
     const { team_id, action, requested_by } = await req.json()
     if (!team_id) return NextResponse.json({ error: 'team_id required' }, { status: 400 })
 
+    const requester = await getRequester(req, supabase)
+    if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
+    if (!canManageTeam(requester.profile, team_id)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
     if (action === 'cancel') {
       const { data: sub } = await supabase.from('subscriptions').select('plan').eq('team_id', team_id).single()
       await supabase.from('subscriptions').update({ status:'cancelled' }).eq('team_id', team_id)
       await supabase.from('billing_events').insert({
         team_id, type:'cancellation', plan: sub?.plan || 'unknown',
-        amount_ghs: 0, created_by: requested_by || null,
+        amount_ghs: 0, created_by: requester.profile.id,
       })
       return NextResponse.json({ ok: true })
     }

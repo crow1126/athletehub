@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
 function initials(n){ return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -27,12 +28,15 @@ export default function PerformancePage(){
   const [deleting, setDeleting] = useState(null)
   const [form,     setForm]     = useState(EMPTY)
   const [selAth,   setSelAth]   = useState('all')
+  const [teamId,   setTeamId]   = useState(null)
 
   const fetchData=useCallback(async()=>{
     setLoading(true)
+    const { teamId: currentTeamId } = await getTenantProfile()
+    setTeamId(currentTeamId)
     const [{data:s},{data:a}]=await Promise.all([
-      supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url)').order('match_date',{ascending:false}),
-      supabase.from('athletes').select('id,name,position,club,photo_url').order('name'),
+      scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url)'), currentTeamId).order('match_date',{ascending:false}),
+      scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url'), currentTeamId).order('name'),
     ])
     setStats(s||[]);setAthletes(a||[]);setLoading(false)
   },[])
@@ -45,16 +49,17 @@ export default function PerformancePage(){
 
   async function handleSave(){
     if (!form.athlete_id) return alert('Select athlete.')
+    if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
-    const payload={...form,minutes_played:parseInt(form.minutes_played)||0,goals:parseInt(form.goals)||0,assists:parseInt(form.assists)||0,shots:parseInt(form.shots)||0,shots_on_target:parseInt(form.shots_on_target)||0,passes:parseInt(form.passes)||0,pass_accuracy:parseFloat(form.pass_accuracy)||0,distance_km:parseFloat(form.distance_km)||0,sprint_count:parseInt(form.sprint_count)||0,duels_won:parseInt(form.duels_won)||0,duels_total:parseInt(form.duels_total)||0,xg:parseFloat(form.xg)||0,xa:parseFloat(form.xa)||0,rating:parseFloat(form.rating)||0}
-    if (editId){const {error}=await supabase.from('performance_stats').update(payload).eq('id',editId);if(error)alert(error.message);else{setShowForm(false);fetchData()}}
+    const payload={...form,team_id:teamId,minutes_played:parseInt(form.minutes_played)||0,goals:parseInt(form.goals)||0,assists:parseInt(form.assists)||0,shots:parseInt(form.shots)||0,shots_on_target:parseInt(form.shots_on_target)||0,passes:parseInt(form.passes)||0,pass_accuracy:parseFloat(form.pass_accuracy)||0,distance_km:parseFloat(form.distance_km)||0,sprint_count:parseInt(form.sprint_count)||0,duels_won:parseInt(form.duels_won)||0,duels_total:parseInt(form.duels_total)||0,xg:parseFloat(form.xg)||0,xa:parseFloat(form.xa)||0,rating:parseFloat(form.rating)||0}
+    if (editId){const {error}=await scopeTeam(supabase.from('performance_stats').update(payload).eq('id',editId), teamId);if(error)alert(error.message);else{setShowForm(false);fetchData()}}
     else{const {error}=await supabase.from('performance_stats').insert([payload]);if(error)alert(error.message);else{setShowForm(false);setForm(EMPTY);fetchData()}}
     setSaving(false)
   }
 
   async function handleDelete(id){
     if (!confirm('Delete this record?'))return;setDeleting(id)
-    const {error}=await supabase.from('performance_stats').delete().eq('id',id)
+    const {error}=await scopeTeam(supabase.from('performance_stats').delete().eq('id',id), teamId)
     if (error)alert(error.message);else fetchData();setDeleting(null)
   }
 

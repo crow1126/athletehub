@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import { useParams, useRouter } from 'next/navigation'
 
 const AV_COLORS = ['#1A365D','#2B6CB0','#1B7A3E','#553C9A']
@@ -70,12 +71,13 @@ export default function AthleteReport() {
 
   useEffect(() => {
     async function load() {
+      const { teamId } = await getTenantProfile()
       const [{ data:a },{ data:i },{ data:p },{ data:c },{ data:tr }] = await Promise.all([
-        supabase.from('athletes').select('*,coaches(name)').eq('id',id).single(),
-        supabase.from('injuries').select('*').eq('athlete_id',id).order('date_of_injury',{ ascending:false }),
-        supabase.from('performance_stats').select('*').eq('athlete_id',id).order('match_date',{ ascending:false }),
-        supabase.from('contracts').select('*').eq('athlete_id',id).order('created_at',{ ascending:false }),
-        supabase.from('transfers').select('*').eq('athlete_id',id).order('transfer_date',{ ascending:false }),
+        scopeTeam(supabase.from('athletes').select('*,coaches(name)').eq('id',id), teamId).single(),
+        scopeTeam(supabase.from('injuries').select('*').eq('athlete_id',id), teamId).order('date_of_injury',{ ascending:false }),
+        scopeTeam(supabase.from('performance_stats').select('*').eq('athlete_id',id), teamId).order('match_date',{ ascending:false }),
+        scopeTeam(supabase.from('contracts').select('*').eq('athlete_id',id), teamId).order('created_at',{ ascending:false }),
+        scopeTeam(supabase.from('transfers').select('*').eq('athlete_id',id), teamId).order('transfer_date',{ ascending:false }),
       ])
       setAth(a)
       setInjuries(i||[])

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
@@ -38,16 +39,17 @@ export default function ReportsPage() {
     async function load() {
       setLoading(true)
       try {
+        const { teamId } = await getTenantProfile()
         const [
           { data: a }, { data: i }, { data: p },
           { data: s }, { data: c }, { data: ct },
         ] = await Promise.all([
-          supabase.from('athletes').select('*, coaches(name)'),
-          supabase.from('injuries').select('*, athletes(name, club, position)'),
-          supabase.from('performance_stats').select('*, athletes(name, position, club)').order('match_date', { ascending: false }),
-          supabase.from('training_sessions').select('*'),
-          supabase.from('coaches').select('*'),
-          supabase.from('contracts').select('*, athletes(name, position, club)'),
+          scopeTeam(supabase.from('athletes').select('*, coaches(name)'), teamId),
+          scopeTeam(supabase.from('injuries').select('*, athletes(name, club, position)'), teamId),
+          scopeTeam(supabase.from('performance_stats').select('*, athletes(name, position, club)'), teamId).order('match_date', { ascending: false }),
+          scopeTeam(supabase.from('training_sessions').select('*'), teamId),
+          scopeTeam(supabase.from('coaches').select('*'), teamId),
+          scopeTeam(supabase.from('contracts').select('*, athletes(name, position, club)'), teamId),
         ])
         setAthletes(a   || [])
         setInjuries(i   || [])

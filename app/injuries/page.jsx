@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const EMPTY = {
   athlete_id:'', injury_type:'', severity:'Mild',
@@ -82,23 +83,23 @@ export default function InjuriesPage() {
   const [form,        setForm]        = useState(EMPTY)
   const [currentUser, setCurrentUser] = useState(null)
   const [hasStamp,    setHasStamp]    = useState(false)
+  const [teamId,      setTeamId]      = useState(null)
 
   const fetchData = useCallback(async () => {
-    const { data:{session} } = await supabase.auth.getSession()
-    if (session) {
-      const { data:p } = await supabase.from('profiles').select('id,full_name,role').eq('id',session.user.id).single()
-      setCurrentUser(p)
-    }
-    const { data:ath } = await supabase.from('athletes').select('id,name,position,photo_url').order('name')
+    const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+    setCurrentUser(p)
+    setTeamId(currentTeamId)
+
+    const { data:ath } = await scopeTeam(supabase.from('athletes').select('id,name,position,photo_url'), currentTeamId).order('name')
     setAthletes(ath||[])
 
-    const r1 = await supabase.from('injuries')
-      .select('*,athletes(name,position,club,id,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)')
+    const r1 = await scopeTeam(supabase.from('injuries')
+      .select('*,athletes(name,position,club,id,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)'), currentTeamId)
       .order('date_of_injury',{ascending:false})
 
     if (!r1.error) { setInjuries(r1.data||[]); setHasStamp(true) }
     else {
-      const r2 = await supabase.from('injuries').select('*,athletes(name,position,club,id,photo_url)').order('date_of_injury',{ascending:false})
+      const r2 = await scopeTeam(supabase.from('injuries').select('*,athletes(name,position,club,id,photo_url)'), currentTeamId).order('date_of_injury',{ascending:false})
       setInjuries(r2.data||[]); setHasStamp(false)
     }
   }, [])
@@ -117,17 +118,18 @@ export default function InjuriesPage() {
   async function handleSave(){
     if (!form.athlete_id) return alert('Select an athlete.')
     if (!form.injury_type.trim()) return alert('Injury type required.')
+    if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
     const now=new Date().toISOString(), userId=currentUser?.id||null
-    const base={...form}
+    const base={...form,team_id:teamId}
     if (hasStamp){if(editId){base.updated_by=userId;base.updated_at=now}else{base.logged_by=userId;base.logged_at=now}}
     if (editId){
-      const {error}=await supabase.from('injuries').update(base).eq('id',editId)
+      const {error}=await scopeTeam(supabase.from('injuries').update(base).eq('id',editId), teamId)
       if (error) alert(error.message)
       else{setShowForm(false);fetchData()}
     } else {
       const {error}=await supabase.from('injuries').insert([{...base,status:'Active'}])
-      if (!error) await supabase.from('athletes').update({status:'Injured'}).eq('id',form.athlete_id)
+      if (!error) await scopeTeam(supabase.from('athletes').update({status:'Injured'}).eq('id',form.athlete_id), teamId)
       if (error) alert(error.message)
       else{setShowForm(false);setForm(EMPTY);fetchData()}
     }
@@ -137,7 +139,7 @@ export default function InjuriesPage() {
   async function handleDelete(id){
     if (!confirm('Delete this injury record?'))return
     setDeleting(id)
-    const {error}=await supabase.from('injuries').delete().eq('id',id)
+    const {error}=await scopeTeam(supabase.from('injuries').delete().eq('id',id), teamId)
     if (error) alert('Delete failed: '+error.message)
     else fetchData()
     setDeleting(null)
@@ -146,17 +148,17 @@ export default function InjuriesPage() {
   async function markRecovered(id,athleteId){
     const update={status:'Recovered'}
     if (hasStamp){update.updated_by=currentUser?.id||null;update.updated_at=new Date().toISOString()}
-    await supabase.from('injuries').update(update).eq('id',id)
-    await supabase.from('athletes').update({status:'Active'}).eq('id',athleteId)
+    await scopeTeam(supabase.from('injuries').update(update).eq('id',id), teamId)
+    await scopeTeam(supabase.from('athletes').update({status:'Active'}).eq('id',athleteId), teamId)
     fetchData()
   }
 
   async function saveField(id,field,value,athleteId){
     const update={[field]:value}
     if (hasStamp){update.updated_by=currentUser?.id||null;update.updated_at=new Date().toISOString()}
-    if (field==='status'&&value==='Recovered'&&athleteId) await supabase.from('athletes').update({status:'Active'}).eq('id',athleteId)
-    if (field==='status'&&value==='Active'&&athleteId) await supabase.from('athletes').update({status:'Injured'}).eq('id',athleteId)
-    const {error}=await supabase.from('injuries').update(update).eq('id',id)
+    if (field==='status'&&value==='Recovered'&&athleteId) await scopeTeam(supabase.from('athletes').update({status:'Active'}).eq('id',athleteId), teamId)
+    if (field==='status'&&value==='Active'&&athleteId) await scopeTeam(supabase.from('athletes').update({status:'Injured'}).eq('id',athleteId), teamId)
+    const {error}=await scopeTeam(supabase.from('injuries').update(update).eq('id',id), teamId)
     if (error) alert('Update failed: '+error.message)
     else fetchData()
   }

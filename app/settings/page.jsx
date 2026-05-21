@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
+import { fetchWithAuth, scopeTeam } from '@/lib/tenant'
 
 const ROLES = ['admin','coach','physio','analyst','scout','player']
 const ROLE_COLORS = {
@@ -69,9 +70,9 @@ export default function SettingsPage() {
       setIsAdmin(admin)
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins }] = await Promise.all([
-          supabase.from('profiles').select('id,full_name,role,is_active,email').neq('role','superadmin').order('created_at',{ ascending:false }),
-          supabase.from('coaches').select('id,name,staff_type,email,is_active').order('name'),
-          supabase.from('staff_logins').select('*,coaches(name,staff_type)').order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,is_active'), prof.team_id).order('name'),
+          scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
         ])
         setAllUsers(users||[]); setAllStaff(staff||[]); setStaffLogins(logins||[])
       }
@@ -101,7 +102,7 @@ export default function SettingsPage() {
     try {
       const { data:{ session } } = await supabase.auth.getSession()
       if (!session?.user?.id) { flash('Session expired.','error'); setSaving(false); return }
-      const res = await fetch('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:session.user.id, action:'change_own_password', new_password:pwForm.newPw }) })
+      const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:session.user.id, action:'change_own_password', new_password:pwForm.newPw }) })
       const data = await res.json()
       if (!res.ok) { flash('Failed: '+(data.error||'Unknown error'),'error'); setSaving(false); return }
       flash('Password changed! Signing you out now…')
@@ -120,7 +121,7 @@ export default function SettingsPage() {
     setIssueSaving(true); setIssueMsg({ text:'',type:'' })
     try {
       const staff = allStaff.find(s => s.id === issueForm.coach_id)
-      const res = await fetch('/api/admin/create-user', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ email:issueForm.email.trim().toLowerCase(), password:issueForm.password, full_name:staff?.name||issueForm.email, role:issueForm.role, coach_id:issueForm.coach_id, team_id:profile.team_id, notes:issueForm.notes }) })
+      const res = await fetchWithAuth('/api/admin/create-user', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ email:issueForm.email.trim().toLowerCase(), password:issueForm.password, full_name:staff?.name||issueForm.email, role:issueForm.role, coach_id:issueForm.coach_id, team_id:profile.team_id, notes:issueForm.notes }) })
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
       flashIssue(`✅ Login created for ${staff?.name}!\n📧 Email: ${issueForm.email}\n🔑 Password: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
@@ -140,12 +141,12 @@ export default function SettingsPage() {
       const login = staffLogins.find(l => l.id === recoverForm.login_id)
       if (!login) { flashRecover('Login record not found.','error'); setRecoverSaving(false); return }
       let userId = null
-      const { data: byEmail } = await supabase.from('profiles').select('id').ilike('email', login.email).maybeSingle()
+      const { data: byEmail } = await scopeTeam(supabase.from('profiles').select('id').ilike('email', login.email), profile?.team_id).maybeSingle()
       if (byEmail?.id) userId = byEmail.id
       if (!userId) { const u = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase()); if (u?.id) userId = u.id }
       if (!userId && login.coaches?.name) { const u = allUsers.find(u => u.full_name?.toLowerCase() === login.coaches.name.toLowerCase()); if (u?.id) userId = u.id }
       if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. Check Supabase Auth.`, 'error'); setRecoverSaving(false); return }
-      const res = await fetch('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
+      const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
       if (!res.ok) { flashRecover(data.error||'Reset failed.','error'); setRecoverSaving(false); return }
       flashRecover(`✅ Password reset for ${login.coaches?.name||login.email}!\n📧 ${login.email}\n🔑 ${recoverForm.new_password}`, 'success')
@@ -158,8 +159,8 @@ export default function SettingsPage() {
     if (!confirm('Revoke this login? The user will be signed out immediately.')) return
     const login = staffLogins.find(l => l.id === loginId)
     const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase() || u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase())
-    if (!user?.id) { await supabase.from('staff_logins').update({ is_active:false }).eq('id',loginId); flash('Login revoked in records.'); await loadAll(); return }
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'revoke' }) })
+    if (!user?.id) { await scopeTeam(supabase.from('staff_logins').update({ is_active:false }).eq('id',loginId), profile?.team_id); flash('Login revoked in records.'); await loadAll(); return }
+    const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'revoke' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash('✅ Login revoked.'); await loadAll()
@@ -169,21 +170,21 @@ export default function SettingsPage() {
     if (!confirm('Reactivate this login?')) return
     const login = staffLogins.find(l => l.id === loginId)
     const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase() || u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase())
-    if (!user?.id) { await supabase.from('staff_logins').update({ is_active:true }).eq('id',loginId); flash('Login reactivated.'); await loadAll(); return }
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'reactivate' }) })
+    if (!user?.id) { await scopeTeam(supabase.from('staff_logins').update({ is_active:true }).eq('id',loginId), profile?.team_id); flash('Login reactivated.'); await loadAll(); return }
+    const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash('✅ Login reactivated.'); await loadAll()
   }
 
   async function updateUserRole(userId, role) {
-    await supabase.from('profiles').update({ role }).eq('id', userId)
+    await scopeTeam(supabase.from('profiles').update({ role }).eq('id', userId), profile?.team_id)
     setAllUsers(u => u.map(x => x.id === userId ? { ...x, role } : x))
   }
 
   async function toggleUserActive(userId, current) {
     if (current && !confirm('Disable this user? They will be signed out immediately.')) return
-    const res  = await fetch('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, action:current?'revoke':'reactivate' }) })
+    const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, action:current?'revoke':'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash(current ? '✅ User disabled.' : '✅ User enabled.'); await loadAll()

@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { PLAN_LIMITS } from '@/lib/subscription'
+import { fetchWithAuth } from '@/lib/tenant'
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxx'
 
@@ -71,7 +72,7 @@ function BillingContent(){
       setProfile({...p,email:session.user.email})
       setIsAdmin(p.role==='admin'||p.role==='superadmin')
       if(p.team_id){
-        const res=await fetch(`/api/billing?team_id=${p.team_id}`)
+        const res=await fetchWithAuth(`/api/billing?team_id=${p.team_id}`)
         const data=await res.json()
         setSub(data.subscription)
         setHistory(data.history||[])
@@ -103,7 +104,7 @@ function BillingContent(){
         channels:['card','mobile_money','bank'],
         onClose: function(){ setPaying(false); flash('Payment window closed.','error') },
         callback: function(response){
-          fetch('/api/billing',{
+          fetchWithAuth('/api/billing',{
             method:'POST', headers:{'Content-Type':'application/json'},
             body:JSON.stringify({ team_id:profile.team_id, plan:selPlan, payment_method:'paystack', payment_ref:response.reference, notes:'Paystack — '+response.reference, requested_by:profile.id }),
           })
@@ -123,7 +124,7 @@ function BillingContent(){
 
   async function handleCancel(){
     if(!confirm('Cancel your subscription?'))return
-    const res=await fetch('/api/billing',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({team_id:profile.team_id,action:'cancel',requested_by:profile.id})})
+    const res=await fetchWithAuth('/api/billing',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({team_id:profile.team_id,action:'cancel',requested_by:profile.id})})
     const data=await res.json()
     if(!res.ok){ flash(data.error||'Failed.','error'); return }
     flash('Subscription cancelled.','success'); await load()

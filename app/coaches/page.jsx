@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const STAFF_TYPES = [
   { value:'head_coach',       label:'Head Coach',          icon:'🎯', color:'#4A90E2', dept:'Coaching'   },
@@ -85,19 +86,18 @@ export default function CoachesPage() {
   const [formError,    setFormError]    = useState('')
   const [currentUser,  setCurrentUser]  = useState(null)
   const [hasStampCols, setHasStampCols] = useState(false)
+  const [teamId,       setTeamId]       = useState(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const { data:{session} } = await supabase.auth.getSession()
-      if (session) {
-        const { data:p } = await supabase.from('profiles').select('id,full_name,role').eq('id',session.user.id).single()
-        setCurrentUser(p)
-      }
+      const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+      setCurrentUser(p)
+      setTeamId(currentTeamId)
 
       // Try with stamp cols first
-      const r1 = await supabase.from('coaches')
-        .select('*,athletes(id,name,position,status,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)')
+      const r1 = await scopeTeam(supabase.from('coaches')
+        .select('*,athletes(id,name,position,status,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)'), currentTeamId)
         .order('name')
 
       if (!r1.error) {
@@ -105,7 +105,7 @@ export default function CoachesPage() {
         setHasStampCols(true)
       } else {
         // Fallback without stamp cols (columns not added yet)
-        const r2 = await supabase.from('coaches').select('*,athletes(id,name,position,status,photo_url)').order('name')
+        const r2 = await scopeTeam(supabase.from('coaches').select('*,athletes(id,name,position,status,photo_url)'), currentTeamId).order('name')
         if (r2.error) console.error('Coaches fetch error:', r2.error.message)
         setCoaches(r2.data||[])
         setHasStampCols(false)
@@ -140,6 +140,7 @@ export default function CoachesPage() {
   async function handleSave() {
     setFormError('')
     if (!form.name.trim()){setFormError('Full name is required.');return}
+    if (!teamId){setFormError('Your account is not assigned to a team.');return}
     setSaving(true)
     const now=new Date().toISOString()
     const userId=currentUser?.id||null
@@ -147,6 +148,7 @@ export default function CoachesPage() {
       name:form.name.trim(),staff_type:form.staff_type,
       speciality:form.speciality||null,experience_years:parseInt(form.experience_years)||null,
       phone:form.phone||null,email:form.email||null,is_active:form.is_active,
+      team_id:teamId,
     }
     if (hasStampCols) {
       if (editId){payload.updated_by=userId;payload.updated_at=now}
@@ -155,13 +157,13 @@ export default function CoachesPage() {
     if (editId) {
       const url=await uploadPhoto(editId)
       if (url) payload.photo_url=url
-      const {error}=await supabase.from('coaches').update(payload).eq('id',editId)
+      const {error}=await scopeTeam(supabase.from('coaches').update(payload).eq('id',editId), teamId)
       if (error){setFormError('Update failed: '+error.message);setSaving(false);return}
     } else {
       const {data:nc,error}=await supabase.from('coaches').insert([payload]).select().single()
       if (error){setFormError('Save failed: '+error.message);setSaving(false);return}
       const url=await uploadPhoto(nc.id)
-      if (url) await supabase.from('coaches').update({photo_url:url}).eq('id',nc.id)
+      if (url) await scopeTeam(supabase.from('coaches').update({photo_url:url}).eq('id',nc.id), teamId)
     }
     setShowForm(false);setForm(EMPTY_FORM);setPhotoFile(null);setPhotoPreview(null);setSaving(false);fetchData()
   }
@@ -169,7 +171,7 @@ export default function CoachesPage() {
   async function handleDelete(id,name) {
     if (!confirm(`Remove ${name} from staff?`))return
     setDeleting(id)
-    const {error}=await supabase.from('coaches').delete().eq('id',id)
+    const {error}=await scopeTeam(supabase.from('coaches').delete().eq('id',id), teamId)
     if (error) alert('Delete failed: '+error.message)
     else fetchData()
     setDeleting(null)
@@ -178,7 +180,7 @@ export default function CoachesPage() {
   async function toggleActive(id,current) {
     const update={is_active:!current}
     if (hasStampCols){update.updated_by=currentUser?.id||null;update.updated_at=new Date().toISOString()}
-    await supabase.from('coaches').update(update).eq('id',id)
+    await scopeTeam(supabase.from('coaches').update(update).eq('id',id), teamId)
     fetchData()
   }
 

@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
 import { Users, Shield, Calendar, Activity, Zap } from 'lucide-react'
 
@@ -68,22 +69,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
-      const { data:{ session } } = await supabase.auth.getSession()
-      if (session) {
-        // ── KEY FIX: fetch club_name and club_logo_url from profiles ──
-        const { data:p } = await supabase
-          .from('profiles')
-          .select('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
-          .eq('id', session.user.id)
-          .single()
-        setProfile(p)
-        setIsAdmin(p?.role==='admin'||p?.role==='superadmin')
-      }
+      const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+      setProfile(p)
+      setIsAdmin(p?.role==='admin'||p?.role==='superadmin')
       const [{ data:a },{ data:i },{ data:c },{ data:s }] = await Promise.all([
-        supabase.from('athletes').select('*').order('created_at',{ascending:false}),
-        supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'),
-        supabase.from('coaches').select('*'),
-        supabase.from('training_sessions').select('*,coaches(name)').order('date',{ascending:true}),
+        scopeTeam(supabase.from('athletes').select('*'), teamId).order('created_at',{ascending:false}),
+        scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), teamId),
+        scopeTeam(supabase.from('coaches').select('*'), teamId),
+        scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), teamId).order('date',{ascending:true}),
       ])
       setAthletes(a||[]); setInjuries(i||[]); setCoaches(c||[]); setSessions(s||[])
       setLoading(false)

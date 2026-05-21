@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
+import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const POSITIONS=['Forward','Midfielder','Defender','Goalkeeper']
 const STATUS_OPTS=['Watching','Recommended','Rejected','Signed']
@@ -30,12 +31,15 @@ export default function ScoutingPage(){
   const [form,    setForm]    = useState(EMPTY)
   const [filter,  setFilter]  = useState('All')
   const [search,  setSearch]  = useState('')
+  const [teamId,  setTeamId]  = useState(null)
 
   const fetchData=useCallback(async()=>{
     setLoading(true)
+    const { teamId: currentTeamId } = await getTenantProfile()
+    setTeamId(currentTeamId)
     const [{data:r},{data:c}]=await Promise.all([
-      supabase.from('scouting_reports').select('*, coaches(name)').order('created_at',{ascending:false}),
-      supabase.from('coaches').select('id,name'),
+      scopeTeam(supabase.from('scouting_reports').select('*, coaches(name)'), currentTeamId).order('created_at',{ascending:false}),
+      scopeTeam(supabase.from('coaches').select('id,name'), currentTeamId),
     ])
     setReports(r||[]);setCoaches(c||[]);setLoading(false)
   },[])
@@ -48,16 +52,17 @@ export default function ScoutingPage(){
 
   async function handleSave(){
     if(!form.player_name.trim())return alert('Player name required.')
+    if(!teamId)return alert('Your account is not assigned to a team.')
     setSaving(true)
-    const p={...form,age:parseInt(form.age)||null,height:parseInt(form.height)||null,weight:parseInt(form.weight)||null,overall_rating:parseInt(form.overall_rating)||5,technical_rating:parseInt(form.technical_rating)||5,physical_rating:parseInt(form.physical_rating)||5,tactical_rating:parseInt(form.tactical_rating)||5,scout_id:form.scout_id||null}
-    if(editId){const{error}=await supabase.from('scouting_reports').update(p).eq('id',editId);if(error)alert(error.message);else{setShowForm(false);fetchData()}}
+    const p={...form,team_id:teamId,age:parseInt(form.age)||null,height:parseInt(form.height)||null,weight:parseInt(form.weight)||null,overall_rating:parseInt(form.overall_rating)||5,technical_rating:parseInt(form.technical_rating)||5,physical_rating:parseInt(form.physical_rating)||5,tactical_rating:parseInt(form.tactical_rating)||5,scout_id:form.scout_id||null}
+    if(editId){const{error}=await scopeTeam(supabase.from('scouting_reports').update(p).eq('id',editId), teamId);if(error)alert(error.message);else{setShowForm(false);fetchData()}}
     else{const{error}=await supabase.from('scouting_reports').insert([p]);if(error)alert(error.message);else{setShowForm(false);setForm(EMPTY);fetchData()}}
     setSaving(false)
   }
 
   async function handleDelete(id){
     if(!confirm('Delete this scouting report?'))return;setDeleting(id)
-    const{error}=await supabase.from('scouting_reports').delete().eq('id',id)
+    const{error}=await scopeTeam(supabase.from('scouting_reports').delete().eq('id',id), teamId)
     if(error)alert(error.message);else fetchData();setDeleting(null)
   }
 

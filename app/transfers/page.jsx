@@ -107,7 +107,7 @@ export default function TransfersPage() {
         const athleteIds = [...new Set(t.map(tr => tr.athlete_id).filter(Boolean))]
         const { data:athData } = await supabase
           .from('athletes')
-          .select('id,name,photo_url,position,nationality,club')
+          .select('id,name,photo_url,position,club')
           .in('id', athleteIds)
 
         console.log('Athlete data for transfer log:', athData)

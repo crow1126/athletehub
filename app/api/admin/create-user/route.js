@@ -16,7 +16,17 @@ async function adminFetch(path, method = 'GET', body = null) {
   })
 
   const data = await res.json()
-  if (!res.ok) throw new Error(data.message || data.error || 'Auth API error')
+  if (!res.ok) {
+    // Supabase Auth Admin API uses `msg` (not `message`) for error text
+    const errMsg =
+      data.msg ||
+      data.message ||
+      data.error_description ||
+      data.error ||
+      `Auth API error (HTTP ${res.status})`
+    console.error('[create-user] adminFetch error:', res.status, JSON.stringify(data))
+    throw new Error(errMsg)
+  }
   return data
 }
 
@@ -43,6 +53,10 @@ export async function POST(req) {
       ? (team_id || null)
       : requester.profile.team_id
 
+    if (!resolvedTeamId) {
+      return NextResponse.json({ error: 'Your account is not linked to a club. Contact the system administrator.' }, { status: 403 })
+    }
+
     if (coach_id) {
       let coachQuery = db
         .from('coaches')
@@ -60,6 +74,22 @@ export async function POST(req) {
 
     if (!resolvedTeamId || !canManageTeam(requester.profile, resolvedTeamId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    // Duplicate-email guard — gives a clear message instead of a raw Supabase Auth error
+    const { data: existingProfile } = await db
+      .from('profiles')
+      .select('id, team_id')
+      .ilike('email', email.trim().toLowerCase())
+      .maybeSingle()
+
+    if (existingProfile) {
+      const sameClub = existingProfile.team_id === resolvedTeamId
+      return NextResponse.json({
+        error: sameClub
+          ? 'A login with this email already exists in your club.'
+          : 'This email is already registered to a user in another club.',
+      }, { status: 409 })
     }
 
     const newUser = await adminFetch('users', 'POST', {

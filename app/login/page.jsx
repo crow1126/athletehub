@@ -137,6 +137,8 @@ export default function LandingPage() {
           setError('Your account has been disabled. Contact your administrator for assistance.')
         } else if (profile?.registration_status === 'pending') {
           setError('Your account is being set up. Please try again in a moment.')
+        } else if (profile?.registration_status === 'pending_email_verification') {
+          setError('Please check your email and click the confirmation link to activate your club account.')
         } else {
           setError('Your account is currently inactive. Contact your administrator.')
         }
@@ -159,7 +161,10 @@ export default function LandingPage() {
     try {
       const { data, error:authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(), password,
-        options:{ data:{ full_name:fullName.trim(), club_name:clubName.trim() } }
+        options:{
+          data:{ full_name:fullName.trim(), club_name:clubName.trim() },
+          emailRedirectTo: `${window.location.origin}/auth/confirm`
+        }
       })
       if (authError) { setError(authError.message); setLoading(false); return }
       if (data?.user) {

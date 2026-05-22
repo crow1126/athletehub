@@ -101,7 +101,11 @@ export async function POST(req) {
       }
     }
 
-    // ── Step 3: Activate the profile ─────────────────────────────────────
+    // ── Step 3: Create profile ────────────────────────────────────────────
+    // New club admins start INACTIVE — they must confirm their email first.
+    // Club joiners (existing team, assigned 'coach') are activated immediately
+    // because they are not registering a fresh club, they are joining an existing one.
+    const isNewClubAdmin = assignedRole === 'admin'
     const { error: profileError } = await db
       .from('profiles')
       .upsert({
@@ -111,9 +115,11 @@ export async function POST(req) {
         club_name: club_name?.trim() || null,
         club_logo_url: logo_url || null,
         role: assignedRole,
-        is_active: true,
-        registration_status: 'approved',
-        approved_at: new Date().toISOString(),
+        is_active: !isNewClubAdmin,                          // false for new admins
+        registration_status: isNewClubAdmin
+          ? 'pending_email_verification'                      // activated after email confirm
+          : 'approved',
+        approved_at: isNewClubAdmin ? null : new Date().toISOString(),
         team_id: teamId,
       }, { onConflict: 'id' })
 

@@ -159,6 +159,14 @@ export default function LandingPage() {
     if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return }
     setLoading(true)
     try {
+      const checkRes = await fetch(`/api/signup-provision?club_name=${encodeURIComponent(clubName.trim())}`)
+      const checkData = await checkRes.json()
+      if (checkData.exists) {
+        setError('A club with this name is already registered.')
+        setLoading(false)
+        return
+      }
+
       const { data, error:authError } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(), password,
         options:{

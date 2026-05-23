@@ -11,6 +11,33 @@ function getDb() {
 }
 
 /**
+ * GET /api/signup-provision
+ *
+ * Check if a team name already exists (case-insensitive)
+ */
+export async function GET(req) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const clubName = searchParams.get('club_name')
+    if (!clubName || !clubName.trim()) {
+      return NextResponse.json({ exists: false })
+    }
+
+    const db = getDb()
+    const { data: existingTeam } = await db
+      .from('teams')
+      .select('id')
+      .ilike('name', clubName.trim())
+      .maybeSingle()
+
+    return NextResponse.json({ exists: !!existingTeam })
+  } catch (err) {
+    console.error('Club check error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+/**
  * POST /api/signup-provision
  *
  * Called after supabase.auth.signUp() succeeds.
@@ -42,9 +69,7 @@ export async function POST(req) {
         .maybeSingle()
 
       if (existingTeam?.id) {
-        // Team exists — join as admin
-        teamId = existingTeam.id
-        assignedRole = 'admin'
+        return NextResponse.json({ error: 'A club with this name is already registered.' }, { status: 409 })
       } else {
         // Create new team
         const shortName = trimmedClub

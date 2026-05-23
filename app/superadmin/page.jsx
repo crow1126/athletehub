@@ -301,6 +301,12 @@ export default function SuperadminPage() {
 
     setAddingAdmin(true)
     try {
+      const checkRes = await fetch(`/api/signup-provision?club_name=${encodeURIComponent(newClub.trim())}`)
+      const checkData = await checkRes.json()
+      if (checkData.exists) {
+        throw new Error('A club with this name is already registered.')
+      }
+
       const { data:authData, error:authError } = await supabase.auth.signUp({
         email: newEmail.trim().toLowerCase(),
         password: newPassword,

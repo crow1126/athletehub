@@ -1,4 +1,4 @@
-﻿import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 const SUPERADMIN_EMAIL = "samuelwobil11@gmail.com"
@@ -16,7 +16,13 @@ serve(async (req) => {
   }
 
   try {
-    const { full_name, email, club_name, club_logo_url } = await req.json()
+    const { full_name, email, club_name, club_logo_url, action_link } = await req.json()
+
+    const buttonUrl = action_link || `${APP_URL}/login`
+    const buttonText = action_link ? 'Verify Email & Activate Account' : 'Sign In to Dashboard'
+    const instructionText = action_link 
+      ? 'Please confirm your email by clicking the button below to fully activate your club account:'
+      : 'Your team and subscription have been set up automatically. Sign in using the link below:'
 
     const welcomeHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
       '<div style="background:linear-gradient(135deg,#004F4F,#008080);padding:28px;border-radius:12px 12px 0 0;text-align:center;">' +
@@ -25,12 +31,13 @@ serve(async (req) => {
       '</div>' +
       '<div style="background:#FFFCF6;padding:28px;border-radius:0 0 12px 12px;border:1px solid #E0F0F0;">' +
       '<p style="color:#003D3D;font-size:15px;">Hi ' + (full_name || 'there') + ',</p>' +
-      '<p style="color:#5A9494;line-height:1.7;">Your Apex Track account is ready with a <strong style="color:#006A6A;">30-day free trial</strong>. Your team and subscription have been set up automatically.</p>' +
+      '<p style="color:#5A9494;line-height:1.7;">Your Apex Track account is ready with a <strong style="color:#006A6A;">30-day free trial</strong>.</p>' +
       '<div style="background:#E8F8EE;border:1px solid rgba(39,174,96,0.2);border-radius:10px;padding:14px;margin:16px 0;">' +
       '<p style="color:#1B6B3A;font-size:13px;margin:0;font-weight:600;">Team "' + (club_name || 'Your Club') + '" created</p>' +
       '<p style="color:#1B6B3A;font-size:13px;margin:4px 0 0;">30-day trial activated</p>' +
       '</div>' +
-      '<a href="' + APP_URL + '/login" style="display:block;text-align:center;background:linear-gradient(135deg,#006A6A,#008080);color:#FFFCF6;text-decoration:none;padding:14px;border-radius:10px;font-weight:700;margin:16px 0;font-size:14px;">Sign In to Dashboard</a>' +
+      '<p style="color:#5A9494;line-height:1.6;margin-bottom:16px;">' + instructionText + '</p>' +
+      '<a href="' + buttonUrl + '" style="display:block;text-align:center;background:linear-gradient(135deg,#006A6A,#008080);color:#FFFCF6;text-decoration:none;padding:14px;border-radius:10px;font-weight:700;margin:16px 0;font-size:14px;">' + buttonText + '</a>' +
       '<p style="color:#5A9494;font-size:11px;text-align:center;">Use your registered email and password to sign in.</p>' +
       '</div></div>'
 
@@ -44,7 +51,9 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Apex Track <onboarding@resend.dev>",
         to: [email],
-        subject: "Welcome to Apex Track - Your 30-day trial is active!",
+        subject: action_link
+          ? "Confirm your email - Apex Track"
+          : "Welcome to Apex Track - Your 30-day trial is active!",
         html: welcomeHtml,
       }),
     })
@@ -62,8 +71,10 @@ serve(async (req) => {
         body: JSON.stringify({
           from: "Apex Track <onboarding@resend.dev>",
           to: [SUPERADMIN_EMAIL],
-          subject: "Forward to " + email + " - Welcome to Apex Track",
-          html: '<p style="color:#8B2020;font-size:13px;background:#FEF9E7;padding:12px;border-radius:8px;">Resend free tier cannot deliver to ' + email + '. Forward this welcome email to them, or add a verified domain in Resend.</p>' + welcomeHtml,
+          subject: action_link
+            ? "Action Required: Forward to " + email + " - Confirm your email"
+            : "Forward to " + email + " - Welcome to Apex Track",
+          html: '<p style="color:#8B2020;font-size:13px;background:#FEF9E7;padding:12px;border-radius:8px;">Resend free tier cannot deliver to ' + email + '. Forward this verification/welcome email to them, or add a verified domain in Resend.</p>' + welcomeHtml,
         }),
       })
     }

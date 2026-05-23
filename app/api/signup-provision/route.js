@@ -106,6 +106,36 @@ export async function POST(req) {
     // Club joiners (existing team, assigned 'coach') are activated immediately
     // because they are not registering a fresh club, they are joining an existing one.
     const isNewClubAdmin = assignedRole === 'admin'
+    
+    let actionLink = null
+    let autoActivated = false
+
+    if (isNewClubAdmin) {
+      try {
+        const origin = req.headers.get('origin') || new URL(req.url).origin
+        const redirectTo = `${origin}/auth/confirm`
+        const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
+          type: 'signup',
+          email: email.trim().toLowerCase(),
+          options: { redirectTo }
+        })
+
+        if (linkError) {
+          if (linkError.message.includes('already') || linkError.message.includes('registered')) {
+            console.log('User is already confirmed in Supabase. Auto-activating profile...')
+            autoActivated = true
+          } else {
+            console.error('Failed to generate verification link:', linkError.message)
+          }
+        } else {
+          actionLink = linkData?.properties?.action_link || null
+        }
+      } catch (linkErr) {
+        console.error('Link generation error:', linkErr.message)
+      }
+    }
+
+    const shouldBeActive = !isNewClubAdmin || autoActivated
     const { error: profileError } = await db
       .from('profiles')
       .upsert({
@@ -115,11 +145,9 @@ export async function POST(req) {
         club_name: club_name?.trim() || null,
         club_logo_url: logo_url || null,
         role: assignedRole,
-        is_active: !isNewClubAdmin,                          // false for new admins
-        registration_status: isNewClubAdmin
-          ? 'pending_email_verification'                      // activated after email confirm
-          : 'approved',
-        approved_at: isNewClubAdmin ? null : new Date().toISOString(),
+        is_active: shouldBeActive,
+        registration_status: shouldBeActive ? 'approved' : 'pending_email_verification',
+        approved_at: shouldBeActive ? new Date().toISOString() : null,
         team_id: teamId,
       }, { onConflict: 'id' })
 
@@ -140,6 +168,7 @@ export async function POST(req) {
           full_name: full_name || email,
           email: email,
           club_name: club_name?.trim() || null,
+          action_link: actionLink,
         }),
       })
     } catch (emailErr) {

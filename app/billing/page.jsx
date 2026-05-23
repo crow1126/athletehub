@@ -135,7 +135,7 @@ function BillingContent(){
   const statusStyle = sub?(STATUS_COLORS[sub.status]||STATUS_COLORS.active):STATUS_COLORS.active
   const days        = sub?daysLeft(sub.plan==='trial'?sub.trial_ends_at:sub.current_period_end):0
 
-  if(loading)return(<Layout><div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}><div style={{width:36,height:36,border:'4px solid var(--border)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/></div></Layout>)
+  if(loading)return(<Layout><div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}><div style={{width:36,height:36,border:'4px solid #CCFBF1',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/></div></Layout>)
 
   return(
     <Layout>
@@ -166,7 +166,7 @@ function BillingContent(){
         {/* Tabs */}
         <div style={{display:'flex',gap:8,marginBottom:28,borderBottom:'1px solid var(--border)'}}>
           {[{id:'overview',label:'📋 Overview'},{id:'upgrade',label:'⬆️ Change Plan'},{id:'history',label:'🧾 Payment History'}].map(t=>(
-            <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'10px 18px',background:'none',border:'none',borderBottom:tab===t.id?'2px solid var(--blue)':'2px solid transparent',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'var(--blue)':'var(--text2)',cursor:'pointer',fontFamily:'var(--font)',marginBottom:-1}}>
+            <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'10px 18px',background:'none',border:'none',borderBottom:tab===t.id?'2px solid #0D9488':'2px solid transparent',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'#0D9488':'var(--text2)',cursor:'pointer',fontFamily:'var(--font)',marginBottom:-1}}>
               {t.label}
             </button>
           ))}
@@ -177,7 +177,7 @@ function BillingContent(){
         {tab==='overview'&&(
           <div style={{display:'flex',flexDirection:'column',gap:20}}>
             <div className="card" style={{padding:0,overflow:'hidden'}}>
-              <div style={{background:currentPlan?.color||'var(--blue)',padding:'20px 24px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div style={{background:currentPlan?.color||'#0D9488',padding:'20px 24px',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div>
                   <div style={{fontSize:11,fontWeight:700,color:'rgba(255,252,246,0.6)',letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:4}}>Current Plan</div>
                   <div style={{fontSize:28,fontWeight:800,color:'#FFFCF6'}}>{currentPlan?.label||sub?.plan||'Trial'}</div>
@@ -287,7 +287,7 @@ function BillingContent(){
                     <span>Billing period</span><span>30 days from today</span>
                   </div>
                 </div>
-                <div style={{background:'var(--blue-light)',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid var(--border)',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
+                <div style={{background:'#F0FDFA',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid #CCFBF1',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
                   📱 <strong>MTN MoMo & Vodafone Cash accepted</strong> — enter your MoMo PIN in the payment popup.<br/>
                   💳 Card payments also supported.
                 </div>
@@ -318,7 +318,7 @@ function BillingContent(){
                 {history.map((ev,i)=>(
                   <div key={ev.id} style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr 1.5fr',gap:8,padding:'12px 20px',borderBottom:'1px solid var(--border)',background:i%2===0?'#fff':'var(--surface2)'}}>
                     <div style={{fontSize:12,color:'var(--text2)'}}>{fmtDate(ev.created_at)}</div>
-                    <div><span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:99,background:'var(--blue-light)',color:'var(--blue)',textTransform:'capitalize'}}>{ev.type}</span></div>
+                    <div><span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:99,background:'#F0FDFA',color:'#0F766E',textTransform:'capitalize'}}>{ev.type}</span></div>
                     <div style={{fontSize:12,fontWeight:600,color:'var(--text)',textTransform:'capitalize'}}>{ev.plan}</div>
                     <div style={{fontSize:12,fontWeight:700,color:ev.amount_ghs>0?'var(--success)':'var(--text3)'}}>{ev.amount_ghs>0?`GHS ${ev.amount_ghs.toLocaleString()}`:'—'}</div>
                     <div style={{fontSize:11,color:'var(--text3)',fontFamily:'monospace',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ev.payment_ref||'—'}</div>
@@ -335,7 +335,7 @@ function BillingContent(){
 
 export default function BillingPage() {
   return (
-    <Suspense fallback={<Layout><div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}><div style={{width:36,height:36,border:'4px solid var(--border)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/></div></Layout>}>
+    <Suspense fallback={<Layout><div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}><div style={{width:36,height:36,border:'4px solid #CCFBF1',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/></div></Layout>}>
       <BillingContent />
     </Suspense>
   )

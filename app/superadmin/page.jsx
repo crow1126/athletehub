@@ -209,41 +209,58 @@ export default function SuperadminPage() {
     })
   }, [router])
 
-  const loadProfiles = useCallback(async () => {
-    setLoading(true)
-    const { data } = await supabase
-      .from('profiles')
-      .select('id,full_name,email,club_name,role,is_active,registration_status,created_at,club_logo_url,phone,team_id')
-      .order('created_at', { ascending:false })
-    const rows = data || []
-    setProfiles(rows)
-    setStats({
-      total:    rows.length,
-      pending:  rows.filter(p=>p.registration_status==='pending_email_verification'||p.registration_status==='pending').length,
-      approved: rows.filter(p=>p.registration_status==='approved').length,
-      rejected: rows.filter(p=>p.registration_status==='rejected').length,
-      clubs:    [...new Set(rows.filter(p=>p.team_id).map(p=>p.team_id))].length,
+  const fetchWithAuth = useCallback(async (url) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) throw new Error('No active session')
+    const res = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      }
     })
-    setLoading(false)
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}))
+      throw new Error(errData.error || `HTTP error ${res.status}`)
+    }
+    return res.json()
   }, [])
 
+  const loadProfiles = useCallback(async () => {
+    setLoading(true)
+    try {
+      const data = await fetchWithAuth('/api/admin/superadmin-data?section=profiles')
+      const rows = data.profiles || []
+      setProfiles(rows)
+      setStats({
+        total:    rows.length,
+        pending:  rows.filter(p=>p.registration_status==='pending_email_verification'||p.registration_status==='pending').length,
+        approved: rows.filter(p=>p.registration_status==='approved').length,
+        rejected: rows.filter(p=>p.registration_status==='rejected').length,
+        clubs:    [...new Set(rows.filter(p=>p.team_id).map(p=>p.team_id))].length,
+      })
+    } catch (err) {
+      console.error('Error loading profiles:', err)
+      showToast('Failed to load profiles: ' + err.message, 'error')
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchWithAuth])
+
   const loadTeams = useCallback(async () => {
-    const { data } = await supabase.from('teams').select('*').order('created_at', { ascending:false })
-    setTeams(data || [])
-  }, [])
+    try {
+      const data = await fetchWithAuth('/api/admin/superadmin-data?section=teams')
+      setTeams(data.teams || [])
+    } catch (err) {
+      console.error('Error loading teams:', err)
+    }
+  }, [fetchWithAuth])
 
   const loadActivities = useCallback(async () => {
     setActLoading(true)
     try {
-      const [profilesRes, athletesRes, teamsRes] = await Promise.all([
-        supabase.from('profiles').select('full_name, email, club_name, created_at').order('created_at', { ascending: false }).limit(6),
-        supabase.from('athletes').select('name, created_at').order('created_at', { ascending: false }).limit(6).catch(() => ({ data: [] })),
-        supabase.from('teams').select('name, created_at').order('created_at', { ascending: false }).limit(6).catch(() => ({ data: [] }))
-      ])
-
+      const data = await fetchWithAuth('/api/admin/superadmin-data?section=activities')
       const acts = []
-      if (profilesRes.data) {
-        profilesRes.data.forEach(p => {
+      if (data.recentProfiles) {
+        data.recentProfiles.forEach(p => {
           acts.push({
             type: 'signup',
             title: 'Club Signup Request',
@@ -253,8 +270,8 @@ export default function SuperadminPage() {
           })
         })
       }
-      if (athletesRes?.data) {
-        athletesRes.data.forEach(a => {
+      if (data.recentAthletes) {
+        data.recentAthletes.forEach(a => {
           acts.push({
             type: 'athlete',
             title: 'Athlete Profile Created',
@@ -264,8 +281,8 @@ export default function SuperadminPage() {
           })
         })
       }
-      if (teamsRes?.data) {
-        teamsRes.data.forEach(t => {
+      if (data.recentTeams) {
+        data.recentTeams.forEach(t => {
           acts.push({
             type: 'club',
             title: 'Franchise Auto-Provision',
@@ -283,7 +300,7 @@ export default function SuperadminPage() {
       console.error(e)
     }
     setActLoading(false)
-  }, [])
+  }, [fetchWithAuth])
 
   useEffect(() => {
     if (authOk) {
@@ -295,10 +312,19 @@ export default function SuperadminPage() {
 
   const loadTable = useCallback(async (tbl) => {
     setDbLoading(true); setDbRows([]); setDbCols([])
-    const { data, error } = await supabase.from(tbl).select('*').limit(50)
-    if (!error && data?.length) { setDbCols(Object.keys(data[0])); setDbRows(data) }
-    setDbLoading(false)
-  }, [])
+    try {
+      const data = await fetchWithAuth(`/api/admin/superadmin-data?table=${tbl}`)
+      if (data?.data?.length) {
+        setDbCols(Object.keys(data.data[0]))
+        setDbRows(data.data)
+      }
+    } catch (err) {
+      console.error('Error loading table:', err)
+      showToast('Failed to load table: ' + err.message, 'error')
+    } finally {
+      setDbLoading(false)
+    }
+  }, [fetchWithAuth])
 
   useEffect(() => { if (authOk && section==='database') loadTable(dbTable) }, [authOk, section, dbTable, loadTable])
 

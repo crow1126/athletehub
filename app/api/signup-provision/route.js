@@ -137,23 +137,35 @@ export async function POST(req) {
 
     if (isNewClubAdmin) {
       try {
-        const origin = req.headers.get('origin') || new URL(req.url).origin
-        const redirectTo = `${origin}/auth/confirm`
-        const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
-          type: 'signup',
-          email: email.trim().toLowerCase(),
-          options: { redirectTo }
-        })
-
-        if (linkError) {
-          if (linkError.message.includes('already') || linkError.message.includes('registered')) {
+        // Fetch user from Supabase Auth to check if they are already confirmed
+        const { data: authData, error: authError } = await db.auth.admin.getUserById(user_id)
+        if (authError || !authData?.user) {
+          console.error('Failed to fetch user auth info:', authError?.message)
+        } else {
+          const user = authData.user
+          const isEmailConfirmed = !!(user.email_confirmed_at || user.confirmed_at)
+          
+          if (isEmailConfirmed) {
             console.log('User is already confirmed in Supabase. Auto-activating profile...')
             autoActivated = true
-          } else {
-            console.error('Failed to generate verification link:', linkError.message)
           }
-        } else {
-          actionLink = linkData?.properties?.action_link || null
+        }
+
+        // Only generate link if user is not auto-activated
+        if (!autoActivated) {
+          const origin = req.headers.get('origin') || new URL(req.url).origin
+          const redirectTo = `${origin}/auth/confirm`
+          const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
+            type: 'signup',
+            email: email.trim().toLowerCase(),
+            options: { redirectTo }
+          })
+
+          if (linkError) {
+            console.error('Failed to generate verification link:', linkError.message)
+          } else {
+            actionLink = linkData?.properties?.action_link || null
+          }
         }
       } catch (linkErr) {
         console.error('Link generation error:', linkErr.message)

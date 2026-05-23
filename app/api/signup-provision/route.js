@@ -42,9 +42,9 @@ export async function POST(req) {
         .maybeSingle()
 
       if (existingTeam?.id) {
-        // Team exists — join as coach (not admin)
+        // Team exists — join as admin
         teamId = existingTeam.id
-        assignedRole = 'coach'
+        assignedRole = 'admin'
       } else {
         // Create new team
         const shortName = trimmedClub

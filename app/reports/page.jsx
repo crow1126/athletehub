@@ -161,7 +161,7 @@ export default function ReportsPage() {
             {/* Toggle */}
             <div style={{ display: 'flex', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 4 }}>
               {['monthly','yearly'].map(t => (
-                <button key={t} onClick={() => setReportType(t)} style={{ padding: '8px 22px', background: reportType === t ? 'var(--blue)' : 'transparent', border: 'none', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600, color: reportType === t ? '#fff' : 'var(--text2)', cursor: 'pointer', transition: 'var(--transition)', textTransform: 'capitalize', fontFamily: 'var(--font)' }}>
+                <button key={t} onClick={() => setReportType(t)} style={{ padding: '8px 22px', background: reportType === t ? '#0D9488' : 'transparent', border: 'none', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600, color: reportType === t ? '#fff' : 'var(--text2)', cursor: 'pointer', transition: 'var(--transition)', textTransform: 'capitalize', fontFamily: 'var(--font)' }}>
                   {t}
                 </button>
               ))}
@@ -179,7 +179,7 @@ export default function ReportsPage() {
               {years.map(y => <option key={y}>{y}</option>)}
             </select>
             <div style={{ fontSize: 14, color: 'var(--text2)' }}>
-              Reporting on: <strong style={{ color: 'var(--blue)' }}>{period}</strong>
+              Reporting on: <strong style={{ color: '#0D9488' }}>{period}</strong>
             </div>
           </div>
         </div>
@@ -198,7 +198,7 @@ export default function ReportsPage() {
 
         {loading ? (
           <div style={{ padding: '60px', textAlign: 'center' }}>
-            <div style={{ width: 36, height: 36, border: '4px solid var(--blue-light)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 12px' }} />
+            <div style={{ width: 36, height: 36, border: '4px solid #F0FDFA', borderTopColor: '#0D9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 12px' }} />
             <p style={{ color: 'var(--text3)', fontSize: 13 }}>Loading data…</p>
           </div>
         ) : (

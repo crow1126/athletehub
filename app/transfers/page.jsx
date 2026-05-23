@@ -66,7 +66,7 @@ function fmtFee(ghs, isFree){
 
 const lbl = { display:'block', fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text3)', marginBottom:6 }
 const inp = { width:'100%', padding:'10px 14px', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', fontSize:14, outline:'none', color:'var(--text)', fontFamily:'var(--font)' }
-const onF = e => e.target.style.borderColor='var(--blue)'
+const onF = e => e.target.style.borderColor='#0D9488'
 const onB = e => e.target.style.borderColor='var(--border)'
 
 const EMPTY_FORM = { athlete_id:'', transfer_type:'bought', from_club:'', to_club:'', fee_ghs:'', fee_usd:'', is_free:false, transfer_date:'', contract_start:'', contract_end:'', notes:'' }
@@ -207,7 +207,7 @@ export default function TransfersPage() {
   if (loading) return (
     <Layout>
       <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'60vh'}}>
-        <div style={{width:36,height:36,border:'4px solid var(--border)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
+        <div style={{width:36,height:36,border:'4px solid var(--border)',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/>
       </div>
     </Layout>
   )
@@ -249,7 +249,7 @@ export default function TransfersPage() {
 
         {/* Record Transfer Form */}
         {showForm && (
-          <div className="card" style={{padding:24,marginBottom:24,borderLeft:'4px solid var(--blue)'}}>
+          <div className="card" style={{padding:24,marginBottom:24,borderLeft:'4px solid #0D9488'}}>
             <h3 style={{fontSize:16,fontWeight:700,color:'var(--text)',marginBottom:20}}>📋 Record New Transfer</h3>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:16}}>
 
@@ -268,7 +268,7 @@ export default function TransfersPage() {
                   alignItems: 'center',
                   gap: 16,
                   padding: '16px 20px',
-                  background: 'var(--blue-light)',
+                  background: '#F0FDFA',
                   borderRadius: 'var(--r-md)',
                   border: '1px solid rgba(20, 184, 166, 0.2)',
                   marginBottom: 8
@@ -355,7 +355,7 @@ export default function TransfersPage() {
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {TRANSFER_TYPES.map(t=>(
               <button key={t} onClick={()=>setFilter(t)}
-                style={{padding:'7px 14px',borderRadius:99,fontSize:12,fontWeight:filter===t?700:500,border:`1px solid ${filter===t?'var(--blue)':'var(--border)'}`,background:filter===t?'var(--blue)':'transparent',color:filter===t?'#FFFCF6':'var(--text2)',cursor:'pointer',fontFamily:'var(--font)',whiteSpace:'nowrap'}}>
+                style={{padding:'7px 14px',borderRadius:99,fontSize:12,fontWeight:filter===t?700:500,border:`1px solid ${filter===t?'#0D9488':'var(--border)'}`,background:filter===t?'#0D9488':'transparent',color:filter===t?'#FFFCF6':'var(--text2)',cursor:'pointer',fontFamily:'var(--font)',whiteSpace:'nowrap'}}>
                 {t==='All'?'All':TYPE_META[t]?.icon+' '+TYPE_META[t]?.label}
               </button>
             ))}
@@ -379,7 +379,7 @@ export default function TransfersPage() {
             const meta = TYPE_META[t.transfer_type]||TYPE_META.bought
             return (
               <div key={t.id} style={{display:'grid',gridTemplateColumns:'2fr 1.2fr 1.8fr 1.2fr 1fr 0.8fr',gap:8,alignItems:'center',padding:'13px 20px',borderBottom:'1px solid var(--border)',background:i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)'}}
-                onMouseEnter={e=>e.currentTarget.style.background='var(--blue-light)'}
+                onMouseEnter={e=>e.currentTarget.style.background='#F0FDFA'}
                 onMouseLeave={e=>e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)'}>
 
                 {/* Player — photo + name */}
@@ -416,7 +416,7 @@ export default function TransfersPage() {
                 {/* Actions */}
                 <div style={{display:'flex',gap:6,justifyContent:'flex-end'}}>
                   <Link href={`/athletes/${t.athlete_id}`}
-                    style={{fontSize:11,fontWeight:700,color:'var(--blue)',background:'var(--blue-light)',padding:'4px 10px',borderRadius:6,textDecoration:'none',whiteSpace:'nowrap'}}>
+                    style={{fontSize:11,fontWeight:700,color:'#0D9488',background:'#F0FDFA',padding:'4px 10px',borderRadius:6,textDecoration:'none',whiteSpace:'nowrap'}}>
                     Profile →
                   </Link>
                   {isAdmin && (
@@ -431,7 +431,7 @@ export default function TransfersPage() {
           })}
         </div>
 
-        <div style={{marginTop:16,padding:'12px 16px',background:'var(--blue-light)',borderRadius:'var(--r-md)',border:'1px solid var(--border)',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
+        <div style={{marginTop:16,padding:'12px 16px',background:'#F0FDFA',borderRadius:'var(--r-md)',border:'1px solid var(--border)',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
           💡 <strong>Historical records are preserved.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain in the system and are still visible on their athlete profile page.
         </div>
 

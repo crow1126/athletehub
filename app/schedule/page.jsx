@@ -133,11 +133,11 @@ export default function SchedulePage() {
             <button onClick={() => setViewDate(d => new Date(d.getFullYear(), d.getMonth()-1, 1))} style={{ width:36, height:36, borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'var(--surface)', cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
             <h2 style={{ fontSize:18, fontWeight:700, minWidth:180, textAlign:'center' }}>{MONTHS[month]} {year}</h2>
             <button onClick={() => setViewDate(d => new Date(d.getFullYear(), d.getMonth()+1, 1))} style={{ width:36, height:36, borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'var(--surface)', cursor:'pointer', fontSize:16, display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
-            <button onClick={() => setViewDate(new Date())} style={{ padding:'7px 14px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'var(--surface)', cursor:'pointer', fontSize:12, fontWeight:600, color:'var(--blue)' }}>Today</button>
+            <button onClick={() => setViewDate(new Date())} style={{ padding:'7px 14px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', background:'var(--surface)', cursor:'pointer', fontSize:12, fontWeight:600, color:'#0D9488' }}>Today</button>
           </div>
           <div style={{ display:'flex', gap:4, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:4 }}>
             {['month','list'].map(v => (
-              <button key={v} onClick={() => setView(v)} style={{ padding:'7px 18px', background:view===v?'var(--blue)':'transparent', border:'none', borderRadius:'var(--r-md)', fontSize:13, fontWeight:600, color:view===v?'#fff':'var(--text2)', cursor:'pointer', transition:'var(--transition)', textTransform:'capitalize' }}>{v}</button>
+              <button key={v} onClick={() => setView(v)} style={{ padding:'7px 18px', background:view===v?'#0D9488':'transparent', border:'none', borderRadius:'var(--r-md)', fontSize:13, fontWeight:600, color:view===v?'#fff':'var(--text2)', cursor:'pointer', transition:'var(--transition)', textTransform:'capitalize' }}>{v}</button>
             ))}
           </div>
         </div>
@@ -163,7 +163,7 @@ export default function SchedulePage() {
                         style={{ minHeight:100, borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'6px', cursor:'pointer', background:isTod?'#E8F4FF':'' }}
                         onMouseEnter={e=>e.currentTarget.style.background=isTod?'#d4ebff':'var(--surface2)'}
                         onMouseLeave={e=>e.currentTarget.style.background=isTod?'#E8F4FF':''}>
-                        <div style={{ width:24, height:24, borderRadius:'50%', background:isTod?'var(--blue)':'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:isTod?800:500, color:isTod?'#fff':'var(--text)', marginBottom:3 }}>{day}</div>
+                        <div style={{ width:24, height:24, borderRadius:'50%', background:isTod?'#0D9488':'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:isTod?800:500, color:isTod?'#fff':'var(--text)', marginBottom:3 }}>{day}</div>
                         {daySessions.slice(0,2).map(s => (
                           <div key={s.id} onClick={e=>{e.stopPropagation();openEdit(s)}}
                             style={{ fontSize:9, fontWeight:600, background:(COLORS[s.type]||'#4A90E2')+'20', color:COLORS[s.type]||'#4A90E2', padding:'1px 4px', borderRadius:3, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', borderLeft:`2px solid ${COLORS[s.type]||'#4A90E2'}`, cursor:'pointer' }}>
@@ -201,7 +201,7 @@ export default function SchedulePage() {
                       <div className="list-hide" style={{ fontSize:12, color:'var(--text2)' }}>{coach?.name?.replace('Coach ','') || '—'}</div>
                       <div style={{ fontSize:12, color:'var(--text2)', fontWeight:600 }}>{s.duration}m</div>
                       <div style={{ display:'flex', gap:5 }}>
-                        <button onClick={() => openEdit(s)} style={{ background:'var(--blue-light)', color:'var(--blue)', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer' }}>Edit</button>
+                        <button onClick={() => openEdit(s)} style={{ background:'#F0FDFA', color:'#0D9488', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer' }}>Edit</button>
                         <button onClick={() => handleDelete(s.id)} disabled={deleting===s.id} style={{ background:'var(--danger-light)', color:'var(--danger)', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer', opacity:deleting===s.id?0.5:1 }}>
                           {deleting===s.id?'…':'Del'}
                         </button>

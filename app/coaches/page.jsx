@@ -232,7 +232,7 @@ export default function CoachesPage() {
         {/* Staff cards */}
         {loading?(
           <div style={{ padding:'60px',textAlign:'center' }}>
-            <div style={{ width:32,height:32,border:'4px solid var(--blue-light)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto 10px' }}/>
+            <div style={{ width:32,height:32,border:'4px solid #F0FDFA',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto 10px' }}/>
             <p style={{ color:'var(--text3)',fontSize:13 }}>Loading staff…</p>
           </div>
         ):filtered.length===0?(
@@ -338,7 +338,7 @@ export default function CoachesPage() {
                     {photoPreview?<img src={photoPreview} alt="Preview" style={{ width:'100%',height:'100%',objectFit:'cover' }}/>:<span style={{ fontSize:34 }}>👤</span>}
                   </div>
                   <div>
-                    <label htmlFor="staff-photo-upload" style={{ display:'inline-block',background:'var(--blue-light)',color:'var(--blue)',border:'1px solid rgba(74,144,226,0.3)',padding:'8px 18px',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer' }}>
+                    <label htmlFor="staff-photo-upload" style={{ display:'inline-block',background:'#F0FDFA',color:'#0D9488',border:'1px solid rgba(74,144,226,0.3)',padding:'8px 18px',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer' }}>
                       {photoPreview?'🔄 Change Photo':'📷 Upload Photo'}
                     </label>
                     <input id="staff-photo-upload" type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(!f)return;setPhotoFile(f);setPhotoPreview(URL.createObjectURL(f))}} style={{ display:'none' }}/>
@@ -348,7 +348,7 @@ export default function CoachesPage() {
                 </div>
               </div>
 
-              <div><label style={lbl}>Full Name *</label><input value={form.name} onChange={e=>set('name')(e.target.value)} style={inp} placeholder="e.g. Dr. Emmanuel Mensah" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+              <div><label style={lbl}>Full Name *</label><input value={form.name} onChange={e=>set('name')(e.target.value)} style={inp} placeholder="e.g. Dr. Emmanuel Mensah" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
 
               <div>
                 <label style={lbl}>Staff Type / Department *</label>
@@ -360,17 +360,17 @@ export default function CoachesPage() {
                 </select>
               </div>
 
-              <div><label style={lbl}>Speciality / Qualification</label><input value={form.speciality} onChange={e=>set('speciality')(e.target.value)} style={inp} placeholder="e.g. UEFA A Licence, MSc Sports Science" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+              <div><label style={lbl}>Speciality / Qualification</label><input value={form.speciality} onChange={e=>set('speciality')(e.target.value)} style={inp} placeholder="e.g. UEFA A Licence, MSc Sports Science" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
 
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
-                <div><label style={lbl}>Years Experience</label><input type="number" min="0" max="50" value={form.experience_years} onChange={e=>set('experience_years')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
-                <div><label style={lbl}>Phone</label><input value={form.phone} onChange={e=>set('phone')(e.target.value)} style={inp} placeholder="+233 24 000 0000" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
+                <div><label style={lbl}>Years Experience</label><input type="number" min="0" max="50" value={form.experience_years} onChange={e=>set('experience_years')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
+                <div><label style={lbl}>Phone</label><input value={form.phone} onChange={e=>set('phone')(e.target.value)} style={inp} placeholder="+233 24 000 0000" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
               </div>
 
-              <div><label style={lbl}>Email Address</label><input type="email" value={form.email} onChange={e=>set('email')(e.target.value)} style={inp} placeholder="staff@club.gh" onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+              <div><label style={lbl}>Email Address</label><input type="email" value={form.email} onChange={e=>set('email')(e.target.value)} style={inp} placeholder="staff@club.gh" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
 
               <div style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:'var(--surface2)',borderRadius:'var(--r-md)',border:'1px solid var(--border)' }}>
-                <input type="checkbox" id="isactive" checked={form.is_active} onChange={e=>set('is_active')(e.target.checked)} style={{ width:16,height:16,cursor:'pointer',accentColor:'var(--blue)' }}/>
+                <input type="checkbox" id="isactive" checked={form.is_active} onChange={e=>set('is_active')(e.target.checked)} style={{ width:16,height:16,cursor:'pointer',accentColor:'#0D9488' }}/>
                 <label htmlFor="isactive" style={{ fontSize:13,fontWeight:600,color:'var(--text)',cursor:'pointer' }}>Active staff member</label>
                 <span style={{ fontSize:11,color:'var(--text3)',marginLeft:'auto' }}>{form.is_active?'● Visible':'○ Hidden'}</span>
               </div>
@@ -378,7 +378,7 @@ export default function CoachesPage() {
               {currentUser&&(
                 <div style={{ background:'linear-gradient(135deg,rgba(74,144,226,0.08),rgba(74,144,226,0.03))',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid rgba(74,144,226,0.2)',position:'relative',overflow:'hidden' }}>
                   <div style={{ position:'absolute',top:0,left:0,width:3,height:'100%',background:'linear-gradient(180deg,#4A90E2,#9B59B6)',borderRadius:'3px 0 0 3px' }}/>
-                  <div style={{ fontSize:11,color:'var(--blue-dark)',fontWeight:700,marginBottom:5 }}>📋 Record will be stamped:</div>
+                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:5 }}>📋 Record will be stamped:</div>
                   <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'rgba(74,144,226,0.12)',borderRadius:99,padding:'4px 12px' }}>
                     <span style={{ fontSize:13 }}>🖊</span>
                     <span style={{ fontSize:12,fontWeight:700,color:'#2E6FC4' }}>{currentUser.full_name}</span>

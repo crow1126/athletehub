@@ -31,7 +31,7 @@ function initials(n) { return (n||'A').slice(0,2).toUpperCase() }
 
 const inp = { width:'100%', padding:'10px 14px', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', fontSize:14, outline:'none', color:'var(--text)', fontFamily:'var(--font)' }
 const lbl = { display:'block', fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text3)', marginBottom:6 }
-const onFocus = e => e.target.style.borderColor = 'var(--blue)'
+const onFocus = e => e.target.style.borderColor = '#0D9488'
 const onBlur  = e => e.target.style.borderColor = 'var(--border)'
 
 export default function SettingsPage() {
@@ -208,7 +208,7 @@ export default function SettingsPage() {
   if (loading) return (
     <Layout>
       <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'60vh' }}>
-        <div style={{ width:36,height:36,border:'4px solid var(--border)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite' }}/>
+        <div style={{ width:36,height:36,border:'4px solid var(--border)',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite' }}/>
       </div>
     </Layout>
   )
@@ -256,7 +256,7 @@ export default function SettingsPage() {
               {TABS.map(t => (
                 <button key={t.id} onClick={() => { setTab(t.id); setMsg({ text:'',type:'' }); setIssueMsg({ text:'',type:'' }); setRecoverMsg({ text:'',type:'' }) }}
                   className="settings-tab-btn"
-                  style={{ width:'100%',padding:'10px 14px',background:tab===t.id?'var(--blue-light)':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'var(--blue)':'var(--text2)',cursor:'pointer',textAlign:'left',transition:'var(--transition)',marginBottom:2,fontFamily:'var(--font)' }}>
+                  style={{ width:'100%',padding:'10px 14px',background:tab===t.id?'#F0FDFA':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'#0D9488':'var(--text2)',cursor:'pointer',textAlign:'left',transition:'var(--transition)',marginBottom:2,fontFamily:'var(--font)' }}>
                   {t.label}
                 </button>
               ))}
@@ -289,9 +289,9 @@ export default function SettingsPage() {
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Security</h2>
                 {!isAdmin ? (
-                  <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'24px 28px' }}>
+                  <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'24px 28px' }}>
                     <div style={{ fontSize:26,marginBottom:12 }}>🔒</div>
-                    <h3 style={{ fontSize:16,fontWeight:700,color:'var(--blue)',marginBottom:8 }}>Password changes are managed by your admin</h3>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:8 }}>Password changes are managed by your admin</h3>
                     <p style={{ fontSize:14,color:'var(--text2)',lineHeight:1.7,marginBottom:18 }}>
                       For security, staff accounts cannot change their own passwords. Contact your club administrator if you need your password changed.
                     </p>
@@ -326,7 +326,7 @@ export default function SettingsPage() {
                 <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
                   <div>
                     <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Issue Staff Logins</h2>
-                    <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'var(--blue)' }}>{profile?.teams?.name||'No team'}</strong></p>
+                    <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong></p>
                   </div>
                   <button onClick={()=>{ setShowIssueForm(!showIssueForm); setIssueMsg({ text:'',type:'' }) }}
                     className={showIssueForm ? 'gm-btn danger' : 'gm-btn outline'} style={{ flexShrink:0 }}>
@@ -335,8 +335,8 @@ export default function SettingsPage() {
                 </div>
 
                 {showIssueForm && (
-                  <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
-                    <h3 style={{ fontSize:16,fontWeight:700,color:'var(--blue)',marginBottom:18 }}>🔑 New Login Credentials</h3>
+                  <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>🔑 New Login Credentials</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
                         <label style={lbl}>Staff Member *</label>
@@ -426,8 +426,8 @@ export default function SettingsPage() {
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Recover Staff Logins</h2>
                 <p style={{ fontSize:14,color:'var(--text3)',marginBottom:24 }}>Reset a staff member's forgotten password. See current stored passwords in the Issue Logins tab.</p>
-                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
-                  <h3 style={{ fontSize:16,fontWeight:700,color:'var(--blue)',marginBottom:18 }}>🔓 Set New Password for Staff</h3>
+                <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
+                  <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>🔓 Set New Password for Staff</h3>
                   <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
                     <div>
                       <label style={lbl}>Staff Member *</label>
@@ -446,16 +446,16 @@ export default function SettingsPage() {
                         return (
                           <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(0,106,106,0.15)' }}>
                             <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
-                              <span style={{ fontSize:12,color:'var(--blue)' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
-                              <span style={{ fontSize:12,color:'var(--blue)' }}>📧 {login.email}</span>
-                              <span style={{ fontSize:12,color:'var(--blue)',textTransform:'capitalize' }}>🎭 {login.role}</span>
+                              <span style={{ fontSize:12,color:'#0D9488' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
+                              <span style={{ fontSize:12,color:'#0D9488' }}>📧 {login.email}</span>
+                              <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>🎭 {login.role}</span>
                             </div>
                             {login.plain_password && (
                               <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--floral-muted)',borderRadius:6,border:'1px solid var(--border)' }}>
-                                <span style={{ fontSize:11,fontWeight:700,color:'var(--blue)' }}>Current password:</span>
+                                <span style={{ fontSize:11,fontWeight:700,color:'#0D9488' }}>Current password:</span>
                                 <span style={{ fontFamily:'monospace',fontSize:13,color:'var(--text)',fontWeight:600 }}>{showPassword['recover_'+login.id] ? login.plain_password : '••••••••'}</span>
                                 <button onClick={()=>setShowPassword(p=>({...p,['recover_'+login.id]:!p['recover_'+login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:2 }}>{showPassword['recover_'+login.id] ? '🙈' : '👁'}</button>
-                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'var(--blue)',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>📋 Copy</button>
+                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>📋 Copy</button>
                               </div>
                             )}
                             {!login.plain_password && <div style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>No stored password — set a new one below.</div>}
@@ -486,7 +486,7 @@ export default function SettingsPage() {
                       const selected = recoverForm.login_id === login.id
                       return (
                         <div key={login.id} onClick={()=>setRecoverForm(f=>({...f,login_id:login.id}))}
-                          style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'var(--blue-light)':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
+                          style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'#F0FDFA':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
                           onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
                           onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
                           <div style={{ display:'flex',alignItems:'center',gap:7 }}>
@@ -521,7 +521,7 @@ export default function SettingsPage() {
               <div>
                 <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20 }}>
                   <div><h2 style={{ fontSize:20,fontWeight:700,marginBottom:4 }}>User Management</h2><p style={{ fontSize:13,color:'var(--text3)' }}>All users in: <strong>{profile?.teams?.name||'—'}</strong></p></div>
-                  <span style={{ fontSize:12,background:'var(--blue-light)',color:'var(--blue)',padding:'6px 14px',borderRadius:99,fontWeight:700 }}>{allUsers.length} users</span>
+                  <span style={{ fontSize:12,background:'#F0FDFA',color:'#0D9488',padding:'6px 14px',borderRadius:99,fontWeight:700 }}>{allUsers.length} users</span>
                 </div>
                 <MsgBox m={msg}/>
                 {allUsers.length===0 ? <p style={{ fontSize:13,color:'var(--text3)',fontStyle:'italic',marginTop:12 }}>No users yet.</p> : (
@@ -557,8 +557,8 @@ export default function SettingsPage() {
             {tab === 'system' && isAdmin && (
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:22 }}>System Information</h2>
-                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'18px 22px',marginBottom:22 }}>
-                  <div style={{ fontSize:13,fontWeight:700,color:'var(--blue)',marginBottom:10 }}>🏟 Your Club</div>
+                <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'18px 22px',marginBottom:22 }}>
+                  <div style={{ fontSize:13,fontWeight:700,color:'#0D9488',marginBottom:10 }}>🏟 Your Club</div>
                   <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }}>
                     {[['Club Name',profile?.teams?.name||'—'],['Short Name',profile?.teams?.short_name||'—'],['Team ID',profile?.team_id||'—'],['Your Role',profile?.role||'—']].map(([label,value])=>(
                       <div key={label} style={{ background:'rgba(255,255,255,0.7)',borderRadius:'var(--r-sm)',padding:'10px 14px' }}>
@@ -576,8 +576,8 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
-                <div style={{ background:'var(--blue-light)',border:'1px solid rgba(0,106,106,0.15)',borderRadius:'var(--r-lg)',padding:'20px 24px' }}>
-                  <h3 style={{ fontSize:15,fontWeight:700,color:'var(--blue)',marginBottom:14 }}>Role Permission Matrix</h3>
+                <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.15)',borderRadius:'var(--r-lg)',padding:'20px 24px' }}>
+                  <h3 style={{ fontSize:15,fontWeight:700,color:'#0D9488',marginBottom:14 }}>Role Permission Matrix</h3>
                   {Object.entries(ROLE_LABELS).map(([role,desc])=>(
                     <div key={role} style={{ display:'flex',alignItems:'center',gap:12,padding:'9px 0',borderBottom:'1px solid rgba(0,106,106,0.08)' }}>
                       <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[role]+'25',color:ROLE_COLORS[role],padding:'3px 12px',borderRadius:99,letterSpacing:'0.08em',textTransform:'uppercase',flexShrink:0,minWidth:76,textAlign:'center' }}>{role}</span>

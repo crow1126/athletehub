@@ -59,13 +59,13 @@ function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
 
 function InlineSelect({ value, options, onSave, renderValue }) {
   const [ed,setEd]=useState(false)
-  if (ed) return <select autoFocus defaultValue={value} onChange={e=>{onSave(e.target.value);setEd(false)}} onBlur={()=>setEd(false)} style={{ padding:'4px 8px',border:'1px solid var(--blue)',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)' }}>{options.map(o=><option key={o}>{o}</option>)}</select>
+  if (ed) return <select autoFocus defaultValue={value} onChange={e=>{onSave(e.target.value);setEd(false)}} onBlur={()=>setEd(false)} style={{ padding:'4px 8px',border:'1px solid #0D9488',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)' }}>{options.map(o=><option key={o}>{o}</option>)}</select>
   return <div onClick={()=>setEd(true)} style={{ cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4 }} title="Click to edit">{renderValue()}<span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}>✏</span></div>
 }
 
 function InlineText({ value, onSave, style={} }) {
   const [ed,setEd]=useState(false)
-  if (ed) return <input autoFocus defaultValue={value} style={{ padding:'4px 8px',border:'1px solid var(--blue)',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)',...style }} onBlur={e=>{onSave(e.target.value);setEd(false)}} onKeyDown={e=>{if(e.key==='Enter'){onSave(e.target.value);setEd(false)}if(e.key==='Escape')setEd(false)}}/>
+  if (ed) return <input autoFocus defaultValue={value} style={{ padding:'4px 8px',border:'1px solid #0D9488',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)',...style }} onBlur={e=>{onSave(e.target.value);setEd(false)}} onKeyDown={e=>{if(e.key==='Enter'){onSave(e.target.value);setEd(false)}if(e.key==='Escape')setEd(false)}}/>
   return <div onClick={()=>setEd(true)} style={{ cursor:'text',display:'inline-flex',alignItems:'center',gap:4,...style }} title="Click to edit"><span>{value||'—'}</span><span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}>✏</span></div>
 }
 
@@ -202,7 +202,7 @@ export default function InjuriesPage() {
         {/* Filter */}
         <div className="fade-up" style={{ display:'flex',gap:4,marginBottom:20,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content' }}>
           {['All','Active','Recovered'].map(f=>(
-            <button key={f} onClick={()=>setFilter(f)} style={{ padding:'8px 22px',background:f==='Active'&&filter===f?'linear-gradient(135deg,#C0392B,#E74C3C)':filter===f?'var(--blue)':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)',fontFamily:'var(--font)' }}>{f}</button>
+            <button key={f} onClick={()=>setFilter(f)} style={{ padding:'8px 22px',background:f==='Active'&&filter===f?'linear-gradient(135deg,#C0392B,#E74C3C)':filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)',fontFamily:'var(--font)' }}>{f}</button>
           ))}
         </div>
 
@@ -273,7 +273,7 @@ export default function InjuriesPage() {
 
                     {/* Actions */}
                     <div style={{ padding:'14px 12px',display:'flex',flexDirection:'column',gap:6,justifyContent:'center' }}>
-                      <button onClick={()=>openEdit(inj)} style={{ background:'var(--blue-light)',color:'var(--blue)',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%' }}>Edit</button>
+                      <button onClick={()=>openEdit(inj)} style={{ background:'#F0FDFA',color:'#0D9488',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%' }}>Edit</button>
                       {isAct&&<button onClick={()=>markRecovered(inj.id,inj.athlete_id)} style={{ background:'#E8F8EE',color:'#1B7A3E',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%' }}>✓ Done</button>}
                       <button onClick={()=>handleDelete(inj.id)} disabled={deleting===inj.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',opacity:deleting===inj.id?0.5:1,fontFamily:'var(--font)',width:'100%' }}>{deleting===inj.id?'…':'Delete'}</button>
                     </div>
@@ -320,7 +320,7 @@ export default function InjuriesPage() {
                   )
                 })()}
               </div>
-              <div><label style={lbl}>Injury Type *</label><input value={form.injury_type} onChange={e=>set('injury_type')(e.target.value)} placeholder="e.g. Hamstring Strain" style={inp} onFocus={e=>e.target.style.borderColor='var(--blue)'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+              <div><label style={lbl}>Injury Type *</label><input value={form.injury_type} onChange={e=>set('injury_type')(e.target.value)} placeholder="e.g. Hamstring Strain" style={inp} onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                 <div><label style={lbl}>Severity</label><select value={form.severity} onChange={e=>set('severity')(e.target.value)} style={inp}>{SEVERITY_OPTS.map(s=><option key={s}>{s}</option>)}</select></div>
                 <div><label style={lbl}>Status</label><select value={form.status||'Active'} onChange={e=>set('status')(e.target.value)} style={inp}>{STATUS_OPTS.map(s=><option key={s}>{s}</option>)}</select></div>
@@ -333,7 +333,7 @@ export default function InjuriesPage() {
               {currentUser&&(
                 <div style={{ background:'linear-gradient(135deg,rgba(74,144,226,0.08),rgba(74,144,226,0.03))',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid rgba(74,144,226,0.2)',position:'relative',overflow:'hidden' }}>
                   <div style={{ position:'absolute',top:0,left:0,width:3,height:'100%',background:'linear-gradient(180deg,#E74C3C,#4A90E2)',borderRadius:'3px 0 0 3px' }}/>
-                  <div style={{ fontSize:11,color:'var(--blue-dark)',fontWeight:700,marginBottom:4 }}>📋 Will be stamped as:</div>
+                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:4 }}>📋 Will be stamped as:</div>
                   <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'rgba(74,144,226,0.1)',borderRadius:99,padding:'4px 12px' }}>
                     <span style={{ fontSize:12 }}>✍</span>
                     <span style={{ fontSize:12,fontWeight:700,color:'#2E6FC4' }}>{currentUser.full_name}</span>

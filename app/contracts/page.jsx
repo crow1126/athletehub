@@ -140,7 +140,7 @@ export default function ContractsPage() {
         {/* Stats */}
         <div className="fade-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
           {[
-            { label: 'Total Contracts',      value: contracts.length,          icon: '📄', color: 'var(--blue)'    },
+            { label: 'Total Contracts',      value: contracts.length,          icon: '📄', color: '#0D9488'    },
             { label: 'Active',               value: activeContracts.length,    icon: '✅', color: 'var(--success)'  },
             { label: 'Weekly Wage Bill',      value: `GHS ${totalWage.toLocaleString('en-GH', { minimumFractionDigits: 0 })}`, icon: '💰', color: '#1B7A3E' },
             { label: 'Expiring (90 days)',    value: contracts.filter(c => { const d = daysLeft(c.contract_end); return d !== null && d >= 0 && d <= 90 }).length, icon: '⚠️', color: 'var(--warning)' },
@@ -158,7 +158,7 @@ export default function ContractsPage() {
         {/* Filter tabs */}
         <div className="fade-up" style={{ display: 'flex', gap: 0, marginBottom: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 4, width: 'fit-content' }}>
           {['All', ...STATUS_OPTS].map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 20px', background: filter === f ? 'var(--blue)' : 'transparent', border: 'none', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600, color: filter === f ? '#fff' : 'var(--text2)', cursor: 'pointer', transition: 'var(--transition)', fontFamily: 'var(--font)' }}>
+            <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 20px', background: filter === f ? '#0D9488' : 'transparent', border: 'none', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600, color: filter === f ? '#fff' : 'var(--text2)', cursor: 'pointer', transition: 'var(--transition)', fontFamily: 'var(--font)' }}>
               {f}
             </button>
           ))}
@@ -174,7 +174,7 @@ export default function ContractsPage() {
 
           {loading ? (
             <div style={{ padding: '48px', textAlign: 'center' }}>
-              <div style={{ width: 28, height: 28, border: '3px solid var(--blue-light)', borderTopColor: 'var(--blue)', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto' }} />
+              <div style={{ width: 28, height: 28, border: '3px solid #F0FDFA', borderTopColor: '#0D9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto' }} />
             </div>
           ) : filtered.length === 0 ? (
             <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
@@ -213,7 +213,7 @@ export default function ContractsPage() {
                   </span>
                 </div>
                 <div style={{ display: 'flex', gap: 5 }}>
-                  <button onClick={() => openEdit(c)} style={{ background: 'var(--blue-light)', color: 'var(--blue)', border: 'none', padding: '4px 10px', borderRadius: 'var(--r-sm)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}>Edit</button>
+                  <button onClick={() => openEdit(c)} style={{ background: '#F0FDFA', color: '#0D9488', border: 'none', padding: '4px 10px', borderRadius: 'var(--r-sm)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font)' }}>Edit</button>
                   <button onClick={() => handleDelete(c.id)} disabled={deleting === c.id} style={{ background: 'var(--danger-light)', color: 'var(--danger)', border: 'none', padding: '4px 10px', borderRadius: 'var(--r-sm)', fontSize: 11, fontWeight: 600, cursor: 'pointer', opacity: deleting === c.id ? 0.5 : 1, fontFamily: 'var(--font)' }}>
                     {deleting === c.id ? '…' : 'Del'}
                   </button>

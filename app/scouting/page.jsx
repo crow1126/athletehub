@@ -12,7 +12,7 @@ const EMPTY={player_name:'',age:'',nationality:'',current_club:'',position:'',he
 const inp={width:'100%',padding:'10px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',fontSize:14,outline:'none',color:'var(--text)',fontFamily:'var(--font)'}
 const lbl={display:'block',fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6}
 
-function RatingBar({value,color='var(--blue)'}){
+function RatingBar({value,color='#0D9488'}){
   return(
     <div style={{height:6,background:'var(--surface3)',borderRadius:3,overflow:'hidden',marginTop:3}}>
       <div style={{height:'100%',width:`${(value/10)*100}%`,background:color,borderRadius:3,transition:'width 0.6s ease'}}/>
@@ -104,13 +104,13 @@ export default function ScoutingPage(){
           <input placeholder="🔍 Search player, club, nationality…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,maxWidth:300}}/>
           <div style={{display:'flex',gap:4,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4}}>
             {['All',...STATUS_OPTS].map(f=>(
-              <button key={f} onClick={()=>setFilter(f)} style={{padding:'7px 14px',background:filter===f?'var(--blue)':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:12,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)'}}>{f}</button>
+              <button key={f} onClick={()=>setFilter(f)} style={{padding:'7px 14px',background:filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:12,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)'}}>{f}</button>
             ))}
           </div>
         </div>
 
         {/* Cards grid */}
-        {loading?(<div style={{padding:'60px',textAlign:'center'}}><div style={{width:32,height:32,border:'4px solid var(--blue-light)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto'}}/></div>
+        {loading?(<div style={{padding:'60px',textAlign:'center'}}><div style={{width:32,height:32,border:'4px solid #F0FDFA',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto'}}/></div>
         ):(
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:16}}>
             {filtered.length===0?<div style={{gridColumn:'1/-1',padding:'48px',textAlign:'center',color:'var(--text3)',background:'var(--surface)',borderRadius:'var(--r-xl)',border:'1px solid var(--border)'}}>No players found.</div>
@@ -144,7 +144,7 @@ export default function ScoutingPage(){
                       </div>
                       {r.market_value&&<div style={{textAlign:'right'}}><div style={{fontSize:10,color:'var(--text3)',textTransform:'uppercase',letterSpacing:'0.06em',fontWeight:600}}>Value</div><div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>{r.market_value}</div></div>}
                       <div style={{display:'flex',gap:5}}>
-                        <button onClick={()=>openEdit(r)} style={{background:'var(--blue-light)',color:'var(--blue)',border:'none',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer'}}>Edit</button>
+                        <button onClick={()=>openEdit(r)} style={{background:'#F0FDFA',color:'#0D9488',border:'none',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer'}}>Edit</button>
                         <button onClick={()=>handleDelete(r.id)} disabled={deleting===r.id} style={{background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',opacity:deleting===r.id?0.5:1}}>{deleting===r.id?'…':'Del'}</button>
                       </div>
                     </div>

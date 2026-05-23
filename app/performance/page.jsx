@@ -130,7 +130,7 @@ export default function PerformancePage(){
             ))}
           </div>
           {loading?(
-            <div style={{ padding:'48px',textAlign:'center' }}><div style={{ width:28,height:28,border:'3px solid var(--blue-light)',borderTopColor:'var(--blue)',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto' }}/></div>
+            <div style={{ padding:'48px',textAlign:'center' }}><div style={{ width:28,height:28,border:'3px solid #F0FDFA',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto' }}/></div>
           ):filtered.length===0?(
             <div style={{ padding:'40px',textAlign:'center',color:'var(--text3)',fontSize:13 }}>No performance records yet.</div>
           ):filtered.map((s,i)=>(
@@ -148,7 +148,7 @@ export default function PerformancePage(){
               <div style={{ fontSize:11,color:'var(--text3)' }}>{s.match_date}</div>
               <div style={{ fontSize:11,color:'var(--text2)',fontWeight:500 }}>{s.opponent||'—'}</div>
               <div style={{ fontSize:12,color:'var(--text2)',fontWeight:600 }}>{s.minutes_played}'</div>
-              <div style={{ fontSize:13,fontWeight:800,color:'var(--blue)' }}>{s.goals}</div>
+              <div style={{ fontSize:13,fontWeight:800,color:'#0D9488' }}>{s.goals}</div>
               <div style={{ fontSize:13,fontWeight:800,color:'#27AE60' }}>{s.assists}</div>
               <div style={{ fontSize:11,color:'var(--text2)' }}>{parseFloat(s.xg||0).toFixed(2)}</div>
               <div style={{ fontSize:11,color:'var(--text2)' }}>{parseFloat(s.xa||0).toFixed(2)}</div>
@@ -159,7 +159,7 @@ export default function PerformancePage(){
                 <span style={{ fontSize:9,color:'var(--text3)' }}>/10</span>
               </div>
               <div style={{ display:'flex',gap:4 }}>
-                <button onClick={()=>openEdit(s)} style={{ background:'var(--blue-light)',color:'var(--blue)',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Edit</button>
+                <button onClick={()=>openEdit(s)} style={{ background:'#F0FDFA',color:'#0D9488',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Edit</button>
                 <button onClick={()=>handleDelete(s.id)} disabled={deleting===s.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',opacity:deleting===s.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===s.id?'…':'Del'}</button>
               </div>
             </div>

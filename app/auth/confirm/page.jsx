@@ -54,7 +54,6 @@ function ConfirmContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState('verifying') // 'verifying' | 'success' | 'error'
   const [message, setMessage] = useState('Verifying your email and activating your account...')
-  const [countdown, setCountdown] = useState(4)
   const isRunningActivation = useRef(false)
 
   useEffect(() => {
@@ -108,16 +107,7 @@ function ConfirmContent() {
     handleConfirm()
   }, [searchParams])
 
-  // Count down to redirect on success
-  useEffect(() => {
-    if (status !== 'success') return
-    if (countdown <= 0) {
-      router.replace('/dashboard')
-      return
-    }
-    const timer = setTimeout(() => setCountdown(c => c - 1), 1000)
-    return () => clearTimeout(timer)
-  }, [status, countdown, router])
+
 
   return (
     <div className="confirm-container">
@@ -283,19 +273,9 @@ function ConfirmContent() {
             <h2 className="heading">Account Activated!</h2>
             <p className="subtext">{message}</p>
 
-            <button className="action-btn" onClick={() => router.replace('/dashboard')}>
-              Go to Dashboard →
+            <button className="action-btn" onClick={() => router.replace('/login')}>
+              Go to Login →
             </button>
-
-            <div className="subtext" style={{ fontSize: 12, marginTop: 16, marginBottom: 0 }}>
-              Redirecting you automatically in {countdown}s...
-            </div>
-            <div className="redirect-progress-bar">
-              <div 
-                className="redirect-progress-fill" 
-                style={{ width: `${(countdown / 4) * 100}%` }}
-              />
-            </div>
           </div>
         )}
 

@@ -135,7 +135,7 @@ export async function POST(req) {
       const origin = req.headers.get('origin') || new URL(req.url).origin
       const redirectTo = `${origin}/auth/confirm`
       const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
-        type: 'signup',
+        type: 'magiclink',
         email: email.trim().toLowerCase(),
         options: { redirectTo }
       })

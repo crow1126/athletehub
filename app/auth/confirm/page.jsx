@@ -57,29 +57,43 @@ function ConfirmContent() {
   const isRunningActivation = useRef(false)
 
   useEffect(() => {
+    // Prevent multiple parallel activation executions
     if (isRunningActivation.current) return
-    isRunningActivation.current = true
 
     async function handleConfirm() {
-      try {
-        const code = searchParams.get('code')
-        let session = null
+      // Get parameters directly from window to bypass Next.js hydration lag
+      if (typeof window === 'undefined') return
+      
+      const queryParams = new URLSearchParams(window.location.search)
+      const code = queryParams.get('code')
+      const hasHashToken = window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token')
 
-        // 1. If PKCE flow (has code query parameter), exchange code for session
+      // Check if we already have an active session in local storage
+      const { data: initialSessionData } = await supabase.auth.getSession()
+      let session = initialSessionData?.session
+
+      // If we don't have a session, and there is no code/hash in the URL, then we can't verify
+      if (!session && !code && !hasHashToken) {
+        setStatus('error')
+        setMessage('No active verification session found. Please sign up or request a new verification link.')
+        return
+      }
+
+      // Mark as running once we know we have a valid context to process
+      isRunningActivation.current = true
+
+      try {
+        // 1. If we have a code (PKCE flow), exchange it
         if (code) {
+          console.log('Exchanging code for session...')
           const { data, error } = await supabase.auth.exchangeCodeForSession(code)
           if (error) throw new Error('Code exchange failed: ' + error.message)
           session = data?.session
         }
 
-        // 2. Fetch current session if not set from code exchange
-        if (!session) {
-          const { data } = await supabase.auth.getSession()
-          session = data?.session
-        }
-
-        // 3. Wait for onAuthStateChange if no session found yet (handles hash fragment parsing delay)
-        if (!session) {
+        // 2. If we don't have a session yet but we have a hash fragment, wait for Supabase to parse it
+        if (!session && hasHashToken) {
+          console.log('Waiting for hash token session parsing...')
           session = await new Promise((resolve) => {
             let resolved = false
             
@@ -91,22 +105,25 @@ function ConfirmContent() {
               }
             })
 
-            // Timeout after 3 seconds if no session is set
+            // Timeout after 5 seconds
             setTimeout(() => {
               if (!resolved) {
                 resolved = true
                 subscription.unsubscribe()
                 resolve(null)
               }
-            }, 3000)
+            }, 5000)
           })
         }
 
+        // 3. Final session check
         if (!session?.user) {
           throw new Error('No active verification session found. Please sign up or request a new verification link.')
         }
 
-        // 3. Call the backend API to securely activate user account
+        console.log('User session verified:', session.user.email)
+
+        // 4. Call the backend API to securely activate user account
         const actRes = await fetch('/api/auth/activate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -125,11 +142,13 @@ function ConfirmContent() {
         console.error('Confirmation error:', err)
         setStatus('error')
         setMessage(err.message || 'An unexpected error occurred during activation.')
+        // Reset so user can retry if they click again or refresh
+        isRunningActivation.current = false
       }
     }
 
     handleConfirm()
-  }, [searchParams])
+  }, [])
 
 
 

@@ -547,27 +547,116 @@ export default function AthleteReport() {
           </div>
 
           {/* ── PERSONAL INFORMATION ── */}
-          <div className="section-title no-break">Personal Information</div>
-          <div className="info-grid">
-            {[
-              ['Full Name',       ath.name            || '—'],
-              ['Date of Birth',   ath.dob             || '—'],
-              ['Age',             ath.age ? `${ath.age} years` : '—'],
-              ['Nationality',     ath.nationality     || '—'],
-              ['Height',          ath.height ? `${ath.height} cm` : '—'],
-              ['Weight',          ath.weight ? `${ath.weight} kg` : '—'],
-              ['Preferred Foot',  ath.strong_foot || ath.preferred_foot || '—'],
-              ['Phone',           ath.phone           || '—'],
-              ['Position',        ath.position        || '—'],
-              ['Current Club',    ath.club || ath.current_club || '—'],
-              ['Region',          ath.region          || '—'],
-              ['Assigned Coach',  ath.coaches?.name   || '—'],
-            ].map(([label,value]) => (
-              <div key={label} className="info-cell">
-                <div className="info-label">{label}</div>
-                <div className="info-value">{value}</div>
+          <div className="no-break">
+            <div className="section-title">Personal Information</div>
+            <div className="info-grid">
+              {[
+                ['Full Name',       ath.name            || '—'],
+                ['First Name',      ath.first_name      || '—'],
+                ['Last Name',       ath.last_name       || '—'],
+                ['Membership No.',  ath.membership_number|| '—'],
+                ['Date of Birth',   ath.date_of_birth   || '—'],
+                ['Age',             ath.age ? `${ath.age} years` : '—'],
+                ['Place of Birth',  ath.place_of_birth  || '—'],
+                ['Nationality',     ath.nationality     || '—'],
+                ['Country',         ath.country         || '—'],
+                ['Address',         ath.address         || '—'],
+                ['Height',          ath.height ? `${ath.height} cm` : '—'],
+                ['Weight',          ath.weight ? `${ath.weight} kg` : '—'],
+                ['Preferred Foot',  { right: 'Right Foot (RF)', left: 'Left Foot (LF)', both: 'Both Feet' }[ath.strong_foot] || ath.strong_foot || ath.preferred_foot || '—'],
+                ['Position',        ath.position        || '—'],
+                ['Current Club',    ath.club || ath.current_club || '—'],
+                ['Region',          ath.region          || '—'],
+                ['Assigned Coach',  ath.coaches?.name   || '—'],
+              ].map(([label,value]) => (
+                <div key={label} className="info-cell">
+                  <div className="info-label">{label}</div>
+                  <div className="info-value">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── CONTACT INFORMATION ── */}
+          <div className="no-break" style={{ marginTop: 22 }}>
+            <div className="section-title">Contact Details</div>
+            <div className="info-grid">
+              {[
+                ['E-mail',        ath.email           || '—'],
+                ['Mobile Phone',  ath.phone           || '—'],
+                ['Landline',      ath.landline        || '—'],
+                ['Homepage',      ath.homepage        || '—'],
+                ['Facebook',      ath.facebook        || '—'],
+                ['Instagram',     ath.instagram       || '—'],
+                ['Snapchat',      ath.snapchat        || '—'],
+              ].map(([label,value]) => (
+                <div key={label} className="info-cell">
+                  <div className="info-label">{label}</div>
+                  <div className="info-value">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── SPORTS DATA & ELIGIBILITY ── */}
+          <div className="no-break" style={{ marginTop: 22 }}>
+            <div className="section-title">Sports Data & Eligibility</div>
+            <div className="info-grid">
+              {[
+                ['Team Section',      ath.team_section      || '—'],
+                ['Back Number',       ath.back_number       || '—'],
+                ['Passport Number',   ath.passport_number   || '—'],
+                ['Wrist Measurement', ath.wrist_measurement || '—'],
+                ['Last Club',         ath.last_club         || '—'],
+                ['In Club Since',     ath.in_club_since     || '—'],
+                ['Contract Until',    ath.contract_until    || '—'],
+                ['Contract Option',   ath.contract_option_until|| '—'],
+              ].map(([label,value]) => (
+                <div key={label} className="info-cell">
+                  <div className="info-label">{label}</div>
+                  <div className="info-value">{value}</div>
+                </div>
+              ))}
+            </div>
+            {ath.contract_details && (
+              <div style={{ border:'1px solid #CBD5E0', borderTop:'none', padding:'9px 12px', background:'#F7FAFC', fontSize:'10px', fontFamily:'Arial', color:'#4A5568' }}>
+                <strong>Eligibility / Contract Details:</strong> {ath.contract_details}
               </div>
-            ))}
+            )}
+          </div>
+
+          {/* ── EQUIPMENT DETAILS ── */}
+          <div className="no-break" style={{ marginTop: 22 }}>
+            <div className="section-title">Equipment Details</div>
+            <div className="info-grid">
+              {[
+                ['Clothing Size',     ath.clothing_size     || '—'],
+                ['Shoe Size',         ath.shoe_size         || '—'],
+                ['Number/Lettering',  ath.number_lettering  || '—'],
+              ].map(([label,value]) => (
+                <div key={label} className="info-cell">
+                  <div className="info-label">{label}</div>
+                  <div className="info-value">{value}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── FINANCIAL & TAX DETAILS ── */}
+          <div className="no-break" style={{ marginTop: 22 }}>
+            <div className="section-title">Financial & Tax Details</div>
+            <div className="info-grid">
+              {[
+                ['IBAN',              ath.iban              || '—'],
+                ['BIC / RIC',         ath.bic               || '—'],
+                ['Tax ID Number',     ath.tax_id            || '—'],
+              ].map(([label,value]) => (
+                <div key={label} className="info-cell">
+                  <div className="info-label">{label}</div>
+                  <div className="info-value">{value}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* ── CONTRACT INFORMATION ── */}

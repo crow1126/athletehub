@@ -16,7 +16,48 @@ const POSITION_GROUPS = {
 
 const REGIONS   = ['Greater Accra','Ashanti','Western','Eastern','Volta','Brong-Ahafo','Northern','Upper East','Upper West','Central']
 const AV_COLORS = ['#0D9488','#059669','#0F766E','#14B8A6','#047857','#065F46']
-const EMPTY     = { name:'', date_of_birth:'', age:'', position:'', strong_foot:'', region:'', club:'', phone:'', height:'', weight:'', coach_id:'' }
+const EMPTY     = {
+  name: '',
+  date_of_birth: '',
+  age: '',
+  position: '',
+  strong_foot: '',
+  region: '',
+  club: '',
+  phone: '',
+  height: '',
+  weight: '',
+  coach_id: '',
+  // New fields:
+  first_name: '',
+  last_name: '',
+  membership_number: '',
+  place_of_birth: '',
+  nationality: '',
+  address: '',
+  country: '',
+  email: '',
+  landline: '',
+  homepage: '',
+  facebook: '',
+  instagram: '',
+  snapchat: '',
+  team_section: '',
+  back_number: '',
+  passport_number: '',
+  wrist_measurement: '',
+  clothing_size: '',
+  shoe_size: '',
+  number_lettering: '',
+  last_club: '',
+  in_club_since: '',
+  contract_until: '',
+  contract_option_until: '',
+  contract_details: '',
+  iban: '',
+  bic: '',
+  tax_id: ''
+}
 
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
@@ -72,7 +113,47 @@ export default function AthletesPage() {
 
   function openEdit(ath) {
     setEditId(ath.id)
-    setForm({ name:ath.name||'', date_of_birth:ath.date_of_birth||'', age:ath.age||'', position:ath.position||'', strong_foot:ath.strong_foot||'', region:ath.region||'', club:ath.club||'', phone:ath.phone||'', height:ath.height||'', weight:ath.weight||'', coach_id:ath.coach_id||'' })
+    setForm({
+      name: ath.name||'',
+      date_of_birth: ath.date_of_birth||'',
+      age: ath.age||'',
+      position: ath.position||'',
+      strong_foot: ath.strong_foot||'',
+      region: ath.region||'',
+      club: ath.club||'',
+      phone: ath.phone||'',
+      height: ath.height||'',
+      weight: ath.weight||'',
+      coach_id: ath.coach_id||'',
+      first_name: ath.first_name||'',
+      last_name: ath.last_name||'',
+      membership_number: ath.membership_number||'',
+      place_of_birth: ath.place_of_birth||'',
+      nationality: ath.nationality||'',
+      address: ath.address||'',
+      country: ath.country||'',
+      email: ath.email||'',
+      landline: ath.landline||'',
+      homepage: ath.homepage||'',
+      facebook: ath.facebook||'',
+      instagram: ath.instagram||'',
+      snapchat: ath.snapchat||'',
+      team_section: ath.team_section||'',
+      back_number: ath.back_number||'',
+      passport_number: ath.passport_number||'',
+      wrist_measurement: ath.wrist_measurement||'',
+      clothing_size: ath.clothing_size||'',
+      shoe_size: ath.shoe_size||'',
+      number_lettering: ath.number_lettering||'',
+      last_club: ath.last_club||'',
+      in_club_since: ath.in_club_since||'',
+      contract_until: ath.contract_until||'',
+      contract_option_until: ath.contract_option_until||'',
+      contract_details: ath.contract_details||'',
+      iban: ath.iban||'',
+      bic: ath.bic||'',
+      tax_id: ath.tax_id||''
+    })
     setPhotoFile(null); setPhotoPreview(ath.photo_url||null); setFormError(''); setShowForm(true)
   }
 
@@ -94,12 +175,27 @@ export default function AthletesPage() {
 
   async function handleSave() {
     setFormError('')
-    if (!form.name.trim()) { setFormError('Full name is required.'); return }
+    let fName = form.first_name.trim()
+    let lName = form.last_name.trim()
+    let fullName = form.name.trim()
+
+    // Sync first name + last name to name
+    if (fName || lName) {
+      fullName = (fName + ' ' + lName).trim()
+    } else if (fullName) {
+      const parts = fullName.split(' ')
+      fName = parts[0] || ''
+      lName = parts.slice(1).join(' ') || ''
+    }
+
+    if (!fullName) { setFormError('Name is required.'); return }
     if (!form.position)    { setFormError('Position is required.'); return }
     if (!teamId)           { setFormError('Your account is not assigned to a team.'); return }
     setSaving(true)
     const payload = {
-      name: form.name.trim(),
+      name: fullName,
+      first_name: fName || null,
+      last_name: lName || null,
       date_of_birth: form.date_of_birth || null,
       age: parseInt(form.age) || null,
       position: form.position || null,
@@ -107,10 +203,37 @@ export default function AthletesPage() {
       region: form.region || null,
       club: form.club || null,
       phone: form.phone || null,
-      height: parseInt(form.height) || null,
-      weight: parseInt(form.weight) || null,
+      height: parseFloat(form.height) || null,
+      weight: parseFloat(form.weight) || null,
       coach_id: form.coach_id || null,
       team_id: teamId,
+      // New fields:
+      membership_number: form.membership_number.trim() || null,
+      place_of_birth: form.place_of_birth.trim() || null,
+      nationality: form.nationality.trim() || null,
+      address: form.address.trim() || null,
+      country: form.country.trim() || null,
+      email: form.email.trim() || null,
+      landline: form.landline.trim() || null,
+      homepage: form.homepage.trim() || null,
+      facebook: form.facebook.trim() || null,
+      instagram: form.instagram.trim() || null,
+      snapchat: form.snapchat.trim() || null,
+      team_section: form.team_section.trim() || null,
+      back_number: form.back_number.trim() || null,
+      passport_number: form.passport_number.trim() || null,
+      wrist_measurement: form.wrist_measurement.trim() || null,
+      clothing_size: form.clothing_size.trim() || null,
+      shoe_size: form.shoe_size.trim() || null,
+      number_lettering: form.number_lettering.trim() || null,
+      last_club: form.last_club.trim() || null,
+      in_club_since: form.in_club_since || null,
+      contract_until: form.contract_until || null,
+      contract_option_until: form.contract_option_until || null,
+      contract_details: form.contract_details.trim() || null,
+      iban: form.iban.trim() || null,
+      bic: form.bic.trim() || null,
+      tax_id: form.tax_id.trim() || null,
     }
     if (editId) {
       const url = await uploadPhoto(editId)
@@ -277,26 +400,119 @@ export default function AthletesPage() {
                 </div>
               </div>
 
+              {/* Master Data Header */}
+              <div style={{ borderBottom:'2px solid #0D9488', paddingBottom:4, marginTop:8, fontSize:12, fontWeight:800, color:'#0F766E', letterSpacing:'0.05em' }}>MASTER DATA</div>
+
+              {/* First Name + Last Name */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>First Name</label>
+                  <input className="form-inp" value={form.first_name} onChange={e=>set('first_name')(e.target.value)} style={inp} placeholder="e.g. Richard"/>
+                </div>
+                <div>
+                  <label style={lbl}>Last Name / Family Name</label>
+                  <input className="form-inp" value={form.last_name} onChange={e=>set('last_name')(e.target.value)} style={inp} placeholder="e.g. Agyen"/>
+                </div>
+              </div>
+
               {/* Full Name */}
               <div>
                 <label style={lbl}>Full Name *</label>
-                <input className="form-inp" value={form.name} onChange={e=>set('name')(e.target.value)} style={inp} placeholder="e.g. Kwame Asante"/>
+                <input className="form-inp" value={form.name} onChange={e=>set('name')(e.target.value)} style={inp} placeholder="e.g. Kwame Asante (Automatically synced if First/Last Name is filled)"/>
               </div>
 
-              {/* Date of Birth */}
-              <div>
-                <label style={lbl}>Date of Birth</label>
-                <input type="date" className="form-inp" value={form.date_of_birth} onChange={e=>set('date_of_birth')(e.target.value)} style={inp}/>
-              </div>
-
-              {/* Age + Position */}
+              {/* Membership Number + Place of Birth */}
               <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Membership Number</label>
+                  <input className="form-inp" value={form.membership_number} onChange={e=>set('membership_number')(e.target.value)} style={inp} placeholder="e.g. MEM-1234"/>
+                </div>
+                <div>
+                  <label style={lbl}>Place of Birth</label>
+                  <input className="form-inp" value={form.place_of_birth} onChange={e=>set('place_of_birth')(e.target.value)} style={inp} placeholder="e.g. Kumasi"/>
+                </div>
+              </div>
+
+              {/* Nationality + Country */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Nationality</label>
+                  <input className="form-inp" value={form.nationality} onChange={e=>set('nationality')(e.target.value)} style={inp} placeholder="e.g. Ghanaian"/>
+                </div>
+                <div>
+                  <label style={lbl}>Country</label>
+                  <input className="form-inp" value={form.country} onChange={e=>set('country')(e.target.value)} style={inp} placeholder="e.g. Ghana"/>
+                </div>
+              </div>
+
+              {/* Date of Birth + Age */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Date of Birth</label>
+                  <input type="date" className="form-inp" value={form.date_of_birth} onChange={e=>set('date_of_birth')(e.target.value)} style={inp}/>
+                </div>
                 <div>
                   <label style={lbl}>Age</label>
                   <input type="number" min="14" max="50" className="form-inp" value={form.age} onChange={e=>set('age')(e.target.value)} style={inp}/>
                 </div>
+              </div>
+
+              {/* Address */}
+              <div>
+                <label style={lbl}>Address</label>
+                <input className="form-inp" value={form.address} onChange={e=>set('address')(e.target.value)} style={inp} placeholder="e.g. Abokobi Clubhouse"/>
+              </div>
+
+              {/* Contact Info Header */}
+              <div style={{ borderBottom:'2px solid #0D9488', paddingBottom:4, marginTop:16, fontSize:12, fontWeight:800, color:'#0F766E', letterSpacing:'0.05em' }}>CONTACT INFORMATION</div>
+
+              {/* E-mail + Phone */}
+              <div className="modal-g2">
                 <div>
-                  <label style={lbl}>Position *</label>
+                  <label style={lbl}>E-mail</label>
+                  <input type="email" className="form-inp" value={form.email} onChange={e=>set('email')(e.target.value)} style={inp} placeholder="e.g. richard@example.com"/>
+                </div>
+                <div>
+                  <label style={lbl}>Mobile Phone</label>
+                  <input className="form-inp" value={form.phone} onChange={e=>set('phone')(e.target.value)} style={inp} placeholder="e.g. +233 55 201 3946"/>
+                </div>
+              </div>
+
+              {/* Landline + Homepage */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Landline</label>
+                  <input className="form-inp" value={form.landline} onChange={e=>set('landline')(e.target.value)} style={inp} placeholder="e.g. +233 30 200 0000"/>
+                </div>
+                <div>
+                  <label style={lbl}>Homepage</label>
+                  <input className="form-inp" value={form.homepage} onChange={e=>set('homepage')(e.target.value)} style={inp} placeholder="e.g. https://richardagyen.com"/>
+                </div>
+              </div>
+
+              {/* Social Media Links */}
+              <div>
+                <label style={lbl}>Social Media Links (Usernames)</label>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'10px' }}>
+                  <div>
+                    <input className="form-inp" value={form.facebook} onChange={e=>set('facebook')(e.target.value)} style={inp} placeholder="Facebook"/>
+                  </div>
+                  <div>
+                    <input className="form-inp" value={form.instagram} onChange={e=>set('instagram')(e.target.value)} style={inp} placeholder="Instagram"/>
+                  </div>
+                  <div>
+                    <input className="form-inp" value={form.snapchat} onChange={e=>set('snapchat')(e.target.value)} style={inp} placeholder="Snapchat"/>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sports & Eligibility Header */}
+              <div style={{ borderBottom:'2px solid #0D9488', paddingBottom:4, marginTop:16, fontSize:12, fontWeight:800, color:'#0F766E', letterSpacing:'0.05em' }}>SPORTS DATA & ELIGIBILITY</div>
+
+              {/* Playing Position + Strong Foot */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Playing Position *</label>
                   <select className="form-inp" value={form.position} onChange={e=>set('position')(e.target.value)} style={inp}>
                     <option value="">Select position…</option>
                     {Object.entries(POSITION_GROUPS).map(([group, positions]) => (
@@ -306,59 +522,138 @@ export default function AthletesPage() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label style={lbl}>Strong Foot</label>
+                  <select className="form-inp" value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>
+                    <option value="">Select…</option>
+                    <option value="right">🦶 Right Foot (RF)</option>
+                    <option value="left">🦶 Left Foot (LF)</option>
+                    <option value="both">🦶 Both Feet</option>
+                  </select>
+                </div>
               </div>
 
-              {/* Strong Foot */}
-              <div>
-                <label style={lbl}>Strong Foot</label>
-                <select className="form-inp" value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>
-                  <option value="">Select…</option>
-                  <option value="right">🦶 Right Foot</option>
-                  <option value="left">🦶 Left Foot</option>
-                  <option value="both">🦶 Both Feet</option>
-                </select>
+              {/* Team Section + Back Number */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Team Section</label>
+                  <input className="form-inp" value={form.team_section} onChange={e=>set('team_section')(e.target.value)} style={inp} placeholder="e.g. Defense inside"/>
+                </div>
+                <div>
+                  <label style={lbl}>Back Number</label>
+                  <input className="form-inp" value={form.back_number} onChange={e=>set('back_number')(e.target.value)} style={inp} placeholder="e.g. 21"/>
+                </div>
               </div>
 
-              {/* Club */}
-              <div>
-                <label style={lbl}>Club / Team</label>
-                <input className="form-inp" value={form.club} onChange={e=>set('club')(e.target.value)} style={inp} placeholder="e.g. Asante Kotoko SC"/>
-              </div>
-
-              {/* Region */}
-              <div>
-                <label style={lbl}>Region</label>
-                <select className="form-inp" value={form.region} onChange={e=>set('region')(e.target.value)} style={inp}>
-                  <option value="">Select…</option>
-                  {REGIONS.map(r=><option key={r}>{r}</option>)}
-                </select>
-              </div>
-
-              {/* Phone */}
-              <div>
-                <label style={lbl}>Phone</label>
-                <input className="form-inp" value={form.phone} onChange={e=>set('phone')(e.target.value)} style={inp} placeholder="+233 24 000 0000"/>
-              </div>
-
-              {/* Assign Coach */}
-              <div>
-                <label style={lbl}>Assign Coach</label>
-                <select className="form-inp" value={form.coach_id} onChange={e=>set('coach_id')(e.target.value)} style={inp}>
-                  <option value="">No coach assigned</option>
-                  {coaches.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+              {/* Passport Number + Wrist Measurement */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Passport Number</label>
+                  <input className="form-inp" value={form.passport_number} onChange={e=>set('passport_number')(e.target.value)} style={inp} placeholder="e.g. GHA-9827362"/>
+                </div>
+                <div>
+                  <label style={lbl}>Wrist Measurement Info</label>
+                  <input className="form-inp" value={form.wrist_measurement} onChange={e=>set('wrist_measurement')(e.target.value)} style={inp} placeholder="e.g. Normal / Detailed"/>
+                </div>
               </div>
 
               {/* Height + Weight */}
               <div className="modal-g2">
                 <div>
                   <label style={lbl}>Height (cm)</label>
-                  <input type="number" className="form-inp" value={form.height} onChange={e=>set('height')(e.target.value)} style={inp}/>
+                  <input type="number" step="0.1" className="form-inp" value={form.height} onChange={e=>set('height')(e.target.value)} style={inp} placeholder="e.g. 190.3"/>
                 </div>
                 <div>
                   <label style={lbl}>Weight (kg)</label>
-                  <input type="number" className="form-inp" value={form.weight} onChange={e=>set('weight')(e.target.value)} style={inp}/>
+                  <input type="number" step="0.1" className="form-inp" value={form.weight} onChange={e=>set('weight')(e.target.value)} style={inp} placeholder="e.g. 81.2"/>
                 </div>
+              </div>
+
+              {/* Assign Coach + Club/Team */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Assign Coach</label>
+                  <select className="form-inp" value={form.coach_id} onChange={e=>set('coach_id')(e.target.value)} style={inp}>
+                    <option value="">No coach assigned</option>
+                    {coaches.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Current Club / Team</label>
+                  <input className="form-inp" value={form.club} onChange={e=>set('club')(e.target.value)} style={inp} placeholder="e.g. Asante Kotoko SC"/>
+                </div>
+              </div>
+
+              {/* Last Club + In Club Since */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Last Club</label>
+                  <input className="form-inp" value={form.last_club} onChange={e=>set('last_club')(e.target.value)} style={inp} placeholder="e.g. Great Warriors SC"/>
+                </div>
+                <div>
+                  <label style={lbl}>In Club Since</label>
+                  <input type="date" className="form-inp" value={form.in_club_since} onChange={e=>set('in_club_since')(e.target.value)} style={inp}/>
+                </div>
+              </div>
+
+              {/* Contract Until + Contract Option Until */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Contract Until</label>
+                  <input type="date" className="form-inp" value={form.contract_until} onChange={e=>set('contract_until')(e.target.value)} style={inp}/>
+                </div>
+                <div>
+                  <label style={lbl}>Contract Option Until</label>
+                  <input type="date" className="form-inp" value={form.contract_option_until} onChange={e=>set('contract_option_until')(e.target.value)} style={inp}/>
+                </div>
+              </div>
+
+              {/* Contract Details */}
+              <div>
+                <label style={lbl}>Contract Details / Notes</label>
+                <textarea className="form-inp" value={form.contract_details} onChange={e=>set('contract_details')(e.target.value)} style={{ ...inp, height:'70px', resize:'vertical' }} placeholder="Additional contract terms, bonuses, etc."/>
+              </div>
+
+              {/* Equipment Header */}
+              <div style={{ borderBottom:'2px solid #0D9488', paddingBottom:4, marginTop:16, fontSize:12, fontWeight:800, color:'#0F766E', letterSpacing:'0.05em' }}>EQUIPMENT</div>
+
+              {/* Clothing Size + Shoe Size */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>Clothing Size</label>
+                  <input className="form-inp" value={form.clothing_size} onChange={e=>set('clothing_size')(e.target.value)} style={inp} placeholder="e.g. L-XL"/>
+                </div>
+                <div>
+                  <label style={lbl}>Shoe Size</label>
+                  <input className="form-inp" value={form.shoe_size} onChange={e=>set('shoe_size')(e.target.value)} style={inp} placeholder="e.g. 45"/>
+                </div>
+              </div>
+
+              {/* Number or Lettering */}
+              <div>
+                <label style={lbl}>Number or Lettering</label>
+                <input className="form-inp" value={form.number_lettering} onChange={e=>set('number_lettering')(e.target.value)} style={inp} placeholder="e.g. Name printing or lettering details"/>
+              </div>
+
+              {/* Financial & Tax Header */}
+              <div style={{ borderBottom:'2px solid #0D9488', paddingBottom:4, marginTop:16, fontSize:12, fontWeight:800, color:'#0F766E', letterSpacing:'0.05em' }}>FINANCIAL & TAX DETAILS</div>
+
+              {/* IBAN + BIC */}
+              <div className="modal-g2">
+                <div>
+                  <label style={lbl}>IBAN</label>
+                  <input className="form-inp" value={form.iban} onChange={e=>set('iban')(e.target.value)} style={inp} placeholder="IBAN Number"/>
+                </div>
+                <div>
+                  <label style={lbl}>BIC / RIC</label>
+                  <input className="form-inp" value={form.bic} onChange={e=>set('bic')(e.target.value)} style={inp} placeholder="BIC Code"/>
+                </div>
+              </div>
+
+              {/* Tax ID */}
+              <div>
+                <label style={lbl}>Tax Identification Number</label>
+                <input className="form-inp" value={form.tax_id} onChange={e=>set('tax_id')(e.target.value)} style={inp} placeholder="Tax ID / Identification Number"/>
               </div>
 
               {/* Actions */}

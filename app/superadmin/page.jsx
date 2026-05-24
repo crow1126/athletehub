@@ -182,6 +182,12 @@ export default function SuperadminPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const [currentTime,    setCurrentTime]    = useState(new Date())
 
+  const [selectedClearTable, setSelectedClearTable] = useState('athletes')
+  const [clearAllModal, setClearAllModal] = useState(false)
+  const [confirmClearAllText, setConfirmClearAllText] = useState('')
+  const [clearingAll, setClearingAll] = useState(false)
+  const [clearingTable, setClearingTable] = useState(false)
+
   // Telemetry indicators
   const [systemLatency,  setSystemLatency]  = useState(38)
   const [systemCpu,      setSystemCpu]      = useState(14)
@@ -447,14 +453,96 @@ export default function SuperadminPage() {
   }
 
   async function handleDelete(p) {
-    if (!confirm('Are you sure you want to delete ' + p.full_name + '? All associated club records will remain orphans.')) return
-    await supabase.from('profiles').delete().eq('id', p.id)
-    showToast('Deleted ' + p.full_name); loadProfiles(); loadActivities()
+    if (!confirm(`Are you sure you want to delete ${p.full_name}? This will delete their Auth account and clear their profile data.`)) return
+    setActing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system-commands', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          command: 'delete_user',
+          userId: p.id
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete user')
+      showToast(`Deleted ${p.full_name} and their Auth account`)
+      loadProfiles(); loadTeams(); loadActivities()
+    } catch (err) {
+      showToast('Deletion failed: ' + err.message, 'error')
+    } finally {
+      setActing(false)
+    }
   }
 
   async function toggleActive(p) {
     await supabase.from('profiles').update({ is_active: !p.is_active }).eq('id', p.id)
     showToast(p.full_name + ' has been ' + (!p.is_active ? 'activated' : 'deactivated')); loadProfiles()
+  }
+
+  async function handleClearTable(tbl) {
+    if (!confirm(`Are you sure you want to delete all data in table "${tbl}"? This action cannot be undone.`)) return
+    setClearingTable(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system-commands', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          command: 'clear_table',
+          tableName: tbl
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to clear table')
+      showToast(`Successfully cleared table "${tbl}"`)
+      loadProfiles(); loadTeams(); loadActivities()
+      if (section === 'database' && dbTable === tbl) {
+        loadTable(tbl)
+      }
+    } catch (err) {
+      showToast('Clear table failed: ' + err.message, 'error')
+    } finally {
+      setClearingTable(false)
+    }
+  }
+
+  async function handleClearAll() {
+    if (confirmClearAllText !== 'CONFIRM CLEAR ALL') {
+      showToast('Please type the exact phrase to confirm.', 'error')
+      return
+    }
+    setClearingAll(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system-commands', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          command: 'clear_all'
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to clear system')
+      showToast('System data wiped successfully!')
+      setClearAllModal(false)
+      setConfirmClearAllText('')
+      loadProfiles(); loadTeams(); loadActivities()
+    } catch (err) {
+      showToast('Wipe failed: ' + err.message, 'error')
+    } finally {
+      setClearingAll(false)
+    }
   }
 
   const filtered = profiles.filter(p => {
@@ -721,6 +809,89 @@ export default function SuperadminPage() {
                     </div>
                   </div>
 
+                </div>
+
+                {/* ── SYSTEM COMMANDS CONSOLE ── */}
+                <div style={{ background: '#0b1329', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, padding: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 18 }}>⚡</span>
+                      <div>
+                        <div style={{ fontSize: 14, fontWeight: 800, color: '#fff' }}>System Command Console</div>
+                        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', marginTop: 1 }}>Execute high-level administrative database & user commands</div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 10, background: 'rgba(239,68,68,0.15)', color: '#EF4444', padding: '2px 8px', borderRadius: 6, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Restricted Access</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+                    
+                    {/* Database Truncator */}
+                    <div style={{ background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.03)', borderRadius: 12, padding: '16px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>🗑️</span> Table Maintenance
+                      </div>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 16, lineHeight: 1.4 }}>
+                        Wipe all records from a specific table. Profiles table retains superadmin account.
+                      </p>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <select 
+                          value={selectedClearTable} 
+                          onChange={e => setSelectedClearTable(e.target.value)}
+                          style={{ 
+                            flex: 1, 
+                            padding: '8px 12px', 
+                            background: 'rgba(11,19,41,0.8)', 
+                            border: '1px solid rgba(255,255,255,0.08)', 
+                            borderRadius: 8, 
+                            fontSize: 12, 
+                            color: '#fff', 
+                            outline: 'none' 
+                          }}
+                        >
+                          <option value="athletes">athletes</option>
+                          <option value="coaches">coaches</option>
+                          <option value="injuries">injuries</option>
+                          <option value="training_sessions">training_sessions</option>
+                          <option value="performance_stats">performance_stats</option>
+                          <option value="contracts">contracts</option>
+                          <option value="transfers">transfers</option>
+                          <option value="scouting_reports">scouting_reports</option>
+                          <option value="staff_logins">staff_logins</option>
+                          <option value="subscriptions">subscriptions</option>
+                          <option value="billing_events">billing_events</option>
+                          <option value="teams">teams</option>
+                          <option value="profiles">profiles</option>
+                        </select>
+                        <Btn 
+                          variant="danger" 
+                          onClick={() => handleClearTable(selectedClearTable)} 
+                          disabled={clearingTable}
+                          style={{ padding: '8px 16px' }}
+                        >
+                          {clearingTable ? 'Clearing...' : 'Clear Table'}
+                        </Btn>
+                      </div>
+                    </div>
+
+                    {/* Nuclear Wipe */}
+                    <div style={{ background: 'rgba(239,68,68,0.02)', border: '1px solid rgba(239,68,68,0.08)', borderRadius: 12, padding: '16px' }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: '#F87171', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span>☢️</span> System Data Cleanup
+                      </div>
+                      <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 16, lineHeight: 1.4 }}>
+                        Wipe all records across all tables (clubs, athletes, plans, logs) and delete all auth IDs except the superadmin.
+                      </p>
+                      <Btn 
+                        variant="danger" 
+                        onClick={() => setClearAllModal(true)} 
+                        style={{ width: '100%', padding: '9px', background: 'linear-gradient(135deg, #DC2626, #B91C1C)', border: 'none', boxShadow: '0 4px 14px rgba(220,38,38,0.2)' }}
+                      >
+                        Wipe All System Data
+                      </Btn>
+                    </div>
+
+                  </div>
                 </div>
 
                 {/* Left/Right Split: Live Activity Feed vs Recent Registrations */}
@@ -1248,6 +1419,53 @@ export default function SuperadminPage() {
                 <Btn onClick={()=>setAddModal(false)} style={{ flex:1 }}>Cancel</Btn>
                 <Btn variant="primary" onClick={handleAddAdmin} disabled={addingAdmin} style={{ flex:2 }}>
                   {addingAdmin ? 'Provisioning workspace…' : '✅ Provision space & Admin'}
+                </Btn>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ── NUCLEAR CLEANUP MODAL ── */}
+      {clearAllModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(3,7,18,0.92)', backdropFilter:'blur(20px)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:20, animation:'fadeUp 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
+          onClick={e=>{ if(e.target===e.currentTarget) { setClearAllModal(false); setConfirmClearAllText('') } }}>
+          <div style={{ background: '#0b1329', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 24, width: '100%', maxWidth: 440, margin: 'auto', boxShadow: '0 24px 70px rgba(0,0,0,0.8)' }}>
+            
+            {/* Header */}
+            <div style={{ background: 'rgba(255,255,255,0.01)', padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+              <div>
+                <div style={{ fontSize:10, color:'#EF4444', fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:2 }}>Critical Operation</div>
+                <div style={{ fontSize:16, fontWeight:800, color:'#fff' }}>Nuclear Data Wipe</div>
+              </div>
+              <button onClick={()=>{ setClearAllModal(false); setConfirmClearAllText('') }} style={{ background:'rgba(255,255,255,0.04)', border:'1px solid rgba(255,255,255,0.08)', width:32, height:32, borderRadius:'50%', fontSize:16, cursor:'pointer', color:'rgba(255,255,255,0.4)', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+            </div>
+            
+            <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16 }}>
+              <div style={{ background:'rgba(239,68,68,0.05)', border:'1px solid rgba(239,68,68,0.15)', borderRadius:12, padding:'14px', fontSize:12, color:'#F87171', lineHeight:1.5 }}>
+                ⚠️ <strong>WARNING:</strong> This action will delete all teams, athletes, coaches, contracts, training logs, injuries, and subscriptions. It will also delete all user accounts from Supabase Auth except yours. <strong>This cannot be undone.</strong>
+              </div>
+              
+              <div>
+                <label style={LBL}>Type <strong>CONFIRM CLEAR ALL</strong> to verify</label>
+                <input 
+                  value={confirmClearAllText} 
+                  onChange={e=>setConfirmClearAllText(e.target.value)} 
+                  placeholder="Type here..." 
+                  style={{ ...INP, borderColor: confirmClearAllText==='CONFIRM CLEAR ALL'?'rgba(16,185,129,0.4)':'rgba(239,68,68,0.2)' }}
+                />
+              </div>
+
+              <div style={{ display:'flex', gap:8, borderTop:'1px solid rgba(255,255,255,0.04)', paddingTop:14 }}>
+                <Btn onClick={()=>{ setClearAllModal(false); setConfirmClearAllText('') }} style={{ flex:1 }}>Cancel</Btn>
+                <Btn 
+                  variant="danger" 
+                  onClick={handleClearAll} 
+                  disabled={clearingAll || confirmClearAllText !== 'CONFIRM CLEAR ALL'} 
+                  style={{ flex:2, background: confirmClearAllText === 'CONFIRM CLEAR ALL' ? 'linear-gradient(135deg, #EF4444, #DC2626)' : 'rgba(255,255,255,0.03)' }}
+                >
+                  {clearingAll ? 'Wiping System...' : '☢️ Execute Wipe'}
                 </Btn>
               </div>
             </div>

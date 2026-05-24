@@ -36,10 +36,15 @@ function getDb() {
 
 export async function POST(req) {
   try {
-    const { email, password, full_name, role, coach_id, team_id, notes } = await req.json()
+    const { username, email: inputEmail, password, full_name, role, coach_id, team_id, notes } = await req.json()
+
+    let email = inputEmail
+    if (username) {
+      email = `${username.trim().toLowerCase()}@apex.local`
+    }
 
     if (!email || !password) {
-      return NextResponse.json({ error: 'email and password are required' }, { status: 400 })
+      return NextResponse.json({ error: 'username/email and password are required' }, { status: 400 })
     }
 
     const db = getDb()
@@ -76,6 +81,19 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    // Duplicate-username guard
+    if (username) {
+      const { data: existingUsername } = await db
+        .from('profiles')
+        .select('id')
+        .ilike('username', username.trim())
+        .maybeSingle()
+
+      if (existingUsername) {
+        return NextResponse.json({ error: 'A login with this username already exists on the platform.' }, { status: 409 })
+      }
+    }
+
     // Duplicate-email guard — gives a clear message instead of a raw Supabase Auth error
     const { data: existingProfile } = await db
       .from('profiles')
@@ -87,9 +105,24 @@ export async function POST(req) {
       const sameClub = existingProfile.team_id === resolvedTeamId
       return NextResponse.json({
         error: sameClub
-          ? 'A login with this email already exists in your club.'
-          : 'This email is already registered to a user in another club.',
+          ? 'A login with this email/username already exists in your club.'
+          : 'This email/username is already registered to a user in another club.',
       }, { status: 409 })
+    }
+
+    // Fetch team name and logo to inherit them automatically in the user's profile
+    let teamName = null
+    let teamLogoUrl = null
+    if (resolvedTeamId) {
+      const { data: teamData } = await db
+        .from('teams')
+        .select('name, logo_url')
+        .eq('id', resolvedTeamId)
+        .maybeSingle()
+      if (teamData) {
+        teamName = teamData.name
+        teamLogoUrl = teamData.logo_url
+      }
     }
 
     const newUser = await adminFetch('users', 'POST', {
@@ -102,7 +135,17 @@ export async function POST(req) {
     const { error: profileError } = await db
       .from('profiles')
       .upsert(
-        { id: userId, full_name, role: safeRole, team_id: resolvedTeamId, is_active: true, email },
+        {
+          id: userId,
+          full_name,
+          role: safeRole,
+          team_id: resolvedTeamId,
+          is_active: true,
+          email,
+          username: username || null,
+          club_name: teamName,
+          club_logo_url: teamLogoUrl
+        },
         { onConflict: 'id' }
       )
 
@@ -117,6 +160,7 @@ export async function POST(req) {
         .insert([{
           coach_id,
           email,
+          username: username || null,
           role: safeRole,
           team_id: resolvedTeamId,
           is_active: true,

@@ -120,13 +120,27 @@ export default function LandingPage() {
 
   async function handleLogin(e) {
     e.preventDefault(); setError(''); setSuccess('')
-    if (!email.trim()) { setError('Please enter your email address.'); return }
+    if (!email.trim()) { setError('Please enter your username or email address.'); return }
     if (!password)     { setError('Please enter your password.'); return }
     setLoading(true)
     try {
-      const { data, error:authError } = await supabase.auth.signInWithPassword({ email:email.trim().toLowerCase(), password })
+      let loginEmail = email.trim().toLowerCase()
+      if (!loginEmail.includes('@')) {
+        // It's a username! Resolve it to an email address.
+        const resolveRes = await fetch(`/api/auth/resolve-username?username=${encodeURIComponent(loginEmail)}`)
+        const resolveData = await resolveRes.json()
+        if (resolveRes.ok && resolveData.email) {
+          loginEmail = resolveData.email
+        } else {
+          setError(resolveData.error || 'Username not found.')
+          setLoading(false)
+          return
+        }
+      }
+
+      const { data, error:authError } = await supabase.auth.signInWithPassword({ email:loginEmail, password })
       if (authError) {
-        setError(authError.message.toLowerCase().includes('invalid') ? 'Incorrect email or password.' : authError.message)
+        setError(authError.message.toLowerCase().includes('invalid') ? 'Incorrect username, email or password.' : authError.message)
         setLoading(false); return
       }
       if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
@@ -692,8 +706,8 @@ export default function LandingPage() {
                   {error && <div style={{background:'#F9E8E8',border:'1px solid rgba(180,50,50,0.18)',borderRadius:10,padding:'11px 14px',fontSize:13,color:'#8B2020',fontWeight:600}}>⚠️ {error}</div>}
 
                   <div>
-                    <label className="auth-field-label">Email Address</label>
-                    <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" autoComplete="email" style={inp} onFocus={focusInp} onBlur={blurInp}/>
+                    <label className="auth-field-label">Username or Email Address</label>
+                    <input type="text" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Username or email" autoComplete="username" style={inp} onFocus={focusInp} onBlur={blurInp}/>
                   </div>
                   <div>
                     <label className="auth-field-label">Password</label>

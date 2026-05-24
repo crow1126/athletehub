@@ -46,7 +46,7 @@ export default function SettingsPage() {
   const [msg,           setMsg]           = useState({ text:'', type:'' })
   const [profileForm,   setProfileForm]   = useState({ full_name:'', phone:'' })
   const [pwForm,        setPwForm]        = useState({ newPw:'', confirm:'' })
-  const [issueForm,     setIssueForm]     = useState({ coach_id:'', email:'', password:'', role:'physio', notes:'' })
+  const [issueForm,     setIssueForm]     = useState({ coach_id:'', username:'', password:'', role:'physio', notes:'' })
   const [issueSaving,   setIssueSaving]   = useState(false)
   const [issueMsg,      setIssueMsg]      = useState({ text:'', type:'' })
   const [showIssueForm, setShowIssueForm] = useState(false)
@@ -70,7 +70,7 @@ export default function SettingsPage() {
       setIsAdmin(admin)
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins }] = await Promise.all([
-          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,is_active'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
         ])
@@ -114,18 +114,19 @@ export default function SettingsPage() {
 
   async function issueLogin() {
     if (!issueForm.coach_id)            { flashIssue('Select a staff member.','error'); return }
-    if (!issueForm.email.trim())        { flashIssue('Email is required.','error'); return }
-    if (!issueForm.email.includes('@')) { flashIssue('Enter a valid email.','error'); return }
+    const username = issueForm.username.trim().toLowerCase()
+    if (!username)                      { flashIssue('Username is required.','error'); return }
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+    if (!usernameRegex.test(username))  { flashIssue('Username: 3-20 characters, alphanumeric and underscores only.','error'); return }
     if (issueForm.password.length < 8)  { flashIssue('Password: min 8 characters.','error'); return }
-    // team_id check removed — team is assigned on approval automatically
     setIssueSaving(true); setIssueMsg({ text:'',type:'' })
     try {
       const staff = allStaff.find(s => s.id === issueForm.coach_id)
-      const res = await fetchWithAuth('/api/admin/create-user', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ email:issueForm.email.trim().toLowerCase(), password:issueForm.password, full_name:staff?.name||issueForm.email, role:issueForm.role, coach_id:issueForm.coach_id, team_id:profile.team_id, notes:issueForm.notes }) })
+      const res = await fetchWithAuth('/api/admin/create-user', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ username, password:issueForm.password, full_name:staff?.name||username, role:issueForm.role, coach_id:issueForm.coach_id, team_id:profile.team_id, notes:issueForm.notes }) })
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
-      flashIssue(`✅ Login created for ${staff?.name}!\n📧 Email: ${issueForm.email}\n🔑 Password: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
-      setIssueForm({ coach_id:'',email:'',password:'',role:'physio',notes:'' })
+      flashIssue(`✅ Login created for ${staff?.name}!\n👤 Username: ${username}\n🔑 Password: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
+      setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'' })
       setShowIssueForm(false); await loadAll()
     } catch(err) { flashIssue('Error: '+err.message,'error') }
     setIssueSaving(false)
@@ -346,7 +347,7 @@ export default function SettingsPage() {
                         </select>
                       </div>
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
-                        <div><label style={lbl}>Login Email *</label><input type="email" value={issueForm.email} onChange={e=>setIssueForm(f=>({...f,email:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="staff@club.gh" onFocus={onFocus} onBlur={onBlur}/></div>
+                        <div><label style={lbl}>Username *</label><input type="text" value={issueForm.username} onChange={e=>setIssueForm(f=>({...f,username:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. coach_kwame" onFocus={onFocus} onBlur={onBlur}/></div>
                         <div><label style={lbl}>Password *</label><input type="text" value={issueForm.password} onChange={e=>setIssueForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
                       </div>
                       <div>
@@ -380,7 +381,7 @@ export default function SettingsPage() {
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
                     <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                      {['Staff','Email','Password','Role','Issued','Status','Action'].map(h=>(
+                      {['Staff','Username','Password','Role','Issued','Status','Action'].map(h=>(
                         <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
                       ))}
                     </div>
@@ -392,7 +393,7 @@ export default function SettingsPage() {
                           <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
                           <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
                         </div>
-                        <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.email}</div>
+                        <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
                         <div style={{ display:'flex',alignItems:'center',gap:6 }}>
                           {login.plain_password ? (
                             <>
@@ -436,7 +437,7 @@ export default function SettingsPage() {
                         {staffLogins.filter(l=>l.is_active).length===0
                           ? <option disabled>No active logins found</option>
                           : staffLogins.filter(l=>l.is_active).map(l=>(
-                            <option key={l.id} value={l.id}>{l.coaches?.name||'—'} · {l.email} · {l.role}</option>
+                            <option key={l.id} value={l.id}>{l.coaches?.name||'—'} · {l.username || l.email} · {l.role}</option>
                           ))
                         }
                       </select>
@@ -447,7 +448,7 @@ export default function SettingsPage() {
                           <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(0,106,106,0.15)' }}>
                             <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
                               <span style={{ fontSize:12,color:'#0D9488' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
-                              <span style={{ fontSize:12,color:'#0D9488' }}>📧 {login.email}</span>
+                              <span style={{ fontSize:12,color:'#0D9488' }}>👤 {login.username || login.email}</span>
                               <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>🎭 {login.role}</span>
                             </div>
                             {login.plain_password && (
@@ -480,7 +481,7 @@ export default function SettingsPage() {
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden' }}>
                     <div style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,padding:'10px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                      {['Staff','Email','Password','Role','Issued'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
+                      {['Staff','Username','Password','Role','Issued'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
                     </div>
                     {staffLogins.filter(l=>l.is_active).map((login,i)=>{
                       const selected = recoverForm.login_id === login.id
@@ -496,7 +497,7 @@ export default function SettingsPage() {
                               <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
                             </div>
                           </div>
-                          <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.email}</div>
+                          <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
                           <div style={{ display:'flex',alignItems:'center',gap:5 }}>
                             {login.plain_password ? (
                               <>

@@ -1,4 +1,4 @@
-﻿// supabase/functions/notify-registration/index.ts
+// supabase/functions/notify-registration/index.ts
 // Triggered on profiles INSERT - sends admin notification AND user welcome
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
@@ -18,15 +18,23 @@ serve(async (req) => {
       return new Response("ok", { status: 200 })
     }
 
-    const { full_name, email, club_name, id } = record
+    const { full_name, email, club_name, role } = record
 
-    // 1. Notify superadmin about the new registration
+    // Only send notifications for new club admin registrations.
+    // Staff profiles (coach, physio, etc.) are issued logins by their admin
+    // and should NOT trigger superadmin notifications or welcome emails.
+    if (role !== "admin") {
+      console.log("Skipping notification for non-admin role:", role)
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: "non-admin role" }), { status: 200 })
+    }
+
+    // 1. Notify superadmin about the new club registration
     const adminHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
       '<div style="background:linear-gradient(135deg,#004F4F,#008080);padding:24px;border-radius:12px 12px 0 0;text-align:center;">' +
-      '<h1 style="color:#FFFCF6;margin:0;font-size:20px;">New Registration</h1>' +
+      '<h1 style="color:#FFFCF6;margin:0;font-size:20px;">New Club Registration</h1>' +
       '</div>' +
       '<div style="background:#FFFCF6;padding:24px;border-radius:0 0 12px 12px;border:1px solid #E0F0F0;">' +
-      '<p style="color:#003D3D;font-size:14px;margin:0 0 12px;"><strong>' + (full_name || 'New User') + '</strong> just signed up.</p>' +
+      '<p style="color:#003D3D;font-size:14px;margin:0 0 12px;"><strong>' + (full_name || 'New User') + '</strong> just registered a new club.</p>' +
       '<table style="width:100%;font-size:13px;color:#5A9494;">' +
       '<tr><td style="padding:4px 0;">Email</td><td style="padding:4px 0;color:#003D3D;">' + email + '</td></tr>' +
       '<tr><td style="padding:4px 0;">Club</td><td style="padding:4px 0;color:#003D3D;">' + (club_name || 'Not specified') + '</td></tr>' +
@@ -44,7 +52,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Apex Track <onboarding@resend.dev>",
         to: [SUPERADMIN_EMAIL],
-        subject: "New Signup: " + (club_name || full_name) + " - Auto-provisioned",
+        subject: "New Club Registration: " + (club_name || full_name),
         html: adminHtml,
       }),
     })
@@ -54,7 +62,7 @@ serve(async (req) => {
       console.error("Admin notification error:", err)
     }
 
-    // 2. Send welcome to the registering user
+    // 2. Send welcome to the registering club admin
     const userHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
       '<div style="background:linear-gradient(135deg,#004F4F,#008080);padding:28px;border-radius:12px 12px 0 0;text-align:center;">' +
       '<h1 style="color:#FFFCF6;margin:0;font-size:22px;">Welcome to Apex Track</h1>' +
@@ -62,12 +70,11 @@ serve(async (req) => {
       '</div>' +
       '<div style="background:#FFFCF6;padding:28px;border-radius:0 0 12px 12px;border:1px solid #E0F0F0;">' +
       '<p style="color:#003D3D;font-size:15px;">Hi ' + (full_name || 'there') + ',</p>' +
-      '<p style="color:#5A9494;line-height:1.7;">Your account has been automatically set up with a <strong style="color:#006A6A;">30-day free trial</strong>. Your team and subscription are ready.</p>' +
+      '<p style="color:#5A9494;line-height:1.7;">Your account has been automatically set up with a <strong style="color:#006A6A;">30-day free trial</strong>. Your team and subscription are ready — you can sign in right away.</p>' +
       '<div style="background:#E8F8EE;border:1px solid rgba(39,174,96,0.2);border-radius:10px;padding:14px;margin:16px 0;">' +
       '<p style="color:#1B6B3A;font-size:13px;margin:0;font-weight:600;">Team "' + (club_name || 'Your Club') + '" created</p>' +
       '<p style="color:#1B6B3A;font-size:13px;margin:4px 0 0;">30-day trial activated</p>' +
       '</div>' +
-      '<p style="color:#5A9494;font-size:13px;">Please confirm your email first (check your inbox), then sign in:</p>' +
       '<a href="' + APP_URL + '/login" style="display:block;text-align:center;background:linear-gradient(135deg,#006A6A,#008080);color:#FFFCF6;text-decoration:none;padding:14px;border-radius:10px;font-weight:700;margin:16px 0;font-size:14px;">Sign In to Dashboard</a>' +
       '<p style="color:#5A9494;font-size:11px;text-align:center;">Use your registered email and password to sign in.</p>' +
       '</div></div>'

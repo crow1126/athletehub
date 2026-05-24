@@ -78,6 +78,30 @@ function ConfirmContent() {
           session = data?.session
         }
 
+        // 3. Wait for onAuthStateChange if no session found yet (handles hash fragment parsing delay)
+        if (!session) {
+          session = await new Promise((resolve) => {
+            let resolved = false
+            
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+              if (currentSession && !resolved) {
+                resolved = true
+                subscription.unsubscribe()
+                resolve(currentSession)
+              }
+            })
+
+            // Timeout after 3 seconds if no session is set
+            setTimeout(() => {
+              if (!resolved) {
+                resolved = true
+                subscription.unsubscribe()
+                resolve(null)
+              }
+            }, 3000)
+          })
+        }
+
         if (!session?.user) {
           throw new Error('No active verification session found. Please sign up or request a new verification link.')
         }

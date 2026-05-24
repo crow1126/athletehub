@@ -127,8 +127,28 @@ export async function POST(req) {
     }
 
     // ── Step 3: Create profile ────────────────────────────────────────────
-    // New club admins are auto-approved and auto-activated immediately.
-    // No email verification required — they can sign in right away.
+    // New club admins start INACTIVE — they must verify their email first
+    // via a dedicated verification landing page (/auth/confirm).
+    let actionLink = null
+
+    try {
+      const origin = req.headers.get('origin') || new URL(req.url).origin
+      const redirectTo = `${origin}/auth/confirm`
+      const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
+        type: 'signup',
+        email: email.trim().toLowerCase(),
+        options: { redirectTo }
+      })
+
+      if (linkError) {
+        console.error('Failed to generate verification link:', linkError.message)
+      } else {
+        actionLink = linkData?.properties?.action_link || null
+      }
+    } catch (linkErr) {
+      console.error('Link generation error:', linkErr.message)
+    }
+
     const { error: profileError } = await db
       .from('profiles')
       .upsert({
@@ -138,9 +158,9 @@ export async function POST(req) {
         club_name: club_name?.trim() || null,
         club_logo_url: logo_url || null,
         role: assignedRole,
-        is_active: true,
-        registration_status: 'approved',
-        approved_at: new Date().toISOString(),
+        is_active: false,
+        registration_status: 'pending_email_verification',
+        approved_at: null,
         team_id: teamId,
       }, { onConflict: 'id' })
 
@@ -149,7 +169,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Profile update failed: ' + profileError.message }, { status: 500 })
     }
 
-    // ── Step 4: Send welcome email (non-blocking) ────────────────────────
+    // ── Step 4: Send welcome email with verification link (non-blocking) ─
     try {
       await fetch(`${SUPABASE_URL}/functions/v1/send-welcome`, {
         method: 'POST',
@@ -161,6 +181,7 @@ export async function POST(req) {
           full_name: full_name || email,
           email: email,
           club_name: club_name?.trim() || null,
+          action_link: actionLink,
         }),
       })
     } catch (emailErr) {

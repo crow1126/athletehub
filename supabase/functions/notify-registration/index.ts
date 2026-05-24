@@ -62,46 +62,8 @@ serve(async (req) => {
       console.error("Admin notification error:", err)
     }
 
-    // 2. Send welcome to the registering club admin with verification instructions
-    const userHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
-      '<div style="background:linear-gradient(135deg,#004F4F,#008080);padding:28px;border-radius:12px 12px 0 0;text-align:center;">' +
-      '<h1 style="color:#FFFCF6;margin:0;font-size:22px;">Welcome to Apex Track</h1>' +
-      '<p style="color:rgba(255,252,246,0.7);margin:6px 0 0;">' + (club_name || "Your club") + ' registration received</p>' +
-      '</div>' +
-      '<div style="background:#FFFCF6;padding:28px;border-radius:0 0 12px 12px;border:1px solid #E0F0F0;">' +
-      '<p style="color:#003D3D;font-size:15px;">Hi ' + (full_name || 'there') + ',</p>' +
-      '<p style="color:#5A9494;line-height:1.7;">Your club has been registered with a <strong style="color:#006A6A;">30-day free trial</strong>. To activate your account, please verify your email address by clicking the button below.</p>' +
-      '<div style="background:#FFF8E1;border:1px solid rgba(230,126,34,0.2);border-radius:10px;padding:14px;margin:16px 0;">' +
-      '<p style="color:#8B6914;font-size:13px;margin:0;font-weight:600;">⚠ Email verification required</p>' +
-      '<p style="color:#8B6914;font-size:13px;margin:4px 0 0;">Your account will be activated once you verify your email.</p>' +
-      '</div>' +
-      '<p style="color:#5A9494;font-size:13px;">Check your inbox for a verification email from Supabase, or click below:</p>' +
-      '<a href="' + APP_URL + '/auth/confirm" style="display:block;text-align:center;background:linear-gradient(135deg,#006A6A,#008080);color:#FFFCF6;text-decoration:none;padding:14px;border-radius:10px;font-weight:700;margin:16px 0;font-size:14px;">Verify Email & Activate Account</a>' +
-      '<p style="color:#5A9494;font-size:11px;text-align:center;">Once verified, you can sign in with your email and password.</p>' +
-      '</div></div>'
-
-    try {
-      const userRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": "Bearer " + RESEND_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Apex Track <onboarding@resend.dev>",
-          to: [email],
-          subject: "Welcome to Apex Track - Please verify your email",
-          html: userHtml,
-        }),
-      })
-
-      if (!userRes.ok) {
-        const userErr = await userRes.text()
-        console.warn("User welcome email failed (Resend free tier limitation):", userErr)
-      }
-    } catch (e) {
-      console.warn("User email send failed:", e.message)
-    }
+    // User welcome email is handled by the signup-provision API route calling /functions/v1/send-welcome with the generated token link.
+    // This DB trigger function only notifies the superadmin.
 
     return new Response(JSON.stringify({ success: true }), { status: 200 })
   } catch (err) {

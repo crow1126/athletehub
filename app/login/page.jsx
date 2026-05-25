@@ -80,6 +80,8 @@ export default function LandingPage() {
   const [loading,    setLoading]   = useState(false)
   const [error,      setError]     = useState('')
   const [success,    setSuccess]   = useState('')
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
   const [disabled,   setDisabled]  = useState(false)
   const [subExpired, setSubExpired]= useState(false)
   const [ready,      setReady]     = useState(false)
@@ -118,8 +120,32 @@ export default function LandingPage() {
     setMobileMenu(false)
   }
 
+  async function handleResendVerification() {
+    const resendEmail = email.trim().toLowerCase()
+    if (!resendEmail || !resendEmail.includes('@')) {
+      setError('Enter your registered email address above, then resend verification.')
+      return
+    }
+    setResendLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resendEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to resend verification email.')
+      setSuccess(data.message || 'Verification email sent. Check your inbox.')
+      setNeedsVerification(true)
+    } catch (err) {
+      setError(err.message || 'Failed to resend verification email.')
+    }
+    setResendLoading(false)
+  }
+
   async function handleLogin(e) {
-    e.preventDefault(); setError(''); setSuccess('')
+    e.preventDefault(); setError(''); setSuccess(''); setNeedsVerification(false)
     if (!email.trim()) { setError('Please enter your username or email address.'); return }
     if (!password)     { setError('Please enter your password.'); return }
     setLoading(true)
@@ -140,7 +166,14 @@ export default function LandingPage() {
 
       const { data, error:authError } = await supabase.auth.signInWithPassword({ email:loginEmail, password })
       if (authError) {
-        setError(authError.message.toLowerCase().includes('invalid') ? 'Incorrect username, email or password.' : authError.message)
+        const msg = authError.message || ''
+        const unconfirmed = msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('confirm')
+        if (unconfirmed) {
+          setNeedsVerification(true)
+          setError('Please confirm your email first. Check your inbox for "Confirm your email - Apex Track", or resend the link below.')
+        } else {
+          setError(msg.toLowerCase().includes('invalid') ? 'Incorrect username, email or password.' : msg)
+        }
         setLoading(false); return
       }
       if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
@@ -152,7 +185,8 @@ export default function LandingPage() {
         } else if (profile?.registration_status === 'pending') {
           setError('Your account is being set up. Please try again in a moment.')
         } else if (profile?.registration_status === 'pending_email_verification') {
-          setError('Please check your email and click the confirmation link to activate your club account.')
+          setNeedsVerification(true)
+          setError('Please confirm your email before signing in. Open the "Confirm Email & Activate Account" link from your welcome email, or resend it below.')
         } else {
           setError('Your account is currently inactive. Contact your administrator.')
         }
@@ -223,7 +257,7 @@ export default function LandingPage() {
         } catch (provErr) {
           console.warn('Auto-provision failed (non-blocking):', provErr.message)
         }
-        setSuccess('Account created! Check your email to confirm, then sign in. Your 30-day free trial starts now.')
+        setSuccess('Account created! Check your email for "Confirm your email - Apex Track" and click the button to activate. Then sign in here.')
         setTab('login'); setPassword(''); setFullName(''); setClubName(''); setClubLogo(null); setLogoPreview('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }
@@ -704,6 +738,16 @@ export default function LandingPage() {
                   {subExpired && <div style={{background:'#FEF9E7',border:'1px solid rgba(183,119,13,0.3)',borderRadius:10,padding:'12px 14px',fontSize:13,color:'#7A5A0A'}}>🔒 Subscription cancelled. Contact your club admin.</div>}
                   {success && <div style={{background:'#E8F8EE',border:'1px solid rgba(39,174,96,0.3)',borderRadius:10,padding:'11px 14px',fontSize:13,color:'#1B6B3A',fontWeight:600}}>✓ {success}</div>}
                   {error && <div style={{background:'#F9E8E8',border:'1px solid rgba(180,50,50,0.18)',borderRadius:10,padding:'11px 14px',fontSize:13,color:'#8B2020',fontWeight:600}}>⚠️ {error}</div>}
+                  {needsVerification && (
+                    <button
+                      type="button"
+                      disabled={resendLoading}
+                      onClick={handleResendVerification}
+                      style={{ width:'100%', padding:'11px', background:'rgba(0,106,106,0.08)', color:'#006A6A', border:'1px solid rgba(0,106,106,0.25)', borderRadius:10, fontSize:13, fontWeight:700, cursor:resendLoading?'not-allowed':'pointer', fontFamily:'inherit' }}
+                    >
+                      {resendLoading ? 'Sending verification email…' : 'Resend confirmation email'}
+                    </button>
+                  )}
 
                   <div>
                     <label className="auth-field-label">Username or Email Address</label>

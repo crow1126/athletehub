@@ -386,10 +386,29 @@ export default function SuperadminPage() {
       }
       const { error } = await supabase.from('profiles').update({ is_active: true, registration_status: 'approved', approved_at: new Date().toISOString(), club_logo_url: finalLogoUrl, team_id: teamId }).eq('id', selected.id)
       if (error) throw error
+
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.access_token) {
+        await fetch('/api/admin/confirm-email', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ user_id: selected.id }),
+        })
+      }
+
       await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-welcome`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ full_name: selected.full_name, email: selected.email, club_name: selected.club_name, club_logo_url: finalLogoUrl }),
+        body: JSON.stringify({
+          full_name: selected.full_name,
+          email: selected.email,
+          club_name: selected.club_name,
+          club_logo_url: finalLogoUrl,
+          app_url: window.location.origin,
+        }),
       })
       showToast('✅ Approved — welcome mail dispatched and team provisioned!')
       setSelected(null); loadProfiles(); loadTeams(); loadActivities()
@@ -420,7 +439,10 @@ export default function SuperadminPage() {
       if (checkData.exists) throw new Error('A club with this name is already registered.')
       const { data:authData, error:authError } = await supabase.auth.signUp({
         email: newEmail.trim().toLowerCase(), password: newPassword,
-        options: { data: { full_name: newName.trim(), club_name: newClub.trim() } }
+        options: {
+          data: { full_name: newName.trim(), club_name: newClub.trim() },
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+        },
       })
       if (authError) throw authError
       if (!authData?.user) throw new Error('User creation failed')
@@ -439,12 +461,11 @@ export default function SuperadminPage() {
       })
       const provData = await provRes.json()
       if (!provRes.ok) throw new Error(provData.error || 'Provision failed')
+      if (!provData.verification_email_sent) {
+        throw new Error('Account created but verification email failed. Use Resend verification from login or try again.')
+      }
       if (finalLogoUrl) await supabase.from('profiles').update({ club_logo_url: finalLogoUrl }).eq('id', userId)
-      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-welcome`, {
-        method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
-        body: JSON.stringify({ full_name:newName.trim(), email:newEmail.trim().toLowerCase(), club_name:newClub.trim(), club_logo_url:finalLogoUrl }),
-      })
-      showToast('✅ Account provisioned & welcoming sequence dispatched!')
+      showToast('✅ Account provisioned — verification email sent!')
       setAddModal(false); setNewName(''); setNewEmail(''); setNewPassword(''); setNewClub('')
       setNewLogoUrl(''); setNewLogoPreview(''); setNewLogoFile(null)
       loadProfiles(); loadTeams(); loadActivities()

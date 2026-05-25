@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 const SUPERADMIN_EMAIL = "samuelwobil11@gmail.com"
-const APP_URL = "https://athletehub-seven.vercel.app"
+const DEFAULT_APP_URL = Deno.env.get("SITE_URL") || Deno.env.get("APP_URL") || "https://athletehub-seven.vercel.app"
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -16,13 +16,18 @@ serve(async (req) => {
   }
 
   try {
-    const { full_name, email, club_name, club_logo_url, action_link } = await req.json()
+    const { full_name, email, club_name, club_logo_url, action_link, app_url } = await req.json()
 
+    const APP_URL = app_url || DEFAULT_APP_URL
+    const needsVerification = !!action_link
     const buttonUrl = action_link || `${APP_URL}/login`
-    const buttonText = action_link ? 'Verify Email & Activate Account' : 'Sign In to Dashboard'
-    const instructionText = action_link 
-      ? 'Please confirm your email by clicking the button below to fully activate your club account:'
-      : 'Your team and subscription have been set up automatically. Sign in using the link below:'
+    const buttonText = needsVerification ? 'Confirm Email & Activate Account' : 'Sign In to Dashboard'
+    const instructionText = needsVerification
+      ? 'Before you can sign in, confirm your email by clicking the button below. This activates your club account and 30-day trial:'
+      : 'Your team and subscription have been set up. Sign in using the button below with your registered email and password:'
+    const footerText = needsVerification
+      ? 'After confirming, return to Apex Track and sign in with the email and password you registered.'
+      : 'Use your registered email and password to sign in.'
 
     const welcomeHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
       '<div style="background:linear-gradient(135deg,#004F4F,#008080);padding:28px;border-radius:12px 12px 0 0;text-align:center;">' +
@@ -38,7 +43,7 @@ serve(async (req) => {
       '</div>' +
       '<p style="color:#5A9494;line-height:1.6;margin-bottom:16px;">' + instructionText + '</p>' +
       '<a href="' + buttonUrl + '" style="display:block;text-align:center;background:linear-gradient(135deg,#006A6A,#008080);color:#FFFCF6;text-decoration:none;padding:14px;border-radius:10px;font-weight:700;margin:16px 0;font-size:14px;">' + buttonText + '</a>' +
-      '<p style="color:#5A9494;font-size:11px;text-align:center;">Use your registered email and password to sign in.</p>' +
+      '<p style="color:#5A9494;font-size:11px;text-align:center;">' + footerText + '</p>' +
       '</div></div>'
 
     // Send to the user
@@ -51,7 +56,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: "Apex Track <onboarding@resend.dev>",
         to: [email],
-        subject: action_link
+        subject: needsVerification
           ? "Confirm your email - Apex Track"
           : "Welcome to Apex Track - Your 30-day trial is active!",
         html: welcomeHtml,
@@ -71,7 +76,7 @@ serve(async (req) => {
         body: JSON.stringify({
           from: "Apex Track <onboarding@resend.dev>",
           to: [SUPERADMIN_EMAIL],
-          subject: action_link
+          subject: needsVerification
             ? "Action Required: Forward to " + email + " - Confirm your email"
             : "Forward to " + email + " - Welcome to Apex Track",
           html: '<p style="color:#8B2020;font-size:13px;background:#FEF9E7;padding:12px;border-radius:8px;">Resend free tier cannot deliver to ' + email + '. Forward this verification/welcome email to them, or add a verified domain in Resend.</p>' + welcomeHtml,

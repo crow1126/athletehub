@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createEmailVerificationLink } from '@/lib/verificationLink'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -129,24 +130,12 @@ export async function POST(req) {
     // ── Step 3: Create profile ────────────────────────────────────────────
     // New club admins start INACTIVE — they must verify their email first
     // via a dedicated verification landing page (/auth/confirm).
-    let actionLink = null
+    const origin = req.headers.get('origin') || new URL(req.url).origin
+    const redirectTo = `${origin}/auth/confirm`
+    const actionLink = await createEmailVerificationLink(db, email, redirectTo)
 
-    try {
-      const origin = req.headers.get('origin') || new URL(req.url).origin
-      const redirectTo = `${origin}/auth/confirm`
-      const { data: linkData, error: linkError } = await db.auth.admin.generateLink({
-        type: 'signup',
-        email: email.trim().toLowerCase(),
-        options: { redirectTo }
-      })
-
-      if (linkError) {
-        console.error('Failed to generate verification link:', linkError.message)
-      } else {
-        actionLink = linkData?.properties?.action_link || null
-      }
-    } catch (linkErr) {
-      console.error('Link generation error:', linkErr.message)
+    if (!actionLink) {
+      console.error('Failed to generate verification link for:', email)
     }
 
     const { error: profileError } = await db
@@ -182,6 +171,7 @@ export async function POST(req) {
           email: email,
           club_name: club_name?.trim() || null,
           action_link: actionLink,
+          app_url: origin,
         }),
       })
     } catch (emailErr) {
@@ -193,6 +183,7 @@ export async function POST(req) {
       team_id: teamId,
       role: assignedRole,
       plan: 'trial',
+      verification_email_sent: !!actionLink,
       message: teamId
         ? `Team provisioned with 30-day trial. Role: ${assignedRole}`
         : 'Account activated (no club specified)',

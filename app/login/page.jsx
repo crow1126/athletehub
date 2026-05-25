@@ -42,13 +42,6 @@ function OrbCanvas() {
   return <canvas ref={ref} style={{ position:'absolute',inset:0,width:'100%',height:'100%',pointerEvents:'none' }}/>
 }
 
-const REVIEWS = [
-  { name:'Kwame Mensah', role:'Head Coach, Hearts of Oak', avatar:'KM', text:'Apex Track transformed how we monitor player fitness. The injury hub alone saved us three key players last season.', rating:5 },
-  { name:'Abena Sarpong', role:'Sports Scientist, Kotoko SC', avatar:'AS', text:'The xG analytics are on par with what European clubs use. Our recruitment decisions are now data-driven and precise.', rating:5 },
-  { name:'Daniel Ofori', role:'Club Administrator, RTU FC', avatar:'DO', text:'Role-based access means every staff member sees exactly what they need. Clean, fast, and reliable on mobile.', rating:5 },
-  { name:'Ama Asante', role:'Performance Analyst, Dreams FC', avatar:'AA', text:'Match logs and squad reports used to take hours. Now it\'s minutes. The platform just works.', rating:5 },
-]
-
 const iconProps = { size: 24, strokeWidth: 1.5, color: '#14B8A6' }
 const FEATURES = [
   { icon:<BarChart3 {...iconProps}/>, title:'xG & xA Analytics', desc:'Expected goals and assists modelling with match-by-match breakdowns and squad-level trend views.' },
@@ -471,22 +464,6 @@ export default function LandingPage() {
         .feat-title { font-size:14px; font-weight:700; color:#FFFCF6; margin-bottom:7px; }
         .feat-desc  { font-size:12.5px; color:rgba(255,252,246,0.45); line-height:1.7; }
 
-        /* ── REVIEWS ── */
-        .reviews-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:52px; }
-        .review-card {
-          background:#fff; border:1px solid #E0F0F0; border-radius:18px; padding:24px 24px 20px;
-          transition:all 0.22s ease; position:relative; overflow:hidden;
-        }
-        .review-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,#006A6A,#7ECACA); opacity:0; transition:opacity 0.22s; }
-        .review-card:hover { transform:translateY(-3px); box-shadow:0 10px 32px rgba(0,106,106,0.12); border-color:#B8DADA; }
-        .review-card:hover::before { opacity:1; }
-        .review-stars { display:flex; gap:3px; margin-bottom:12px; }
-        .review-text { font-size:14px; color:#2D4A4A; line-height:1.75; margin-bottom:18px; font-style:italic; }
-        .review-author { display:flex; align-items:center; gap:11px; }
-        .review-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#006A6A,#008080); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color:#FFFCF6; flex-shrink:0; }
-        .review-name { font-size:13px; font-weight:700; color:#003D3D; }
-        .review-role { font-size:11px; color:#5A9494; margin-top:1px; }
-
         /* ── AUTH SECTION ── */
         .auth-section { padding:100px 40px; background:#0F172A; } /* Slate 900 */
         .auth-wrap { max-width:960px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:start; }
@@ -530,7 +507,6 @@ export default function LandingPage() {
           .stats-band-inner { grid-template-columns:repeat(2,1fr); gap:20px; }
           .stat-col + .stat-col { border-left:none; }
           .stat-col:nth-child(odd) { border-right:1px solid rgba(255,252,246,0.15); }
-          .reviews-grid { grid-template-columns:1fr; }
           .features-grid { grid-template-columns:1fr 1fr; gap:10px; }
           .section { padding:60px 20px; }
           .auth-section { padding:60px 20px; }
@@ -558,7 +534,7 @@ export default function LandingPage() {
       {mobileMenu && (
         <div className="mobile-nav">
           <button className="mobile-nav-close" onClick={()=>setMobileMenu(false)}>×</button>
-          {['Features','Stats','Reviews'].map(l=>(
+          {['Features','Stats'].map(l=>(
             <button key={l} className="mobile-nav-link" onClick={()=>{ document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'}); setMobileMenu(false); }}>{l}</button>
           ))}
           <button className="mobile-nav-link" onClick={scrollToAuth}>Sign In</button>
@@ -573,7 +549,7 @@ export default function LandingPage() {
           <div className="nav-logo-text">Apex <span>Track</span></div>
         </a>
         <div className="nav-links">
-          {['Features','Stats','Reviews'].map(l=>(
+          {['Features','Stats'].map(l=>(
             <button key={l} className="nav-link" onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'})}>{l}</button>
           ))}
           <button className="nav-link" onClick={scrollToAuth}>Sign In</button>
@@ -659,30 +635,6 @@ export default function LandingPage() {
                 <div className="feat-icon">{f.icon}</div>
                 <div className="feat-title">{f.title}</div>
                 <div className="feat-desc">{f.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── REVIEWS ── */}
-      <div id="reviews" className="section-light">
-        <div className="section">
-          <div className="s-eyebrow"><div className="s-eyebrow-line"/><span className="s-eyebrow-text" style={{color:'#006A6A'}}>Testimonials</span></div>
-          <h2 className="s-title-light">Trusted by Ghana's top clubs</h2>
-          <p className="s-sub-light">Coaches and analysts across the Ghana Premier League rely on Apex Track every matchday.</p>
-          <div className="reviews-grid">
-            {REVIEWS.map(r=>(
-              <div key={r.name} className="review-card">
-                <div className="review-stars">{Array(r.rating).fill(0).map((_,i)=><span key={i} style={{fontSize:14,color:'#F59E0B'}}>★</span>)}</div>
-                <p className="review-text">"{r.text}"</p>
-                <div className="review-author">
-                  <div className="review-avatar">{r.avatar}</div>
-                  <div>
-                    <div className="review-name">{r.name}</div>
-                    <div className="review-role">{r.role}</div>
-                  </div>
-                </div>
               </div>
             ))}
           </div>
@@ -854,7 +806,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div style={{display:'flex',gap:24,flexWrap:'wrap'}}>
-            {['Features','Reviews','Sign In','Register'].map(l=>(
+            {['Features','Sign In','Register'].map(l=>(
               <button key={l} onClick={()=> l==='Sign In'||l==='Register' ? (setTab(l==='Register'?'signup':'login'),scrollToAuth()) : document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'})}
                 style={{background:'none',border:'none',color:'rgba(255,252,246,0.4)',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:'inherit',transition:'color 0.2s'}}
                 onMouseEnter={e=>e.target.style.color='rgba(255,252,246,0.8)'}

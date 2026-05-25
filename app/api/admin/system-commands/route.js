@@ -51,11 +51,11 @@ export async function POST(req) {
         }
       }
 
-      // Delete non-superadmin profiles
+      // Delete non-superadmin profiles (by email, not only role)
       const { error: profileError } = await db
         .from('profiles')
         .delete()
-        .neq('role', 'superadmin')
+        .neq('email', SUPER_ADMIN_EMAIL.toLowerCase())
       if (profileError) {
         console.error('Error deleting profiles:', profileError.message)
         return NextResponse.json({ error: `Failed to clear profiles: ${profileError.message}` }, { status: 500 })
@@ -90,9 +90,23 @@ export async function POST(req) {
         }
       }
 
+      // Re-ensure superadmin profile after wipe
+      const superAuth = users?.find(u => u.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase())
+      if (superAuth) {
+        await db.from('profiles').upsert({
+          id: superAuth.id,
+          email: SUPER_ADMIN_EMAIL.toLowerCase(),
+          full_name: superAuth.user_metadata?.full_name || 'Super Admin',
+          role: 'superadmin',
+          is_active: true,
+          registration_status: 'approved',
+          team_id: null,
+        }, { onConflict: 'id' })
+      }
+
       return NextResponse.json({
         success: true,
-        message: `System data cleared successfully. Deleted ${deletedCount} auth users and all associate table records.`
+        message: `System data cleared successfully. Deleted ${deletedCount} auth users and all associate table records. Superadmin preserved.`
       })
     }
 
@@ -127,7 +141,7 @@ export async function POST(req) {
         const { error } = await db
           .from('profiles')
           .delete()
-          .neq('role', 'superadmin') // Keep superadmin profile
+          .neq('email', SUPER_ADMIN_EMAIL.toLowerCase())
         if (error) return NextResponse.json({ error: error.message }, { status: 500 })
       } else {
         const { error } = await db

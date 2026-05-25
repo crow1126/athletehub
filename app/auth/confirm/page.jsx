@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, Suspense, useRef } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 
@@ -51,7 +51,6 @@ function LoadingUI() {
 
 function ConfirmContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [status, setStatus] = useState('verifying') // 'verifying' | 'success' | 'error'
   const [message, setMessage] = useState('Verifying your email and activating your account...')
   const isRunningActivation = useRef(false)
@@ -135,6 +134,9 @@ function ConfirmContent() {
         if (!actRes.ok) {
           throw new Error(actData.error || 'Failed to activate account.')
         }
+
+        // End the verification session so the user signs in manually on /login
+        await supabase.auth.signOut()
 
         setStatus('success')
         setMessage('Your email has been verified and your club profile is fully activated!')
@@ -272,21 +274,6 @@ function ConfirmContent() {
           to { transform: rotate(360deg); }
         }
 
-        .redirect-progress-bar {
-          width: 100%;
-          height: 4px;
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 2px;
-          overflow: hidden;
-          margin-top: 24px;
-        }
-
-        .redirect-progress-fill {
-          height: 100%;
-          background: #14B8A6;
-          border-radius: 2px;
-          transition: width 1s linear;
-        }
       `}</style>
       <OrbBackground />
 
@@ -316,7 +303,13 @@ function ConfirmContent() {
             <h2 className="heading">Account Activated!</h2>
             <p className="subtext">{message}</p>
 
-            <button className="action-btn" onClick={() => router.replace('/login')}>
+            <button
+              className="action-btn"
+              onClick={async () => {
+                await supabase.auth.signOut()
+                router.replace('/login')
+              }}
+            >
               Go to Login →
             </button>
           </div>

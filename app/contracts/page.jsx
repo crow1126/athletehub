@@ -31,8 +31,9 @@ function AthleteAvatar({ ath, size=36, index=0 }) {
 function currency(v) { return v ? `GHS ${parseFloat(v).toLocaleString('en-GH', { minimumFractionDigits: 2 })}` : '—' }
 
 const EMPTY = { athlete_id:'',contract_start:'',contract_end:'',weekly_wage:'',signing_fee:'',release_clause:'',bonus_goals:'',bonus_assists:'',status:'Active',notes:'' }
-const inp   = { width:'100%',padding:'10px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',fontSize:14,outline:'none',color:'var(--text)',fontFamily:'var(--font)' }
-const lbl   = { display:'block',fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6 }
+// Match "Register Athlete" modal look & feel
+const inp   = { width:'100%',padding:'10px 14px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:'12px',fontSize:14,outline:'none',color:'#0F172A',fontFamily:'var(--font)',transition:'border-color 0.2s' }
+const lbl   = { display:'block',fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:'#64748B',marginBottom:6 }
 
 export default function ContractsPage() {
   const [contracts, setContracts] = useState([])
@@ -245,16 +246,16 @@ export default function ContractsPage() {
 
       {/* Modal */}
       {showForm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(44,62,80,0.6)', backdropFilter: 'blur(6px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-          <div style={{ background: 'var(--surface)', borderRadius: 'var(--r-xl)', width: '100%', maxWidth: 560, maxHeight: '92vh', overflow: 'auto', boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border)' }}>
-            <div style={{ background: 'linear-gradient(90deg, #1B5E20, #27AE60)', padding: '20px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#FFFFFF', borderRadius:'20px', width:'100%', maxWidth:560, maxHeight:'92vh', overflow:'auto', boxShadow:'0 25px 60px -10px rgba(0,0,0,0.25)', border:'1px solid #E2E8F0' }}>
+            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'20px 20px 0 0' }}>
               <div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>Player Finance</div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{editId ? 'Edit Contract' : 'New Contract'}</h2>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.65)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:3 }}>{editId?'Edit Record':'New Registration'}</div>
+                <h2 style={{ fontSize:18, fontWeight:800, color:'#fff', margin:0 }}>{editId ? 'Edit Contract' : 'New Contract'}</h2>
               </div>
-              <button onClick={() => setShowForm(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', width: 36, height: 36, borderRadius: '50%', fontSize: 18, cursor: 'pointer', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+              <button onClick={() => setShowForm(false)} style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', width:36, height:36, borderRadius:'50%', fontSize:20, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>×</button>
             </div>
-            <div style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {formError && (
                 <div style={{ background: 'var(--danger-light)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: 13, color: 'var(--danger)', fontWeight: 600 }}>⚠ {formError}</div>
               )}
@@ -287,8 +288,8 @@ export default function ContractsPage() {
               </div>
               <div><label style={lbl}>Notes</label><textarea value={form.notes} onChange={e => set('notes')(e.target.value)} rows={3} style={{ ...inp, resize: 'vertical' }} placeholder="Additional contract details…" /></div>
               <div style={{ display: 'flex', gap: 10, paddingTop: 8 }}>
-                <button onClick={() => setShowForm(false)} style={{ flex: 1, background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text2)', padding: '12px', borderRadius: 'var(--r-md)', fontSize: 14, cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font)' }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} className="btn-blue" style={{ flex: 2, padding: '12px', opacity: saving ? 0.7 : 1, background: 'linear-gradient(135deg,#1B5E20,#27AE60)', fontSize: 14 }}>
+                <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'12px', borderRadius:'12px', fontSize:14, cursor:'pointer', fontWeight:800, fontFamily:'var(--font)' }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'12px', opacity:saving?0.7:1, fontSize:14, background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:'12px', cursor:'pointer', fontWeight:900, fontFamily:'var(--font)' }}>
                   {saving ? 'Saving…' : editId ? 'Save Changes' : 'Create Contract'}
                 </button>
               </div>

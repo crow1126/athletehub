@@ -69,8 +69,9 @@ function InlineText({ value, onSave, style={} }) {
   return <div onClick={()=>setEd(true)} style={{ cursor:'text',display:'inline-flex',alignItems:'center',gap:4,...style }} title="Click to edit"><span>{value||'—'}</span><span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}>✏</span></div>
 }
 
-const inp = { width:'100%',padding:'10px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',fontSize:14,outline:'none',color:'var(--text)',fontFamily:'var(--font)' }
-const lbl = { display:'block',fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6 }
+// Match "Register Athlete" modal look & feel
+const inp = { width:'100%',padding:'10px 14px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:'12px',fontSize:14,outline:'none',color:'#0F172A',fontFamily:'var(--font)',transition:'border-color 0.2s' }
+const lbl = { display:'block',fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:'#64748B',marginBottom:6 }
 
 export default function InjuriesPage() {
   const [injuries,    setInjuries]    = useState([])
@@ -295,13 +296,16 @@ export default function InjuriesPage() {
 
       {/* Modal */}
       {showForm&&(
-        <div style={{ position:'fixed',inset:0,background:'rgba(44,62,80,0.55)',backdropFilter:'blur(6px)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:24 }}>
-          <div style={{ background:'var(--surface)',borderRadius:'var(--r-xl)',width:'100%',maxWidth:520,maxHeight:'92vh',overflow:'auto',boxShadow:'var(--shadow-lg)',border:'1px solid var(--border)' }}>
-            <div style={{ padding:'20px 28px',display:'flex',justifyContent:'space-between',alignItems:'center',background:'linear-gradient(90deg,#C0392B,#E74C3C)' }}>
-              <h2 style={{ fontSize:20,fontWeight:800,color:'#fff' }}>{editId?'Edit Injury':'Log Injury'}</h2>
-              <button onClick={()=>setShowForm(false)} style={{ background:'rgba(255,255,255,0.2)',border:'none',width:34,height:34,borderRadius:'50%',fontSize:18,cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center' }}>×</button>
+        <div style={{ position:'fixed',inset:0,background:'rgba(15,23,42,0.6)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
+          <div style={{ background:'#FFFFFF',borderRadius:'20px',width:'100%',maxWidth:520,maxHeight:'92vh',overflow:'auto',boxShadow:'0 25px 60px -10px rgba(0,0,0,0.25)',border:'1px solid #E2E8F0' }}>
+            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)',padding:'20px 24px',display:'flex',justifyContent:'space-between',alignItems:'center',borderRadius:'20px 20px 0 0' }}>
+              <div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.65)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:3 }}>{editId?'Edit Record':'New Registration'}</div>
+                <h2 style={{ fontSize:18,fontWeight:800,color:'#fff',margin:0 }}>{editId?'Edit Injury':'Log Injury'}</h2>
+              </div>
+              <button onClick={()=>setShowForm(false)} style={{ background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.25)',width:36,height:36,borderRadius:'50%',fontSize:20,cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1 }}>×</button>
             </div>
-            <div style={{ padding:28,display:'flex',flexDirection:'column',gap:16 }}>
+            <div style={{ padding:24,display:'flex',flexDirection:'column',gap:16 }}>
               <div>
                 <label style={lbl}>Athlete *</label>
                 <select value={form.athlete_id} onChange={e=>set('athlete_id')(e.target.value)} style={inp} disabled={!!editId}>
@@ -342,8 +346,8 @@ export default function InjuriesPage() {
                 </div>
               )}
               <div style={{ display:'flex',gap:10,paddingTop:8 }}>
-                <button onClick={()=>setShowForm(false)} style={{ flex:1,background:'var(--surface2)',border:'1px solid var(--border)',color:'var(--text2)',padding:'11px',borderRadius:'var(--r-md)',fontSize:14,cursor:'pointer',fontWeight:600,fontFamily:'var(--font)' }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} className="btn-blue" style={{ flex:2,padding:'11px',background:'linear-gradient(135deg,#C0392B,#E74C3C)',opacity:saving?0.7:1,fontSize:14 }}>{saving?'Saving…':editId?'Save Changes':'Log Injury'}</button>
+                <button onClick={()=>setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'11px', borderRadius:'12px', fontSize:14, cursor:'pointer', fontWeight:800, fontFamily:'var(--font)' }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'11px', opacity:saving?0.7:1, fontSize:14, background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:'12px', cursor:'pointer', fontWeight:900, fontFamily:'var(--font)' }}>{saving?'Saving…':editId?'Save Changes':'Log Injury'}</button>
               </div>
             </div>
           </div>

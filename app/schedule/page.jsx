@@ -12,8 +12,9 @@ const VENUES = ['Training Ground','Fitness Center','Pitch A','Pitch B','Aquatic 
 const COLORS = { 'Squad Training':'#4A90E2', 'Strength & Conditioning':'#27AE60', 'Tactical Drills':'#9B59B6', 'Recovery Session':'#1ABC9C', 'Match Preparation':'#E67E22', 'Friendly Match':'#E74C3C', 'Fitness Test':'#F39C12', 'Video Analysis':'#7F8C8D' }
 const EMPTY_SESSION = { title:'', type:'Squad Training', date:'', time:'09:00', duration:90, venue:'Training Ground', coach_id:'', notes:'' }
 
-const inp = { width:'100%', padding:'10px 14px', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', fontSize:14, outline:'none', color:'var(--text)', fontFamily:'var(--font)' }
-const lbl = { display:'block', fontSize:11, fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase', color:'var(--text3)', marginBottom:6 }
+// Match "Register Athlete" modal look & feel
+const inp = { width:'100%', padding:'10px 14px', background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:'12px', fontSize:14, outline:'none', color:'#0F172A', fontFamily:'var(--font)', transition:'border-color 0.2s' }
+const lbl = { display:'block', fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'#64748B', marginBottom:6 }
 
 export default function SchedulePage() {
   const [sessions,   setSessions]   = useState([])
@@ -251,11 +252,15 @@ export default function SchedulePage() {
       </div>
 
       {showForm && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(44,62,80,0.55)', backdropFilter:'blur(6px)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-          <div style={{ background:'var(--surface)', borderRadius:'var(--r-xl)', width:'100%', maxWidth:560, maxHeight:'92vh', overflow:'auto', boxShadow:'var(--shadow-lg)', border:'1px solid var(--border)' }}>
-            <div style={{ padding:'20px 28px', display:'flex', justifyContent:'space-between', alignItems:'center', background:'linear-gradient(90deg,#2E6FC4,#4A90E2)' }}>
-              <h2 style={{ fontSize:20, fontWeight:800, color:'#fff' }}>{editId ? 'Edit Session' : 'New Session'}</h2>
-              <button onClick={() => setShowForm(false)} style={{ background:'rgba(255,255,255,0.2)', border:'none', width:34, height:34, borderRadius:'50%', fontSize:18, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>×</button>
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#FFFFFF', borderRadius:'20px', width:'100%', maxWidth:560, maxHeight:'92vh', overflow:'auto', boxShadow:'0 25px 60px -10px rgba(0,0,0,0.25)', border:'1px solid #E2E8F0' }}>
+            {/* Modal Header */}
+            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)', padding:'20px 24px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'20px 20px 0 0' }}>
+              <div>
+                <div style={{ fontSize:10, color:'rgba(255,255,255,0.65)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:3 }}>{editId?'Edit Record':'New Registration'}</div>
+                <h2 style={{ fontSize:18, fontWeight:800, color:'#fff', margin:0 }}>{editId ? 'Edit Session' : 'New Session'}</h2>
+              </div>
+              <button onClick={() => setShowForm(false)} style={{ background:'rgba(255,255,255,0.15)', border:'1px solid rgba(255,255,255,0.25)', width:36, height:36, borderRadius:'50%', fontSize:20, cursor:'pointer', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}>×</button>
             </div>
             <div style={{ padding:24, display:'flex', flexDirection:'column', gap:16 }}>
               <div><label style={lbl}>Session Title *</label><input value={form.title} onChange={e=>set('title')(e.target.value)} style={inp} placeholder="e.g. Morning Squad Training"/></div>
@@ -269,8 +274,8 @@ export default function SchedulePage() {
               <div><label style={lbl}>Assign Coach</label><select value={form.coach_id} onChange={e=>set('coach_id')(e.target.value)} style={inp}><option value="">Select coach…</option>{coaches.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
               <div><label style={lbl}>Notes</label><textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={3} placeholder="Session details…" style={{ ...inp, resize:'vertical' }}/></div>
               <div style={{ display:'flex', gap:10, paddingTop:8 }}>
-                <button onClick={() => setShowForm(false)} className="btn-ghost" style={{ flex:1, padding:'11px' }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} className="btn-blue" style={{ flex:2, padding:'11px', opacity:saving?0.7:1 }}>
+                <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'11px', borderRadius:'12px', fontSize:14, cursor:'pointer', fontWeight:800, fontFamily:'var(--font)' }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'11px', opacity:saving?0.7:1, fontSize:14, background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:'12px', cursor:'pointer', fontWeight:900, fontFamily:'var(--font)' }}>
                   {saving ? 'Saving…' : editId ? 'Save Changes' : 'Schedule Session'}
                 </button>
               </div>

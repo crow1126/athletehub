@@ -88,21 +88,6 @@ export default function LandingPage() {
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 80)
     if (typeof window !== 'undefined') {
-      const url = new URL(window.location.href)
-      const hasAuthParams =
-        url.searchParams.has('code') ||
-        url.searchParams.has('token_hash') ||
-        url.hash.includes('access_token') ||
-        url.hash.includes('refresh_token')
-
-      if (hasAuthParams) {
-        const target = url.searchParams.has('code') || url.searchParams.has('token_hash')
-          ? `/auth/callback${url.search}`
-          : `/auth/confirm${url.search}${url.hash}`
-        window.location.replace(target)
-        return () => clearTimeout(t)
-      }
-
       const p = new URLSearchParams(window.location.search)
       if (p.get('reason') === 'disabled') setDisabled(true)
       if (p.get('reason') === 'subscription_expired') {
@@ -230,7 +215,7 @@ export default function LandingPage() {
         email: email.trim().toLowerCase(), password,
         options:{
           data:{ full_name:fullName.trim(), club_name:clubName.trim() },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          emailRedirectTo: `${window.location.origin}/auth/confirm`
         }
       })
       if (authError) { setError(authError.message); setLoading(false); return }

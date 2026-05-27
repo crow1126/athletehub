@@ -441,7 +441,7 @@ export default function SuperadminPage() {
         email: newEmail.trim().toLowerCase(), password: newPassword,
         options: {
           data: { full_name: newName.trim(), club_name: newClub.trim() },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
         },
       })
       if (authError) throw authError

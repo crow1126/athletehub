@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
-const SUPERADMIN_EMAIL = "samuelwobil11@gmail.com"
+const SUPERADMIN_EMAIL = "admin@apextrackgh.com"
 const DEFAULT_APP_URL = Deno.env.get("SITE_URL") || Deno.env.get("APP_URL") || "https://athletehub-seven.vercel.app"
 
 const corsHeaders = {
@@ -54,7 +54,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Apex Track <onboarding@resend.dev>",
+        from: "Apex Track <admin@apextrackgh.com>",
         to: [email],
         subject: needsVerification
           ? "Confirm your email - Apex Track"
@@ -74,7 +74,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "Apex Track <onboarding@resend.dev>",
+          from: "Apex Track <admin@apextrackgh.com>",
           to: [SUPERADMIN_EMAIL],
           subject: needsVerification
             ? "Action Required: Forward to " + email + " - Confirm your email"

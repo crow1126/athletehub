@@ -3,7 +3,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
-const SUPERADMIN_EMAIL = "samuelwobil11@gmail.com"
+const SUPERADMIN_EMAIL = "admin@apextrackgh.com"
 const APP_URL = "https://athletehub-seven.vercel.app"
 
 serve(async (req) => {
@@ -50,7 +50,7 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Apex Track <onboarding@resend.dev>",
+        from: "Apex Track <admin@apextrackgh.com>",
         to: [SUPERADMIN_EMAIL],
         subject: "New Club Registration: " + (club_name || full_name),
         html: adminHtml,

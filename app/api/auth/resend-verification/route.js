@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createEmailVerificationLink } from '@/lib/verificationLink'
+import { getSiteUrl } from '@/lib/siteUrl'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -26,7 +27,8 @@ export async function POST(req) {
 
     const db = getDb()
     const origin = req.headers.get('origin') || new URL(req.url).origin
-    const redirectTo = `${origin}/auth/confirm`
+    const siteUrl = getSiteUrl(origin)
+    const redirectTo = `${siteUrl}/auth/confirm`
 
     const { data: profile } = await db
       .from('profiles')
@@ -68,7 +70,7 @@ export async function POST(req) {
         email: normalizedEmail,
         club_name: profile.club_name,
         action_link: actionLink,
-        app_url: origin,
+        app_url: siteUrl,
       }),
     })
 

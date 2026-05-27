@@ -65,14 +65,16 @@ function ConfirmContent() {
       
       const queryParams = new URLSearchParams(window.location.search)
       const code = queryParams.get('code')
+      const tokenHash = queryParams.get('token_hash')
+      const type = queryParams.get('type')
       const hasHashToken = window.location.hash.includes('access_token') || window.location.hash.includes('refresh_token')
 
       // Check if we already have an active session in local storage
       const { data: initialSessionData } = await supabase.auth.getSession()
       let session = initialSessionData?.session
 
-      // If we don't have a session, and there is no code/hash in the URL, then we can't verify
-      if (!session && !code && !hasHashToken) {
+      // If we don't have a session, and there is no code/token/hash in the URL, then we can't verify
+      if (!session && !code && !tokenHash && !hasHashToken) {
         setStatus('error')
         setMessage('No active verification session found. Please sign up or request a new verification link.')
         return
@@ -90,7 +92,18 @@ function ConfirmContent() {
           session = data?.session
         }
 
-        // 2. If we don't have a session yet but we have a hash fragment, wait for Supabase to parse it
+        // 2. Handle OTP/hash links that include token_hash + type query params
+        if (!session && tokenHash && type) {
+          console.log('Verifying token_hash with verifyOtp...')
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type,
+          })
+          if (error) throw new Error('Token verification failed: ' + error.message)
+          session = data?.session || null
+        }
+
+        // 3. If we don't have a session yet but we have a hash fragment, wait for Supabase to parse it
         if (!session && hasHashToken) {
           console.log('Waiting for hash token session parsing...')
           session = await new Promise((resolve) => {
@@ -115,17 +128,20 @@ function ConfirmContent() {
           })
         }
 
-        // 3. Final session check
+        // 4. Final session check
         if (!session?.user) {
           throw new Error('No active verification session found. Please sign up or request a new verification link.')
         }
 
         console.log('User session verified:', session.user.email)
 
-        // 4. Call the backend API to securely activate user account
+        // 5. Call the backend API to securely activate user account
         const actRes = await fetch('/api/auth/activate', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ user_id: session.user.id })
         })
 

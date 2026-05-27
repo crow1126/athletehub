@@ -27,6 +27,21 @@ export async function POST(req) {
     }
 
     const db = getDb()
+    const authHeader = req.headers.get('authorization') || ''
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : ''
+
+    if (!token) {
+      return NextResponse.json({ error: 'Missing authorization token.' }, { status: 401 })
+    }
+
+    const { data: sessionUser, error: sessionErr } = await db.auth.getUser(token)
+    if (sessionErr || !sessionUser?.user) {
+      return NextResponse.json({ error: 'Invalid or expired verification session.' }, { status: 401 })
+    }
+
+    if (sessionUser.user.id !== user_id) {
+      return NextResponse.json({ error: 'Forbidden: user mismatch.' }, { status: 403 })
+    }
 
     // 1. Fetch user auth info via Admin API to verify email confirmation
     const { data: authData, error: authError } = await db.auth.admin.getUserById(user_id)
@@ -38,10 +53,15 @@ export async function POST(req) {
 
     const user = authData.user
 
-    // 2. Check if email is confirmed
+    // 2. Ensure email is confirmed.
+    // Some link types (e.g. magic links) may produce a valid session without setting
+    // email_confirmed_at immediately; in that case we confirm it here.
     const isEmailConfirmed = !!(user.email_confirmed_at || user.confirmed_at)
     if (!isEmailConfirmed) {
-      return NextResponse.json({ error: 'Please confirm your email address before activating your account.' }, { status: 400 })
+      const { error: confirmError } = await db.auth.admin.updateUserById(user_id, { email_confirm: true })
+      if (confirmError) {
+        return NextResponse.json({ error: 'Please confirm your email address before activating your account.' }, { status: 400 })
+      }
     }
 
     // 3. Check current profile state

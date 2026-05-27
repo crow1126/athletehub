@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createEmailVerificationLink } from '@/lib/verificationLink'
+import { getAuthCallbackUrl } from '@/lib/siteUrl'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -131,7 +132,7 @@ export async function POST(req) {
     // New club admins start INACTIVE — they must verify their email first
     // via a dedicated verification landing page (/auth/confirm).
     const origin = req.headers.get('origin') || new URL(req.url).origin
-    const redirectTo = `${origin}/auth/confirm`
+    const redirectTo = getAuthCallbackUrl(origin)
     const actionLink = await createEmailVerificationLink(db, email, redirectTo)
 
     if (!actionLink) {

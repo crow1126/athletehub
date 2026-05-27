@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { activateUserProfile } from '@/lib/activateUser'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
-const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 function getDb() {
   return createClient(SUPABASE_URL, SERVICE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false }
+    auth: { autoRefreshToken: false, persistSession: false },
   })
 }
 
@@ -43,61 +44,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden: user mismatch.' }, { status: 403 })
     }
 
-    // 1. Fetch user auth info via Admin API to verify email confirmation
-    const { data: authData, error: authError } = await db.auth.admin.getUserById(user_id)
-
-    if (authError || !authData?.user) {
-      console.error('Error fetching user auth info:', authError?.message)
-      return NextResponse.json({ error: 'Verification failed: User auth record not found.' }, { status: 404 })
-    }
-
-    const user = authData.user
-
-    // 2. Ensure email is confirmed.
-    // Some link types (e.g. magic links) may produce a valid session without setting
-    // email_confirmed_at immediately; in that case we confirm it here.
-    const isEmailConfirmed = !!(user.email_confirmed_at || user.confirmed_at)
-    if (!isEmailConfirmed) {
-      const { error: confirmError } = await db.auth.admin.updateUserById(user_id, { email_confirm: true })
-      if (confirmError) {
-        return NextResponse.json({ error: 'Please confirm your email address before activating your account.' }, { status: 400 })
-      }
-    }
-
-    // 3. Check current profile state
-    const { data: profile, error: profileGetError } = await db
-      .from('profiles')
-      .select('registration_status, is_active')
-      .eq('id', user_id)
-      .maybeSingle()
-
-    if (profileGetError || !profile) {
-      return NextResponse.json({ error: 'Profile not found.' }, { status: 404 })
-    }
-
-    // If already active/approved, just succeed
-    if (profile.is_active && profile.registration_status === 'approved') {
-      return NextResponse.json({ success: true, message: 'Account is already active.' })
-    }
-
-    // 4. Update profile to active / approved
-    const { error: updateError } = await db
-      .from('profiles')
-      .update({
-        is_active: true,
-        registration_status: 'approved',
-        approved_at: new Date().toISOString(),
-      })
-      .eq('id', user_id)
-
-    if (updateError) {
-      console.error('Failed to activate profile:', updateError.message)
-      return NextResponse.json({ error: 'Failed to activate profile: ' + updateError.message }, { status: 500 })
-    }
+    const result = await activateUserProfile(db, user_id)
 
     return NextResponse.json({
       success: true,
-      message: 'Account successfully activated!',
+      message: result.alreadyActive ? 'Account is already active.' : 'Account successfully activated!',
     })
   } catch (err) {
     console.error('Activation route error:', err)

@@ -62,8 +62,24 @@ function ConfirmContent() {
     async function handleConfirm() {
       // Get parameters directly from window to bypass Next.js hydration lag
       if (typeof window === 'undefined') return
-      
+
       const queryParams = new URLSearchParams(window.location.search)
+      const activated = queryParams.get('activated')
+      const callbackError = queryParams.get('error')
+
+      if (activated === '1') {
+        await supabase.auth.signOut()
+        setStatus('success')
+        setMessage('Your email has been verified and your club profile is fully activated!')
+        return
+      }
+
+      if (callbackError) {
+        setStatus('error')
+        setMessage(decodeURIComponent(callbackError))
+        return
+      }
+      
       const code = queryParams.get('code')
       const tokenHash = queryParams.get('token_hash')
       const type = queryParams.get('type')
@@ -84,26 +100,13 @@ function ConfirmContent() {
       isRunningActivation.current = true
 
       try {
-        // 1. If we have a code (PKCE flow), exchange it
-        if (code) {
-          console.log('Exchanging code for session...')
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-          if (error) throw new Error('Code exchange failed: ' + error.message)
-          session = data?.session
+        // 1. If we have a code (PKCE flow), send to server callback
+        if (code || (tokenHash && type)) {
+          window.location.replace(`/auth/callback${window.location.search}`)
+          return
         }
 
-        // 2. Handle OTP/hash links that include token_hash + type query params
-        if (!session && tokenHash && type) {
-          console.log('Verifying token_hash with verifyOtp...')
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: tokenHash,
-            type,
-          })
-          if (error) throw new Error('Token verification failed: ' + error.message)
-          session = data?.session || null
-        }
-
-        // 3. If we don't have a session yet but we have a hash fragment, wait for Supabase to parse it
+        // 2. Handle legacy hash-token links on this page
         if (!session && hasHashToken) {
           console.log('Waiting for hash token session parsing...')
           session = await new Promise((resolve) => {

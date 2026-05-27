@@ -990,7 +990,7 @@ export default function SuperadminPage() {
                       ['Active Architecture Version', 'AthleteHub FOS v2.4 (Lagoon Theme)'],
                       ['Cloud Hosting Engine', 'Supabase Cloud Core (PostgreSQL)'],
                       ['Framework Compilation', 'Next.js 16.2.1 Turbopack Enabled'],
-                      ['Security Gateway Access', 'Multi-tenant Row Level Security (RLS)'],
+                      ['Security Gateway Access', 'Club-scoped Row Level Security (RLS)'],
                       ['Platform System Email', 'Resend API Integration via Welcome Node'],
                       ['Active Superadmin Gateway', 'samuelwobil11@gmail.com'],
                     ].map(([blueprintLabel, blueprintValue]) => (

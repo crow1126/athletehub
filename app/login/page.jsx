@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { BarChart3, Activity, Users, Calendar, Search, Lock, FileText, DollarSign, ActivitySquare, Shield } from 'lucide-react'
 
@@ -80,6 +81,7 @@ export default function LandingPage() {
   const [ready,      setReady]     = useState(false)
   const [navSolid,   setNavSolid]  = useState(false)
   const [mobileMenu, setMobileMenu]= useState(false)
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
   const authRef  = useRef(null)
   const router   = useRouter()
 
@@ -198,6 +200,7 @@ export default function LandingPage() {
     if (!email.trim())    { setError('Email address is required.'); return }
     if (!clubName.trim()) { setError('Club / organisation name is required.'); return }
     if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return }
+    if (!acceptedTerms) { setError('Please accept the Terms of Service and Privacy Policy to register.'); return }
     setLoading(true)
     try {
       const checkRes = await fetch(`/api/signup-provision?club_name=${encodeURIComponent(clubName.trim())}`)
@@ -484,17 +487,37 @@ export default function LandingPage() {
         .auth-tab:not(.active):hover { color:#0F172A; background:#F8FAFC; }
         .auth-form { padding:32px 32px 28px; display:flex; flex-direction:column; gap:20px; }
         .auth-field-label { display:block; font-size:11px; font-weight:700; color:#475569; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:8px; }
-        .auth-trust { display:flex; align-items:center; justify-content:center; gap:24px; padding:16px 24px; border-top:1px solid #F1F5F9; background:#F8FAFC; }
+        .auth-trust { display:flex; align-items:center; justify-content:center; gap:24px; padding:16px 24px; border-top:1px solid #F1F5F9; background:#F8FAFC; flex-wrap:wrap; }
         .auth-trust-item { display:flex; align-items:center; gap:6px; font-size:12px; color:#64748B; font-weight:600; }
+
+        /* ── TRUST & COMPLIANCE ── */
+        .trust-section { padding:80px 40px; background:#002828; border-top:1px solid rgba(0,128,128,0.2); }
+        .trust-inner { max-width:1200px; margin:0 auto; }
+        .trust-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:40px; }
+        .trust-card {
+          background:rgba(255,252,246,0.03); border:1px solid rgba(255,252,246,0.08);
+          border-radius:16px; padding:24px 22px; transition:border-color 0.2s;
+        }
+        .trust-card:hover { border-color:rgba(0,128,128,0.35); }
+        .trust-card-title { font-size:15px; font-weight:700; color:#FFFCF6; margin-bottom:8px; }
+        .trust-card-desc { font-size:12.5px; color:rgba(255,252,246,0.45); line-height:1.7; margin-bottom:14px; }
+        .trust-card-link { font-size:12px; font-weight:700; color:#7ECACA; text-decoration:none; }
+        .trust-card-link:hover { color:#14B8A6; }
+        .terms-check { display:flex; align-items:flex-start; gap:10px; font-size:12px; color:#64748B; line-height:1.55; }
+        .terms-check input { margin-top:3px; flex-shrink:0; accent-color:#006A6A; }
 
         /* ── FOOTER ── */
         .footer { background:#001E1E; padding:48px 40px 32px; }
-        .footer-inner { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:20px; padding-bottom:24px; border-bottom:1px solid rgba(255,252,246,0.07); }
+        .footer-inner { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:28px; padding-bottom:24px; border-bottom:1px solid rgba(255,252,246,0.07); }
+        .footer-legal { display:flex; flex-direction:column; gap:10px; }
+        .footer-legal a { font-size:12px; color:rgba(255,252,246,0.45); text-decoration:none; font-weight:500; transition:color 0.2s; }
+        .footer-legal a:hover { color:rgba(255,252,246,0.85); }
         .footer-copy { font-size:12px; color:rgba(255,252,246,0.3); margin-top:20px; max-width:1200px; margin-left:auto; margin-right:auto; }
 
         /* ── RESPONSIVE ── */
         @media(max-width:1024px) {
           .features-grid { grid-template-columns:repeat(2,1fr); }
+          .trust-grid { grid-template-columns:1fr; }
           .auth-wrap { grid-template-columns:1fr; max-width:480px; }
           .auth-left { display:none; }
         }
@@ -510,6 +533,7 @@ export default function LandingPage() {
           .features-grid { grid-template-columns:1fr 1fr; gap:10px; }
           .section { padding:60px 20px; }
           .auth-section { padding:60px 20px; }
+          .trust-section { padding:60px 20px; }
           .footer { padding:36px 20px 24px; }
           .footer-inner { flex-direction:column; align-items:flex-start; }
         }
@@ -534,7 +558,7 @@ export default function LandingPage() {
       {mobileMenu && (
         <div className="mobile-nav">
           <button className="mobile-nav-close" onClick={()=>setMobileMenu(false)}>×</button>
-          {['Features','Stats'].map(l=>(
+          {['Features','Stats','Trust'].map(l=>(
             <button key={l} className="mobile-nav-link" onClick={()=>{ document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'}); setMobileMenu(false); }}>{l}</button>
           ))}
           <button className="mobile-nav-link" onClick={scrollToAuth}>Sign In</button>
@@ -549,7 +573,7 @@ export default function LandingPage() {
           <div className="nav-logo-text">Apex <span>Track</span></div>
         </a>
         <div className="nav-links">
-          {['Features','Stats'].map(l=>(
+          {['Features','Stats','Trust'].map(l=>(
             <button key={l} className="nav-link" onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'})}>{l}</button>
           ))}
           <button className="nav-link" onClick={scrollToAuth}>Sign In</button>
@@ -641,6 +665,40 @@ export default function LandingPage() {
         </div>
       </div>
 
+      {/* ── TRUST & COMPLIANCE ── */}
+      <section id="trust" className="trust-section">
+        <div className="trust-inner">
+          <div className="s-eyebrow"><div className="s-eyebrow-line"/><span className="s-eyebrow-text">Trust</span></div>
+          <h2 className="s-title-dark">Built for sensitive squad data</h2>
+          <p className="s-sub-dark" style={{ maxWidth: 640 }}>
+            Injury notes and athlete records deserve clear policies and honest security practices — not vague marketing claims.
+          </p>
+          <div className="trust-grid">
+            <div className="trust-card">
+              <div className="trust-card-title">Privacy &amp; GDPR</div>
+              <p className="trust-card-desc">
+                UK/EU-ready privacy policy. Clubs act as data controllers; we process on your instructions with EU West hosting.
+              </p>
+              <Link href="/privacy" className="trust-card-link">Read Privacy Policy →</Link>
+            </div>
+            <div className="trust-card">
+              <div className="trust-card-title">Terms of Service</div>
+              <p className="trust-card-desc">
+                Clear account responsibilities, medical disclaimer, and acceptable use — so staff know what the platform is (and isn&apos;t).
+              </p>
+              <Link href="/terms" className="trust-card-link">Read Terms →</Link>
+            </div>
+            <div className="trust-card">
+              <div className="trust-card-title">Security &amp; backups</div>
+              <p className="trust-card-desc">
+                Club-scoped database access (RLS), TLS encryption, and provider-managed backups. We explain limits openly.
+              </p>
+              <Link href="/security" className="trust-card-link">Security overview →</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── AUTH SECTION ── */}
       <div ref={authRef} className="auth-section">
         <div className="auth-wrap" style={{margin:'0 auto'}}>
@@ -651,7 +709,7 @@ export default function LandingPage() {
             <h2 className="s-title-dark" style={{marginBottom:18}}>Your squad.<br/>Your data.</h2>
             <p className="s-sub-dark" style={{marginBottom:28}}>Sign in to your club dashboard or register to bring your team onto the platform.</p>
             <div style={{display:'flex',flexDirection:'column',gap:12}}>
-              {['Real-time squad updates','Injury alerts & recovery tracking','Scheduled sessions & reports','Secure role-based access'].map(pt=>(
+              {['Real-time squad updates','Injury alerts & recovery tracking','Scheduled sessions & reports','Club-scoped access & role permissions'].map(pt=>(
                 <div key={pt} style={{display:'flex',alignItems:'center',gap:10}}>
                   <div style={{width:20,height:20,borderRadius:6,background:'rgba(0,128,128,0.2)',border:'1px solid rgba(0,128,128,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#7ECACA',flexShrink:0}}>✓</div>
                   <span style={{fontSize:13,color:'rgba(255,252,246,0.6)',fontWeight:500}}>{pt}</span>
@@ -775,7 +833,18 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  <button type="submit" disabled={loading} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#006A6A,#008080)',color:'#FFFCF6',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,opacity:loading?0.7:1,boxShadow:'0 4px 14px rgba(0,106,106,0.3)',transition:'all 0.2s'}}>
+                  <label className="terms-check">
+                    <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
+                    <span>
+                      I agree to the{' '}
+                      <Link href="/terms" target="_blank" style={{ color: '#006A6A', fontWeight: 700 }}>Terms of Service</Link>
+                      {' '}and{' '}
+                      <Link href="/privacy" target="_blank" style={{ color: '#006A6A', fontWeight: 700 }}>Privacy Policy</Link>.
+                      I confirm our club is authorised to store athlete data entered here.
+                    </span>
+                  </label>
+
+                  <button type="submit" disabled={loading || !acceptedTerms} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#006A6A,#008080)',color:'#FFFCF6',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:loading||!acceptedTerms?'not-allowed':'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,opacity:loading||!acceptedTerms?0.7:1,boxShadow:'0 4px 14px rgba(0,106,106,0.3)',transition:'all 0.2s'}}>
                     {loading ? <><span style={{width:15,height:15,border:'2px solid rgba(255,252,246,0.35)',borderTopColor:'#FFFCF6',borderRadius:'50%',animation:'spin 0.6s linear infinite',display:'inline-block'}}/> Creating account…</> : 'Create Account →'}
                   </button>
 
@@ -786,7 +855,7 @@ export default function LandingPage() {
               )}
 
               <div className="auth-trust">
-                {[['🔒','Encrypted'],['🏟️','Multi-Club'],['📱','Mobile Ready']].map(([ico,lbl])=>(
+                {[['🔒','TLS Encrypted'],['🏟️','Club-scoped data'],['🛡️','GDPR-aware']].map(([ico,lbl])=>(
                   <div key={lbl} className="auth-trust-item"><span style={{fontSize:13}}>{ico}</span>{lbl}</div>
                 ))}
               </div>
@@ -805,8 +874,8 @@ export default function LandingPage() {
               <div style={{fontSize:9,fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'rgba(255,252,246,0.35)'}}>Performance Platform</div>
             </div>
           </div>
-          <div style={{display:'flex',gap:24,flexWrap:'wrap'}}>
-            {['Features','Sign In','Register'].map(l=>(
+          <div style={{display:'flex',gap:24,flexWrap:'wrap',alignItems:'flex-start'}}>
+            {['Features','Trust','Sign In','Register'].map(l=>(
               <button key={l} onClick={()=> l==='Sign In'||l==='Register' ? (setTab(l==='Register'?'signup':'login'),scrollToAuth()) : document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'})}
                 style={{background:'none',border:'none',color:'rgba(255,252,246,0.4)',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:'inherit',transition:'color 0.2s'}}
                 onMouseEnter={e=>e.target.style.color='rgba(255,252,246,0.8)'}
@@ -814,8 +883,14 @@ export default function LandingPage() {
               >{l}</button>
             ))}
           </div>
+          <nav className="footer-legal" aria-label="Legal">
+            <Link href="/privacy">Privacy Policy</Link>
+            <Link href="/terms">Terms of Service</Link>
+            <Link href="/security">Security &amp; Data Protection</Link>
+            <a href="mailto:privacy@apextrack.app" style={{ fontSize: 12, color: 'rgba(255,252,246,0.45)', textDecoration: 'none', fontWeight: 500 }}>privacy@apextrack.app</a>
+          </nav>
         </div>
-        <p className="footer-copy">© {new Date().getFullYear()} Apex Track. Built for African football.</p>
+        <p className="footer-copy">© {new Date().getFullYear()} Apex Track. Built for African football. Not a substitute for professional medical advice.</p>
       </footer>
     </>
   )

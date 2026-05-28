@@ -771,14 +771,15 @@ export default function LandingPage() {
           </p>
           <div className="features-grid">
             {[
-              { emoji: '📊', title: 'xG & xA Analytics', desc: 'Expected goals and assists modelling with match-by-match breakdowns and squad-level trend views.' },
-              { emoji: '🏥', title: 'Injury Hub', desc: 'Full injury lifecycle tracking — onset, treatment, recovery timeline and return-to-play clearance.' },
-              { emoji: '👥', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, coach assignments and status badges.' },
-              { emoji: '📅', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, duration tracking and coach assignments.' },
-              { emoji: '🔍', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools to build your transfer shortlist.' },
-              { emoji: '🔒', title: 'Role-based Access', desc: 'Superadmin, admin, coach and analyst roles — each with tailored data access and permissions.' },
-              { emoji: '📄', title: 'Reports', desc: 'Automated performance, medical and squad reports exportable for board and technical staff use.' },
-              { emoji: '💵', title: 'Transfer Log', desc: 'Track incoming, outgoing and loan transactions with fee records and contract status.' }
+               { emoji: '📊', title: 'xG & xA Analytics', desc: 'Expected goals and assists modelling with match-by-match breakdowns and squad-level trend views.' },
+               { emoji: '🏥', title: 'Injury Hub', desc: 'Full injury lifecycle tracking — onset, treatment, recovery timeline and return-to-play clearance.' },
+               { emoji: '👥', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, coach assignments and status badges.' },
+               { emoji: '📅', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, duration tracking and coach assignments.' },
+               { emoji: '🔍', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools to build your transfer shortlist.' },
+               { emoji: '🔒', title: 'Role-based Access', desc: 'Superadmin, admin, coach and analyst roles — each with tailored data access and permissions.' },
+               { emoji: '📄', title: 'Reports', desc: 'Automated performance, medical and squad reports exportable for board and technical staff use.' },
+               { emoji: '💵', title: 'Transfer Log', desc: 'Track incoming, outgoing and loan transactions with fee records and contract status.' },
+               { emoji: '💬', title: 'Dedicated Support', desc: 'Direct technical assistance and custom onboarding support via active email admin@apextrackgh.com.' }
             ].map(f => (
               <div key={f.title} className="feat-card">
                 <div className="feat-icon">{f.emoji}</div>

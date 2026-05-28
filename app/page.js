@@ -13,6 +13,7 @@ const FEATURES = [
   { emoji: '📅', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, and duration tracking.' },
   { emoji: '🔍', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools for transfers.' },
   { emoji: '📄', title: 'Reports', desc: 'Automated performance and medical reports for board and technical staff.' },
+  { emoji: '💬', title: 'Dedicated Support', desc: 'Direct technical assistance and custom onboarding support via active email admin@apextrackgh.com.' },
 ]
 
 const STATS = [

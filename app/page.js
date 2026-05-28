@@ -286,7 +286,7 @@ export default function LandingPage() {
 
         /* ── LOGOS STRIP ── */
         .logos-strip {
-          padding: 52px 0 48px;
+          padding: 32px 0;
           background: #FFFFFF;
           border-bottom: 1px solid #F1F5F9;
         }
@@ -617,7 +617,6 @@ export default function LandingPage() {
 
       {/* ── LOGOS STRIP ── */}
       <div className="logos-strip">
-        <div className="logos-label">Trusted by clubs across Africa</div>
         <div className="logos-track-wrap">
           <div className="logos-track">
             {[...LOGOS, ...LOGOS].map((logo, i) => (

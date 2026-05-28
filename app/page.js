@@ -7,13 +7,24 @@ import { useRouter } from 'next/navigation'
 const NAV_LINKS = ['Features', 'Pricing', 'FAQ', 'Support']
 
 const FEATURES = [
-  { emoji: '📊', title: 'Performance Analytics', desc: 'xG, xA, match ratings, and squad-level trend views with beautiful charts.' },
+  { emoji: '📊', title: 'Performance Analytics', desc: 'xG, xA, match ratings, and squad-level trend views with beautiful premium charts.' },
   { emoji: '🏥', title: 'Injury Hub', desc: 'Full injury lifecycle — onset, treatment, recovery timeline, and return-to-play clearance.' },
   { emoji: '👥', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, and coach assignments.' },
   { emoji: '📅', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, and duration tracking.' },
   { emoji: '🔍', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools for transfers.' },
   { emoji: '📄', title: 'Reports', desc: 'Automated performance and medical reports for board and technical staff.' },
-  { emoji: '💬', title: 'Dedicated Support', desc: 'Direct technical assistance and custom onboarding support via active email admin@apextrackgh.com.' },
+  { 
+    emoji: '💬', 
+    title: 'Dedicated Support', 
+    desc: (
+      <span>
+        Direct technical assistance and custom onboarding support via active email{' '}
+        <a href="mailto:admin@apextrackgh.com" className="feat-link">
+          admin@apextrackgh.com
+        </a>.
+      </span>
+    )
+  },
 ]
 
 const STATS = [
@@ -31,10 +42,30 @@ const LOGOS = [
   { name: 'Accra Lions', style: { fontWeight: 800, fontSize: 17 } },
 ]
 
+const FAQS = [
+  {
+    q: 'How secure is our club and athlete database?',
+    a: 'ApexTrack utilizes Postgres Row Level Security (RLS) and TLS encryption to isolate your squad data completely. Only coaches and administrators in your specific club are granted permission to access your athlete and injury records.'
+  },
+  {
+    q: 'Is there a limit on how many athletes or coaches we can add?',
+    a: 'No! During our current beta period, clubs can onboard unlimited squads, athletes, trainers, and coaches to fully experience all the features of ApexTrack.'
+  },
+  {
+    q: 'How do we request custom feature additions or onboarding support?',
+    a: 'We provide full custom setup and data import support. Just drop us an email at admin@apextrackgh.com and our engineering team will assist your club for free.'
+  },
+  {
+    q: 'Can we export reports for club executives or board members?',
+    a: 'Yes, ApexTrack enables you to generate comprehensive PDF performance sheets, medical summaries, and transfer history reports in just a few clicks.'
+  }
+]
+
 export default function LandingPage() {
   const router = useRouter()
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [activeFaq, setActiveFaq] = useState(null)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 48)
@@ -43,7 +74,7 @@ export default function LandingPage() {
   }, [])
 
   function scrollTo(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    document.getElementById(id.toLowerCase())?.scrollIntoView({ behavior: 'smooth' })
     setMenuOpen(false)
   }
 
@@ -111,11 +142,13 @@ export default function LandingPage() {
         .nav-link-arrow { font-size: 10px; opacity: 0.5; }
 
         .nav-right { display: flex; align-items: center; gap: 12px; }
-        .nav-pricing {
+        .nav-pricing-btn {
           font-size: 14px; font-weight: 600; color: #475569;
-          text-decoration: none; transition: color 0.2s;
+          background: none; border: none; cursor: pointer;
+          font-family: inherit; transition: color 0.2s;
+          text-decoration: none;
         }
-        .nav-pricing:hover { color: #0F172A; }
+        .nav-pricing-btn:hover { color: #0F172A; }
         .nav-cta {
           background: #0F172A; color: #fff;
           border: none; border-radius: 99px;
@@ -307,7 +340,7 @@ export default function LandingPage() {
         }
         .feat-card:hover {
           border-color: #99F6E4;
-          box-shadow: 0 8px 32px rgba(13,148,136,0.1);
+          box-shadow: 0 8px 32px rgba(13,148,136,0.06);
           transform: translateY(-3px);
         }
         .feat-icon {
@@ -318,6 +351,8 @@ export default function LandingPage() {
         }
         .feat-title { font-size: 15px; font-weight: 700; color: #0F172A; margin-bottom: 8px; }
         .feat-desc  { font-size: 13px; color: #64748B; line-height: 1.7; }
+        .feat-link { color: #0D9488; text-decoration: underline; font-weight: 600; }
+        .feat-link:hover { color: #0F766E; }
 
         /* ── STATS BAND ── */
         .stats-band {
@@ -334,21 +369,101 @@ export default function LandingPage() {
         .stat-val { font-size: clamp(36px,4vw,56px); font-weight: 900; color: #fff; letter-spacing: -0.03em; line-height: 1; margin-bottom: 8px; }
         .stat-lbl { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.45); letter-spacing: 0.05em; text-transform: uppercase; }
 
-        /* ── CTA SECTION ── */
+        /* ── PRICING SECTION ── */
+        .pricing-section {
+          padding: 96px 48px;
+          background: #FFFFFF;
+        }
+        .pricing-grid {
+          max-width: 900px; margin: 0 auto;
+          display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+          align-items: stretch;
+        }
+        .price-card {
+          background: #FFFFFF; border: 1px solid #E2E8F0;
+          border-radius: 24px; padding: 40px;
+          display: flex; flex-direction: column; justify-content: space-between;
+          position: relative; transition: all 0.25s ease;
+        }
+        .price-card.featured {
+          border-color: #0D9488;
+          box-shadow: 0 12px 40px rgba(13,148,136,0.06);
+        }
+        .price-badge {
+          position: absolute; top: 20px; right: 20px;
+          background: #F0FDFA; border: 1px solid #CCFBF1;
+          color: #0D9488; font-size: 11px; font-weight: 700;
+          padding: 4px 12px; border-radius: 99px; text-transform: uppercase;
+        }
+        .price-tier { font-size: 18px; font-weight: 800; color: #0F172A; margin-bottom: 8px; }
+        .price-desc { font-size: 13px; color: #64748B; line-height: 1.5; margin-bottom: 24px; }
+        .price-amount { font-size: 40px; font-weight: 900; color: #0F172A; display: flex; align-items: baseline; gap: 4px; margin-bottom: 28px; }
+        .price-amount span { font-size: 14px; font-weight: 600; color: #94A3B8; }
+        .price-features { list-style: none; display: flex; flex-direction: column; gap: 14px; margin-bottom: 36px; }
+        .price-feat-item { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #475569; font-weight: 500; }
+        .price-feat-check { width: 18px; height: 18px; border-radius: 50%; background: #F0FDFA; border: 1px solid #CCFBF1; display: flex; align-items: center; justify-content: center; font-size: 10px; color: #0D9488; flex-shrink: 0; }
+        
+        .price-btn {
+          width: 100%; text-align: center; padding: 14px;
+          border-radius: 12px; font-size: 14px; font-weight: 700;
+          cursor: pointer; font-family: inherit; transition: all 0.2s;
+          text-decoration: none; display: block; box-sizing: border-box;
+        }
+        .price-btn.primary { background: #0D9488; color: #FFFFFF; border: none; box-shadow: 0 4px 14px rgba(13,148,136,0.2); }
+        .price-btn.primary:hover { background: #0F766E; transform: translateY(-1px); }
+        .price-btn.outline { background: transparent; color: #0F172A; border: 1.5px solid #E2E8F0; }
+        .price-btn.outline:hover { border-color: #94A3B8; background: #F8FAFC; transform: translateY(-1px); }
+
+        /* ── FAQ SECTION ── */
+        .faq-section {
+          padding: 96px 48px;
+          background: #FAFAFA;
+        }
+        .faq-list { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+        .faq-item { background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; overflow: hidden; transition: all 0.2s ease; }
+        .faq-item:hover { border-color: #CBD5E1; }
+        .faq-trigger {
+          width: 100%; display: flex; justify-content: space-between; align-items: center;
+          padding: 24px; background: none; border: none; text-align: left;
+          font-size: 16px; font-weight: 700; color: #0F172A; cursor: pointer;
+          font-family: inherit; transition: color 0.15s;
+        }
+        .faq-trigger:hover { color: #0D9488; }
+        .faq-icon { font-size: 14px; color: #94A3B8; transition: transform 0.2s ease; }
+        .faq-item.active .faq-icon { transform: rotate(180deg); color: #0D9488; }
+        .faq-content { padding: 0 24px 24px; font-size: 14px; color: #64748B; line-height: 1.65; display: none; }
+        .faq-item.active .faq-content { display: block; animation: fadeIn 0.3s ease; }
+
+        /* ── SUPPORT / CTA SECTION ── */
         .cta-section {
           padding: 96px 48px;
           background: #FFFFFF;
           text-align: center;
         }
         .cta-box {
-          max-width: 680px; margin: 0 auto;
+          max-width: 760px; margin: 0 auto;
           background: linear-gradient(135deg, #F0FDFA, #ECFDF5);
           border: 1px solid #CCFBF1; border-radius: 28px;
-          padding: 56px 48px;
+          padding: 64px 48px;
+          position: relative;
         }
         .cta-title { font-size: clamp(28px,3.5vw,40px); font-weight: 800; color: #0F172A; letter-spacing: -0.025em; margin-bottom: 14px; }
-        .cta-sub   { font-size: 15px; color: #64748B; line-height: 1.7; margin-bottom: 32px; }
-        .cta-btns  { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
+        .cta-sub   { font-size: 15px; color: #64748B; line-height: 1.7; margin-bottom: 32px; max-width: 580px; margin-left: auto; margin-right: auto; }
+        
+        .support-details {
+          margin-top: 36px; padding-top: 32px; border-top: 1px solid rgba(13,148,136,0.1);
+          display: flex; flex-direction: column; align-items: center; gap: 10px;
+        }
+        .support-mail-btn {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: #FFFFFF; border: 1.5px solid #CCFBF1;
+          color: #0D9488; font-size: 14px; font-weight: 700;
+          padding: 12px 24px; border-radius: 99px; text-decoration: none;
+          transition: all 0.2s; box-shadow: 0 4px 12px rgba(13,148,136,0.04);
+        }
+        .support-mail-btn:hover {
+          border-color: #0D9488; background: #F0FDFA; transform: translateY(-1px);
+        }
 
         /* ── FOOTER ── */
         .footer {
@@ -372,6 +487,7 @@ export default function LandingPage() {
           .nav-links-center { display: none; }
           .nav-hamburger { display: block; }
           .features-grid { grid-template-columns: repeat(2,1fr); }
+          .pricing-grid { grid-template-columns: 1fr; max-width: 480px; }
           .stats-grid { grid-template-columns: repeat(2,1fr); gap: 28px; }
           .stat-col + .stat-col { border-left: none; }
           .stat-col:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.1); }
@@ -384,9 +500,12 @@ export default function LandingPage() {
           .hf-card { display: none; }
           .features-section { padding: 64px 20px; }
           .features-grid { grid-template-columns: 1fr; }
+          .pricing-section { padding: 64px 20px; }
+          .faq-section { padding: 64px 20px; }
+          .faq-trigger { padding: 20px; font-size: 15px; }
           .stats-band { padding: 52px 20px; }
           .cta-section { padding: 64px 20px; }
-          .cta-box { padding: 36px 24px; }
+          .cta-box { padding: 48px 24px; }
           .footer { padding: 36px 20px 24px; }
           .footer-inner { flex-direction: column; align-items: flex-start; }
         }
@@ -397,7 +516,7 @@ export default function LandingPage() {
         <div className="mobile-menu">
           <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>×</button>
           {NAV_LINKS.map(l => (
-            <button key={l} className="mobile-menu-link" onClick={() => scrollTo(l.toLowerCase())}>{l}</button>
+            <button key={l} className="mobile-menu-link" onClick={() => scrollTo(l)}>{l}</button>
           ))}
           <Link href="/login" className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>
             Get Started
@@ -414,21 +533,21 @@ export default function LandingPage() {
 
         <div className="nav-links-center">
           {NAV_LINKS.map(l => (
-            <button key={l} className="nav-link" onClick={() => scrollTo(l.toLowerCase())}>
+            <button key={l} className="nav-link" onClick={() => scrollTo(l)}>
               {l} <span className="nav-link-arrow">▾</span>
             </button>
           ))}
         </div>
 
         <div className="nav-right">
-          <Link href="/login" className="nav-pricing">Pricing</Link>
+          <button className="nav-pricing-btn" onClick={() => scrollTo('Pricing')}>Pricing</button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>☰</button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section className="hero" id="features">
+      <section className="hero">
         {/* Eyebrow */}
         <div className="hero-eyebrow">
           <div className="hero-eyebrow-dot" />
@@ -509,7 +628,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── FEATURES ── */}
-      <section className="features-section" id="pricing">
+      <section className="features-section" id="features">
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <div className="section-eyebrow">
             <div className="eyebrow-line" />
@@ -524,7 +643,7 @@ export default function LandingPage() {
               <div key={f.title} className="feat-card">
                 <div className="feat-icon">{f.emoji}</div>
                 <div className="feat-title">{f.title}</div>
-                <p className="feat-desc">{f.desc}</p>
+                <div className="feat-desc">{f.desc}</div>
               </div>
             ))}
           </div>
@@ -532,7 +651,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── STATS BAND ── */}
-      <div className="stats-band" id="faq">
+      <div className="stats-band">
         <div className="stats-grid">
           {STATS.map(s => (
             <div key={s.label} className="stat-col">
@@ -543,17 +662,132 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── CTA ── */}
+      {/* ── PRICING SECTION ── */}
+      <section className="pricing-section" id="pricing">
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div className="section-eyebrow">
+            <div className="eyebrow-line" />
+            <span className="eyebrow-text">Pricing</span>
+          </div>
+          <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 8 }}>Simple, transparent plans</h2>
+          <p className="section-sub" style={{ textAlign: 'center', margin: '0 auto 52px' }}>
+            Bring your club onboard today. Get complete access to all tracking metrics during our beta phase.
+          </p>
+
+          <div className="pricing-grid">
+            {/* Free Tier Card */}
+            <div className="price-card featured">
+              <div className="price-badge">Active Beta</div>
+              <div>
+                <div className="price-tier">Standard Club</div>
+                <p className="price-desc">Complete athlete registry, injury hub lifecycle, and training sessions scheduler.</p>
+                <div className="price-amount">$0 <span>/ month during Beta</span></div>
+                
+                <ul className="price-features">
+                  {[
+                    'Unlimited active athletes tracking',
+                    'Injury onset & recovery lifecycle tracking',
+                    'Coaches & trainers dashboard',
+                    'Basic performance reports PDF export',
+                    'Postgres Row Level Security data isolation',
+                    'Direct technical support via email',
+                  ].map(feat => (
+                    <li key={feat} className="price-feat-item">
+                      <div className="price-feat-check">✓</div>
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Link href="/login?tab=signup" className="price-btn primary">
+                Register Free Beta Account →
+              </Link>
+            </div>
+
+            {/* Pro Tier Card */}
+            <div className="price-card">
+              <div>
+                <div className="price-tier">Pro Academy / Club</div>
+                <p className="price-desc">Advanced performance analytics, full scouting logs, and tailored brand visuals.</p>
+                <div className="price-amount">Contact Us <span>/ for custom pricing</span></div>
+                
+                <ul className="price-features">
+                  {[
+                    'Everything in Standard Beta plan',
+                    'Expected goals (xG) & assists (xA) models',
+                    'Scouting shortlist & trials management log',
+                    'Custom club logo upload & theme visuals',
+                    'Automated executive board reports builder',
+                    'Priority Technical Account Onboarding',
+                  ].map(feat => (
+                    <li key={feat} className="price-feat-item">
+                      <div className="price-feat-check">✓</div>
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <a href="mailto:admin@apextrackgh.com?subject=ApexTrack%20Pro%20Custom%20Pricing" className="price-btn outline">
+                Contact Technical Team
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FAQ SECTION ── */}
+      <section className="faq-section" id="faq">
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div className="section-eyebrow">
+            <div className="eyebrow-line" />
+            <span className="eyebrow-text">FAQ</span>
+          </div>
+          <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 12 }}>Frequently Asked Questions</h2>
+          <p className="section-sub" style={{ textAlign: 'center', margin: '0 auto 52px' }}>
+            Everything you need to know about the platform, security, and onboarding.
+          </p>
+
+          <div className="faq-list">
+            {FAQS.map((faq, idx) => (
+              <div 
+                key={idx} 
+                className={`faq-item${activeFaq === idx ? ' active' : ''}`}
+              >
+                <button 
+                  className="faq-trigger" 
+                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                >
+                  <span>{faq.q}</span>
+                  <span className="faq-icon">▼</span>
+                </button>
+                <div className="faq-content">
+                  <p>{faq.a}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── SUPPORT / CTA SECTION ── */}
       <section className="cta-section" id="support">
         <div className="cta-box">
           <h2 className="cta-title">Ready to elevate your squad?</h2>
           <p className="cta-sub">
-            Join 40+ clubs already managing athletes smarter with ApexTrack.
+            Join 40+ football clubs and academies already managing athletes smarter with ApexTrack.
             Start your free trial today — no credit card required.
           </p>
           <div className="cta-btns">
             <Link href="/login?tab=signup" className="btn-primary">Start Free Trial →</Link>
             <Link href="/login" className="btn-outline">Sign In</Link>
+          </div>
+
+          <div className="support-details">
+            <p style={{ fontSize: 13, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Need help setting up your team roster?</p>
+            <a href="mailto:admin@apextrackgh.com" className="support-mail-btn">
+              ✉ Email: admin@apextrackgh.com
+            </a>
+            <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>Technical onboarding and roster imports are provided completely free of charge.</p>
           </div>
         </div>
       </section>
@@ -569,7 +803,7 @@ export default function LandingPage() {
             <Link href="/login" className="footer-link">Sign In</Link>
           </div>
         </div>
-        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved.</div>
+        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Built for African football.</div>
       </footer>
     </>
   )

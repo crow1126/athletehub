@@ -284,31 +284,7 @@ export default function LandingPage() {
           font-size: 10px; font-weight: 700; color: #16A34A;
         }
 
-        /* ── LOGOS STRIP ── */
-        .logos-strip {
-          padding: 32px 0;
-          background: #FFFFFF;
-          border-bottom: 1px solid #F1F5F9;
-        }
-        .logos-label {
-          text-align: center;
-          font-size: 12px; font-weight: 700;
-          letter-spacing: 0.1em; text-transform: uppercase;
-          color: #94A3B8; margin-bottom: 28px;
-        }
-        .logos-track-wrap { overflow: hidden; }
-        .logos-track {
-          display: flex; align-items: center; gap: 64px;
-          animation: marquee 22s linear infinite;
-          width: max-content;
-        }
-        .logo-item {
-          color: #CBD5E1;
-          transition: color 0.2s;
-          cursor: default;
-          user-select: none;
-        }
-        .logo-item:hover { color: #94A3B8; }
+
 
         /* ── FEATURES ── */
         .features-section {
@@ -615,16 +591,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── LOGOS STRIP ── */}
-      <div className="logos-strip">
-        <div className="logos-track-wrap">
-          <div className="logos-track">
-            {[...LOGOS, ...LOGOS].map((logo, i) => (
-              <div key={i} className="logo-item" style={logo.style}>{logo.name}</div>
-            ))}
-          </div>
-        </div>
-      </div>
+
 
       {/* ── FEATURES ── */}
       <section className="features-section" id="features">

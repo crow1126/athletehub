@@ -132,13 +132,16 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
+    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player']
+    const profileDbRole = allowedDbRoles.includes(safeRole) ? safeRole : 'coach'
+
     const { error: profileError } = await db
       .from('profiles')
       .upsert(
         {
           id: userId,
           full_name,
-          role: safeRole,
+          role: profileDbRole,
           team_id: resolvedTeamId,
           is_active: true,
           email,

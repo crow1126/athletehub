@@ -74,7 +74,14 @@ export default function SettingsPage() {
           scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,is_active'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
         ])
-        setAllUsers(users||[]); setAllStaff(staff||[]); setStaffLogins(logins||[])
+        const enrichedUsers = (users||[]).map(u => {
+          const login = (logins||[]).find(l => l.email?.toLowerCase() === u.email?.toLowerCase() || l.username?.toLowerCase() === u.username?.toLowerCase())
+          if (login && u.role === 'coach' && (login.role === 'analyst' || login.role === 'scout')) {
+            return { ...u, role: login.role }
+          }
+          return u
+        })
+        setAllUsers(enrichedUsers); setAllStaff(staff||[]); setStaffLogins(logins||[])
       }
     } catch(e) { console.error(e) }
     setLoading(false)
@@ -179,8 +186,22 @@ export default function SettingsPage() {
   }
 
   async function updateUserRole(userId, role) {
-    await scopeTeam(supabase.from('profiles').update({ role }).eq('id', userId), profile?.team_id)
+    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player']
+    const dbRole = allowedDbRoles.includes(role) ? role : 'coach'
+    
+    const { error } = await scopeTeam(supabase.from('profiles').update({ role: dbRole }).eq('id', userId), profile?.team_id)
+    if (error) {
+      flash('Failed to update role: ' + error.message, 'error')
+      return
+    }
+
+    const user = allUsers.find(x => x.id === userId)
+    if (user?.email) {
+      await scopeTeam(supabase.from('staff_logins').update({ role }).eq('email', user.email), profile?.team_id)
+    }
+
     setAllUsers(u => u.map(x => x.id === userId ? { ...x, role } : x))
+    await loadAll()
   }
 
   async function toggleUserActive(userId, current) {

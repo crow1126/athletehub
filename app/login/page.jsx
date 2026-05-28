@@ -272,247 +272,349 @@ export default function LandingPage() {
   const focusInp = e => { e.target.style.borderColor='#006A6A'; e.target.style.boxShadow='0 0 0 3px rgba(0,106,106,0.1)' }
   const blurInp  = e => { e.target.style.borderColor='#C8E0E0'; e.target.style.boxShadow='none' }
 
+  function scrollTo(id) {
+    if (id === 'pricing' || id === 'support' || id === 'faq') {
+      scrollToAuth()
+    } else {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    }
+    setMobileMenu(false)
+  }
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
-        html { scroll-behavior:smooth; }
-        body { font-family:'Plus Jakarta Sans',sans-serif; background:#002828; overflow-x:hidden; }
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 
-        @keyframes spin    { to { transform:rotate(360deg); } }
-        @keyframes fadeUp  { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes fadeIn  { from { opacity:0; } to { opacity:1; } }
-        @keyframes float0  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-10px)} }
-        @keyframes float1  { 0%,100%{transform:translateY(-6px)}50%{transform:translateY(6px)}   }
-        @keyframes float2  { 0%,100%{transform:translateY(0)}   50%{transform:translateY(-8px)}  }
-        @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
-        @keyframes slideUp { from{opacity:0;transform:translateY(40px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes scaleIn { from{opacity:0;transform:scale(0.93)} to{opacity:1;transform:scale(1)} }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
 
-        /* ── NAV ── */
+        body {
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+          background: #FFFFFF;
+          color: #0F172A;
+          overflow-x: hidden;
+        }
+
+        /* ── KEYFRAMES ── */
+        @keyframes fadeUp   { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeIn   { from { opacity:0; } to { opacity:1; } }
+        @keyframes float0   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-10px)} }
+        @keyframes float1   { 0%,100%{transform:translateY(-6px)} 50%{transform:translateY(6px)} }
+        @keyframes float2   { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-8px)} }
+        @keyframes marquee  { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+        @keyframes shimmer  { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+
+        /* ── NAVBAR ── */
         .lp-nav {
-          position:fixed; top:0; left:0; right:0; z-index:100;
-          display:flex; align-items:center; justify-content:space-between;
-          padding:0 40px; height:80px;
-          transition:background 0.3s, box-shadow 0.3s, backdrop-filter 0.3s, height 0.3s;
+          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 0 48px; height: 72px;
+          background: rgba(255,255,255,0.85);
+          backdrop-filter: blur(16px);
+          transition: box-shadow 0.3s, height 0.3s;
         }
         .lp-nav.solid {
-          background:rgba(15, 23, 42, 0.95);
-          backdrop-filter:blur(16px);
-          box-shadow:0 1px 0 rgba(255,255,255,0.05);
-          height:64px;
+          box-shadow: 0 1px 0 rgba(0,0,0,0.07), 0 4px 20px rgba(0,0,0,0.04);
+          height: 60px;
         }
-        .nav-logo { display:flex; align-items:center; gap:12px; text-decoration:none; }
-        .nav-logo-icon {
-          width:36px; height:36px; border-radius:10px;
-          background:transparent;
-          display:flex; align-items:center; justify-content:center;
-          font-size:16px; border:none;
+        .nav-brand {
+          display: flex; align-items: center; gap: 10px;
+          text-decoration: none;
         }
-        .nav-logo-text { font-size:18px; font-weight:800; color:#FFFFFF; letter-spacing:-0.03em; }
-        .nav-logo-text span { color:#14B8A6; font-weight:700; }
-        .nav-links { display:flex; align-items:center; gap:32px; }
-        .nav-link { font-size:14px; font-weight:600; color:rgba(248, 250, 252, 0.7); text-decoration:none; transition:color 0.2s; cursor:pointer; background:none; border:none; font-family:inherit; }
-        .nav-link:hover { color:#FFFFFF; }
+        .nav-brand-img {
+          height: 38px; width: auto; border-radius: 8px; object-fit: contain;
+        }
+        .nav-brand-name {
+          font-size: 18px; font-weight: 800; color: #0F172A;
+          letter-spacing: -0.03em;
+        }
+        .nav-brand-name span { color: #0D9488; }
+
+        .nav-links-center {
+          display: flex; align-items: center; gap: 36px;
+          position: absolute; left: 50%; transform: translateX(-50%);
+        }
+        .nav-link {
+          font-size: 14px; font-weight: 600; color: #475569;
+          text-decoration: none; background: none; border: none;
+          cursor: pointer; font-family: inherit;
+          transition: color 0.2s;
+          display: flex; align-items: center; gap: 4px;
+        }
+        .nav-link:hover { color: #0F172A; }
+        .nav-link-arrow { font-size: 10px; opacity: 0.5; }
+
+        .nav-right { display: flex; align-items: center; gap: 12px; }
+        .nav-pricing {
+          font-size: 14px; font-weight: 600; color: #475569;
+          text-decoration: none; transition: color 0.2s; background: none; border: none; cursor: pointer;
+        }
+        .nav-pricing:hover { color: #0F172A; }
         .nav-cta {
-          background:#14B8A6;
-          color:#FFFFFF; border:none; border-radius:99px;
-          padding:10px 24px; font-size:14px; font-weight:700;
-          cursor:pointer; font-family:inherit;
-          transition:all 0.2s;
-          box-shadow:0 4px 14px rgba(20, 184, 166, 0.3);
+          background: #0F172A; color: #fff;
+          border: none; border-radius: 99px;
+          padding: 10px 22px; font-size: 14px; font-weight: 700;
+          cursor: pointer; font-family: inherit;
+          transition: all 0.2s; text-decoration: none;
+          display: inline-flex; align-items: center;
         }
-        .nav-cta:hover { background:#0D9488; transform:translateY(-1px); box-shadow:0 6px 20px rgba(20, 184, 166, 0.4); }
-        .nav-mobile-btn { display:none; background:none; border:none; color:#FFFCF6; font-size:22px; cursor:pointer; padding:4px; }
+        .nav-cta:hover { background: #1E293B; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(15,23,42,0.18); }
+        .nav-hamburger {
+          display: none; background: none; border: none;
+          cursor: pointer; color: #0F172A; font-size: 22px; padding: 4px;
+        }
+
+        /* ── MOBILE MENU ── */
+        .mobile-menu {
+          position: fixed; inset: 0; z-index: 200;
+          background: rgba(255,255,255,0.98); backdrop-filter: blur(16px);
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center; gap: 32px;
+          animation: fadeIn 0.2s ease;
+        }
+        .mobile-menu-close {
+          position: absolute; top: 20px; right: 20px;
+          background: none; border: none; font-size: 28px;
+          cursor: pointer; color: #0F172A;
+        }
+        .mobile-menu-link {
+          font-size: 24px; font-weight: 700; color: #0F172A;
+          text-decoration: none; background: none; border: none;
+          cursor: pointer; font-family: inherit;
+        }
 
         /* ── HERO ── */
         .hero {
-          position:relative; overflow:hidden;
-          min-height:100vh;
-          background:#0F172A; /* Slate 900 */
-          display:flex; flex-direction:column;
-          align-items:center; justify-content:center;
-          padding:120px 40px 80px; text-align:center;
-        }
-        .hero-grid {
-          position:absolute; inset:0;
-          background-image:radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%),
-                           linear-gradient(rgba(20, 184, 166, 0.05) 1px, transparent 1px),
-                           linear-gradient(90deg, rgba(20, 184, 166, 0.05) 1px, transparent 1px);
-          background-size:100% 100%, 64px 64px, 64px 64px;
-          background-position: top center, 0 0, 0 0;
-          pointer-events:none;
+          padding: 148px 48px 0;
+          text-align: center;
+          background: #FFFFFF;
+          position: relative;
+          overflow: hidden;
         }
         .hero-eyebrow {
-          display:inline-flex; align-items:center; gap:10px;
-          background:rgba(20, 184, 166, 0.1); border:1px solid rgba(20, 184, 166, 0.2);
-          border-radius:99px; padding:6px 16px 6px 8px;
-          margin-bottom:28px;
-          opacity:0; animation:fadeUp 0.7s ease 0.3s forwards;
+          display: inline-flex; align-items: center; gap: 8px;
+          background: #F0FDFA; border: 1px solid #CCFBF1;
+          border-radius: 99px; padding: 5px 14px 5px 8px;
+          margin-bottom: 28px;
+          opacity: 0; animation: fadeUp 0.6s ease 0.2s forwards;
         }
-        .hero-eyebrow-dot { width:8px; height:8px; border-radius:50%; background:#14B8A6; flex-shrink:0; animation:float0 2s ease-in-out infinite; box-shadow: 0 0 10px rgba(20, 184, 166, 0.5); }
-        .hero-eyebrow-text { font-size:12px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:#14B8A6; }
+        .hero-eyebrow-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #14B8A6; animation: float0 2s ease-in-out infinite;
+        }
+        .hero-eyebrow-text {
+          font-size: 12px; font-weight: 700;
+          letter-spacing: 0.1em; text-transform: uppercase;
+          color: #0D9488;
+        }
         .hero-h1 {
-          font-size:clamp(46px,8vw,96px); font-weight:800; line-height:1.05;
-          letter-spacing:-0.03em; color:#FFFFFF; margin-bottom:12px;
-          opacity:0; animation:fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.45s forwards;
+          font-size: clamp(44px, 7vw, 88px);
+          font-weight: 800; line-height: 1.04;
+          letter-spacing: -0.03em; color: #0F172A;
+          margin-bottom: 22px; max-width: 760px; margin-left: auto; margin-right: auto;
+          opacity: 0; animation: fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.3s forwards;
         }
-        .hero-h1 .teal { color:#14B8A6; }
-        .hero-h1 .outline { color:transparent; -webkit-text-stroke:2px rgba(255,255,255,0.15); }
         .hero-sub {
-          font-size:clamp(16px,2vw,20px); line-height:1.6; color:rgba(248, 250, 252, 0.7);
-          max-width:680px; margin:0 auto 40px; font-weight:500;
-          opacity:0; animation:fadeUp 0.9s ease 0.55s forwards;
+          font-size: clamp(15px, 1.8vw, 18px); line-height: 1.65;
+          color: #64748B; max-width: 540px; margin: 0 auto 36px;
+          font-weight: 500;
+          opacity: 0; animation: fadeUp 0.8s ease 0.45s forwards;
         }
         .hero-btns {
-          display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;
-          opacity:0; animation:fadeUp 0.7s ease 0.9s forwards;
+          display: flex; align-items: center; justify-content: center;
+          gap: 12px; flex-wrap: wrap;
+          opacity: 0; animation: fadeUp 0.7s ease 0.6s forwards;
         }
-        .hero-btn-primary {
-          background:#14B8A6; color:#fff; border:none; border-radius:99px;
-          padding:16px 36px; font-size:16px; font-weight:700; cursor:pointer;
-          box-shadow: 0 10px 25px -5px rgba(20, 184, 166, 0.4);
-          transition:all 0.2s ease; font-family:inherit;
+        .btn-primary {
+          background: #0F172A; color: #fff;
+          border: none; border-radius: 99px;
+          padding: 15px 32px; font-size: 15px; font-weight: 700;
+          cursor: pointer; font-family: inherit;
+          transition: all 0.22s;
+          box-shadow: 0 8px 24px rgba(15,23,42,0.15);
+          text-decoration: none; display: inline-flex; align-items: center;
         }
-        .hero-btn-primary:hover { transform:translateY(-2px); box-shadow: 0 15px 30px -5px rgba(20, 184, 166, 0.5); background:#0D9488; }
-        
-        .hero-btn-secondary {
-          background:rgba(255,255,255,0.05); color:#fff; border:1px solid rgba(255,255,255,0.15);
-          border-radius:99px; padding:16px 36px; font-size:16px; font-weight:700;
-          cursor:pointer; transition:all 0.2s ease; backdrop-filter:blur(10px); font-family:inherit;
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(15,23,42,0.22); background: #1E293B; }
+        .btn-outline {
+          background: transparent; color: #0F172A;
+          border: 1.5px solid #CBD5E1; border-radius: 99px;
+          padding: 15px 32px; font-size: 15px; font-weight: 700;
+          cursor: pointer; font-family: inherit;
+          transition: all 0.22s;
+          text-decoration: none; display: inline-flex; align-items: center;
         }
-        .hero-btn-secondary:hover { background:rgba(255,255,255,0.1); transform:translateY(-2px); }
+        .btn-outline:hover { border-color: #94A3B8; background: #F8FAFC; transform: translateY(-2px); }
 
-        /* Hero floating stat cards */
-        .hero-floats {
-          position:absolute; inset:0; pointer-events:none;
-          opacity:0; animation:fadeIn 0.8s ease 1.1s forwards;
+        /* ── HERO IMAGE BOX ── */
+        .hero-visual {
+          position: relative;
+          margin: 48px auto 0;
+          max-width: 960px;
+          border-radius: 24px 24px 0 0;
+          overflow: hidden;
+          opacity: 0; animation: fadeUp 0.9s ease 0.75s forwards;
         }
+        .hero-img {
+          width: 100%; display: block;
+          border-radius: 24px 24px 0 0;
+        }
+
+        /* Floating stat cards on the hero image */
         .hf-card {
-          position:absolute;
-          background:rgba(255,252,246,0.06); border:1px solid rgba(255,252,246,0.12);
-          backdrop-filter:blur(14px); border-radius:14px; padding:12px 16px;
-          display:flex; align-items:center; gap:10px;
+          position: absolute;
+          background: rgba(255,255,255,0.92);
+          border: 1px solid rgba(0,0,0,0.07);
+          backdrop-filter: blur(12px);
+          border-radius: 14px; padding: 11px 15px;
+          display: flex; align-items: center; gap: 10px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+          white-space: nowrap;
         }
-        .hf-icon { width:34px; height:34px; border-radius:9px; background:rgba(0,128,128,0.25); border:1px solid rgba(0,128,128,0.4); display:flex; align-items:center; justify-content:center; font-size:15px; }
-        .hf-label { font-size:9px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,252,246,0.4); margin-bottom:2px; }
-        .hf-val   { font-size:17px; font-weight:800; color:#FFFCF6; line-height:1; }
-
-        /* Hero pills */
-        .hero-pills {
-          display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-top:36px;
-          opacity:0; animation:fadeUp 0.7s ease 1.0s forwards;
+        .hf-icon {
+          width: 34px; height: 34px; border-radius: 9px;
+          background: #F0FDFA; border: 1px solid #CCFBF1;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 16px; flex-shrink: 0;
         }
-        .hero-pill {
-          display:flex; align-items:center; gap:6px;
-          background:rgba(255,252,246,0.05); border:1px solid rgba(255,252,246,0.1);
-          border-radius:99px; padding:5px 13px 5px 7px;
-          font-size:11.5px; font-weight:500; color:rgba(255,252,246,0.6);
-          transition:all 0.2s ease;
+        .hf-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #94A3B8; }
+        .hf-val   { font-size: 16px; font-weight: 800; color: #0F172A; line-height: 1; }
+        .hf-badge {
+          display: inline-flex; align-items: center; gap: 4px;
+          background: #F0FDF4; border: 1px solid #BBF7D0;
+          border-radius: 99px; padding: 3px 9px;
+          font-size: 10px; font-weight: 700; color: #16A34A;
         }
-        .hero-pill:hover { background:rgba(0,128,128,0.2); border-color:rgba(0,128,128,0.45); color:#FFFCF6; }
-        .pill-dot { width:5px; height:5px; border-radius:50%; background:#7ECACA; }
 
-        /* Scroll indicator */
-        .scroll-ind {
-          position:absolute; bottom:32px; left:50%; transform:translateX(-50%);
-          display:flex; flex-direction:column; align-items:center; gap:6px;
-          opacity:0; animation:fadeIn 1s ease 1.5s forwards;
-          cursor:pointer;
+        /* ── LOGOS STRIP ── */
+        .logos-strip {
+          padding: 52px 0 48px;
+          background: #FFFFFF;
+          border-bottom: 1px solid #F1F5F9;
         }
-        .scroll-ind-text { font-size:10px; font-weight:600; letter-spacing:0.12em; text-transform:uppercase; color:rgba(255,252,246,0.3); }
-        .scroll-ind-arrow { width:24px; height:24px; border-right:2px solid rgba(255,252,246,0.25); border-bottom:2px solid rgba(255,252,246,0.25); transform:rotate(45deg); animation:float1 1.4s ease-in-out infinite; }
+        .logos-label {
+          text-align: center;
+          font-size: 12px; font-weight: 700;
+          letter-spacing: 0.1em; text-transform: uppercase;
+          color: #94A3B8; margin-bottom: 28px;
+        }
+        .logos-track-wrap { overflow: hidden; }
+        .logos-track {
+          display: flex; align-items: center; gap: 64px;
+          animation: marquee 22s linear infinite;
+          width: max-content;
+        }
+        .logo-item {
+          color: #CBD5E1;
+          transition: color 0.2s;
+          cursor: default;
+          user-select: none;
+        }
+        .logo-item:hover { color: #94A3B8; }
 
-        /* ── SECTION BASE ── */
-        .section { padding:100px 40px; max-width:1200px; margin:0 auto; }
-        .section-dark { background:linear-gradient(180deg,#001E1E,#002828); padding:100px 0; }
-        .section-dark .section { max-width:1200px; margin:0 auto; padding:0 40px; }
-        .section-light { background:#FFFCF6; padding:100px 0; }
-        .section-light .section { max-width:1200px; margin:0 auto; padding:0 40px; }
-        .section-mid { background:linear-gradient(180deg,#002828,#003D3D); padding:100px 0; }
-        .section-mid .section { max-width:1200px; margin:0 auto; padding:0 40px; }
-
-        .s-eyebrow { display:inline-flex; align-items:center; gap:8px; margin-bottom:14px; }
-        .s-eyebrow-line { width:24px; height:1.5px; background:linear-gradient(90deg,#7ECACA,#008080); border-radius:2px; }
-        .s-eyebrow-text { font-size:10px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:#7ECACA; }
-        .s-title-dark  { font-size:clamp(28px,3.5vw,42px); font-weight:800; color:#FFFCF6; letter-spacing:-0.025em; line-height:1.15; margin-bottom:14px; }
-        .s-title-light { font-size:clamp(28px,3.5vw,42px); font-weight:800; color:#003D3D; letter-spacing:-0.025em; line-height:1.15; margin-bottom:14px; }
-        .s-sub-dark  { font-size:15px; color:rgba(255,252,246,0.5); line-height:1.8; max-width:480px; }
-        .s-sub-light { font-size:15px; color:#5A9494; line-height:1.8; max-width:480px; }
+        /* ── FEATURES ── */
+        .features-section {
+          padding: 96px 48px;
+          background: #FAFAFA;
+        }
+        .section-eyebrow {
+          display: inline-flex; align-items: center; gap: 8px;
+          margin-bottom: 14px;
+        }
+        .eyebrow-line { width: 22px; height: 2px; background: linear-gradient(90deg,#14B8A6,#0D9488); border-radius: 2px; }
+        .eyebrow-text { font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #0D9488; }
+        .section-title {
+          font-size: clamp(28px, 3.5vw, 42px); font-weight: 800;
+          color: #0F172A; letter-spacing: -0.025em; margin-bottom: 12px;
+        }
+        .section-sub {
+          font-size: 15px; color: #64748B; line-height: 1.75;
+          max-width: 480px; margin-bottom: 52px;
+        }
+        .features-grid {
+          max-width: 1100px; margin: 0 auto;
+          display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+        }
+        .feat-card {
+          background: #FFFFFF; border: 1px solid #E2E8F0;
+          border-radius: 18px; padding: 28px 24px;
+          transition: all 0.22s ease;
+        }
+        .feat-card:hover {
+          border-color: #99F6E4;
+          box-shadow: 0 8px 32px rgba(13,148,136,0.1);
+          transform: translateY(-3px);
+        }
+        .feat-icon {
+          width: 46px; height: 46px; border-radius: 13px;
+          background: #F0FDFA; border: 1px solid #CCFBF1;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 20px; margin-bottom: 18px;
+        }
+        .feat-title { font-size: 15px; font-weight: 700; color: #0F172A; margin-bottom: 8px; }
+        .feat-desc  { font-size: 13px; color: #64748B; line-height: 1.7; }
 
         /* ── STATS BAND ── */
         .stats-band {
-          background:linear-gradient(90deg,#004F4F,#006A6A,#008080);
-          padding:52px 40px;
+          background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+          padding: 64px 48px;
         }
-        .stats-band-inner { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:repeat(4,1fr); gap:0; }
-        .stat-col { text-align:center; padding:0 20px; }
-        .stat-col + .stat-col { border-left:1px solid rgba(255,252,246,0.15); }
-        .stat-col-val { font-size:clamp(32px,4vw,52px); font-weight:900; color:#FFFCF6; letter-spacing:-0.03em; line-height:1; margin-bottom:6px; }
-        .stat-col-lbl { font-size:12px; font-weight:600; color:rgba(255,252,246,0.55); letter-spacing:0.05em; text-transform:uppercase; }
-
-        /* ── FEATURES ── */
-        .features-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-top:52px; }
-        .feat-card {
-          background:rgba(255,252,246,0.04); border:1px solid rgba(255,252,246,0.09);
-          border-radius:16px; padding:22px 20px;
-          transition:all 0.22s ease;
+        .stats-grid {
+          max-width: 960px; margin: 0 auto;
+          display: grid; grid-template-columns: repeat(4,1fr); gap: 0;
+          text-align: center;
         }
-        .feat-card:hover {
-          background:rgba(0,128,128,0.12); border-color:rgba(0,128,128,0.3);
-          transform:translateY(-3px); box-shadow:0 8px 28px rgba(0,106,106,0.18);
-        }
-        .feat-icon { width:42px; height:42px; border-radius:11px; background:rgba(0,128,128,0.2); border:1px solid rgba(0,128,128,0.35); display:flex; align-items:center; justify-content:center; font-size:18px; margin-bottom:14px; }
-        .feat-title { font-size:14px; font-weight:700; color:#FFFCF6; margin-bottom:7px; }
-        .feat-desc  { font-size:12.5px; color:rgba(255,252,246,0.45); line-height:1.7; }
+        .stat-col { padding: 0 24px; }
+        .stat-col + .stat-col { border-left: 1px solid rgba(255,255,255,0.1); }
+        .stat-val { font-size: clamp(36px,4vw,56px); font-weight: 900; color: #fff; letter-spacing: -0.03em; line-height: 1; margin-bottom: 8px; }
+        .stat-lbl { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.45); letter-spacing: 0.05em; text-transform: uppercase; }
 
         /* ── AUTH SECTION ── */
-        .auth-section { padding:100px 40px; background:#0F172A; } /* Slate 900 */
-        .auth-wrap { max-width:960px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:52px; align-items:start; }
+        .auth-section { padding: 96px 48px; background: #FAFAFA; border-top: 1px solid #E2E8F0; }
+        .auth-wrap { max-width: 960px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 52px; align-items: start; }
         .auth-left {}
         .auth-card {
-          background:#FFFFFF; border-radius:24px; overflow:hidden;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05);
-          border:1px solid #F1F5F9;
+          background: #FFFFFF; border-radius: 24px; overflow: hidden;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.03);
+          border: 1px solid #E2E8F0;
         }
-        .auth-tabs { display:flex; border-bottom:1px solid #E2E8F0; }
+        .auth-tabs { display: flex; border-bottom: 1px solid #E2E8F0; }
         .auth-tab {
-          flex:1; padding:18px; text-align:center;
-          font-size:14px; font-weight:700; cursor:pointer;
-          border:none; background:none; font-family:inherit;
-          color:#64748B; transition:all 0.2s ease;
+          flex: 1; padding: 18px; text-align: center;
+          font-size: 14px; font-weight: 700; cursor: pointer;
+          border: none; background: none; font-family: inherit;
+          color: #64748B; transition: all 0.2s ease;
         }
-        .auth-tab.active { color:#0F172A; border-bottom:2px solid #14B8A6; background:#FFFFFF; }
-        .auth-tab:not(.active):hover { color:#0F172A; background:#F8FAFC; }
-        .auth-form { padding:32px 32px 28px; display:flex; flex-direction:column; gap:20px; }
-        .auth-field-label { display:block; font-size:11px; font-weight:700; color:#475569; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:8px; }
-        .auth-trust { display:flex; align-items:center; justify-content:center; gap:24px; padding:16px 24px; border-top:1px solid #F1F5F9; background:#F8FAFC; flex-wrap:wrap; }
-        .auth-trust-item { display:flex; align-items:center; gap:6px; font-size:12px; color:#64748B; font-weight:600; }
+        .auth-tab.active { color: #0F172A; border-bottom: 2px solid #0D9488; background: #FFFFFF; }
+        .auth-tab:not(.active):hover { color: #0F172A; background: #F8FAFC; }
+        .auth-form { padding: 32px 32px 28px; display: flex; flex-direction: column; gap: 20px; }
+        .auth-field-label { display: block; font-size: 11px; font-weight: 700; color: #475569; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+        .auth-trust { display: flex; align-items: center; justify-content: center; gap: 24px; padding: 16px 24px; border-top: 1px solid #E2E8F0; background: #F8FAFC; flex-wrap: wrap; }
+        .auth-trust-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748B; font-weight: 600; }
 
         /* ── TRUST & COMPLIANCE ── */
-        .trust-section { padding:80px 40px; background:#002828; border-top:1px solid rgba(0,128,128,0.2); }
-        .trust-inner { max-width:1200px; margin:0 auto; }
-        .trust-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; margin-top:40px; }
+        .trust-section { padding: 96px 48px; background: #FFFFFF; border-top: 1px solid #E2E8F0; }
+        .trust-inner { max-width: 1100px; margin: 0 auto; }
+        .trust-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 20px; margin-top: 40px; }
         .trust-card {
-          background:rgba(255,252,246,0.03); border:1px solid rgba(255,252,246,0.08);
-          border-radius:16px; padding:24px 22px; transition:border-color 0.2s;
+          background: #FAFAFA; border: 1px solid #E2E8F0;
+          border-radius: 16px; padding: 24px 22px; transition: border-color 0.2s;
         }
-        .trust-card:hover { border-color:rgba(0,128,128,0.35); }
-        .trust-card-title { font-size:15px; font-weight:700; color:#FFFCF6; margin-bottom:8px; }
-        .trust-card-desc { font-size:12.5px; color:rgba(255,252,246,0.45); line-height:1.7; margin-bottom:14px; }
-        .trust-card-link { font-size:12px; font-weight:700; color:#7ECACA; text-decoration:none; }
-        .trust-card-link:hover { color:#14B8A6; }
-        .terms-check { display:flex; align-items:flex-start; gap:10px; font-size:12px; color:#64748B; line-height:1.55; }
-        .terms-check input { margin-top:3px; flex-shrink:0; accent-color:#006A6A; }
+        .trust-card:hover { border-color: #99F6E4; }
+        .trust-card-title { font-size: 15px; font-weight: 700; color: #0F172A; margin-bottom: 8px; }
+        .trust-card-desc { font-size: 13px; color: #64748B; line-height: 1.7; margin-bottom: 14px; }
+        .trust-card-link { font-size: 12px; font-weight: 700; color: #0D9488; text-decoration: none; }
+        .trust-card-link:hover { color: #0F766E; }
+        .terms-check { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: #64748B; line-height: 1.55; }
+        .terms-check input { margin-top: 3px; flex-shrink: 0; accent-color: #0D9488; }
 
         /* ── FOOTER ── */
-        .footer { background:#001E1E; padding:48px 40px 32px; }
-        .footer-inner { max-width:1200px; margin:0 auto; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:28px; padding-bottom:24px; border-bottom:1px solid rgba(255,252,246,0.07); }
-        .footer-legal { display:flex; flex-direction:column; gap:10px; }
-        .footer-legal a { font-size:12px; color:rgba(255,252,246,0.45); text-decoration:none; font-weight:500; transition:color 0.2s; }
-        .footer-legal a:hover { color:rgba(255,252,246,0.85); }
-        .footer-copy { font-size:12px; color:rgba(255,252,246,0.3); margin-top:20px; max-width:1200px; margin-left:auto; margin-right:auto; }
+        .footer { background: #0F172A; padding: 48px 48px 32px; }
+        .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 28px; padding-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .footer-legal { display: flex; flex-direction: column; gap: 10px; }
+        .footer-legal a { font-size: 13px; color: rgba(255,255,255,0.4); text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        .footer-legal a:hover { color: rgba(255,255,255,0.85); }
+        .footer-copy { font-size: 12px; color: rgba(255,255,255,0.2); margin-top: 20px; max-width: 1100px; margin-left: auto; margin-right: auto; text-align: center; }
 
         /* ── RESPONSIVE ── */
         @media(max-width:1024px) {
@@ -521,156 +623,196 @@ export default function LandingPage() {
           .auth-wrap { grid-template-columns:1fr; max-width:480px; }
           .auth-left { display:none; }
         }
+        @media (max-width: 900px) {
+          .nav-links-center { display: none; }
+          .nav-hamburger { display: block; }
+          .stats-grid { grid-template-columns: repeat(2,1fr); gap: 28px; }
+          .stat-col + .stat-col { border-left: none; }
+          .stat-col:col:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.1); }
+        }
         @media(max-width:768px) {
           .lp-nav { padding:0 20px; }
-          .nav-links { display:none; }
-          .nav-mobile-btn { display:block; }
-          .hero { padding:80px 20px 70px; }
+          .hero { padding:120px 20px 0; }
+          .hero-visual { margin: 36px 16px 0; border-radius: 16px 16px 0 0; }
+          .hero-img { border-radius: 16px 16px 0 0; }
           .hf-card { display:none; }
-          .stats-band-inner { grid-template-columns:repeat(2,1fr); gap:20px; }
-          .stat-col + .stat-col { border-left:none; }
-          .stat-col:nth-child(odd) { border-right:1px solid rgba(255,252,246,0.15); }
-          .features-grid { grid-template-columns:1fr 1fr; gap:10px; }
-          .section { padding:60px 20px; }
-          .auth-section { padding:60px 20px; }
-          .trust-section { padding:60px 20px; }
+          .features-section { padding: 64px 20px; }
+          .features-grid { grid-template-columns: 1fr; }
+          .stats-band { padding: 52px 20px; }
+          .auth-section { padding: 64px 20px; }
+          .trust-section { padding:64px 20px; }
           .footer { padding:36px 20px 24px; }
           .footer-inner { flex-direction:column; align-items:flex-start; }
         }
-        @media(max-width:480px) {
-          .features-grid { grid-template-columns:1fr; }
-          .stats-band-inner { grid-template-columns:1fr 1fr; }
-        }
-
-        /* mobile nav overlay */
-        .mobile-nav {
-          position:fixed; inset:0; z-index:200;
-          background:rgba(0,30,30,0.97); backdrop-filter:blur(16px);
-          display:flex; flex-direction:column;
-          align-items:center; justify-content:center; gap:28px;
-          animation:fadeIn 0.2s ease;
-        }
-        .mobile-nav-link { font-size:22px; font-weight:700; color:#FFFCF6; text-decoration:none; cursor:pointer; background:none; border:none; font-family:inherit; }
-        .mobile-nav-close { position:absolute; top:20px; right:20px; background:none; border:none; color:#FFFCF6; font-size:28px; cursor:pointer; }
       `}</style>
 
-      {/* ── MOBILE NAV OVERLAY ── */}
+      {/* ── MOBILE MENU ── */}
       {mobileMenu && (
-        <div className="mobile-nav">
-          <button className="mobile-nav-close" onClick={()=>setMobileMenu(false)}>×</button>
+        <div className="mobile-menu">
+          <button className="mobile-menu-close" onClick={()=>setMobileMenu(false)}>×</button>
           {['Features','Stats','Trust'].map(l=>(
-            <button key={l} className="mobile-nav-link" onClick={()=>{ document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'}); setMobileMenu(false); }}>{l}</button>
+            <button key={l} className="mobile-menu-link" onClick={()=>{ scrollTo(l.toLowerCase()) }}>{l}</button>
           ))}
-          <button className="mobile-nav-link" onClick={scrollToAuth}>Sign In</button>
-          <button className="nav-cta" style={{fontSize:16,padding:'12px 32px'}} onClick={()=>{ setTab('signup'); scrollToAuth(); }}>Get Started</button>
+          <button className="mobile-menu-link" onClick={scrollToAuth}>Sign In</button>
+          <button className="btn-primary" style={{fontSize:16,padding:'12px 32px'}} onClick={()=>{ setTab('signup'); scrollToAuth(); }}>Get Started</button>
         </div>
       )}
 
       {/* ── NAVBAR ── */}
-      <nav className={`lp-nav ${navSolid?'solid':''}`}>
-        <a className="nav-logo" href="#" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <img src="/logo.png" alt="Apex Track Logo" style={{ height: '42px', width: 'auto', borderRadius: '8px', objectFit: 'contain' }} />
-          <div className="nav-logo-text">Apex <span>Track</span></div>
+      <nav className={`lp-nav ${navSolid ? 'solid' : ''}`}>
+        <a className="nav-brand" href="/">
+          <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
+          <span className="nav-brand-name">Apex<span>Track</span></span>
         </a>
-        <div className="nav-links">
+        <div className="nav-links-center">
           {['Features','Stats','Trust'].map(l=>(
-            <button key={l} className="nav-link" onClick={()=>document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'})}>{l}</button>
+            <button key={l} className="nav-link" onClick={()=>scrollTo(l.toLowerCase())}>{l} <span className="nav-link-arrow">▾</span></button>
           ))}
-          <button className="nav-link" onClick={scrollToAuth}>Sign In</button>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:10}}>
-          <button className="nav-cta" onClick={()=>{ setTab('signup'); scrollToAuth(); }}>Get Started →</button>
-          <button className="nav-mobile-btn" onClick={()=>setMobileMenu(true)}>☰</button>
+        <div className="nav-right">
+          <button className="nav-pricing" onClick={scrollToAuth}>Pricing</button>
+          <button className="nav-cta" onClick={()=>{ setTab('signup'); scrollToAuth(); }}>Get Started</button>
+          <button className="nav-hamburger" onClick={()=>setMobileMenu(true)}>☰</button>
         </div>
       </nav>
 
       {/* ── HERO ── */}
-      <section className="hero">
-        <OrbCanvas/>
-        <div className="hero-grid"/>
-
-        {/* Floating stat cards (desktop) */}
-        <div className="hero-floats">
-          <div className="hf-card" style={{top:'22%',left:'6%',animation:'float0 3.5s ease-in-out 0s infinite'}}>
-            <div className="hf-icon" style={{ background: 'transparent', border: 'none' }}><Users size={24} color="#14B8A6"/></div>
-            <div><div className="hf-label">Active Athletes</div><div className="hf-val">248</div></div>
-          </div>
-          <div className="hf-card" style={{top:'55%',left:'4%',animation:'float1 4s ease-in-out 0.4s infinite'}}>
-            <div className="hf-icon" style={{ background: 'transparent', border: 'none' }}><BarChart3 size={24} color="#14B8A6"/></div>
-            <div><div className="hf-label">Avg Match Rating</div><div className="hf-val">7.4</div></div>
-          </div>
-          <div className="hf-card" style={{top:'30%',right:'5%',animation:'float2 3.8s ease-in-out 0.8s infinite'}}>
-            <div className="hf-icon" style={{ background: 'transparent', border: 'none' }}><Activity size={24} color="#14B8A6"/></div>
-            <div><div className="hf-label">Injury Recovery</div><div className="hf-val">94%</div></div>
-          </div>
+      <section className="hero" id="features">
+        <div className="hero-eyebrow">
+          <div className="hero-eyebrow-dot"/>
+          <span className="hero-eyebrow-text">Football Performance Platform</span>
+        </div>
+        <h1 className="hero-h1">
+          The Leading<br/>
+          Football Management<br/>
+          Platform
+        </h1>
+        <p className="hero-sub">
+          Manage squads, track athlete performance, and prevent injuries — all in one place. Built for clubs across Africa.
+        </p>
+        <div className="hero-btns">
+          <button className="btn-primary" onClick={()=>{ setTab('signup'); scrollToAuth(); }}>Get Started — It&apos;s Free</button>
+          <button className="btn-outline" onClick={scrollToAuth}>Sign In — Dashboard</button>
         </div>
 
-        {/* Content */}
-        <div style={{position:'relative',zIndex:3,maxWidth:700}}>
-          <div className="hero-eyebrow">
-            <div className="hero-eyebrow-dot"/>
-            <span className="hero-eyebrow-text">Football Performance Platform</span>
+        {/* Hero visual */}
+        <div className="hero-visual">
+          <img src="/hero-light.png" alt="ApexTrack dashboard preview" className="hero-img" />
+
+          {/* Floating cards */}
+          <div className="hf-card" style={{ top: '18%', left: '3%', animation: 'float0 3.6s ease-in-out infinite' }}>
+            <div className="hf-icon">👥</div>
+            <div>
+              <div className="hf-label">Active Athletes</div>
+              <div className="hf-val">248 <span className="hf-badge">↑ 12 New</span></div>
+            </div>
           </div>
-          <h1 className="hero-h1">
-            Elite <span className="teal">Athlete</span><br/>
-            <span className="outline">Intelligence</span>
-          </h1>
-          <p className="hero-sub">
-            Multi-club management built for football — performance analytics, squad intelligence, injury tracking and sports science in one place.
-          </p>
-          <div className="hero-btns">
-            <button className="hero-btn-primary" onClick={()=>{ setTab('signup'); scrollToAuth(); }}>Start Free Trial →</button>
-            <button className="hero-btn-secondary" onClick={scrollToAuth}>Sign In</button>
+
+          <div className="hf-card" style={{ top: '55%', left: '2%', animation: 'float1 4.2s ease-in-out 0.4s infinite' }}>
+            <div className="hf-icon">📊</div>
+            <div>
+              <div className="hf-label">Avg Match Rating</div>
+              <div className="hf-val">7.4</div>
+            </div>
           </div>
-          <div className="hero-pills">
-            {['xG & xA Analytics','Injury Hub','Squad Management','Role-based Access','Transfer Log','Reports'].map(f=>(
-              <div key={f} className="hero-pill"><div className="pill-dot"/>{f}</div>
+
+          <div className="hf-card" style={{ top: '24%', right: '3%', animation: 'float2 3.9s ease-in-out 0.7s infinite' }}>
+            <div className="hf-icon">🤖</div>
+            <div>
+              <div className="hf-label">Co-Pilot</div>
+              <div className="hf-val" style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>AI · Live</div>
+            </div>
+          </div>
+
+          <div className="hf-card" style={{ top: '58%', right: '2%', animation: 'float0 4s ease-in-out 1s infinite' }}>
+            <div className="hf-icon">🏥</div>
+            <div>
+              <div className="hf-label">Recovery Rate</div>
+              <div className="hf-val">94% <span className="hf-badge">Secure</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── LOGOS STRIP ── */}
+      <div className="logos-strip">
+        <div className="logos-label">Trusted by clubs across Africa</div>
+        <div className="logos-track-wrap">
+          <div className="logos-track">
+            {[
+              { name: 'GFA', style: { fontWeight: 900, fontSize: 22, letterSpacing: '-0.03em' } },
+              { name: 'CAF', style: { fontWeight: 800, fontSize: 20, letterSpacing: '0.08em' } },
+              { name: 'Premier League', style: { fontWeight: 700, fontSize: 15 } },
+              { name: 'Ghana Stars FC', style: { fontWeight: 900, fontSize: 16, letterSpacing: '-0.02em' } },
+              { name: 'Accra Lions', style: { fontWeight: 800, fontSize: 17 } }
+            ].concat([
+              { name: 'GFA', style: { fontWeight: 900, fontSize: 22, letterSpacing: '-0.03em' } },
+              { name: 'CAF', style: { fontWeight: 800, fontSize: 20, letterSpacing: '0.08em' } },
+              { name: 'Premier League', style: { fontWeight: 700, fontSize: 15 } },
+              { name: 'Ghana Stars FC', style: { fontWeight: 900, fontSize: 16, letterSpacing: '-0.02em' } },
+              { name: 'Accra Lions', style: { fontWeight: 800, fontSize: 17 } }
+            ]).map((logo, i) => (
+              <div key={i} className="logo-item" style={logo.style}>{logo.name}</div>
             ))}
           </div>
         </div>
+      </div>
 
-        <div className="scroll-ind" onClick={()=>document.getElementById('stats')?.scrollIntoView({behavior:'smooth'})}>
-          <span className="scroll-ind-text">Scroll</span>
-          <div className="scroll-ind-arrow"/>
+      {/* ── FEATURES ── */}
+      <section className="features-section" id="features">
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div className="section-eyebrow">
+            <div className="eyebrow-line" />
+            <span className="eyebrow-text">Platform</span>
+          </div>
+          <h2 className="section-title">Everything your club needs</h2>
+          <p className="section-sub">
+            Built specifically for Ghanaian and African football infrastructure — from grassroots to professional level.
+          </p>
+          <div className="features-grid">
+            {[
+              { emoji: '📊', title: 'xG & xA Analytics', desc: 'Expected goals and assists modelling with match-by-match breakdowns and squad-level trend views.' },
+              { emoji: '🏥', title: 'Injury Hub', desc: 'Full injury lifecycle tracking — onset, treatment, recovery timeline and return-to-play clearance.' },
+              { emoji: '👥', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, coach assignments and status badges.' },
+              { emoji: '📅', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, duration tracking and coach assignments.' },
+              { emoji: '🔍', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools to build your transfer shortlist.' },
+              { emoji: '🔒', title: 'Role-based Access', desc: 'Superadmin, admin, coach and analyst roles — each with tailored data access and permissions.' },
+              { emoji: '📄', title: 'Reports', desc: 'Automated performance, medical and squad reports exportable for board and technical staff use.' },
+              { emoji: '💵', title: 'Transfer Log', desc: 'Track incoming, outgoing and loan transactions with fee records and contract status.' }
+            ].map(f => (
+              <div key={f.title} className="feat-card">
+                <div className="feat-icon">{f.emoji}</div>
+                <div className="feat-title">{f.title}</div>
+                <p className="feat-desc">{f.desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── STATS BAND ── */}
       <div id="stats" className="stats-band">
-        <div className="stats-band-inner">
-          {STATS.map(s=>(
+        <div className="stats-grid">
+          {[
+            { value:'40+',    label:'Clubs Onboarded' },
+            { value:'2,000+', label:'Athletes Tracked' },
+            { value:'14k+',   label:'Matches Logged'  },
+            { value:'94%',    label:'Injury Recovery Rate' }
+          ].map(s=>(
             <div key={s.label} className="stat-col">
-              <div className="stat-col-val">{s.value}</div>
-              <div className="stat-col-lbl">{s.label}</div>
+              <div className="stat-val">{s.value}</div>
+              <div className="stat-lbl">{s.label}</div>
             </div>
           ))}
-        </div>
-      </div>
-
-      {/* ── FEATURES ── */}
-      <div id="features" className="section-dark">
-        <div className="section">
-          <div className="s-eyebrow"><div className="s-eyebrow-line"/><span className="s-eyebrow-text">Platform</span></div>
-          <h2 className="s-title-dark">Everything your club needs</h2>
-          <p className="s-sub-dark">Built specifically for Ghanaian and African football infrastructure — from grassroots to professional level.</p>
-          <div className="features-grid">
-            {FEATURES.map(f=>(
-              <div key={f.title} className="feat-card">
-                <div className="feat-icon">{f.icon}</div>
-                <div className="feat-title">{f.title}</div>
-                <div className="feat-desc">{f.desc}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
       {/* ── TRUST & COMPLIANCE ── */}
       <section id="trust" className="trust-section">
         <div className="trust-inner">
-          <div className="s-eyebrow"><div className="s-eyebrow-line"/><span className="s-eyebrow-text">Trust</span></div>
-          <h2 className="s-title-dark">Built for sensitive squad data</h2>
-          <p className="s-sub-dark" style={{ maxWidth: 640 }}>
+          <div className="section-eyebrow"><div className="eyebrow-line"/><span className="eyebrow-text">Trust</span></div>
+          <h2 className="section-title">Built for sensitive squad data</h2>
+          <p className="section-sub" style={{ maxWidth: 640 }}>
             Injury notes and athlete records deserve clear policies and honest security practices — not vague marketing claims.
           </p>
           <div className="trust-grid">
@@ -705,14 +847,14 @@ export default function LandingPage() {
 
           {/* Left copy */}
           <div className="auth-left">
-            <div className="s-eyebrow"><div className="s-eyebrow-line"/><span className="s-eyebrow-text">Access</span></div>
-            <h2 className="s-title-dark" style={{marginBottom:18}}>Your squad.<br/>Your data.</h2>
-            <p className="s-sub-dark" style={{marginBottom:28}}>Sign in to your club dashboard or register to bring your team onto the platform.</p>
+            <div className="section-eyebrow"><div className="eyebrow-line"/><span className="eyebrow-text">Access</span></div>
+            <h2 className="section-title" style={{marginBottom:18}}>Your squad.<br/>Your data.</h2>
+            <p className="section-sub" style={{marginBottom:28}}>Sign in to your club dashboard or register to bring your team onto the platform.</p>
             <div style={{display:'flex',flexDirection:'column',gap:12}}>
               {['Real-time squad updates','Injury alerts & recovery tracking','Scheduled sessions & reports','Club-scoped access & role permissions'].map(pt=>(
                 <div key={pt} style={{display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{width:20,height:20,borderRadius:6,background:'rgba(0,128,128,0.2)',border:'1px solid rgba(0,128,128,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#7ECACA',flexShrink:0}}>✓</div>
-                  <span style={{fontSize:13,color:'rgba(255,252,246,0.6)',fontWeight:500}}>{pt}</span>
+                  <div style={{width:20,height:20,borderRadius:6,background:'rgba(13, 148, 136, 0.1)',border:'1px solid rgba(13, 148, 136, 0.2)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,color:'#0D9488',flexShrink:0}}>✓</div>
+                  <span style={{fontSize:13,color:'#475569',fontWeight:500}}>{pt}</span>
                 </div>
               ))}
             </div>
@@ -721,7 +863,7 @@ export default function LandingPage() {
           {/* Auth card */}
           <div>
             {/* Progress bar */}
-            <div style={{height:3,background:'linear-gradient(90deg,#006A6A,#008080,#7ECACA)',borderRadius:'22px 22px 0 0',backgroundSize:'200% 100%',animation:'shimmer 2.5s ease infinite'}}/>
+            <div style={{height:3,background:'linear-gradient(90deg,#0D9488,#14B8A6,#99F6E4)',borderRadius:'22px 22px 0 0',backgroundSize:'200% 100%',animation:'shimmer 2.5s ease infinite'}}/>
             <div className="auth-card" style={{borderRadius:'0 0 22px 22px',borderTop:'none'}}>
               <div className="auth-tabs">
                 <button className={`auth-tab ${tab==='login'?'active':''}`} onClick={()=>{ setTab('login'); setError(''); setSuccess(''); }}>Sign In</button>
@@ -730,18 +872,18 @@ export default function LandingPage() {
 
               {/* Logo row */}
               <div style={{padding:'24px 28px 4px',display:'flex',alignItems:'center',gap:12}}>
-                <img src="/logo.png" alt="Apex Track Logo" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain', border: '1px solid rgba(0,106,106,0.12)' }} />
+                <img src="/logo.png" alt="Apex Track Logo" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain', border: '1px solid rgba(13, 148, 136, 0.12)' }} />
                 <div>
-                  <div style={{fontSize:15,fontWeight:800,color:'#006A6A',letterSpacing:'-0.02em'}}>Apex <span style={{color:'#2D6B6B',fontWeight:400}}>Track</span></div>
-                  <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:'#5A9494'}}>Performance Platform</div>
+                  <div style={{fontSize:15,fontWeight:800,color:'#0D9488',letterSpacing:'-0.02em'}}>Apex <span style={{color:'#64748B',fontWeight:400}}>Track</span></div>
+                  <div style={{fontSize:9,fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',color:'#94A3B8'}}>Performance Platform</div>
                 </div>
               </div>
 
               {tab === 'login' ? (
                 <form className="auth-form" onSubmit={handleLogin}>
                   <div>
-                    <h3 style={{fontSize:22,fontWeight:800,color:'#003D3D',letterSpacing:'-0.02em',marginBottom:3}}>Welcome back</h3>
-                    <p style={{fontSize:13,color:'#5A9494'}}>Sign in to your Apex Track account</p>
+                    <h3 style={{fontSize:22,fontWeight:800,color:'#0F172A',letterSpacing:'-0.02em',marginBottom:3}}>Welcome back</h3>
+                    <p style={{fontSize:13,color:'#64748B'}}>Sign in to your Apex Track account</p>
                   </div>
 
                   {disabled && <div style={{background:'#F9E8E8',border:'1px solid rgba(180,50,50,0.2)',borderRadius:10,padding:'11px 14px',fontSize:13,color:'#8B2020',fontWeight:600}}>🚫 Account disabled. Contact your administrator.</div>}
@@ -753,7 +895,7 @@ export default function LandingPage() {
                       type="button"
                       disabled={resendLoading}
                       onClick={handleResendVerification}
-                      style={{ width:'100%', padding:'11px', background:'rgba(0,106,106,0.08)', color:'#006A6A', border:'1px solid rgba(0,106,106,0.25)', borderRadius:10, fontSize:13, fontWeight:700, cursor:resendLoading?'not-allowed':'pointer', fontFamily:'inherit' }}
+                      style={{ width:'100%', padding:'11px', background:'rgba(13,148,136,0.08)', color:'#0D9488', border:'1px solid rgba(13,148,136,0.25)', borderRadius:10, fontSize:13, fontWeight:700, cursor:resendLoading?'not-allowed':'pointer', fontFamily:'inherit' }}
                     >
                       {resendLoading ? 'Sending verification email…' : 'Resend confirmation email'}
                     </button>
@@ -767,23 +909,23 @@ export default function LandingPage() {
                     <label className="auth-field-label">Password</label>
                     <div style={{position:'relative'}}>
                       <input type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" style={{...inp,paddingRight:46}} onFocus={focusInp} onBlur={blurInp}/>
-                      <button type="button" onClick={()=>setShowPass(v=>!v)} style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#5A9494',padding:0,display:'flex',alignItems:'center'}}>{showPass?'🙈':'👁️'}</button>
+                      <button type="button" onClick={()=>setShowPass(v=>!v)} style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#94A3B8',padding:0,display:'flex',alignItems:'center'}}>{showPass?'🙈':'👁️'}</button>
                     </div>
                   </div>
 
-                  <button type="submit" disabled={loading} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#006A6A,#008080)',color:'#FFFCF6',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,opacity:loading?0.7:1,boxShadow:'0 4px 14px rgba(0,106,106,0.3)',transition:'all 0.2s'}}>
-                    {loading ? <><span style={{width:15,height:15,border:'2px solid rgba(255,252,246,0.35)',borderTopColor:'#FFFCF6',borderRadius:'50%',animation:'spin 0.6s linear infinite',display:'inline-block'}}/> Signing in…</> : 'Sign In →'}
+                  <button type="submit" disabled={loading} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#0D9488,#0F766E)',color:'#FFFFFF',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:loading?'not-allowed':'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,opacity:loading?0.7:1,boxShadow:'0 4px 14px rgba(13,148,136,0.3)',transition:'all 0.2s'}}>
+                    {loading ? <><span style={{width:15,height:15,border:'2px solid rgba(255,255,255,0.35)',borderTopColor:'#FFFFFF',borderRadius:'50%',animation:'spin 0.6s linear infinite',display:'inline-block'}}/> Signing in…</> : 'Sign In →'}
                   </button>
 
-                  <p style={{textAlign:'center',fontSize:12,color:'#5A9494'}}>
-                    No account? <button type="button" onClick={()=>{ setTab('signup'); setError(''); }} style={{background:'none',border:'none',color:'#006A6A',fontWeight:700,cursor:'pointer',fontFamily:'inherit',fontSize:12}}>Register here</button>
+                  <p style={{textAlign:'center',fontSize:12,color:'#64748B'}}>
+                    No account? <button type="button" onClick={()=>{ setTab('signup'); setError(''); }} style={{background:'none',border:'none',color:'#0D9488',fontWeight:700,cursor:'pointer',fontFamily:'inherit',fontSize:12}}>Register here</button>
                   </p>
                 </form>
               ) : (
                 <form className="auth-form" onSubmit={handleSignup}>
                   <div>
-                    <h3 style={{fontSize:22,fontWeight:800,color:'#003D3D',letterSpacing:'-0.02em',marginBottom:3}}>Create account</h3>
-                    <p style={{fontSize:13,color:'#5A9494'}}>Join Apex Track — free to get started</p>
+                    <h3 style={{fontSize:22,fontWeight:800,color:'#0F172A',letterSpacing:'-0.02em',marginBottom:3}}>Create account</h3>
+                    <p style={{fontSize:13,color:'#64748B'}}>Join Apex Track — free to get started</p>
                   </div>
 
                   {error   && <div style={{background:'#F9E8E8',border:'1px solid rgba(180,50,50,0.18)',borderRadius:10,padding:'11px 14px',fontSize:13,color:'#8B2020',fontWeight:600}}>⚠️ {error}</div>}
@@ -798,16 +940,16 @@ export default function LandingPage() {
                     <input type="text" value={clubName} onChange={e=>setClubName(e.target.value)} placeholder="e.g. Asante Kotoko SC" style={inp} onFocus={focusInp} onBlur={blurInp}/>
                   </div>
                   <div>
-                    <label className="auth-field-label">Club Logo <span style={{fontWeight:400,textTransform:'none',letterSpacing:0,fontSize:10,color:'#8AAEAE'}}>(optional)</span></label>
+                    <label className="auth-field-label">Club Logo <span style={{fontWeight:400,textTransform:'none',letterSpacing:0,fontSize:10,color:'#94A3B8'}}>(optional)</span></label>
                     <div style={{display:'flex',alignItems:'center',gap:12}}>
-                      <div style={{width:48,height:48,borderRadius:'50%',background:'#E8F5F5',border:'2px dashed #B8D8D8',overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                      <div style={{width:48,height:48,borderRadius:'50%',background:'#F0FDFA',border:'2px dashed #CCFBF1',overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
                         {logoPreview
                           ? <img src={logoPreview} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                          : <span style={{fontSize:20,color:'#8AAEAE'}}>🏟️</span>
+                          : <span style={{fontSize:20,color:'#94A3B8'}}>🏟️</span>
                         }
                       </div>
                       <div style={{flex:1}}>
-                        <label htmlFor="signup-logo" style={{display:'inline-block',background:'#E8F0FA',color:'#1A4A8A',border:'1px solid rgba(26,74,138,0.2)',padding:'7px 14px',borderRadius:8,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s'}}>
+                        <label htmlFor="signup-logo" style={{display:'inline-block',background:'#F0FDFA',color:'#0D9488',border:'1px solid rgba(13,148,136,0.2)',padding:'7px 14px',borderRadius:8,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s'}}>
                           {logoPreview ? '✓ Change Logo' : '📁 Upload Logo'}
                         </label>
                         <input id="signup-logo" type="file" accept="image/*" style={{display:'none'}} onChange={e=>{
@@ -829,7 +971,7 @@ export default function LandingPage() {
                     <label className="auth-field-label">Password</label>
                     <div style={{position:'relative'}}>
                       <input type={showPass?'text':'password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Min 8 characters" autoComplete="new-password" style={{...inp,paddingRight:46}} onFocus={focusInp} onBlur={blurInp}/>
-                      <button type="button" onClick={()=>setShowPass(v=>!v)} style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#5A9494',padding:0,display:'flex',alignItems:'center'}}>{showPass?'🙈':'👁️'}</button>
+                      <button type="button" onClick={()=>setShowPass(v=>!v)} style={{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',fontSize:16,color:'#94A3B8',padding:0,display:'flex',alignItems:'center'}}>{showPass?'🙈':'👁️'}</button>
                     </div>
                   </div>
 
@@ -837,25 +979,25 @@ export default function LandingPage() {
                     <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
                     <span>
                       I agree to the{' '}
-                      <Link href="/terms" target="_blank" style={{ color: '#006A6A', fontWeight: 700 }}>Terms of Service</Link>
+                      <Link href="/terms" target="_blank" style={{ color: '#0D9488', fontWeight: 700 }}>Terms of Service</Link>
                       {' '}and{' '}
-                      <Link href="/privacy" target="_blank" style={{ color: '#006A6A', fontWeight: 700 }}>Privacy Policy</Link>.
+                      <Link href="/privacy" target="_blank" style={{ color: '#0D9488', fontWeight: 700 }}>Privacy Policy</Link>.
                       I confirm our club is authorised to store athlete data entered here.
                     </span>
                   </label>
 
-                  <button type="submit" disabled={loading || !acceptedTerms} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#006A6A,#008080)',color:'#FFFCF6',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:loading||!acceptedTerms?'not-allowed':'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,opacity:loading||!acceptedTerms?0.7:1,boxShadow:'0 4px 14px rgba(0,106,106,0.3)',transition:'all 0.2s'}}>
-                    {loading ? <><span style={{width:15,height:15,border:'2px solid rgba(255,252,246,0.35)',borderTopColor:'#FFFCF6',borderRadius:'50%',animation:'spin 0.6s linear infinite',display:'inline-block'}}/> Creating account…</> : 'Create Account →'}
+                  <button type="submit" disabled={loading || !acceptedTerms} style={{width:'100%',padding:'13px',background:'linear-gradient(135deg,#0D9488,#0F766E)',color:'#FFFFFF',border:'none',borderRadius:10,fontSize:14,fontWeight:700,cursor:loading||!acceptedTerms?'not-allowed':'pointer',fontFamily:'inherit',display:'flex',alignItems:'center',justifyContent:'center',gap:8,opacity:loading||!acceptedTerms?0.7:1,boxShadow:'0 4px 14px rgba(13,148,136,0.3)',transition:'all 0.2s'}}>
+                    {loading ? <><span style={{width:15,height:15,border:'2px solid rgba(255,255,255,0.35)',borderTopColor:'#FFFFFF',borderRadius:'50%',animation:'spin 0.6s linear infinite',display:'inline-block'}}/> Creating account…</> : 'Create Account →'}
                   </button>
 
-                  <p style={{textAlign:'center',fontSize:12,color:'#5A9494'}}>
-                    Already registered? <button type="button" onClick={()=>{ setTab('login'); setError(''); }} style={{background:'none',border:'none',color:'#006A6A',fontWeight:700,cursor:'pointer',fontFamily:'inherit',fontSize:12}}>Sign in</button>
+                  <p style={{textAlign:'center',fontSize:12,color:'#64748B'}}>
+                    Already registered? <button type="button" onClick={()=>{ setTab('login'); setError(''); }} style={{background:'none',border:'none',color:'#0D9488',fontWeight:700,cursor:'pointer',fontFamily:'inherit',fontSize:12}}>Sign in</button>
                   </p>
                 </form>
               )}
 
               <div className="auth-trust">
-                {[['🔒','TLS Encrypted'],['🏟️','Club-scoped data'],['🛡️','GDPR-aware']].map(([ico,lbl])=>(
+                {[['🔒','TLS Encrypted'],['🏟️','Club-scoped data'],['🛡','GDPR-aware']].map(([ico,lbl])=>(
                   <div key={lbl} className="auth-trust-item"><span style={{fontSize:13}}>{ico}</span>{lbl}</div>
                 ))}
               </div>
@@ -867,30 +1009,15 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="footer">
         <div className="footer-inner">
-          <div style={{display:'flex',alignItems:'center',gap:10}}>
-            <div style={{width:34,height:34,borderRadius:9,background:'linear-gradient(135deg,#004F4F,#008080)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:15}}>⚽</div>
-            <div>
-              <div style={{fontSize:15,fontWeight:800,color:'#FFFCF6',letterSpacing:'-0.02em'}}>Apex <span style={{color:'#7ECACA',fontWeight:400}}>Track</span></div>
-              <div style={{fontSize:9,fontWeight:600,letterSpacing:'0.1em',textTransform:'uppercase',color:'rgba(255,252,246,0.35)'}}>Performance Platform</div>
-            </div>
+          <div className="footer-brand">Apex<span>Track</span></div>
+          <div className="footer-links">
+            <Link href="/privacy" className="footer-link">Privacy Policy</Link>
+            <Link href="/terms" className="footer-link">Terms of Service</Link>
+            <Link href="/security" className="footer-link">Security</Link>
+            <button className="footer-link" style={{ background: 'none', border: 'none', cursor: 'pointer' }} onClick={scrollToAuth}>Sign In</button>
           </div>
-          <div style={{display:'flex',gap:24,flexWrap:'wrap',alignItems:'flex-start'}}>
-            {['Features','Trust','Sign In','Register'].map(l=>(
-              <button key={l} onClick={()=> l==='Sign In'||l==='Register' ? (setTab(l==='Register'?'signup':'login'),scrollToAuth()) : document.getElementById(l.toLowerCase())?.scrollIntoView({behavior:'smooth'})}
-                style={{background:'none',border:'none',color:'rgba(255,252,246,0.4)',fontSize:12,fontWeight:500,cursor:'pointer',fontFamily:'inherit',transition:'color 0.2s'}}
-                onMouseEnter={e=>e.target.style.color='rgba(255,252,246,0.8)'}
-                onMouseLeave={e=>e.target.style.color='rgba(255,252,246,0.4)'}
-              >{l}</button>
-            ))}
-          </div>
-          <nav className="footer-legal" aria-label="Legal">
-            <Link href="/privacy">Privacy Policy</Link>
-            <Link href="/terms">Terms of Service</Link>
-            <Link href="/security">Security &amp; Data Protection</Link>
-            <a href="mailto:privacy@apextrack.app" style={{ fontSize: 12, color: 'rgba(255,252,246,0.45)', textDecoration: 'none', fontWeight: 500 }}>privacy@apextrack.app</a>
-          </nav>
         </div>
-        <p className="footer-copy">© {new Date().getFullYear()} Apex Track. Built for African football. Not a substitute for professional medical advice.</p>
+        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Built for African football.</div>
       </footer>
     </>
   )

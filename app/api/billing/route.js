@@ -67,11 +67,7 @@ export async function POST(req) {
       const result = await supabase.from('subscriptions')
         .update({
           plan: targetPlan, status:'active',
-          athlete_limit: p.athlete_limit, staff_limit: p.staff_limit, price_ghs: p.price_ghs,
-          payment_method: payment_method || 'paystack',
-          payment_ref:    payment_ref    || null,
-          notes:          notes          || null,
-          current_period_start: now.toISOString(),
+          athlete_limit: p.athlete_limit,
           current_period_end:   end.toISOString(),
           trial_ends_at: null,
         })
@@ -82,11 +78,7 @@ export async function POST(req) {
       const result = await supabase.from('subscriptions')
         .insert({
           team_id, plan: targetPlan, status:'active',
-          athlete_limit: p.athlete_limit, staff_limit: p.staff_limit, price_ghs: p.price_ghs,
-          payment_method: payment_method || 'paystack',
-          payment_ref:    payment_ref    || null,
-          notes:          notes          || null,
-          current_period_start: now.toISOString(),
+          athlete_limit: p.athlete_limit,
           current_period_end:   end.toISOString(),
         })
         .select().single()
@@ -97,19 +89,24 @@ export async function POST(req) {
 
     if (subErr) return NextResponse.json({ error: subErr.message, details: subErr }, { status: 500 })
 
-    // Log billing event
-    const { error: evErr } = await supabase.from('billing_events').insert({
-      team_id, type:'payment', plan: targetPlan,
-      amount_ghs:  p.price_ghs,
-      payment_ref: payment_ref || null,
-      notes,
-      created_by:  requester.profile.id,
-    })
+    // Log billing event (best-effort — don't block activation if this fails)
+    try {
+      const { error: evErr } = await supabase.from('billing_events').insert({
+        team_id, type:'payment', plan: targetPlan,
+        amount_ghs:  p.price_ghs,
+        payment_ref: payment_ref || null,
+        notes,
+        created_by:  requester.profile.id,
+      })
+      if (evErr) console.error('Billing event log failed (non-blocking):', evErr)
+    } catch (evEx) {
+      console.error('Billing event log exception (non-blocking):', evEx)
+    }
 
     return NextResponse.json({ ok: true, subscription: sub })
   } catch (e) {
     console.error('Billing POST error:', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    return NextResponse.json({ error: e.message, detail: e.stack?.slice(0, 300) }, { status: 500 })
   }
 }
 

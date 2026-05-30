@@ -107,7 +107,7 @@ function BillingContent(){
           })
           .then(res=>res.json())
           .then(data=>{
-            if(data.error){ flash('Activation failed. Contact support with ref: '+response.reference,'error'); setPaying(false); return }
+            if(data.error){ flash('Activation failed: '+(data.error||'Unknown')+'. Ref: '+response.reference,'error'); setPaying(false); return }
             flash('✅ Payment successful! '+plan.label+' plan is now active.','success')
             load().then(()=>setTab('overview'))
             setPaying(false)

@@ -36,6 +36,7 @@ const onBlur  = e => e.target.style.borderColor = 'var(--border)'
 
 export default function SettingsPage() {
   const [profile,       setProfile]       = useState(null)
+  const [subPlan,       setSubPlan]       = useState('trial')
   const [allUsers,      setAllUsers]      = useState([])
   const [allStaff,      setAllStaff]      = useState([])
   const [staffLogins,   setStaffLogins]   = useState([])
@@ -68,6 +69,10 @@ export default function SettingsPage() {
       setProfileForm({ full_name: prof.full_name||'', phone: prof.phone||'' })
       const admin = prof.role === 'admin' || prof.role === 'superadmin'
       setIsAdmin(admin)
+      if (prof.team_id) {
+        const { data: sub } = await supabase.from('subscriptions').select('plan').eq('team_id', prof.team_id).maybeSingle()
+        if (sub?.plan) setSubPlan(sub.plan)
+      }
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins }] = await Promise.all([
           scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
@@ -376,8 +381,17 @@ export default function SettingsPage() {
                         <select value={issueForm.role} onChange={e=>setIssueForm(f=>({...f,role:e.target.value}))} style={{ ...inp,background:'#fff' }}>
                           <option value="physio">physio — Medical Hub access</option>
                           <option value="coach">coach — Training & Athletes</option>
-                          <option value="analyst">analyst — Performance & Reports</option>
-                          <option value="scout">scout — Scouting module</option>
+                          {(subPlan === 'starting_xi' || subPlan === 'starter') ? (
+                            <>
+                              <option value="analyst" disabled>analyst — Locked (Upgrade to Captain)</option>
+                              <option value="scout" disabled>scout — Locked (Upgrade to Captain)</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="analyst">analyst — Performance & Reports</option>
+                              <option value="scout">scout — Scouting module</option>
+                            </>
+                          )}
                           <option value="player">player — Dashboard only</option>
                         </select>
                       </div>
@@ -560,7 +574,22 @@ export default function SettingsPage() {
                           <span style={{ fontSize:13,fontWeight:600,color:'var(--text)' }}>{u.full_name||'—'}</span>
                         </div>
                         <div style={{ fontSize:12,color:'var(--text3)',wordBreak:'break-all' }}>{u.email||'—'}</div>
-                        <div><select value={u.role||'coach'} onChange={e=>updateUserRole(u.id,e.target.value)} style={{ padding:'5px 10px',border:'1px solid var(--border)',borderRadius:'var(--r-sm)',fontSize:12,background:'var(--surface2)',color:'var(--text)',fontFamily:'var(--font)',cursor:'pointer',outline:'none' }}>{ROLES.map(r=><option key={r}>{r}</option>)}</select></div>
+                        <div>
+                          <select 
+                            value={u.role||'coach'} 
+                            onChange={e=>updateUserRole(u.id,e.target.value)} 
+                            style={{ padding:'5px 10px',border:'1px solid var(--border)',borderRadius:'var(--r-sm)',fontSize:12,background:'var(--surface2)',color:'var(--text)',fontFamily:'var(--font)',cursor:'pointer',outline:'none' }}
+                          >
+                            {ROLES.map(r => {
+                              const isLocked = (subPlan === 'starting_xi' || subPlan === 'starter') && (r === 'analyst' || r === 'scout')
+                              return (
+                                <option key={r} value={r} disabled={isLocked}>
+                                  {r}{isLocked ? ' (Locked)' : ''}
+                                </option>
+                              )
+                            })}
+                          </select>
+                        </div>
                         <div><span style={{ fontSize:10,fontWeight:700,background:u.is_active!==false?'var(--success-light)':'var(--danger-light)',color:u.is_active!==false?'var(--success)':'var(--danger)',padding:'3px 10px',borderRadius:99 }}>{u.is_active!==false?'Active':'Disabled'}</span></div>
                         <div>
                           {u.is_active!==false

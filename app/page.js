@@ -615,26 +615,57 @@ export default function LandingPage() {
           </div>
           <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 8 }}>Simple, transparent plans</h2>
           <p className="section-sub" style={{ textAlign: 'center', margin: '0 auto 52px' }}>
-            Bring your club onboard today. Get complete access to all tracking metrics during our beta phase.
+            Bring your club onboard today. Choose the package that fits your setup.
           </p>
 
           <div className="pricing-grid">
-            {/* Free Tier Card */}
-            <div className="price-card featured">
-              <div className="price-badge">Active Beta</div>
+            {/* Starting XI Tier Card */}
+            <div className="price-card">
               <div>
-                <div className="price-tier">Standard Club</div>
-                <p className="price-desc">Complete athlete registry, injury hub lifecycle, and training sessions scheduler.</p>
-                <div className="price-amount">$0 <span>/ month during Beta</span></div>
+                <div className="price-tier">⚽ Starting XI</div>
+                <p className="price-desc">For grassroots clubs, academies, and smaller setups looking to digitize their operations.</p>
+                <div className="price-amount">GHS 199 <span>/ month</span></div>
                 
                 <ul className="price-features">
                   {[
-                    'Unlimited active athletes tracking',
-                    'Injury onset & recovery lifecycle tracking',
-                    'Coaches & trainers dashboard',
-                    'Basic performance reports PDF export',
-                    'Postgres Row Level Security data isolation',
-                    'Direct technical support via email',
+                    'Up to 40 active athlete profiles',
+                    'Squad Roster & Player Registry',
+                    'Training Scheduler & Calendars',
+                    'Full Injury Hub Lifecycle Tracking',
+                    'Basic Performance Reports PDF Export',
+                    'Admin + Coach + Physio roles',
+                    'Standard Email Support',
+                  ].map(feat => (
+                    <li key={feat} className="price-feat-item">
+                      <div className="price-feat-check">✓</div>
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <Link href="/login?tab=signup" className="price-btn outline">
+                Get Started
+              </Link>
+            </div>
+
+            {/* Captain Tier Card */}
+            <div className="price-card featured">
+              <div className="price-badge">Most Popular</div>
+              <div>
+                <div className="price-tier">🏆 Captain</div>
+                <p className="price-desc">For semi-pro and professional clubs serious about performance and data analytics.</p>
+                <div className="price-amount">GHS 499 <span>/ month</span></div>
+                
+                <ul className="price-features">
+                  {[
+                    'Unlimited active athletes',
+                    'Everything in Starting XI plan',
+                    'Performance Analytics (xG, xA, match ratings)',
+                    'Scouting Module & Transfer History',
+                    'Advanced Reports (board-level summaries)',
+                    'All 4 roles including Analyst',
+                    'Custom club logo & branding',
+                    'Priority support + guided onboarding',
                   ].map(feat => (
                     <li key={feat} className="price-feat-item">
                       <div className="price-feat-check">✓</div>
@@ -644,36 +675,8 @@ export default function LandingPage() {
                 </ul>
               </div>
               <Link href="/login?tab=signup" className="price-btn primary">
-                Register Free Beta Account →
+                Subscribe to Captain →
               </Link>
-            </div>
-
-            {/* Pro Tier Card */}
-            <div className="price-card">
-              <div>
-                <div className="price-tier">Pro Academy / Club</div>
-                <p className="price-desc">Advanced performance analytics, full scouting logs, and tailored brand visuals.</p>
-                <div className="price-amount">Contact Us <span>/ for custom pricing</span></div>
-                
-                <ul className="price-features">
-                  {[
-                    'Everything in Standard Beta plan',
-                    'Expected goals (xG) & assists (xA) models',
-                    'Scouting shortlist & trials management log',
-                    'Custom club logo upload & theme visuals',
-                    'Automated executive board reports builder',
-                    'Priority Technical Account Onboarding',
-                  ].map(feat => (
-                    <li key={feat} className="price-feat-item">
-                      <div className="price-feat-check">✓</div>
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <a href="mailto:admin@apextrackgh.com?subject=ApexTrack%20Pro%20Custom%20Pricing" className="price-btn outline">
-                Contact Technical Team
-              </a>
             </div>
           </div>
         </div>

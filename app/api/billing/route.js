@@ -5,10 +5,9 @@ import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAu
 const supabase = createServiceClient()
 
 const PLANS = {
-  starter: { athlete_limit:40,   staff_limit:3,   price_ghs:350  },
-  academy: { athlete_limit:100,  staff_limit:10,  price_ghs:600  },
-  elite:   { athlete_limit:9999, staff_limit:999, price_ghs:1000 },
-  trial:   { athlete_limit:999,  staff_limit:99,  price_ghs:0    },
+  starting_xi: { athlete_limit:40,   staff_limit:99,  price_ghs:199  },
+  captain:     { athlete_limit:9999, staff_limit:999, price_ghs:499  },
+  trial:       { athlete_limit:999,  staff_limit:99,  price_ghs:0    },
 }
 
 // GET — fetch subscription + history
@@ -40,7 +39,12 @@ export async function POST(req) {
     console.log('Billing POST:', { team_id, plan, payment_method, payment_ref })
 
     if (!team_id || !plan) return NextResponse.json({ error: 'team_id and plan required' }, { status: 400 })
-    if (!PLANS[plan])      return NextResponse.json({ error: 'Invalid plan: ' + plan }, { status: 400 })
+
+    let targetPlan = plan
+    if (plan === 'starter') targetPlan = 'starting_xi'
+    if (plan === 'academy' || plan === 'elite') targetPlan = 'captain'
+
+    if (!PLANS[targetPlan]) return NextResponse.json({ error: 'Invalid plan: ' + plan }, { status: 400 })
 
     const requester = await getRequester(req, supabase)
     if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
@@ -48,7 +52,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const p   = PLANS[plan]
+    const p   = PLANS[targetPlan]
     const now = new Date()
     const end = new Date(now); end.setDate(end.getDate() + 30)
 
@@ -62,7 +66,7 @@ export async function POST(req) {
     if (existing) {
       const result = await supabase.from('subscriptions')
         .update({
-          plan, status:'active',
+          plan: targetPlan, status:'active',
           athlete_limit: p.athlete_limit, staff_limit: p.staff_limit, price_ghs: p.price_ghs,
           payment_method: payment_method || 'paystack',
           payment_ref:    payment_ref    || null,
@@ -77,7 +81,7 @@ export async function POST(req) {
     } else {
       const result = await supabase.from('subscriptions')
         .insert({
-          team_id, plan, status:'active',
+          team_id, plan: targetPlan, status:'active',
           athlete_limit: p.athlete_limit, staff_limit: p.staff_limit, price_ghs: p.price_ghs,
           payment_method: payment_method || 'paystack',
           payment_ref:    payment_ref    || null,
@@ -95,14 +99,12 @@ export async function POST(req) {
 
     // Log billing event
     const { error: evErr } = await supabase.from('billing_events').insert({
-      team_id, type:'payment', plan,
+      team_id, type:'payment', plan: targetPlan,
       amount_ghs:  p.price_ghs,
       payment_ref: payment_ref || null,
       notes,
       created_by:  requester.profile.id,
     })
-
-    console.log('Billing event error:', evErr)
 
     return NextResponse.json({ ok: true, subscription: sub })
   } catch (e) {

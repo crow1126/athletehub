@@ -18,14 +18,11 @@ const GM_ICON = (
 )
 
 const PLANS = {
-  starter: { label:'Starter', price:350, usd:23, color:'#004F4F', bg:'#E0F0F0', popular:false,
-    features:['40 athlete profiles','3 staff accounts','Session scheduling','Dashboard'],
-    locked:['Medical hub','Performance analytics','Scouting','Contracts','Reports'] },
-  academy: { label:'Academy', price:600, usd:40, color:'#006A6A', bg:'#C8E8E8', popular:true,
-    features:['100 athlete profiles','10 staff accounts','Full medical hub','xG & xA analytics','Scout access portal','PDF player reports','Session scheduling'],
-    locked:['Contracts module'] },
-  elite:   { label:'Elite',   price:1000, usd:67, color:'#1B7A3E', bg:'#E8F8EE', popular:false,
-    features:['Unlimited athlete profiles','Unlimited staff accounts','All modules unlocked','Contracts management','Multi-team management','Priority onboarding','Custom branding'],
+  starting_xi: { label:'Starting XI', price:199, usd:13, color:'#004F4F', bg:'#E0F0F0', popular:false,
+    features:['Up to 40 athletes','Squad Roster','Training Scheduler','Injury Hub','Basic Reports (PDF export)','Admin + Coach + Physio roles','Email support'],
+    locked:['Performance Analytics','Scouting Module + Transfers','Advanced Reports','Analyst role','Custom club branding'] },
+  captain: { label:'Captain', price:499, usd:33, color:'#1B7A3E', bg:'#E8F8EE', popular:true,
+    features:['Unlimited athletes','Everything in Starting XI','Performance Analytics (xG, xA, match ratings)','Scouting Module + Transfers','Advanced Reports (board/medical)','All 4 roles including Analyst','Custom club branding','Priority support + onboarding'],
     locked:[] },
 }
 
@@ -56,7 +53,7 @@ function BillingContent(){
   const [loading, setLoading] = useState(true)
   const [tab,     setTab]     = useState('overview')
   const [isAdmin, setIsAdmin] = useState(false)
-  const [selPlan, setSelPlan] = useState('academy')
+  const [selPlan, setSelPlan] = useState('captain')
   const [paying,  setPaying]  = useState(false)
   const [msg,     setMsg]     = useState({text:'',type:''})
 
@@ -130,8 +127,12 @@ function BillingContent(){
     flash('Subscription cancelled.','success'); await load()
   }
 
-  const currentPlan = sub?PLANS[sub.plan]:null
-  const planLimits  = sub?PLAN_LIMITS[sub.plan]:null
+  let activePlanKey = sub?.plan
+  if (activePlanKey === 'starter') activePlanKey = 'starting_xi'
+  if (activePlanKey === 'academy' || activePlanKey === 'elite') activePlanKey = 'captain'
+
+  const currentPlan = sub?PLANS[activePlanKey]:null
+  const planLimits  = sub?PLAN_LIMITS[activePlanKey]:null
   const statusStyle = sub?(STATUS_COLORS[sub.status]||STATUS_COLORS.active):STATUS_COLORS.active
   const days        = sub?daysLeft(sub.plan==='trial'?sub.trial_ends_at:sub.current_period_end):0
 

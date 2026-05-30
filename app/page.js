@@ -255,41 +255,39 @@ export default function LandingPage() {
         .hero-visual {
           position: relative;
           margin: 48px auto 0;
-          max-width: 960px;
-          border-radius: 24px 24px 0 0;
+          max-width: 1100px;
           overflow: hidden;
           opacity: 0; animation: fadeUp 0.9s ease 0.75s forwards;
         }
+        .hero-img-wrapper {
+          position: relative;
+          border-radius: 28px;
+          overflow: hidden;
+          box-shadow: 0 24px 80px rgba(0,0,0,0.25), 0 0 0 1px rgba(13,148,136,0.1);
+        }
         .hero-img {
           width: 100%; display: block;
-          border-radius: 24px 24px 0 0;
+          height: 520px;
+          object-fit: cover;
+          object-position: center 30%;
+          filter: contrast(1.08) brightness(0.95);
         }
-
-        /* Floating stat cards on the hero image */
-        .hf-card {
-          position: absolute;
-          background: rgba(255,255,255,0.92);
-          border: 1px solid rgba(0,0,0,0.07);
-          backdrop-filter: blur(12px);
-          border-radius: 14px; padding: 11px 15px;
-          display: flex; align-items: center; gap: 10px;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-          white-space: nowrap;
+        .hero-img-overlay {
+          position: absolute; inset: 0;
+          background: 
+            linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0) 40%, rgba(15,23,42,0.7) 100%),
+            linear-gradient(135deg, rgba(13,148,136,0.18) 0%, rgba(20,184,166,0.08) 50%, transparent 100%);
+          border-radius: 28px;
+          pointer-events: none;
         }
-        .hf-icon {
-          width: 34px; height: 34px; border-radius: 9px;
-          background: #F0FDFA; border: 1px solid #CCFBF1;
-          display: flex; align-items: center; justify-content: center;
-          font-size: 16px; flex-shrink: 0;
+        .hero-img-accent {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          height: 4px;
+          background: linear-gradient(90deg, #0D9488, #14B8A6, #2DD4BF, #14B8A6, #0D9488);
+          background-size: 200% 100%;
+          animation: shimmer 3s ease-in-out infinite;
         }
-        .hf-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #94A3B8; }
-        .hf-val   { font-size: 16px; font-weight: 800; color: #0F172A; line-height: 1; }
-        .hf-badge {
-          display: inline-flex; align-items: center; gap: 4px;
-          background: #F0FDF4; border: 1px solid #BBF7D0;
-          border-radius: 99px; padding: 3px 9px;
-          font-size: 10px; font-weight: 700; color: #16A34A;
-        }
+        @keyframes shimmer { 0%{background-position:100% 0} 50%{background-position:0% 0} 100%{background-position:100% 0} }
 
         /* ── FEATURES ── */
         .features-section {
@@ -478,9 +476,11 @@ export default function LandingPage() {
         @media (max-width: 640px) {
           .lp-nav { padding: 0 20px; }
           .hero { padding: 120px 20px 0; }
-          .hero-visual { margin: 36px 16px 0; border-radius: 16px 16px 0 0; }
-          .hero-img { border-radius: 16px 16px 0 0; }
-          .hf-card { display: none; }
+          .hero-visual { margin: 36px 16px 0; }
+          .hero-img-wrapper { border-radius: 18px; }
+          .hero-img { height: 360px; }
+          .hero-img-overlay { border-radius: 18px; }
+
           .features-section { padding: 64px 20px; }
           .features-grid { grid-template-columns: 1fr; }
           .pricing-section { padding: 64px 20px; }
@@ -561,39 +561,10 @@ export default function LandingPage() {
 
         {/* Hero visual */}
         <div className="hero-visual">
-          <img src="/hero-light.png" alt="ApexTrack dashboard preview" className="hero-img" />
-
-          {/* Floating cards */}
-          <div className="hf-card" style={{ top: '18%', left: '3%', animation: 'float0 3.6s ease-in-out infinite' }}>
-            <div className="hf-icon">👥</div>
-            <div>
-              <div className="hf-label">Active Athletes</div>
-              <div className="hf-val">248 <span className="hf-badge">↑ 12 New</span></div>
-            </div>
-          </div>
-
-          <div className="hf-card" style={{ top: '55%', left: '2%', animation: 'float1 4.2s ease-in-out 0.4s infinite' }}>
-            <div className="hf-icon">📊</div>
-            <div>
-              <div className="hf-label">Avg Match Rating</div>
-              <div className="hf-val">7.4</div>
-            </div>
-          </div>
-
-          <div className="hf-card" style={{ top: '24%', right: '3%', animation: 'float2 3.9s ease-in-out 0.7s infinite' }}>
-            <div className="hf-icon">🤖</div>
-            <div>
-              <div className="hf-label">Co-Pilot</div>
-              <div className="hf-val" style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>AI · Live</div>
-            </div>
-          </div>
-
-          <div className="hf-card" style={{ top: '58%', right: '2%', animation: 'float0 4s ease-in-out 1s infinite' }}>
-            <div className="hf-icon">🏥</div>
-            <div>
-              <div className="hf-label">Recovery Rate</div>
-              <div className="hf-val">94% <span className="hf-badge">Secure</span></div>
-            </div>
+          <div className="hero-img-wrapper">
+            <img src="/hero-football.png" alt="Football player in action" className="hero-img" />
+            <div className="hero-img-overlay" />
+            <div className="hero-img-accent" />
           </div>
         </div>
       </section>

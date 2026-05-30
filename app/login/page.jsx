@@ -246,7 +246,13 @@ export default function LoginPage() {
 
         body {
           font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-          background: #FFFFFF;
+          background-color: #FFFFFF;
+          background-image:
+            radial-gradient(ellipse at 0% 0%, rgba(180, 220, 180, 0.45) 0%, transparent 55%),
+            radial-gradient(ellipse at 5% 80%, rgba(180, 215, 175, 0.3) 0%, transparent 45%),
+            radial-gradient(ellipse at 30% 30%, rgba(200, 230, 200, 0.25) 0%, transparent 50%),
+            linear-gradient(to right, rgba(195, 225, 190, 0.3) 0%, rgba(220, 240, 220, 0.1) 40%, #FFFFFF 70%);
+          background-attachment: fixed;
           color: #0F172A;
           overflow-x: hidden;
         }
@@ -291,7 +297,7 @@ export default function LoginPage() {
           flex-direction: column;
           justify-content: space-between;
           position: relative;
-          background: #FFFFFF;
+          background: transparent;
           padding: 100px 48px 32px;
           box-sizing: border-box;
           z-index: 1;

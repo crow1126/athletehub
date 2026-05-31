@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react'
 
+// Track activation attempts to prevent React StrictMode from firing twice and consuming token twice
+let activationAttempted = false
+
 // Premium animated orb background similar to landing page
 function OrbBackground() {
   const ref = useRef(null)
@@ -56,8 +59,8 @@ function ConfirmContent() {
   const isRunningActivation = useRef(false)
 
   useEffect(() => {
-    // Prevent multiple parallel activation executions
-    if (isRunningActivation.current) return
+    // Prevent multiple parallel activation executions or double-runs in StrictMode
+    if (isRunningActivation.current || activationAttempted) return
 
     async function handleConfirm() {
       // Get parameters directly from window to bypass Next.js hydration lag
@@ -98,12 +101,26 @@ function ConfirmContent() {
 
       // Mark as running once we know we have a valid context to process
       isRunningActivation.current = true
+      activationAttempted = true
 
       try {
         // 1. If we have a code (PKCE flow), send to server callback
-        if (code || (tokenHash && type)) {
+        if (code) {
           window.location.replace(`/auth/callback${window.location.search}`)
           return
+        }
+
+        // 1.5. If we have token_hash and type, verify it directly on the client
+        if (tokenHash && type) {
+          console.log('Verifying token hash directly...', tokenHash, type)
+          const { data: verifyData, error: verifyErr } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type,
+          })
+          if (verifyErr) {
+            throw new Error(verifyErr.message || 'Verification failed. The token may be expired or invalid.')
+          }
+          session = verifyData?.session
         }
 
         // 2. Handle legacy hash-token links on this page
@@ -165,6 +182,7 @@ function ConfirmContent() {
         setMessage(err.message || 'An unexpected error occurred during activation.')
         // Reset so user can retry if they click again or refresh
         isRunningActivation.current = false
+        activationAttempted = false
       }
     }
 

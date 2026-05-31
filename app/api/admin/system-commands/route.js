@@ -16,7 +16,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden: Superadmin privilege required' }, { status: 403 })
     }
 
-    const { command, tableName, userId } = await req.json()
+    const { command, tableName, userId, teamId } = await req.json()
 
     if (!command) {
       return NextResponse.json({ error: 'command parameter is required' }, { status: 400 })
@@ -186,6 +186,105 @@ export async function POST(req) {
       return NextResponse.json({
         success: true,
         message: `User ${authData.user.email} deleted successfully.`
+      })
+    }
+
+    if (command === 'delete_team') {
+      if (!teamId) {
+        return NextResponse.json({ error: 'teamId parameter is required' }, { status: 400 })
+      }
+
+      // Check if team exists
+      const { data: teamData, error: teamFetchError } = await db
+        .from('teams')
+        .select('name')
+        .eq('id', teamId)
+        .maybeSingle()
+
+      if (teamFetchError) {
+        return NextResponse.json({ error: `Failed to fetch team: ${teamFetchError.message}` }, { status: 500 })
+      }
+      if (!teamData) {
+        return NextResponse.json({ error: 'Team record not found.' }, { status: 404 })
+      }
+
+      console.log(`Deleting team: ${teamData.name} (${teamId}) and purging roots data...`)
+
+      // 1. Get and process team profiles
+      const { data: profiles, error: profilesError } = await db
+        .from('profiles')
+        .select('id, email')
+        .eq('team_id', teamId)
+
+      if (profilesError) {
+        return NextResponse.json({ error: `Failed to list team profiles: ${profilesError.message}` }, { status: 500 })
+      }
+
+      let deletedAuthUsers = 0
+      if (profiles && profiles.length > 0) {
+        for (const profile of profiles) {
+          if (profile.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase()) {
+            // Keep superadmin and just remove their association
+            await db.from('profiles').update({ team_id: null }).eq('id', profile.id)
+          } else {
+            // Delete Auth user
+            const { error: delAuthErr } = await db.auth.admin.deleteUser(profile.id)
+            if (delAuthErr) {
+              console.error(`Failed to delete auth user ${profile.email}:`, delAuthErr.message)
+            } else {
+              deletedAuthUsers++
+            }
+            // Delete Profile explicitly
+            await db.from('profiles').delete().eq('id', profile.id)
+          }
+        }
+      }
+
+      // 2. Find team's athletes
+      const { data: athletes, error: athletesError } = await db
+        .from('athletes')
+        .select('id')
+        .eq('team_id', teamId)
+
+      if (athletesError) {
+        return NextResponse.json({ error: `Failed to list athletes: ${athletesError.message}` }, { status: 500 })
+      }
+
+      const athleteIds = athletes?.map(a => a.id) || []
+
+      // 3. Purge dependent children tables
+      if (athleteIds.length > 0) {
+        await db.from('performance_stats').delete().in('athlete_id', athleteIds)
+        await db.from('injuries').delete().in('athlete_id', athleteIds)
+        await db.from('scouting_reports').delete().in('athlete_id', athleteIds)
+        await db.from('contracts').delete().in('athlete_id', athleteIds)
+        await db.from('transfers').delete().in('athlete_id', athleteIds)
+      }
+
+      // 4. Purge team direct dependencies
+      await db.from('contracts').delete().eq('team_id', teamId)
+      await db.from('transfers').delete().eq('from_team_id', teamId)
+      await db.from('transfers').delete().eq('to_team_id', teamId)
+      await db.from('coaches').delete().eq('team_id', teamId)
+      await db.from('training_sessions').delete().eq('team_id', teamId)
+      await db.from('staff_logins').delete().eq('team_id', teamId)
+      await db.from('subscriptions').delete().eq('team_id', teamId)
+      await db.from('billing_events').delete().eq('team_id', teamId)
+      await db.from('athletes').delete().eq('team_id', teamId)
+
+      // 5. Delete the team itself
+      const { error: deleteTeamErr } = await db
+        .from('teams')
+        .delete()
+        .eq('id', teamId)
+
+      if (deleteTeamErr) {
+        return NextResponse.json({ error: `Failed to delete team record: ${deleteTeamErr.message}` }, { status: 500 })
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: `Team "${teamData.name}" and all associated roots data (athletes, contracts, coaches, subscriptions) were successfully deleted. Preserved superadmin.`
       })
     }
 

@@ -64,7 +64,7 @@ export async function POST(req) {
     }))
 
     // Send bulk SMS
-    const { sent, failed } = await sendBulkSMS(recipients)
+    const { sent, failed, error: smsError } = await sendBulkSMS(recipients)
 
     // Log the notification event
     await supabase.from('notification_logs').insert({
@@ -76,7 +76,7 @@ export async function POST(req) {
       created_by: requester.profile.id,
     }).maybeSingle() // non-blocking — table may not exist yet
 
-    return NextResponse.json({ ok: true, sent, failed, total: athletes.length })
+    return NextResponse.json({ ok: true, sent, failed, total: athletes.length, smsError: smsError || null })
 
   } catch (e) {
     console.error('[schedule/notify] Error:', e)

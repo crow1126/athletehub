@@ -83,7 +83,7 @@ export default function SchedulePage() {
             credentials: 'include',
           })
           const d = await r.json()
-          setSmsStatus({ sent: d.sent ?? 0, failed: d.failed ?? 0, total: d.total ?? 0 })
+          setSmsStatus({ sent: d.sent ?? 0, failed: d.failed ?? 0, total: d.total ?? 0, error: d.smsError || null })
           setTimeout(() => setSmsStatus(null), 8000)
         } catch { /* non-blocking */ }
       }
@@ -308,14 +308,19 @@ export default function SchedulePage() {
 
       {/* SMS status toast */}
       {smsStatus && (
-        <div style={{ position:'fixed', bottom:28, right:28, zIndex:300, background:'#0F172A', color:'#fff', borderRadius:14, padding:'14px 20px', fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:320, animation:'fadeInUp 0.3s ease' }}>
-          <span style={{ fontSize:20 }}>📱</span>
-          <div>
-            <div style={{ fontWeight:700, marginBottom:2 }}>SMS Notifications Sent</div>
-            <div style={{ color:'rgba(255,255,255,0.7)', fontSize:12 }}>
-              ✅ {smsStatus.sent} delivered
-              {smsStatus.failed > 0 && ` · ⚠️ ${smsStatus.failed} failed`}
-              {' '}of {smsStatus.total} athletes
+        <div style={{ position:'fixed', bottom:28, right:28, zIndex:300, background: smsStatus.error ? '#7F1D1D' : smsStatus.sent === 0 ? '#1E293B' : '#0F172A', color:'#fff', borderRadius:14, padding:'14px 20px', fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:360, animation:'fadeInUp 0.3s ease' }}>
+          <span style={{ fontSize:20 }}>{smsStatus.error ? '⚠️' : smsStatus.sent > 0 ? '📱' : '📭'}</span>
+          <div style={{ flex:1 }}>
+            <div style={{ fontWeight:700, marginBottom:2 }}>
+              {smsStatus.error ? 'SMS Failed' : smsStatus.sent > 0 ? 'SMS Notifications Sent' : 'No SMS Sent'}
+            </div>
+            <div style={{ color:'rgba(255,255,255,0.75)', fontSize:12 }}>
+              {smsStatus.error
+                ? smsStatus.error
+                : smsStatus.sent === 0 && smsStatus.total === 0
+                  ? 'No athletes have phone numbers registered.'
+                  : `✅ ${smsStatus.sent} delivered${smsStatus.failed > 0 ? ` · ⚠️ ${smsStatus.failed} failed` : ''} of ${smsStatus.total} athletes`
+              }
             </div>
           </div>
           <button onClick={() => setSmsStatus(null)} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', width:24, height:24, borderRadius:'50%', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>×</button>

@@ -35,13 +35,18 @@ export async function POST(req) {
     const reference = ref || `APEX-M-${team_id.slice(0, 8)}-${Date.now()}`
     const price     = amount_ghs || PLANS[targetPlan].price_ghs
 
+    const protocol = req.headers.get('x-forwarded-proto') || 'https'
+    const host = req.headers.get('host')
+    const origin = `${protocol}://${host}`
+
     const result = await createCharge({
       email,
       amount_ghs: price,
       reference,
       plan:       targetPlan,
       team_id,
-      channels:   ['mobile_money', 'card'],
+      callbackUrl: `${origin}/api/webhooks/moolre`,
+      redirectUrl: `${origin}/billing`
     })
 
     if (!result.ok) {

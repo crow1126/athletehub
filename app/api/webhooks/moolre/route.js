@@ -29,11 +29,12 @@ export async function POST(req) {
   try { event = JSON.parse(body) }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  console.log('[Moolre Webhook] Event:', event?.event)
+  console.log('[Moolre Webhook] Status:', event?.status, 'Code:', event?.code)
 
   // ── Handle successful charge ───────────────────────────────────────────────
-  if (event?.event === 'charge.success') {
-    const { reference, amount, metadata } = event.data || {}
+  if (event?.status === 1 || event?.code === 'P01') {
+    const { externalref, reference, amount, metadata } = event.data || {}
+    const paymentRef = externalref || reference
     const { plan, team_id } = metadata || {}
 
     if (!team_id || !plan) {
@@ -72,9 +73,9 @@ export async function POST(req) {
       team_id,
       type:        'payment',
       plan:        targetPlan,
-      amount_ghs:  amount ? Math.round(amount / 100) : p.price_ghs,
-      payment_ref: reference || null,
-      notes:       `Moolre — ${reference}`,
+      amount_ghs:  amount ? Math.round(parseFloat(amount)) : p.price_ghs,
+      payment_ref: paymentRef || null,
+      notes:       `Moolre — ${paymentRef || 'Success'}`,
     })
 
     console.log('[Moolre Webhook] Subscription activated for team:', team_id, 'plan:', targetPlan)

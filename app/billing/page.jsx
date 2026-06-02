@@ -55,6 +55,7 @@ function BillingContent(){
   const [isAdmin, setIsAdmin] = useState(false)
   const [selPlan, setSelPlan] = useState('captain')
   const [paying,  setPaying]  = useState(false)
+  const [payMethod, setPayMethod] = useState('paystack') // 'paystack' | 'moolre'
   const [msg,     setMsg]     = useState({text:'',type:''})
 
   const flash=(text,type='success')=>{ setMsg({text,type}); setTimeout(()=>setMsg({text:'',type:''}),9000) }
@@ -116,6 +117,25 @@ function BillingContent(){
         },
       })
       handler.openIframe()
+    }catch(e){ flash('Error: '+e.message,'error'); setPaying(false) }
+  }
+
+  async function handleMoolre(){
+    if(!selPlan){ flash('Select a plan first.','error'); return }
+    if(!profile?.email){ flash('Profile email not found.','error'); return }
+    setPaying(true)
+    try{
+      const plan=PLANS[selPlan]
+      const ref=`APEX-M-${profile.team_id?.slice(0,8)}-${Date.now()}`
+      const res=await fetchWithAuth('/api/billing/moolre-checkout',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({ team_id:profile.team_id, plan:selPlan, email:profile.email, ref, amount_ghs:plan.price }),
+      })
+      const data=await res.json()
+      if(data.error){ flash('Could not initiate Moolre payment: '+data.error,'error'); setPaying(false); return }
+      if(data.checkout_url){ window.location.href=data.checkout_url; return }
+      flash('Moolre payment initiated. Reference: '+ref,'success')
+      setPaying(false)
     }catch(e){ flash('Error: '+e.message,'error'); setPaying(false) }
   }
 
@@ -289,14 +309,35 @@ function BillingContent(){
                   </div>
                 </div>
                 <div style={{background:'#F0FDFA',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid #CCFBF1',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
-                  📱 <strong>MTN MoMo & Vodafone Cash accepted</strong> — enter your MoMo PIN in the payment popup.<br/>
+                  📱 <strong>MTN MoMo &amp; Vodafone Cash accepted</strong> — enter your MoMo PIN in the payment popup.<br/>
                   💳 Card payments also supported.
                 </div>
-                <button onClick={handlePaystack} disabled={paying||!isAdmin} className="gm-btn"
-                  style={{justifyContent:'center',opacity:paying||!isAdmin?0.7:1,cursor:paying||!isAdmin?'not-allowed':'pointer',background:paying?'var(--text3)':undefined}}>
-                  {paying?'⏳ Opening payment…':`Pay GHS ${PLANS[selPlan]?.price?.toLocaleString()} — Activate ${PLANS[selPlan]?.label}`}
-                  {!paying&&GM_ICON}
-                </button>
+                {/* Payment method selector */}
+                <div style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',color:'var(--text3)',marginBottom:4}}>Pay with</div>
+                <div style={{display:'flex',gap:8,marginBottom:4}}>
+                  {[
+                    {id:'paystack', label:'💳 Paystack', sub:'Card / MoMo'},
+                    {id:'moolre',   label:'📲 Moolre',   sub:'Local Mobile Money'},
+                  ].map(m=>(
+                    <button key={m.id} onClick={()=>setPayMethod(m.id)}
+                      style={{flex:1,padding:'10px 12px',borderRadius:'var(--r-md)',border:payMethod===m.id?'2px solid #0D9488':'1px solid var(--border)',background:payMethod===m.id?'#F0FDFA':'#fff',cursor:'pointer',textAlign:'left',transition:'all 0.15s'}}>
+                      <div style={{fontSize:13,fontWeight:700,color:payMethod===m.id?'#0D9488':'var(--text)'}}>{m.label}</div>
+                      <div style={{fontSize:11,color:'var(--text3)',marginTop:2}}>{m.sub}</div>
+                    </button>
+                  ))}
+                </div>
+                {payMethod==='paystack'
+                  ? <button onClick={handlePaystack} disabled={paying||!isAdmin} className="gm-btn"
+                      style={{justifyContent:'center',opacity:paying||!isAdmin?0.7:1,cursor:paying||!isAdmin?'not-allowed':'pointer',background:paying?'var(--text3)':undefined}}>
+                      {paying?'⏳ Opening payment…':`Pay GHS ${PLANS[selPlan]?.price?.toLocaleString()} via Paystack`}
+                      {!paying&&GM_ICON}
+                    </button>
+                  : <button onClick={handleMoolre} disabled={paying||!isAdmin} className="gm-btn"
+                      style={{justifyContent:'center',opacity:paying||!isAdmin?0.7:1,cursor:paying||!isAdmin?'not-allowed':'pointer',background:paying?'var(--text3)':'#0F766E',borderColor:'#0F766E'}}>
+                      {paying?'⏳ Connecting to Moolre…':`Pay GHS ${PLANS[selPlan]?.price?.toLocaleString()} via Moolre`}
+                      {!paying&&GM_ICON}
+                    </button>
+                }
                 {!isAdmin&&<div style={{fontSize:12,color:'var(--text3)',textAlign:'center'}}>Only admins can change the subscription plan.</div>}
               </div>
             </div>

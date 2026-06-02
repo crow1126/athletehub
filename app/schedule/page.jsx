@@ -29,6 +29,7 @@ export default function SchedulePage() {
   const [deleting,   setDeleting]   = useState(null)
   const [view,       setView]       = useState('month')
   const [teamId,     setTeamId]     = useState(null)
+  const [smsStatus,  setSmsStatus]  = useState(null) // {sent, failed, total} | null
 
   const fetchData = useCallback(async () => {
     const { teamId: currentTeamId } = await getTenantProfile()
@@ -68,9 +69,24 @@ export default function SchedulePage() {
       if (error) alert(error.message)
       else { setShowForm(false); fetchData() }
     } else {
-      const { error } = await supabase.from('training_sessions').insert([payload])
-      if (error) alert(error.message)
-      else { setShowForm(false); setForm(EMPTY_SESSION); fetchData() }
+      const { data: inserted, error } = await supabase
+        .from('training_sessions').insert([payload]).select().single()
+      if (error) { alert(error.message); setSaving(false); return }
+      setShowForm(false); setForm(EMPTY_SESSION); fetchData()
+      // Fire SMS notifications to all athletes
+      if (inserted?.id) {
+        try {
+          const r = await fetch('/api/schedule/notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: inserted.id, team_id: teamId }),
+            credentials: 'include',
+          })
+          const d = await r.json()
+          setSmsStatus({ sent: d.sent ?? 0, failed: d.failed ?? 0, total: d.total ?? 0 })
+          setTimeout(() => setSmsStatus(null), 8000)
+        } catch { /* non-blocking */ }
+      }
     }
     setSaving(false)
   }
@@ -273,14 +289,36 @@ export default function SchedulePage() {
               <div><label style={lbl}>Venue</label><select value={form.venue} onChange={e=>set('venue')(e.target.value)} style={inp}>{VENUES.map(v=><option key={v}>{v}</option>)}</select></div>
               <div><label style={lbl}>Assign Coach</label><select value={form.coach_id} onChange={e=>set('coach_id')(e.target.value)} style={inp}><option value="">Select coach…</option>{coaches.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
               <div><label style={lbl}>Notes</label><textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={3} placeholder="Session details…" style={{ ...inp, resize:'vertical' }}/></div>
+              {!editId && (
+                <div style={{ background:'#F0FDFA', border:'1px solid #CCFBF1', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#0F766E', display:'flex', alignItems:'center', gap:8 }}>
+                  <span style={{ fontSize:16 }}>📱</span>
+                  <span>Athletes with registered phone numbers will receive an SMS notification automatically.</span>
+                </div>
+              )}
               <div style={{ display:'flex', gap:10, paddingTop:8 }}>
                 <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'11px', borderRadius:'12px', fontSize:14, cursor:'pointer', fontWeight:800, fontFamily:'var(--font)' }}>Cancel</button>
                 <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'11px', opacity:saving?0.7:1, fontSize:14, background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:'12px', cursor:'pointer', fontWeight:900, fontFamily:'var(--font)' }}>
-                  {saving ? 'Saving…' : editId ? 'Save Changes' : 'Schedule Session'}
+                  {saving ? 'Saving…' : editId ? 'Save Changes' : 'Schedule & Notify Athletes'}
                 </button>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* SMS status toast */}
+      {smsStatus && (
+        <div style={{ position:'fixed', bottom:28, right:28, zIndex:300, background:'#0F172A', color:'#fff', borderRadius:14, padding:'14px 20px', fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:320, animation:'fadeInUp 0.3s ease' }}>
+          <span style={{ fontSize:20 }}>📱</span>
+          <div>
+            <div style={{ fontWeight:700, marginBottom:2 }}>SMS Notifications Sent</div>
+            <div style={{ color:'rgba(255,255,255,0.7)', fontSize:12 }}>
+              ✅ {smsStatus.sent} delivered
+              {smsStatus.failed > 0 && ` · ⚠️ ${smsStatus.failed} failed`}
+              {' '}of {smsStatus.total} athletes
+            </div>
+          </div>
+          <button onClick={() => setSmsStatus(null)} style={{ background:'rgba(255,255,255,0.1)', border:'none', color:'#fff', width:24, height:24, borderRadius:'50%', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>×</button>
         </div>
       )}
     </Layout>

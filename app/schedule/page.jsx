@@ -76,16 +76,22 @@ export default function SchedulePage() {
       // Fire SMS notifications to all athletes
       if (inserted?.id) {
         try {
+          const { data: { session: authSession } } = await supabase.auth.getSession()
           const r = await fetch('/api/schedule/notify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+              'Content-Type': 'application/json',
+              ...(authSession?.access_token ? { 'Authorization': `Bearer ${authSession.access_token}` } : {}),
+            },
             body: JSON.stringify({ session_id: inserted.id, team_id: teamId }),
-            credentials: 'include',
           })
           const d = await r.json()
-          setSmsStatus({ sent: d.sent ?? 0, failed: d.failed ?? 0, total: d.total ?? 0, error: d.smsError || null })
+          setSmsStatus({ sent: d.sent ?? 0, failed: d.failed ?? 0, total: d.total ?? 0, error: d.smsError || d.error || null })
           setTimeout(() => setSmsStatus(null), 8000)
-        } catch { /* non-blocking */ }
+        } catch (err) {
+          setSmsStatus({ sent: 0, failed: 0, total: 0, error: err.message || 'Failed to call notify API' })
+          setTimeout(() => setSmsStatus(null), 8000)
+        }
       }
     }
     setSaving(false)

@@ -40,4 +40,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
+# supabase cli temp files
+supabase/.temp/
+
+# scratch / local dev scripts
+scratch/

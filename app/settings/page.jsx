@@ -56,6 +56,12 @@ export default function SettingsPage() {
   const [recoverMsg,    setRecoverMsg]    = useState({ text:'', type:'' })
   const [showPassword,  setShowPassword]  = useState({})
 
+  const [allAthletes,    setAllAthletes]    = useState([])
+  const [playerForm,     setPlayerForm]     = useState({ athlete_id: '', username: '', password: '' })
+  const [playerSaving,   setPlayerSaving]   = useState(false)
+  const [playerMsg,      setPlayerMsg]      = useState({ text: '', type: '' })
+  const [showPlayerForm, setShowPlayerForm] = useState(false)
+
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
@@ -74,10 +80,11 @@ export default function SettingsPage() {
         if (sub?.plan) setSubPlan(sub.plan)
       }
       if (admin) {
-        const [{ data:users },{ data:staff },{ data:logins }] = await Promise.all([
-          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
+        const [{ data:users },{ data:staff },{ data:logins },{ data:athletes }] = await Promise.all([
+          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,is_active'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('athletes').select('id,name,position,back_number'), prof.team_id).order('name'),
         ])
         const enrichedUsers = (users||[]).map(u => {
           const login = (logins||[]).find(l => l.email?.toLowerCase() === u.email?.toLowerCase() || l.username?.toLowerCase() === u.username?.toLowerCase())
@@ -86,7 +93,10 @@ export default function SettingsPage() {
           }
           return u
         })
-        setAllUsers(enrichedUsers); setAllStaff(staff||[]); setStaffLogins(logins||[])
+        setAllUsers(enrichedUsers)
+        setAllStaff(staff||[])
+        setStaffLogins(logins||[])
+        setAllAthletes(athletes||[])
       }
     } catch(e) { console.error(e) }
     setLoading(false)
@@ -95,6 +105,7 @@ export default function SettingsPage() {
   const flash        = (text, type='success') => { setMsg({ text, type }); setTimeout(()=>setMsg({ text:'',type:'' }),9000) }
   const flashIssue   = (text, type='success') => setIssueMsg({ text, type })
   const flashRecover = (text, type='success') => setRecoverMsg({ text, type })
+  const flashPlayer  = (text, type='success') => setPlayerMsg({ text, type })
 
   async function saveProfile() {
     if (!profileForm.full_name.trim()) { flash('Name is required.','error'); return }
@@ -142,6 +153,80 @@ export default function SettingsPage() {
       setShowIssueForm(false); await loadAll()
     } catch(err) { flashIssue('Error: '+err.message,'error') }
     setIssueSaving(false)
+  }
+
+  async function createPlayerLogin() {
+    if (!playerForm.athlete_id) { flashPlayer('Select an athlete.', 'error'); return }
+    const username = playerForm.username.trim().toLowerCase()
+    if (!username) { flashPlayer('Username is required.', 'error'); return }
+    const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
+    if (!usernameRegex.test(username)) { flashPlayer('Username: 3-20 characters, alphanumeric and underscores only.', 'error'); return }
+    if (playerForm.password.length < 8) { flashPlayer('Password: min 8 characters.', 'error'); return }
+    setPlayerSaving(true); setPlayerMsg({ text: '', type: '' })
+    try {
+      const athlete = allAthletes.find(a => a.id === playerForm.athlete_id)
+      const res = await fetchWithAuth('/api/admin/create-player', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          athlete_id: playerForm.athlete_id,
+          username: username,
+          password: playerForm.password
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        flashPlayer(data.error || 'Failed.', 'error')
+        setPlayerSaving(false)
+        return
+      }
+      flashPlayer(`✅ Login created for ${athlete?.name}!\n👤 Username: ${username}\n🔑 Password: ${playerForm.password}\n\nShare these credentials securely.`, 'success')
+      setPlayerForm({ athlete_id: '', username: '', password: '' })
+      setShowPlayerForm(false)
+      await loadAll()
+    } catch (err) {
+      flashPlayer('Error: ' + err.message, 'error')
+    }
+    setPlayerSaving(false)
+  }
+
+  async function handlePlayerAction(userId, action, extra = {}) {
+    let confirmMsg = ''
+    if (action === 'revoke') confirmMsg = 'Revoke this player\'s login? They will be signed out immediately.'
+    if (action === 'reactivate') confirmMsg = 'Reactivate this player\'s login?'
+    if (action === 'reset_password') {
+      const newPw = prompt('Enter new password for the player (min 8 characters):')
+      if (newPw === null) return
+      if (newPw.length < 8) { alert('Password must be at least 8 characters.'); return }
+      extra.new_password = newPw
+    } else if (confirmMsg && !confirm(confirmMsg)) {
+      return
+    }
+
+    try {
+      const res = await fetchWithAuth('/api/admin/create-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          action,
+          ...extra
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        flash('Failed: ' + (data.error || 'Unknown error'), 'error')
+        return
+      }
+      if (action === 'reset_password') {
+        flash(`✅ Password reset successfully. New password: ${extra.new_password}`, 'success')
+      } else {
+        flash(`✅ Action "${action}" completed successfully.`, 'success')
+      }
+      await loadAll()
+    } catch (err) {
+      flash('Error: ' + err.message, 'error')
+    }
   }
 
   async function recoverLogin() {
@@ -221,6 +306,7 @@ export default function SettingsPage() {
     { id:'profile',  label:'👤 My Profile',     show: true    },
     { id:'security', label:'🔒 Security',        show: true    },
     { id:'logins',   label:'🔑 Issue Logins',    show: isAdmin },
+    { id:'players',  label:'⚽ Player Accounts',  show: isAdmin },
     { id:'recover',  label:'🔓 Recover Logins',  show: isAdmin },
     { id:'users',    label:'👥 User Management', show: isAdmin },
     { id:'system',   label:'⚙️ System',          show: isAdmin },
@@ -452,6 +538,110 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* PLAYER ACCOUNTS */}
+            {tab === 'players' && isAdmin && (
+              <div>
+                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
+                  <div>
+                    <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Player Accounts</h2>
+                    <p style={{ fontSize:14,color:'var(--text3)' }}>Provision and manage logins for athletes in <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong></p>
+                  </div>
+                  <button onClick={()=>{ setShowPlayerForm(!showPlayerForm); setPlayerMsg({ text:'',type:'' }) }}
+                    className={showPlayerForm ? 'gm-btn danger' : 'gm-btn outline'} style={{ flexShrink:0 }}>
+                    {showPlayerForm ? '✕ Cancel' : '+ Create Player Login'} {GM_ICON}
+                  </button>
+                </div>
+
+                {showPlayerForm && (
+                  <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>⚽ Create Player Login</h3>
+                    <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
+                      <div>
+                        <label style={lbl}>Athlete *</label>
+                        <select value={playerForm.athlete_id} onChange={e=>setPlayerForm(f=>({...f,athlete_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
+                          <option value="">— Select an athlete —</option>
+                          {allAthletes.length===0 ? <option disabled>No athletes found</option> : allAthletes.map(a=>{
+                            const hasLogin = allUsers.some(u => u.athlete_id === a.id)
+                            return <option key={a.id} value={a.id} disabled={hasLogin}>{a.name} ({a.position || 'N/A'}) {hasLogin ? ' (Already has login)' : ''}</option>
+                          })}
+                        </select>
+                      </div>
+                      <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                        <div><label style={lbl}>Username *</label><input type="text" value={playerForm.username} onChange={e=>setPlayerForm(f=>({...f,username:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. richard_agyen" onFocus={onFocus} onBlur={onBlur}/></div>
+                        <div><label style={lbl}>Password *</label><input type="text" value={playerForm.password} onChange={e=>setPlayerForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
+                      </div>
+                      <MsgBox m={playerMsg}/>
+                      <button onClick={createPlayerLogin} disabled={playerSaving} className="gm-btn" style={{ width:'fit-content',opacity:playerSaving?0.7:1 }}>
+                        {playerSaving?'⏳ Creating…':'⚽ Create Login Now'} {!playerSaving&&GM_ICON}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!showPlayerForm && <MsgBox m={playerMsg}/>}
+
+                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,marginTop:8 }}>
+                  <h3 style={{ fontSize:16,fontWeight:700,margin:0 }}>Club Athletes & Logins ({allAthletes.length})</h3>
+                </div>
+                <MsgBox m={msg}/>
+
+                {allAthletes.length === 0 ? (
+                  <div style={{ padding:'28px',textAlign:'center',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:14,fontStyle:'italic',border:'1px solid var(--border)',marginTop:12 }}>No athletes registered yet. Please register athletes in the Athletes tab first.</div>
+                ) : (
+                  <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
+                    <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                      {['Athlete','Username / Email','Role','Status','Actions'].map(h=>(
+                        <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
+                      ))}
+                    </div>
+                    {allAthletes.map(a => {
+                      const login = allUsers.find(u => u.athlete_id === a.id)
+                      return (
+                        <div key={a.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:(!login || login.is_active) ? 1 : 0.6 }}
+                          onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
+                          onMouseLeave={e=>e.currentTarget.style.background=''}>
+                          <div>
+                            <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{a.name}</div>
+                            <div style={{ fontSize:11,color:'var(--text3)' }}>{a.position || '—'} {a.back_number ? `· #${a.back_number}` : ''}</div>
+                          </div>
+                          <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>
+                            {login ? (login.username || login.email) : <span style={{ color:'var(--text3)',fontStyle:'italic' }}>— No Login —</span>}
+                          </div>
+                          <div>
+                            {login ? (
+                              <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS.player+'20',color:ROLE_COLORS.player,padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span>
+                            ) : '—'}
+                          </div>
+                          <div>
+                            {login ? (
+                              <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'✅ Active':'⛔ Revoked'}</span>
+                            ) : '—'}
+                          </div>
+                          <div>
+                            {login ? (
+                              <div style={{ display:'flex',gap:6 }}>
+                                <button onClick={()=>handlePlayerAction(login.id, 'reset_password')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Reset PW</button>
+                                {login.is_active ? (
+                                  <button onClick={()=>handlePlayerAction(login.id, 'revoke')} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke</button>
+                                ) : (
+                                  <button onClick={()=>handlePlayerAction(login.id, 'reactivate')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore</button>
+                                )}
+                              </div>
+                            ) : (
+                              <button onClick={()=>{
+                                setPlayerForm(f => ({ ...f, athlete_id: a.id, username: a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20) }))
+                                setShowPlayerForm(true)
+                                setPlayerMsg({ text: '', type: '' })
+                              }} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Create Login</button>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>

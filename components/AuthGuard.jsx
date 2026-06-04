@@ -20,6 +20,7 @@ function pathToModule(path) {
     '/reports':     'reports',
     '/settings':    'settings',
     '/billing':     'billing',
+    '/player-hub':  'player-hub',
   }
   const key = Object.keys(map).find(k => path === k || path.startsWith(k + '/'))
   return key ? map[key] : null

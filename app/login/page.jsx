@@ -76,7 +76,13 @@ export default function LoginPage() {
         try {
           const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
           if (profile?.is_active !== false) {
-            if (profile?.role === 'superadmin') { router.replace('/superadmin') } else { router.replace('/dashboard') }
+            if (profile?.role === 'superadmin') {
+              router.replace('/superadmin')
+            } else if (profile?.role === 'player') {
+              router.replace('/player-hub')
+            } else {
+              router.replace('/dashboard')
+            }
           }
         } catch {}
       }
@@ -154,7 +160,13 @@ export default function LoginPage() {
         }
         setLoading(false); return
       }
-      if (profile?.role === 'superadmin') { router.replace('/superadmin') } else { router.replace('/dashboard') }
+      if (profile?.role === 'superadmin') {
+        router.replace('/superadmin')
+      } else if (profile?.role === 'player') {
+        router.replace('/player-hub')
+      } else {
+        router.replace('/dashboard')
+      }
     } catch(err) {
       setError(err.message?.includes('fetch') ? 'Cannot connect. Check your internet and try again.' : (err.message||'Unexpected error.'))
       setLoading(false)

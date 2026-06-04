@@ -73,9 +73,10 @@ export default function SchedulePage() {
         .from('training_sessions').insert([payload]).select().single()
       if (error) { alert(error.message); setSaving(false); return }
       setShowForm(false); setForm(EMPTY_SESSION); fetchData()
-      // Fire SMS notifications to all athletes
       if (inserted?.id) {
         try {
+          // Force-refresh the token if expired by calling getUser()
+          await supabase.auth.getUser()
           const { data: { session: authSession } } = await supabase.auth.getSession()
           const r = await fetch('/api/schedule/notify', {
             method: 'POST',
@@ -83,6 +84,7 @@ export default function SchedulePage() {
               'Content-Type': 'application/json',
               ...(authSession?.access_token ? { 'Authorization': `Bearer ${authSession.access_token}` } : {}),
             },
+
             body: JSON.stringify({ session_id: inserted.id, team_id: teamId }),
           })
           const d = await r.json()

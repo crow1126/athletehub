@@ -30,7 +30,7 @@ export async function POST(req) {
     return NextResponse.json({
       ok: false,
       config_errors: configErrors,
-      hint: 'Set these in your env variables and redeploy/restart',
+      hint: 'Set these in your .env.local and restart the dev server',
     }, { status: 400 })
   }
 
@@ -46,45 +46,4 @@ export async function POST(req) {
   })
 }
 
-export async function GET(req) {
-  const keysToCheck = [
-    'NEXT_PUBLIC_SUPABASE_URL',
-    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-    'SUPABASE_SERVICE_ROLE_KEY',
-    'MOOLRE_VAS_KEY',
-    'MOOLRE_API_USER',
-    'MOOLRE_PUBLIC_KEY',
-    'MOOLRE_SECRET_KEY',
-    'MOOLRE_ACCOUNT_NUMBER',
-    'MOOLRE_SMS_SENDER_ID',
-    'MOOLRE_BASE_URL'
-  ]
-
-  const diagnostics = {}
-
-  for (const key of keysToCheck) {
-    const val = process.env[key]
-    if (val === undefined || val === null) {
-      diagnostics[key] = { exists: false }
-    } else {
-      const trimmed = val.trim()
-      diagnostics[key] = {
-        exists: true,
-        length: val.length,
-        hasQuotes: (val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'")),
-        hasLeadingOrTrailingWhitespace: val !== trimmed,
-        hasNewlines: val.includes('\n') || val.includes('\r'),
-        masked: val.length > 8 
-          ? `${val.slice(0, 4)}...${val.slice(-4)}`
-          : '***'
-      }
-    }
-  }
-
-  return NextResponse.json({
-    message: "Environment variables diagnostics (Safely masked)",
-    timestamp: new Date().toISOString(),
-    diagnostics
-  })
-}
 

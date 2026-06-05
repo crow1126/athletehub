@@ -122,18 +122,11 @@ export default function ReportsPage() {
 
   return (
     <Layout>
-      <style>{`
-  @media(max-width:768px){
-    div[style*="32px 40px 60px"]{padding:14px 12px 40px!important}
-    div[style*="repeat(5,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
-    div[style*="repeat(3,1fr)"]{grid-template-columns:1fr!important}
-  }
-`}</style>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 40px 60px' }}>
+      <div className="page-outer-wide">
         <PageHeader label="Analytics & Exports" title="Reports" subtitle="Generate and download Excel reports for any time period" />
 
         {/* Stats row */}
-        <div className="fade-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
+        <div className="fade-up stat-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
           {[
             { label:'Total Athletes',    value: loading ? '…' : athletes.length,         icon:'👥', color:'#4A90E2' },
             { label:'Active Athletes',   value: loading ? '…' : activeAthletes,          icon:'✅', color:'#27AE60' },
@@ -202,7 +195,7 @@ export default function ReportsPage() {
             <p style={{ color: 'var(--text3)', fontSize: 13 }}>Loading data…</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }} className="card-grid-auto">
             {REPORT_CARDS.map((card, idx) => {
               const isGenerating = generating === card.id
               return (

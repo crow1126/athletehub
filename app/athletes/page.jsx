@@ -273,7 +273,7 @@ export default function AthletesPage() {
   return (
     <Layout>
       <style>{`
-        .ath-outer{max-width:1280px;margin:0 auto;padding:32px 40px}
+        .ath-outer{max-width:1280px;margin:0 auto;padding:32px 40px;min-width:0}
         .ath-filters{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
         .ath-th{display:grid;grid-template-columns:2.2fr 1fr 1.1fr 1fr 1fr 0.5fr 1fr 1fr;gap:8px;padding:12px 20px;background:#F8FAFC;border-bottom:1px solid #E2E8F0}
         .ath-tr{display:grid;grid-template-columns:2.2fr 1fr 1.1fr 1fr 1fr 0.5fr 1fr 1fr;gap:8px;align-items:center;padding:12px 20px;border-bottom:1px solid #E2E8F0;transition:background 0.15s}
@@ -281,7 +281,6 @@ export default function AthletesPage() {
         .modal-g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
         .form-inp:focus{border-color:#0D9488!important;box-shadow:0 0 0 3px rgba(13,148,136,0.1)}
         @media(max-width:768px){
-          .ath-outer{padding:16px 12px!important}
           .ath-filters input,.ath-filters select{max-width:100%!important;width:100%!important}
           .ath-th{display:none!important}
           .ath-tr{grid-template-columns:auto 1fr auto!important;gap:10px!important;padding:12px 14px!important}

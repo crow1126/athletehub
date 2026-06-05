@@ -121,16 +121,7 @@ export default function ContractsPage() {
 
   return (
     <Layout>
-      <style>{`
-  @media(max-width:768px){
-    div[style*="32px 40px"]{padding:14px 12px!important}
-    div[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
-    div[style*="2fr 1fr 1fr 1.2fr"]{display:none!important}
-    div[style*="1fr 1fr;gap:14"]{grid-template-columns:1fr!important}
-    div[style*="1fr 1fr 1fr;gap:12"]{grid-template-columns:1fr!important}
-  }
-`}</style>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '32px 40px' }}>
+      <div className="page-outer">
         <PageHeader
           label="Finance"
           title="Player Contracts"
@@ -139,7 +130,7 @@ export default function ContractsPage() {
         />
 
         {/* Stats */}
-        <div className="fade-up" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
+        <div className="fade-up stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
           {[
             { label: 'Total Contracts',      value: contracts.length,          icon: '📄', color: '#0D9488'    },
             { label: 'Active',               value: activeContracts.length,    icon: '✅', color: 'var(--success)'  },
@@ -157,7 +148,7 @@ export default function ContractsPage() {
         </div>
 
         {/* Filter tabs */}
-        <div className="fade-up" style={{ display: 'flex', gap: 0, marginBottom: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 4, width: 'fit-content' }}>
+        <div className="fade-up tabs-scroll" style={{ display: 'flex', gap: 0, marginBottom: 20, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: 4, width: 'fit-content', maxWidth: '100%' }}>
           {['All', ...STATUS_OPTS].map(f => (
             <button key={f} onClick={() => setFilter(f)} style={{ padding: '8px 20px', background: filter === f ? '#0D9488' : 'transparent', border: 'none', borderRadius: 'var(--r-md)', fontSize: 13, fontWeight: 600, color: filter === f ? '#fff' : 'var(--text2)', cursor: 'pointer', transition: 'var(--transition)', fontFamily: 'var(--font)' }}>
               {f}
@@ -167,7 +158,9 @@ export default function ContractsPage() {
 
         {/* Table */}
         <div className="card fade-up fade-up-1" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.2fr 1.1fr 1.1fr 0.9fr 1.1fr', gap: 8, padding: '12px 20px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
+          <div className="table-scroll-wrap">
+          <div className="table-scroll-inner">
+          <div className="table-header-row" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1.2fr 1.1fr 1.1fr 0.9fr 1.1fr', gap: 8, padding: '12px 20px', background: 'var(--surface2)', borderBottom: '1px solid var(--border)' }}>
             {['Athlete','Start','End','Weekly Wage','Signing Fee','Release Clause','Status','Actions'].map(h => (
               <div key={h} style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{h}</div>
             ))}
@@ -222,13 +215,15 @@ export default function ContractsPage() {
               </div>
             )
           })}
+          </div>
+          </div>
         </div>
 
         {/* Wage summary */}
         {activeContracts.length > 0 && (
           <div className="card fade-up" style={{ padding: '20px 24px', marginTop: 20 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>💰 Wage Bill Summary (Active Contracts)</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="stat-grid-3">
               {[
                 ['Weekly',  `GHS ${totalWage.toLocaleString('en-GH', { minimumFractionDigits: 2 })}`],
                 ['Monthly', `GHS ${(totalWage * 4.33).toLocaleString('en-GH', { minimumFractionDigits: 2 })}`],

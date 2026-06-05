@@ -28,6 +28,14 @@ const ALL_NAV = [
 
 const MOBILE_NAV = ['dashboard','athletes','schedule','injuries','settings']
 
+const MOBILE_NAV_LABELS = {
+  dashboard: 'Home',
+  athletes:  'Squad',
+  schedule:  'Schedule',
+  injuries:  'Medical',
+  settings:  'Settings',
+}
+
 const iconProps = { size: 20, strokeWidth: 2 }
 const ICONS = {
   dashboard:   <LayoutDashboard {...iconProps} />,
@@ -194,18 +202,19 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        <main style={{ flex:1, paddingBottom:72 }}>{children}</main>
+        <main style={{ flex:1, paddingBottom:72, minWidth:0, overflowX:'hidden' }}>{children}</main>
 
-        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.floralDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)' }}>
+        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.floralDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)' }}>
           {mobileNav.map(({ href, label, page }) => {
             const active = path === href || path.startsWith(href + '/')
+            const navLabel = MOBILE_NAV_LABELS[page] || label
             return (
               <Link key={href} href={href}
-                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:4, padding:'6px 12px', textDecoration:'none', color: active ? C.lagoon : C.text3, flex:1 }}>
-                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:32, height:32, borderRadius:8, background: active ? 'var(--lagoon-alpha)' : 'transparent', transition:'all 0.15s' }}>
+                style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:3, padding:'6px 4px', textDecoration:'none', color: active ? C.lagoon : C.text3, flex:1, minWidth:0, maxWidth:72 }}>
+                <span style={{ display:'flex', alignItems:'center', justifyContent:'center', width:30, height:30, borderRadius:8, background: active ? 'var(--lagoon-alpha)' : 'transparent', transition:'all 0.15s', flexShrink:0 }}>
                   {ICONS[page]}
                 </span>
-                <span style={{ fontSize:10, fontWeight: active ? 600 : 500 }}>{label}</span>
+                <span style={{ fontSize:9, fontWeight: active ? 600 : 500, lineHeight:1.1, textAlign:'center', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', width:'100%' }}>{navLabel}</span>
               </Link>
             )
           })}

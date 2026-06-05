@@ -214,7 +214,7 @@ export default function TransfersPage() {
 
   return (
     <Layout>
-      <div style={{maxWidth:1200,margin:'0 auto',padding:'32px 40px'}}>
+      <div className="page-outer" style={{ maxWidth: 1200 }}>
 
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:28,flexWrap:'wrap',gap:12}}>
           <PageHeader label="Club Operations" title="Transfer History" subtitle="Player movements — bought, sold, loans and free agents"/>

@@ -328,33 +328,18 @@ export default function SettingsPage() {
 
   return (
     <Layout>
-      <div style={{ maxWidth:1100,margin:'0 auto',padding:'32px 40px' }}>
+      <div className="page-outer" style={{ maxWidth: 1100 }}>
         <PageHeader label="Configuration" title="Settings" subtitle="Profile, security, and system administration"/>
 
         <style>{`
           .settings-wrap { display:grid; grid-template-columns:230px 1fr; gap:24px; align-items:start; }
           .settings-content { padding:30px; }
-          @media(max-width:768px){
-            .settings-wrap { grid-template-columns:1fr !important; gap:12px !important; }
-            .settings-profile-header { display:none !important; }
-            .settings-tabs-list { flex-direction:row !important; overflow-x:auto !important; gap:4px !important; padding:8px !important; scrollbar-width:none !important; }
-            .settings-tabs-list::-webkit-scrollbar { display:none !important; }
-            .settings-tab-btn { width:auto !important; white-space:nowrap !important; flex-shrink:0 !important; padding:8px 14px !important; margin-bottom:0 !important; }
-            .settings-content { padding:16px !important; }
-            .issue-grid { grid-template-columns:1fr !important; }
-            .recover-grid { grid-template-columns:1fr !important; }
-            .logins-table-header { display:none !important; }
-            .logins-table-row { display:flex !important; flex-direction:column !important; gap:6px !important; padding:14px !important; }
-            .users-table-header { display:none !important; }
-            .users-table-row { display:flex !important; flex-wrap:wrap !important; gap:8px !important; padding:12px 14px !important; }
-            .system-grid { grid-template-columns:1fr !important; }
-          }
         `}</style>
 
         <div className="settings-wrap">
 
           {/* Sidebar */}
-          <div className="card" style={{ padding:10 }}>
+          <div className="card settings-tabs-card" style={{ padding:10 }}>
             <div className="settings-profile-header" style={{ textAlign:'center',padding:'16px 12px',borderBottom:'1px solid var(--border)',marginBottom:10 }}>
               <div style={{ width:54,height:54,borderRadius:'50%',background:`linear-gradient(135deg,${ROLE_COLORS[profile?.role||'admin']},${ROLE_COLORS[profile?.role||'admin']}99)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:800,color:'#fff',margin:'0 auto 10px' }}>
                 {initials(profile?.full_name)}

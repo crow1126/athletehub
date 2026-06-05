@@ -74,15 +74,7 @@ export default function PerformancePage(){
 
   return(
     <Layout>
-      <style>{`
-  @media(max-width:768px){
-    .perf-lb{grid-template-columns:repeat(2,1fr)!important}
-    div[style*="32px 40px"]{padding:14px 12px!important}
-    div[style*="1.8fr 0.9fr 0.9fr"]{display:none!important}
-    div[style*="repeat(4,1fr)"]{grid-template-columns:1fr 1fr!important}
-  }
-`}</style>
-      <div style={{ maxWidth:1280,margin:'0 auto',padding:'32px 40px' }}>
+      <div className="page-outer">
         <PageHeader label="Analytics" title="Performance" subtitle="Match stats, xG, xA and player analytics"
           action={<button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>
 
@@ -90,7 +82,7 @@ export default function PerformancePage(){
         {lb.length>0&&(
           <div className="fade-up" style={{ marginBottom:24 }}>
             <h2 style={{ fontSize:16,fontWeight:700,marginBottom:14 }}>🏆 Top Performers</h2>
-            <div style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12 }}>
+            <div className="stat-grid-5" style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12 }}>
               {lb.map((a,i)=>(
                 <div key={a.id} className="card" style={{ padding:'16px 14px',textAlign:'center',transition:'var(--transition)' }}
                   onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='var(--shadow-md)'}}
@@ -125,7 +117,9 @@ export default function PerformancePage(){
 
         {/* Stats table */}
         <div className="card fade-up fade-up-1" style={{ overflow:'hidden' }}>
-          <div style={{ display:'grid',gridTemplateColumns:'1.8fr 0.9fr 0.9fr 0.6fr 0.6fr 0.6fr 0.6fr 0.8fr 0.7fr 0.6fr 0.7fr 1fr',gap:6,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+          <div className="table-scroll-wrap">
+          <div className="table-scroll-inner table-scroll-wide">
+          <div className="table-header-row" style={{ display:'grid',gridTemplateColumns:'1.8fr 0.9fr 0.9fr 0.6fr 0.6fr 0.6fr 0.6fr 0.8fr 0.7fr 0.6fr 0.7fr 1fr',gap:6,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
             {['Athlete','Date','Opponent','Min','⚽','🅰️','xG','xA','Pass%','Dist','Rating','Actions'].map(h=>(
               <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
             ))}
@@ -165,6 +159,8 @@ export default function PerformancePage(){
               </div>
             </div>
           ))}
+          </div>
+          </div>
         </div>
       </div>
 

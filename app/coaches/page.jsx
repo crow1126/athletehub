@@ -191,18 +191,11 @@ export default function CoachesPage() {
 
   return (
     <Layout>
-      <style>{`
-  @media(max-width:768px){
-    div[style*="32px 40px"]{padding:14px 12px!important}
-    div[style*="repeat(5,1fr);gap:14"]{grid-template-columns:repeat(2,1fr)!important}
-    div[style*="1fr 1fr;gap:14"]{grid-template-columns:1fr!important}
-  }
-`}</style>
-      <div style={{ maxWidth:1280,margin:'0 auto',padding:'32px 40px' }}>
+      <div className="page-outer">
         <PageHeader label="Organisation" title="Team & Staff" subtitle={`${coaches.length} staff member${coaches.length!==1?'s':''} across departments`} action={<button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>}/>
 
         {/* Dept stats */}
-        <div className="fade-up" style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginBottom:24 }}>
+        <div className="fade-up stat-grid-5" style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginBottom:24 }}>
           {DEPT_TABS.filter(d=>d.key!=='All').map(dept=>{
             const count=deptCounts[dept.key]||0
             const active=coaches.filter(c=>getStaffType(c.staff_type).dept===dept.key&&c.is_active!==false).length
@@ -220,7 +213,7 @@ export default function CoachesPage() {
         </div>
 
         {/* Tabs */}
-        <div className="fade-up" style={{ display:'flex',gap:4,marginBottom:22,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content',flexWrap:'wrap' }}>
+        <div className="fade-up tabs-scroll" style={{ display:'flex',gap:4,marginBottom:22,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content',maxWidth:'100%',flexWrap:'wrap' }}>
           {DEPT_TABS.map(dept=>(
             <button key={dept.key} onClick={()=>setActiveTab(dept.key)} style={{ padding:'8px 16px',background:activeTab===dept.key?dept.color:'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,color:activeTab===dept.key?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)',whiteSpace:'nowrap',fontFamily:'var(--font)' }}>
               {dept.icon} {dept.label}
@@ -243,7 +236,7 @@ export default function CoachesPage() {
             <button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>
           </div>
         ):(
-          <div style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',gap:18 }}>
+          <div className="staff-card-grid" style={{ display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))',gap:18 }}>
             {filtered.map((coach,ci)=>{
               const st=getStaffType(coach.staff_type)
               const squad=coach.athletes||[]

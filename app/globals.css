@@ -185,3 +185,234 @@ body {
 .gm-btn.danger .gm-icon svg path { fill: #FDEDEC; }
 .gm-btn.danger:hover .gm-icon { background: #FDEDEC; }
 .gm-btn.danger:hover .gm-icon svg path { fill: #7A1A1A; }
+
+/* ── Page shell ── */
+.page-outer {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 40px;
+  min-width: 0;
+}
+
+.page-outer-wide {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 40px 60px;
+  min-width: 0;
+}
+
+.ath-outer,
+.sch-outer {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 40px;
+  min-width: 0;
+}
+
+/* ── Horizontal tab bars ── */
+.tabs-scroll,
+.tabs-underline {
+  max-width: 100%;
+  min-width: 0;
+}
+
+.tabs-scroll {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.tabs-underline {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Wide data tables on small screens ── */
+.table-scroll-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-scroll-inner {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .page-outer,
+  .page-outer-wide,
+  .ath-outer,
+  .sch-outer {
+    padding: 16px 12px 24px;
+  }
+
+  .page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .page-header-action {
+    width: 100%;
+  }
+
+  .page-header-action .btn-blue,
+  .page-header-action .gm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tabs-scroll {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100% !important;
+    padding-bottom: 2px;
+  }
+
+  .tabs-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs-scroll > button {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+  }
+
+  .tabs-underline {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    margin-bottom: 20px !important;
+    gap: 0 !important;
+  }
+
+  .tabs-underline::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabs-underline > button {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    padding: 10px 14px !important;
+    font-size: 12px !important;
+  }
+
+  .table-scroll-wrap {
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+
+  .table-scroll-inner {
+    min-width: 680px;
+  }
+
+  .table-scroll-inner.table-scroll-wide {
+    min-width: 920px;
+  }
+
+  .table-scroll-inner .table-header-row {
+    display: none !important;
+  }
+
+  .staff-card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .card-grid-auto {
+    grid-template-columns: 1fr !important;
+  }
+
+  .mobile-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+  }
+
+  .mobile-banner .gm-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stat-grid-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .stat-grid-5 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .stat-grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settings-wrap {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .settings-profile-header {
+    display: none !important;
+  }
+
+  .settings-tabs-card {
+    overflow: visible !important;
+    padding: 8px !important;
+  }
+
+  .settings-tabs-list {
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    gap: 4px !important;
+    padding: 4px !important;
+    scrollbar-width: none !important;
+  }
+
+  .settings-tabs-list::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .settings-tab-btn {
+    width: auto !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    padding: 8px 14px !important;
+    margin-bottom: 0 !important;
+  }
+
+  .settings-content {
+    padding: 16px !important;
+  }
+
+  .issue-grid,
+  .recover-grid,
+  .system-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .logins-table-header,
+  .users-table-header {
+    display: none !important;
+  }
+
+  .logins-table-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    padding: 14px !important;
+  }
+
+  .users-table-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+}

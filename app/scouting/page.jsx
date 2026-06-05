@@ -74,20 +74,12 @@ export default function ScoutingPage(){
 
   return(
     <Layout>
-      <style>{`
-  @media(max-width:768px){
-    div[style*="32px 40px"]{padding:14px 12px!important}
-    div[style*="repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}
-    div[style*="1fr 1fr 1fr;gap:12"]{grid-template-columns:1fr!important}
-    div[style*="repeat(4,1fr);gap:10"]{grid-template-columns:1fr 1fr!important}
-  }
-`}</style>
-      <div style={{maxWidth:1280,margin:'0 auto',padding:'32px 40px'}}>
+      <div className="page-outer">
         <PageHeader label="Recruitment" title="Scouting" subtitle={`${reports.length} players tracked · ${reports.filter(r=>r.status==='Recommended').length} recommended`}
           action={<button className="btn-blue" onClick={openAdd}>+ Add Scout Report</button>}/>
 
         {/* Summary */}
-        <div className="fade-up" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:24}}>
+        <div className="fade-up stat-grid-4" style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:24}}>
           {STATUS_OPTS.map(s=>{
             const count=reports.filter(r=>r.status===s).length
             const sc=STATUS_COLORS[s]
@@ -103,7 +95,7 @@ export default function ScoutingPage(){
         {/* Filters */}
         <div className="fade-up" style={{display:'flex',gap:10,marginBottom:20,flexWrap:'wrap'}}>
           <input placeholder="🔍 Search player, club, nationality…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,maxWidth:300}}/>
-          <div style={{display:'flex',gap:4,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4}}>
+          <div className="tabs-scroll" style={{display:'flex',gap:4,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,maxWidth:'100%'}}>
             {['All',...STATUS_OPTS].map(f=>(
               <button key={f} onClick={()=>setFilter(f)} style={{padding:'7px 14px',background:filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:12,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)'}}>{f}</button>
             ))}

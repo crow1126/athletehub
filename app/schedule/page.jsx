@@ -138,7 +138,6 @@ export default function SchedulePage() {
         .list-tr{display:grid;grid-template-columns:0.8fr 1.5fr 1fr 1fr 1fr 0.8fr 1fr;gap:8px;align-items:center;padding:13px 20px;border-bottom:1px solid var(--border)}
         .modal-g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
         @media(max-width:768px){
-          .sch-outer{padding:14px 12px!important}
           .sch-grid{grid-template-columns:1fr!important;gap:14px!important}
           .sch-nav{flex-direction:column!important;align-items:flex-start!important}
           .list-th{display:none!important}

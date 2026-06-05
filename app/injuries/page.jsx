@@ -171,20 +171,12 @@ export default function InjuriesPage() {
 
   return (
     <Layout>
-      <style>{`
-  @media(max-width:768px){
-    div[style*="32px 40px"]{padding:14px 12px!important}
-    div[style*="repeat(3,1fr)"]{grid-template-columns:1fr!important}
-    div[style*="2.2fr 1.8fr"]{grid-template-columns:1fr!important}
-    div[style*="1fr 1fr;gap:14"]{grid-template-columns:1fr!important}
-  }
-`}</style>
-      <div style={{ maxWidth:1280,margin:'0 auto',padding:'32px 40px' }}>
+      <div className="page-outer">
         <PageHeader label="Medical Records" title="Injury Register" subtitle={`${activeCnt} active · ${recovCnt} recovered`}
           action={<button className="btn-blue" onClick={openAdd} style={{ background:'linear-gradient(135deg,#C0392B,#E74C3C)',boxShadow:'0 4px 14px rgba(231,76,60,0.35)' }}>+ Log Injury</button>}/>
 
         {/* Stats */}
-        <div className="fade-up" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:24 }}>
+        <div className="fade-up stat-grid-3" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:24 }}>
           {[
             {label:'Total Records',  value:injuries.length, icon:'📋', color:'#4A90E2', bg:'#E8F4FF'},
             {label:'Active Injuries',value:activeCnt,       icon:'🚨', color:'#E74C3C', bg:'#FDEDEC'},
@@ -201,7 +193,7 @@ export default function InjuriesPage() {
         </div>
 
         {/* Filter */}
-        <div className="fade-up" style={{ display:'flex',gap:4,marginBottom:20,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content' }}>
+        <div className="fade-up tabs-scroll" style={{ display:'flex',gap:4,marginBottom:20,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content',maxWidth:'100%' }}>
           {['All','Active','Recovered'].map(f=>(
             <button key={f} onClick={()=>setFilter(f)} style={{ padding:'8px 22px',background:f==='Active'&&filter===f?'linear-gradient(135deg,#C0392B,#E74C3C)':filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)',fontFamily:'var(--font)' }}>{f}</button>
           ))}

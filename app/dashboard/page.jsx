@@ -130,6 +130,7 @@ export default function Dashboard() {
         }
         @media(max-width:768px) {
           .dash-hero { padding:20px 16px 18px !important; }
+          .dash-stats-wrap { padding:14px 12px 0 !important; }
           .dash-stats-row { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
           .dash-grid { gap:14px !important; padding:14px 12px 0 !important; }
           .dash-athletes-cols { grid-template-columns:1fr auto !important; }
@@ -179,7 +180,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div style={{ maxWidth:1280, margin:'0 auto', padding:'20px 40px 0' }}>
+      <div className="dash-stats-wrap" style={{ maxWidth:1280, margin:'0 auto', padding:'20px 40px 0' }}>
         <div className="dash-stats-row" style={{ display:'grid', gap:12 }}>
           {stats.map(s => (
             <StatCard key={s.label} label={s.label} value={s.value} note={s.note} icon={s.icon} accent={s.accent}/>

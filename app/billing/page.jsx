@@ -160,11 +160,11 @@ function BillingContent(){
 
   return(
     <Layout>
-      <div style={{maxWidth:960,margin:'0 auto',padding:'32px 40px'}}>
+      <div className="page-outer" style={{ maxWidth: 960 }}>
         <PageHeader label="Subscription" title="Billing & Plan" subtitle="Manage your Apex Track subscription"/>
 
         {upgradeReason==='upgrade_required'&&blockedModule&&(
-          <div style={{background:'#FEF9E7',border:'1px solid rgba(183,119,13,0.3)',borderRadius:'var(--r-lg)',padding:'14px 20px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
+          <div className="mobile-banner" style={{background:'#FEF9E7',border:'1px solid rgba(183,119,13,0.3)',borderRadius:'var(--r-lg)',padding:'14px 20px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
             <span style={{fontSize:22}}>🔒</span>
             <div style={{flex:1}}>
               <div style={{fontSize:14,fontWeight:700,color:'#B7770D'}}>{MODULE_NAMES[blockedModule]||blockedModule} requires a higher plan</div>
@@ -185,7 +185,7 @@ function BillingContent(){
         )}
 
         {/* Tabs */}
-        <div style={{display:'flex',gap:8,marginBottom:28,borderBottom:'1px solid var(--border)'}}>
+        <div className="tabs-underline" style={{ marginBottom: 28 }}>
           {[{id:'overview',label:'📋 Overview'},{id:'upgrade',label:'⬆️ Change Plan'},{id:'history',label:'🧾 Payment History'}].map(t=>(
             <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'10px 18px',background:'none',border:'none',borderBottom:tab===t.id?'2px solid #0D9488':'2px solid transparent',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'#0D9488':'var(--text2)',cursor:'pointer',fontFamily:'var(--font)',marginBottom:-1}}>
               {t.label}

@@ -14,7 +14,7 @@ import {
 const ALL_NAV = [
   { href:'/dashboard',   label:'Dashboard',   page:'dashboard'   },
   { href:'/athletes',    label:'Athletes',    page:'athletes'    },
-  { href:'/coaches',     label:'Teams',       page:'coaches'     },
+  { href:'/coaches',     label:'Staff',       page:'coaches'     },
   { href:'/schedule',    label:'Schedule',    page:'schedule'    },
   { href:'/injuries',    label:'Medical',     page:'injuries'    },
   { href:'/performance', label:'Performance', page:'performance' },

@@ -26,7 +26,7 @@ const PLANS = {
     locked:[] },
 }
 
-const MODULE_NAMES = { coaches:'Teams', injuries:'Medical Hub', performance:'Performance Analytics', scouting:'Scouting', contracts:'Contracts', reports:'Reports' }
+const MODULE_NAMES = { coaches:'Staff', injuries:'Medical Hub', performance:'Performance Analytics', scouting:'Scouting', contracts:'Contracts', reports:'Reports' }
 const STATUS_COLORS = { active:{bg:'#E8F8EE',color:'#1B7A3E'}, trial:{bg:'#E0F0F0',color:'#004F4F'}, expired:{bg:'#FDEDEC',color:'#C0392B'}, cancelled:{bg:'#FDEDEC',color:'#C0392B'} }
 
 function daysLeft(d){ if(!d)return 0; return Math.max(0,Math.ceil((new Date(d)-new Date())/86400000)) }

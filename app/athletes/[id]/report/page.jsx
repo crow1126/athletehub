@@ -50,6 +50,19 @@ export default function AthleteReport() {
     load()
   }, [id])
 
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('print') === 'true') {
+        const timer = setTimeout(() => {
+          window.print()
+        }, 1000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [loading])
+
+
   if (loading) return (
     <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',fontFamily:'Georgia,serif' }}>
       <div style={{ width:36,height:36,border:'3px solid #E2E8F0',borderTopColor:'#2B6CB0',borderRadius:'50%',animation:'spin 0.7s linear infinite' }}/>

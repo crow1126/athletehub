@@ -89,6 +89,18 @@ export default function AthleteReport() {
     load()
   }, [id])
 
+  useEffect(() => {
+    if (!loading && typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('print') === 'true') {
+        const timer = setTimeout(() => {
+          window.print()
+        }, 1000)
+        return () => clearTimeout(timer)
+      }
+    }
+  }, [loading])
+
   if (loading) return (
     <div style={{ display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#f0f0f0' }}>
       <div style={{ textAlign:'center' }}>

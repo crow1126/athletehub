@@ -6,6 +6,7 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
+import { FileText } from 'lucide-react'
 
 const POSITION_GROUPS = {
   'Goalkeeper':  ['GK'],
@@ -275,8 +276,8 @@ export default function AthletesPage() {
       <style>{`
         .ath-outer{max-width:1280px;margin:0 auto;padding:32px 40px;min-width:0}
         .ath-filters{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
-        .ath-th{display:grid;grid-template-columns:2.2fr 1fr 1.1fr 1fr 1fr 0.5fr 1fr 1fr;gap:8px;padding:12px 20px;background:#F8FAFC;border-bottom:1px solid #E2E8F0}
-        .ath-tr{display:grid;grid-template-columns:2.2fr 1fr 1.1fr 1fr 1fr 0.5fr 1fr 1fr;gap:8px;align-items:center;padding:12px 20px;border-bottom:1px solid #E2E8F0;transition:background 0.15s}
+        .ath-th{display:grid;grid-template-columns:2fr 1fr 0.8fr 1fr 1fr 1.8fr;gap:8px;padding:12px 20px;background:#F8FAFC;border-bottom:1px solid #E2E8F0}
+        .ath-tr{display:grid;grid-template-columns:2fr 1fr 0.8fr 1fr 1fr 1.8fr;gap:8px;align-items:center;padding:12px 20px;border-bottom:1px solid #E2E8F0;transition:background 0.15s}
         .ath-tr:hover{background:#F0FDFA}
         .modal-g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
         .form-inp:focus{border-color:#0D9488!important;box-shadow:0 0 0 3px rgba(13,148,136,0.1)}
@@ -323,7 +324,7 @@ export default function AthletesPage() {
 
         <div className="card fade-up fade-up-1" style={{ overflow:'hidden' }}>
           <div className="ath-th">
-            {['Athlete','Position','Club','Region','Coach','Age','Status','Actions'].map(h=>(
+            {['Athlete','Position','Age','Jersey No.','Status','Actions'].map(h=>(
               <div key={h} style={{ fontSize:11, fontWeight:700, color:'#64748B', letterSpacing:'0.08em', textTransform:'uppercase' }}>{h}</div>
             ))}
           </div>
@@ -346,16 +347,17 @@ export default function AthletesPage() {
                 </div>
               </div>
               <div className="ath-hide" style={{ fontSize:12, fontWeight:700, color:'#0F766E', background:'#F0FDFA', border:'1px solid #CCFBF1', padding:'3px 8px', borderRadius:6, width:'fit-content' }}>{ath.position||'—'}</div>
-              <div className="ath-hide" style={{ fontSize:13, color:'#0F172A' }}>{ath.club||'—'}</div>
-              <div className="ath-hide" style={{ fontSize:13, color:'#334155' }}>{ath.region||'—'}</div>
-              <div className="ath-hide" style={{ fontSize:12, color:'#334155' }}>{ath.coaches?.name?.replace('Coach ','')||'—'}</div>
               <div className="ath-hide" style={{ fontSize:13, fontWeight:600, color:'#334155' }}>{ath.age||'—'}</div>
+              <div className="ath-hide" style={{ fontSize:13, fontWeight:600, color:'#0F766E' }}>{ath.back_number ? `#${ath.back_number}` : '—'}</div>
               <div><Badge status={ath.status}/></div>
               <div style={{ display:'flex', gap:6 }}>
                 <button onClick={()=>openEdit(ath)} style={{ background:'#F0FDFA', color:'#0F766E', border:'1px solid #CCFBF1', padding:'5px 11px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}>Edit</button>
                 <button onClick={()=>handleDelete(ath.id,ath.name)} disabled={deleting===ath.id} style={{ background:'#FFE4E6', color:'#E11D48', border:'none', padding:'5px 11px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer', opacity:deleting===ath.id?0.5:1, fontFamily:'var(--font)' }}>
                   {deleting===ath.id?'…':'Del'}
                 </button>
+                <a href={`/athletes/${ath.id}?print=true`} target="_blank" rel="noopener noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#EFF6FF', color:'#1D4ED8', border:'1px solid #BFDBFE', padding:'5px 11px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer', textDecoration:'none', fontFamily:'var(--font)' }}>
+                  <FileText size={13} /> PDF
+                </a>
               </div>
             </div>
           ))}

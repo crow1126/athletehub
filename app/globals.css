@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /* ============================================================
-   MODERN SAAS THEME — Apex Track
-   Crisp Whites, Soft Slates, and Elegant Teal Accents
+   MINT BREEZE THEME — Apex Track
+   Soft Green Gradient · Clean Whites · Crisp Teal Accents
    ============================================================ */
 
 :root {
@@ -13,26 +13,32 @@
   --lagoon-pale:   #F0FDFA; /* Teal 50 */
   --lagoon-alpha:  rgba(13, 148, 136, 0.1);
 
-  /* Neutrals (Slate) */
-  --floral:        #F8FAFC; /* Slate 50 - App Background */
-  --floral-dark:   #FFFFFF; /* White - Surfaces/Cards */
-  --floral-muted:  #F1F5F9; /* Slate 100 - Hover states */
+  /* Mint Green Palette — for backgrounds & surfaces */
+  --mint-50:       #F0FBF4; /* Very pale mint — main app bg */
+  --mint-100:      #DCF5E5; /* Soft mint — sidebar bg */
+  --mint-200:      #BBE9CE; /* Muted mint — hover states */
+  --mint-300:      #86D4A8; /* Medium mint — accents */
+
+  /* Surfaces */
+  --floral:        #F0FBF4; /* Mint 50  - App Background */
+  --floral-dark:   #FFFFFF; /* Pure White - Sidebar / Cards */
+  --floral-muted:  #E8F7EE; /* Tinted hover states */
   
-  --border:        #E2E8F0; /* Slate 200 */
-  --border-light:  #F1F5F9;
+  --border:        #D4EDDE; /* Soft green-tinted border */
+  --border-light:  #EBF7F0;
 
   /* Typography */
   --font:   var(--font-jakarta), system-ui, sans-serif;
-  --text:   #0F172A; /* Slate 900 - Headings */
-  --text2:  #334155; /* Slate 700 - Body */
-  --text3:  #64748B; /* Slate 500 - Muted/Secondary */
+  --text:   #0F2218; /* Deep forest - Headings */
+  --text2:  #1E4433; /* Dark green - Body */
+  --text3:  #5A7A68; /* Muted sage - Secondary */
 
-  /* Modern Soft Shadows */
-  --shadow-sm:  0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md:  0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg:  0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
-  --shadow-xl:  0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
-  --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.15);
+  /* Soft Green-tinted Shadows */
+  --shadow-sm:  0 1px 3px 0 rgba(13, 100, 60, 0.06);
+  --shadow-md:  0 4px 8px -1px rgba(13, 100, 60, 0.08), 0 2px 4px -2px rgba(13, 100, 60, 0.04);
+  --shadow-lg:  0 10px 20px -3px rgba(13, 100, 60, 0.08), 0 4px 6px -4px rgba(13, 100, 60, 0.04);
+  --shadow-xl:  0 20px 30px -5px rgba(13, 100, 60, 0.08), 0 8px 12px -6px rgba(13, 100, 60, 0.04);
+  --shadow-glow: 0 0 24px rgba(13, 148, 136, 0.18);
 
   /* Border Radii */
   --r-sm:  8px;
@@ -54,7 +60,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background-color: var(--floral);
+  /* Soft mint-green to white gradient — top-left green fades to white on the right */
+  background: linear-gradient(135deg, #C8EDCE 0%, #E4F7E8 30%, #F0FBF4 60%, #FFFFFF 100%);
+  background-attachment: fixed;
   color: var(--text2);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
@@ -62,14 +70,16 @@ body {
 }
 
 .card {
-  background: #FFFFFF;
+  background: rgba(255, 255, 255, 0.92);
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
+  backdrop-filter: blur(4px);
 }
 .card:hover {
   box-shadow: var(--shadow-md);
+  border-color: var(--mint-200);
 }
 
 .btn-blue {

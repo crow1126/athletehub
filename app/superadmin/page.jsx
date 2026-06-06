@@ -122,6 +122,7 @@ export default function SuperadminPage() {
   const [profiles, setProfiles] = useState([])
   const [teams, setTeams] = useState([])
   const [mobileNav, setMobileNav] = useState(false)
+  const [expandedUser, setExpandedUser] = useState(null)
 
   const [dbRows, setDbRows] = useState([])
   const [dbCols, setDbCols] = useState([])
@@ -605,7 +606,7 @@ export default function SuperadminPage() {
 
             {/* ── USER ACCOUNTS ── */}
             {section === 'users' && (
-              <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+              <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
                 {/* Search & Filter */}
                 <div className="sa-filter-row">
@@ -628,71 +629,113 @@ export default function SuperadminPage() {
                   </div>
                 </div>
 
-                {/* Table */}
-                <div className="sa-card" style={{ padding:0, overflow:'hidden' }}>
-                  <div className="sa-table-wrap">
-                    <table className="sa-table">
-                      <thead>
-                        <tr>
-                          <th className="sa-th">Administrator</th>
-                          <th className="sa-th">Email</th>
-                          <th className="sa-th" style={{ display:'none' }} id="col-id">Tenant ID</th>
-                          <th className="sa-th">Status</th>
-                          <th className="sa-th">Lock</th>
-                          <th className="sa-th" style={{ textAlign:'right' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {loading ? (
-                          <tr><td colSpan={6} style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
-                            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:13 }}>
-                              <div style={{ width:16, height:16, border:'2px solid #e2e8f0', borderTopColor:'#0d9488', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-                              Syncing user accounts…
-                            </div>
-                          </td></tr>
-                        ) : filtered.length === 0 ? (
-                          <tr><td colSpan={6} style={{ padding:48, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
-                            No administrator accounts match the selected parameters.
-                          </td></tr>
-                        ) : filtered.map(p => (
-                          <tr key={p.id} style={{ transition:'background 0.1s' }}
+                {/* Summary strip */}
+                <div style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
+                  {filtered.length} account{filtered.length !== 1 ? 's' : ''} · click a row to expand details
+                </div>
+
+                {/* Accordion Cards */}
+                {loading ? (
+                  <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:13 }}>
+                      <div style={{ width:16, height:16, border:'2px solid #e2e8f0', borderTopColor:'#0d9488', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+                      Syncing user accounts…
+                    </div>
+                  </div>
+                ) : filtered.length === 0 ? (
+                  <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
+                    No administrator accounts match the selected parameters.
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    {filtered.map(p => {
+                      const isOpen = expandedUser === p.id
+                      const statusMeta = STATUS_META[p.registration_status?.toLowerCase()] || STATUS_META.pending
+                      return (
+                        <div key={p.id} className="sa-card" style={{ padding:0, overflow:'hidden', border: isOpen ? '1px solid #99f6e4' : '1px solid #e2e8f0', transition:'border 0.2s' }}>
+                          {/* ── COLLAPSED ROW (always visible) ── */}
+                          <button
+                            onClick={() => setExpandedUser(isOpen ? null : p.id)}
+                            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background:'none', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
                             onMouseLeave={e => e.currentTarget.style.background=''}>
-                            <td className="sa-td">
-                              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                                <ClubLogoImg url={p.club_logo_url} name={p.full_name} />
-                                <div>
-                                  <div style={{ fontWeight:700, color:'#0f172a' }}>{p.full_name}</div>
-                                  <div style={{ fontSize:11, color:'#0d9488', marginTop:1 }}>{p.club_name || 'Individual'}</div>
+                            {/* Logo */}
+                            <ClubLogoImg url={p.club_logo_url} name={p.full_name} size={40} />
+                            {/* Name + Club */}
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontWeight:700, fontSize:14, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.full_name || '—'}</div>
+                              <div style={{ fontSize:11, color:'#0d9488', marginTop:2, fontWeight:600 }}>{p.club_name || 'Individual'}</div>
+                            </div>
+                            {/* Status pill */}
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:statusMeta.bg, color:statusMeta.color, borderRadius:99, padding:'3px 12px', fontSize:11, fontWeight:700, flexShrink:0 }}>
+                              <span style={{ width:6, height:6, borderRadius:'50%', background:statusMeta.color }} />
+                              {statusMeta.label}
+                            </span>
+                            {/* Lock badge */}
+                            <span style={{ fontSize:10, fontWeight:700, background:p.is_active?'#d1fae5':'#ffe4e6', color:p.is_active?'#059669':'#e11d48', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>
+                              {p.is_active ? 'Active' : 'Blocked'}
+                            </span>
+                            {/* Chevron */}
+                            <span style={{ color:'#94a3b8', fontSize:12, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
+                          </button>
+
+                          {/* ── EXPANDED PANEL ── */}
+                          {isOpen && (
+                            <div style={{ borderTop:'1px solid #e2e8f0', padding:'16px 18px', background:'#fafcff', display:'flex', flexDirection:'column', gap:14, animation:'fadeIn 0.2s ease' }}>
+                              {/* Detail grid */}
+                              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:12 }}>
+                                {/* Role */}
+                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Role</div>
+                                  <RoleBadge role={p.role || 'admin'} />
+                                </div>
+                                {/* Full Name */}
+                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Full Name</div>
+                                  <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{p.full_name || '—'}</div>
+                                </div>
+                                {/* Email */}
+                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Email</div>
+                                  <div style={{ fontSize:12, color:'#334155', wordBreak:'break-all' }}>{p.email}</div>
+                                </div>
+                                {/* User ID */}
+                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>User ID</div>
+                                  <div style={{ fontSize:10, color:'#0d9488', fontFamily:'monospace', wordBreak:'break-all' }}>{p.id}</div>
+                                </div>
+                                {/* Status */}
+                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Status</div>
+                                  <Pill status={p.registration_status || 'pending'} />
+                                </div>
+                                {/* Lock / Active */}
+                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
+                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Lock</div>
+                                  <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:11, padding:'4px 10px' }}>
+                                    {p.is_active ? '🔓 Active' : '🔒 Blocked'}
+                                  </Btn>
                                 </div>
                               </div>
-                            </td>
-                            <td className="sa-td" style={{ fontSize:12, color:'#64748b' }}>{p.email}</td>
-                            <td className="sa-td">
-                              <Pill status={p.registration_status || 'pending'} />
-                            </td>
-                            <td className="sa-td">
-                              <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:10, padding:'4px 8px' }}>
-                                {p.is_active?'Active':'Blocked'}
-                              </Btn>
-                            </td>
-                            <td className="sa-td" style={{ textAlign:'right' }}>
-                              <div style={{ display:'inline-flex', gap:5, flexWrap:'wrap', justifyContent:'flex-end' }}>
+
+                              {/* Actions row */}
+                              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', paddingTop:8, borderTop:'1px solid #f1f5f9' }}>
+                                <span style={{ fontSize:11, fontWeight:600, color:'#64748b', marginRight:4 }}>Actions:</span>
                                 {p.registration_status !== 'approved' && (
-                                  <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:11, padding:'4px 8px' }} disabled={acting}>Approve</Btn>
+                                  <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:12, padding:'6px 14px' }} disabled={acting}>✓ Approve</Btn>
                                 )}
                                 {p.registration_status !== 'rejected' && (
-                                  <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:11, padding:'4px 8px' }} disabled={acting}>Reject</Btn>
+                                  <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:12, padding:'6px 14px' }} disabled={acting}>✕ Reject</Btn>
                                 )}
-                                <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:11, padding:'4px 8px' }} disabled={acting}>Delete</Btn>
+                                <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:12, padding:'6px 14px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>🗑 Delete</Btn>
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -919,19 +962,44 @@ export default function SuperadminPage() {
                       <table className="sa-table" style={{ minWidth:'auto' }}>
                         <thead>
                           <tr>
-                            {dbCols.map(c => <th key={c} className="sa-th" style={{ whiteSpace:'nowrap' }}>{c}</th>)}
+                            {dbCols.map(c => (
+                              <th key={c} className="sa-th" style={{ whiteSpace:'nowrap', background: c==='full_name'||c==='name'?'#f0fdfa':undefined, color: c==='full_name'||c==='name'?'#0d9488':undefined }}>
+                                {c}{(c==='full_name'||c==='name') ? ' 👤' : ''}
+                              </th>
+                            ))}
                           </tr>
                         </thead>
                         <tbody>
-                          {dbRows.map((row, i) => (
-                            <tr key={i} onMouseEnter={e => e.currentTarget.style.background='#f8fafc'} onMouseLeave={e => e.currentTarget.style.background=''}>
-                              {dbCols.map(c => (
-                                <td key={c} className="sa-td" style={{ maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily:c==='id'||c?.endsWith('_id')?'monospace':'inherit', color:row[c]===null?'#cbd5e1':c==='id'||c?.endsWith('_id')?'#0d9488':'#334155', fontSize:11 }}>
-                                  {row[c]===null ? <span style={{ fontStyle:'italic', color:'#cbd5e1' }}>null</span> : String(row[c])}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
+                          {dbRows.map((row, i) => {
+                            const nameVal = row['full_name'] || row['name'] || null
+                            const clubVal = row['club_name'] || null
+                            const roleVal = row['role'] || null
+                            return (
+                              <tr key={i} onMouseEnter={e => e.currentTarget.style.background='#f0fdfa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                                {dbCols.map(c => {
+                                  const isName = c === 'full_name' || c === 'name'
+                                  const isId = c === 'id' || c?.endsWith('_id')
+                                  const isRole = c === 'role'
+                                  const val = row[c]
+                                  return (
+                                    <td key={c} className="sa-td" style={{ maxWidth: isName ? 200 : 160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily: isId ? 'monospace' : 'inherit', fontSize:11,
+                                      background: isName ? '#f0fdfa' : undefined,
+                                      color: val===null ? '#cbd5e1' : isName ? '#0f172a' : isId ? '#0d9488' : '#334155',
+                                      fontWeight: isName ? 700 : undefined,
+                                    }}>
+                                      {val === null ? (
+                                        <span style={{ fontStyle:'italic', color:'#cbd5e1' }}>null</span>
+                                      ) : isRole ? (
+                                        <RoleBadge role={String(val)} />
+                                      ) : (
+                                        String(val)
+                                      )}
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            )
+                          })}
                         </tbody>
                       </table>
                     </div>

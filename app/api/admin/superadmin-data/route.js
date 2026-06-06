@@ -76,6 +76,13 @@ export async function GET(req) {
         .order('created_at', { ascending: false })
       if (error) console.error('Profiles fetch error:', error.message)
       result.profiles = data || []
+
+      // Also return athletes list for client-side ID resolving
+      const { data: athletes, error: athletesError } = await db
+        .from('athletes')
+        .select('id,name,team_id')
+      if (athletesError) console.error('Athletes fetch error:', athletesError.message)
+      result.athletes = athletes || []
     }
 
     // Teams

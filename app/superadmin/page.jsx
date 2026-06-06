@@ -121,6 +121,7 @@ export default function SuperadminPage() {
   const [section, setSection] = useState('users')
   const [profiles, setProfiles] = useState([])
   const [teams, setTeams] = useState([])
+  const [athletes, setAthletes] = useState([])
   const [mobileNav, setMobileNav] = useState(false)
   const [expandedUser, setExpandedUser] = useState(null)
 
@@ -180,6 +181,7 @@ export default function SuperadminPage() {
     try {
       const data = await fetchWithAuth('/api/admin/superadmin-data?section=profiles')
       setProfiles(data.profiles || [])
+      if (data.athletes) setAthletes(data.athletes)
     } catch (err) { showToast('Failed to load profiles: ' + err.message, 'error') }
     finally { setLoading(false) }
   }, [fetchWithAuth])
@@ -204,6 +206,71 @@ export default function SuperadminPage() {
   useEffect(() => { if (authOk && section === 'maintenance') { loadTable(dbTable) } }, [authOk, section, dbTable, loadTable])
 
   function showToast(msg, type='success') { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
+
+  // ── DB HELPER FUNCTIONS FOR USER AND TEAM ROOTS ──
+  function resolveIdName(colName, val) {
+    if (!val) return null
+    if (colName === 'team_id' || (colName === 'id' && dbTable === 'teams')) {
+      const team = teams.find(t => t.id === val)
+      return team ? { name: team.name, icon: '🏟️', type: 'team' } : null
+    }
+    if (colName === 'profile_id' || colName === 'user_id' || colName === 'admin_id' || (colName === 'id' && dbTable === 'profiles')) {
+      const p = profiles.find(x => x.id === val)
+      return p ? { name: p.full_name || p.email, icon: '👤', type: 'profile', club: p.club_name } : null
+    }
+    if (colName === 'athlete_id' || (colName === 'id' && dbTable === 'athletes')) {
+      const a = athletes.find(x => x.id === val)
+      return a ? { name: a.name, icon: '🏃‍♂️', type: 'athlete' } : null
+    }
+    return null
+  }
+
+  function getRowStatus(table, row, profiles, teams) {
+    if (table === 'profiles') {
+      if (row.role === 'superadmin') return { label: 'Superadmin', bg: '#f1f5f9', color: '#475569' }
+      if (!row.club_name?.trim() && !row.team_id) {
+        return { label: 'Orphaned (No Club)', bg: '#ffe4e6', color: '#e11d48', isOrphan: true }
+      }
+    }
+    if (table === 'teams') {
+      const hasActiveAdmin = profiles.some(p => p.team_id === row.id && p.registration_status === 'approved')
+      if (!hasActiveAdmin) {
+        return { label: 'Orphaned (No Admin)', bg: '#ffe4e6', color: '#e11d48', isOrphan: true }
+      }
+    }
+    if (table === 'athletes') {
+      if (!row.team_id || !teams.some(t => t.id === row.team_id)) {
+        return { label: 'Orphaned Athlete', bg: '#ffe4e6', color: '#e11d48', isOrphan: true }
+      }
+    }
+    return null
+  }
+
+  async function deleteUserDirect(userId, userName) {
+    if (!confirm(`Delete user "${userName}"? This will permanently wipe their account and profile.`)) return
+    setActing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system-commands', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${session.access_token}` }, body:JSON.stringify({ command:'delete_user', userId }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete user')
+      showToast(`User ${userName} deleted successfully.`); loadProfiles(); loadTeams(); loadTable(dbTable)
+    } catch (err) { showToast('Deletion failed: ' + err.message, 'error') }
+    finally { setActing(false) }
+  }
+
+  async function deleteTeamDirect(teamId, teamName) {
+    if (!confirm(`CAUTION: Wiping Team "${teamName}" will delete this club and ALL its data! This cannot be undone.`)) return
+    setActing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system-commands', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${session.access_token}` }, body:JSON.stringify({ command:'delete_team', teamId }) })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete team')
+      showToast(data.message || `Wiped team "${teamName}" successfully!`); loadProfiles(); loadTeams(); loadTable(dbTable)
+    } catch (err) { showToast('Deletion failed: ' + err.message, 'error') }
+    finally { setActing(false) }
+  }
 
   async function handleApprove(p) {
     setActing(true)
@@ -605,139 +672,200 @@ export default function SuperadminPage() {
           <main className="sa-main">
 
             {/* ── USER ACCOUNTS ── */}
-            {section === 'users' && (
-              <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+            {section === 'users' && (() => {
+              // Group filtered profiles by team or club name
+              const clubGroups = {}
+              const orphans = []
+              filtered.forEach(p => {
+                const team = p.team_id ? teams.find(t => t.id === p.team_id) : null
+                const key = team ? team.name : p.club_name?.trim() || ''
+                const logo = team ? team.logo_url : p.club_logo_url || null
+                
+                if (key) {
+                  if (!clubGroups[key]) {
+                    clubGroups[key] = { club_name: key, logo: logo, users: [] }
+                  }
+                  clubGroups[key].users.push(p)
+                } else {
+                  orphans.push(p)
+                }
+              })
+              const clubs = Object.values(clubGroups).sort((a,b) => a.club_name.localeCompare(b.club_name))
 
-                {/* Search & Filter */}
-                <div className="sa-filter-row">
-                  <div style={{ position:'relative', flex:'1 1 240px', maxWidth:340 }}>
-                    <input className="sa-custom-input" placeholder="Search name, email, or club…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft:36 }} />
-                    <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}>🔍</span>
-                  </div>
-                  <div className="sa-filter-btns">
-                    {['all','pending','approved','rejected'].map(f => (
-                      <Btn key={f} onClick={() => setFilter(f)} style={{
-                        padding:'6px 12px', fontSize:11,
-                        background:filter===f?'#f0fdfa':'transparent',
-                        color:filter===f?'#0d9488':'#64748b',
-                        border:filter===f?'1px solid #99f6e4':'1px solid #e2e8f0',
-                        textTransform:'capitalize',
-                      }}>
-                        {f}
-                      </Btn>
-                    ))}
-                  </div>
-                </div>
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
-                {/* Summary strip */}
-                <div style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
-                  {filtered.length} account{filtered.length !== 1 ? 's' : ''} · click a row to expand details
-                </div>
-
-                {/* Accordion Cards */}
-                {loading ? (
-                  <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
-                    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:13 }}>
-                      <div style={{ width:16, height:16, border:'2px solid #e2e8f0', borderTopColor:'#0d9488', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-                      Syncing user accounts…
+                  {/* Search & Filter */}
+                  <div className="sa-filter-row">
+                    <div style={{ position:'relative', flex:'1 1 240px', maxWidth:340 }}>
+                      <input className="sa-custom-input" placeholder="Search name, email, or club…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft:36 }} />
+                      <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}>🔍</span>
+                    </div>
+                    <div className="sa-filter-btns">
+                      {['all','pending','approved','rejected'].map(f => (
+                        <Btn key={f} onClick={() => setFilter(f)} style={{
+                          padding:'6px 12px', fontSize:11,
+                          background:filter===f?'#f0fdfa':'transparent',
+                          color:filter===f?'#0d9488':'#64748b',
+                          border:filter===f?'1px solid #99f6e4':'1px solid #e2e8f0',
+                          textTransform:'capitalize',
+                        }}>
+                          {f}
+                        </Btn>
+                      ))}
                     </div>
                   </div>
-                ) : filtered.length === 0 ? (
-                  <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
-                    No administrator accounts match the selected parameters.
+
+                  {/* Summary */}
+                  <div style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
+                    {clubs.length} club{clubs.length !== 1 ? 's' : ''} · {filtered.length} total accounts
+                    {orphans.length > 0 && <span style={{ color:'#e11d48', marginLeft:10 }}>⚠ {orphans.length} orphaned</span>}
                   </div>
-                ) : (
-                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                    {filtered.map(p => {
-                      const isOpen = expandedUser === p.id
-                      const statusMeta = STATUS_META[p.registration_status?.toLowerCase()] || STATUS_META.pending
-                      return (
-                        <div key={p.id} className="sa-card" style={{ padding:0, overflow:'hidden', border: isOpen ? '1px solid #99f6e4' : '1px solid #e2e8f0', transition:'border 0.2s' }}>
-                          {/* ── COLLAPSED ROW (always visible) ── */}
+
+                  {loading ? (
+                    <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:8, fontSize:13 }}>
+                        <div style={{ width:16, height:16, border:'2px solid #e2e8f0', borderTopColor:'#0d9488', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
+                        Syncing user accounts…
+                      </div>
+                    </div>
+                  ) : filtered.length === 0 ? (
+                    <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
+                      No accounts match the filter.
+                    </div>
+                  ) : (
+                    <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+
+                      {/* ── CLUB GROUPS ── */}
+                      {clubs.map(group => {
+                        const isOpen = expandedUser === group.club_name
+                        const allApproved = group.users.every(u => u.registration_status === 'approved')
+                        const hasPending  = group.users.some(u => u.registration_status?.startsWith('pending'))
+                        const borderColor = isOpen ? '#99f6e4' : '#e2e8f0'
+                        const headerBg    = isOpen ? '#f0fdfa' : '#fff'
+                        return (
+                          <div key={group.club_name} style={{ border:`1px solid ${borderColor}`, borderRadius:14, overflow:'hidden', transition:'border 0.2s', boxShadow: isOpen ? '0 4px 16px rgba(13,148,136,0.08)' : '0 1px 4px rgba(0,0,0,0.04)' }}>
+                            {/* Club header row — click to expand/collapse */}
+                            <button
+                              onClick={() => setExpandedUser(isOpen ? null : group.club_name)}
+                              style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background:headerBg, border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.background='#f0fdfa'}
+                              onMouseLeave={e => e.currentTarget.style.background=headerBg}>
+                              <ClubLogoImg url={group.logo} name={group.club_name} size={42} />
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.club_name}</div>
+                                <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{group.users.length} user{group.users.length !== 1 ? 's' : ''} attached</div>
+                              </div>
+                              {/* Aggregate status indicators */}
+                              {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>⏳ Has Pending</span>}
+                              {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>✓ All Approved</span>}
+                              {/* User count badge */}
+                              <span style={{ fontSize:12, fontWeight:800, background:'#f1f5f9', color:'#334155', borderRadius:99, padding:'2px 10px', flexShrink:0, minWidth:28, textAlign:'center' }}>{group.users.length}</span>
+                              <span style={{ color:'#94a3b8', fontSize:14, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
+                            </button>
+
+                            {/* Expanded: all users in this club */}
+                            {isOpen && (
+                              <div style={{ borderTop:'1px solid #e2e8f0', background:'#fafcff', animation:'fadeIn 0.2s ease' }}>
+                                {group.users.map((p, idx) => (
+                                  <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 18px', borderBottom: idx < group.users.length - 1 ? '1px solid #f1f5f9' : 'none', flexWrap:'wrap' }}
+                                    onMouseEnter={e => e.currentTarget.style.background='#f0fdfa'}
+                                    onMouseLeave={e => e.currentTarget.style.background=''}>
+                                    {/* Role badge */}
+                                    <RoleBadge role={p.role || 'admin'} />
+                                    {/* Name + email + copyable ID */}
+                                    <div style={{ flex:'1 1 180px', minWidth:0 }}>
+                                      <div style={{ fontWeight:700, fontSize:13, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.full_name || '—'}</div>
+                                      <div style={{ fontSize:11, color:'#64748b', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.email}</div>
+                                      <div style={{ fontSize:10, color:'#0d9488', fontFamily:'monospace', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
+                                        <span>ID: {p.id}</span>
+                                        <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.id); showToast('Copied User ID!') }}
+                                          style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID">📋</button>
+                                      </div>
+                                    </div>
+                                    {/* Status */}
+                                    <Pill status={p.registration_status || 'pending'} />
+                                    {/* Lock */}
+                                    <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:10, padding:'3px 8px', flexShrink:0 }}>
+                                      {p.is_active ? '🔓 Active' : '🔒 Blocked'}
+                                    </Btn>
+                                    {/* Actions */}
+                                    <div style={{ display:'flex', gap:5, flexShrink:0 }}>
+                                      {p.registration_status !== 'approved' && (
+                                        <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✓ Approve</Btn>
+                                      )}
+                                      {p.registration_status !== 'rejected' && (
+                                        <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✕ Reject</Btn>
+                                      )}
+                                      <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>🗑 Delete</Btn>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+
+                      {/* ── ORPHANED / INDIVIDUAL ACCOUNTS ── */}
+                      {orphans.length > 0 && (
+                        <div style={{ border:'1.5px solid #fca5a5', borderRadius:14, overflow:'hidden', boxShadow:'0 2px 8px rgba(225,29,72,0.08)' }}>
+                          {/* Orphan header */}
                           <button
-                            onClick={() => setExpandedUser(isOpen ? null : p.id)}
-                            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background:'none', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
-                            onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
-                            onMouseLeave={e => e.currentTarget.style.background=''}>
-                            {/* Logo */}
-                            <ClubLogoImg url={p.club_logo_url} name={p.full_name} size={40} />
-                            {/* Name + Club */}
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontWeight:700, fontSize:14, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.full_name || '—'}</div>
-                              <div style={{ fontSize:11, color:'#0d9488', marginTop:2, fontWeight:600 }}>{p.club_name || 'Individual'}</div>
+                            onClick={() => setExpandedUser(expandedUser === '__orphans__' ? null : '__orphans__')}
+                            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background: expandedUser === '__orphans__' ? '#fff5f5' : '#fff', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.background='#fff5f5'}
+                            onMouseLeave={e => e.currentTarget.style.background=expandedUser === '__orphans__' ? '#fff5f5' : '#fff'}>
+                            <div style={{ width:42, height:42, borderRadius:'50%', background:'#ffe4e6', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>⚠</div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontWeight:800, fontSize:15, color:'#e11d48' }}>Orphaned / No Club Assigned</div>
+                              <div style={{ fontSize:11, color:'#f87171', marginTop:2 }}>{orphans.length} account{orphans.length !== 1 ? 's' : ''} — no club linked, may need cleanup</div>
                             </div>
-                            {/* Status pill */}
-                            <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:statusMeta.bg, color:statusMeta.color, borderRadius:99, padding:'3px 12px', fontSize:11, fontWeight:700, flexShrink:0 }}>
-                              <span style={{ width:6, height:6, borderRadius:'50%', background:statusMeta.color }} />
-                              {statusMeta.label}
-                            </span>
-                            {/* Lock badge */}
-                            <span style={{ fontSize:10, fontWeight:700, background:p.is_active?'#d1fae5':'#ffe4e6', color:p.is_active?'#059669':'#e11d48', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>
-                              {p.is_active ? 'Active' : 'Blocked'}
-                            </span>
-                            {/* Chevron */}
-                            <span style={{ color:'#94a3b8', fontSize:12, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
+                            <span style={{ fontSize:12, fontWeight:800, background:'#ffe4e6', color:'#e11d48', borderRadius:99, padding:'2px 10px', flexShrink:0 }}>{orphans.length}</span>
+                            <span style={{ color:'#f87171', fontSize:14, transition:'transform 0.2s', transform: expandedUser === '__orphans__' ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
                           </button>
 
-                          {/* ── EXPANDED PANEL ── */}
-                          {isOpen && (
-                            <div style={{ borderTop:'1px solid #e2e8f0', padding:'16px 18px', background:'#fafcff', display:'flex', flexDirection:'column', gap:14, animation:'fadeIn 0.2s ease' }}>
-                              {/* Detail grid */}
-                              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(200px, 1fr))', gap:12 }}>
-                                {/* Role */}
-                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
-                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Role</div>
+                          {expandedUser === '__orphans__' && (
+                            <div style={{ borderTop:'1px solid #fca5a5', background:'#fff9f9', animation:'fadeIn 0.2s ease' }}>
+                              {orphans.map((p, idx) => (
+                                <div key={p.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 18px', borderBottom: idx < orphans.length - 1 ? '1px solid #fee2e2' : 'none', flexWrap:'wrap' }}
+                                  onMouseEnter={e => e.currentTarget.style.background='#fff5f5'}
+                                  onMouseLeave={e => e.currentTarget.style.background=''}>
                                   <RoleBadge role={p.role || 'admin'} />
-                                </div>
-                                {/* Full Name */}
-                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
-                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Full Name</div>
-                                  <div style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>{p.full_name || '—'}</div>
-                                </div>
-                                {/* Email */}
-                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
-                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Email</div>
-                                  <div style={{ fontSize:12, color:'#334155', wordBreak:'break-all' }}>{p.email}</div>
-                                </div>
-                                {/* User ID */}
-                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
-                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>User ID</div>
-                                  <div style={{ fontSize:10, color:'#0d9488', fontFamily:'monospace', wordBreak:'break-all' }}>{p.id}</div>
-                                </div>
-                                {/* Status */}
-                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
-                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Status</div>
+                                  {/* Name + email + copyable ID */}
+                                  <div style={{ flex:'1 1 180px', minWidth:0 }}>
+                                    <div style={{ fontWeight:700, fontSize:13, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.full_name || '— No Name —'}</div>
+                                    <div style={{ fontSize:11, color:'#ef4444', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.email}</div>
+                                    <div style={{ fontSize:10, color:'#e11d48', fontFamily:'monospace', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
+                                      <span>ID: {p.id}</span>
+                                      <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.id); showToast('Copied User ID!') }}
+                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#f87171', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID">📋</button>
+                                    </div>
+                                  </div>
                                   <Pill status={p.registration_status || 'pending'} />
-                                </div>
-                                {/* Lock / Active */}
-                                <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'10px 14px' }}>
-                                  <div style={{ fontSize:9, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:5 }}>Lock</div>
-                                  <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:11, padding:'4px 10px' }}>
+                                  <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:10, padding:'3px 8px', flexShrink:0 }}>
                                     {p.is_active ? '🔓 Active' : '🔒 Blocked'}
                                   </Btn>
+                                  <div style={{ display:'flex', gap:5, flexShrink:0 }}>
+                                    {p.registration_status !== 'approved' && (
+                                      <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✓ Approve</Btn>
+                                    )}
+                                    {p.registration_status !== 'rejected' && (
+                                      <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✕ Reject</Btn>
+                                    )}
+                                    <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>🗑 Delete</Btn>
+                                  </div>
                                 </div>
-                              </div>
-
-                              {/* Actions row */}
-                              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', paddingTop:8, borderTop:'1px solid #f1f5f9' }}>
-                                <span style={{ fontSize:11, fontWeight:600, color:'#64748b', marginRight:4 }}>Actions:</span>
-                                {p.registration_status !== 'approved' && (
-                                  <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:12, padding:'6px 14px' }} disabled={acting}>✓ Approve</Btn>
-                                )}
-                                {p.registration_status !== 'rejected' && (
-                                  <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:12, padding:'6px 14px' }} disabled={acting}>✕ Reject</Btn>
-                                )}
-                                <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:12, padding:'6px 14px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>🗑 Delete</Btn>
-                              </div>
+                              ))}
                             </div>
                           )}
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
 
             {/* ── CLUBS & TEAMS ── */}
             {section === 'clubs' && (
@@ -967,36 +1095,109 @@ export default function SuperadminPage() {
                                 {c}{(c==='full_name'||c==='name') ? ' 👤' : ''}
                               </th>
                             ))}
+                            <th className="sa-th" style={{ whiteSpace:'nowrap' }}>Root Status</th>
+                            {['profiles', 'teams', 'athletes'].includes(dbTable) && (
+                              <th className="sa-th" style={{ textAlign:'right', whiteSpace:'nowrap' }}>Direct Actions</th>
+                            )}
                           </tr>
                         </thead>
                         <tbody>
                           {dbRows.map((row, i) => {
-                            const nameVal = row['full_name'] || row['name'] || null
-                            const clubVal = row['club_name'] || null
-                            const roleVal = row['role'] || null
+                            const rowStatus = getRowStatus(dbTable, row, profiles, teams)
+                            const isOrphan = rowStatus?.isOrphan
+                            const rowBg = isOrphan ? '#fff5f5' : ''
+                            
                             return (
-                              <tr key={i} onMouseEnter={e => e.currentTarget.style.background='#f0fdfa'} onMouseLeave={e => e.currentTarget.style.background=''}>
+                              <tr key={i}
+                                style={{ background: rowBg, borderLeft: isOrphan ? '4px solid #ef4444' : undefined }}
+                                onMouseEnter={e => e.currentTarget.style.background = isOrphan ? '#fee2e2' : '#f0fdfa'}
+                                onMouseLeave={e => e.currentTarget.style.background = rowBg}>
                                 {dbCols.map(c => {
                                   const isName = c === 'full_name' || c === 'name'
                                   const isId = c === 'id' || c?.endsWith('_id')
                                   const isRole = c === 'role'
                                   const val = row[c]
+                                  const resolved = isId ? resolveIdName(c, val) : null
+
                                   return (
-                                    <td key={c} className="sa-td" style={{ maxWidth: isName ? 200 : 160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', fontFamily: isId ? 'monospace' : 'inherit', fontSize:11,
+                                    <td key={c} className="sa-td" style={{ 
+                                      maxWidth: isName || resolved ? 240 : 160, 
+                                      overflow:'hidden', 
+                                      textOverflow:'ellipsis', 
+                                      whiteSpace:'nowrap', 
+                                      fontFamily: isId && !resolved ? 'monospace' : 'inherit', 
+                                      fontSize:11,
                                       background: isName ? '#f0fdfa' : undefined,
                                       color: val===null ? '#cbd5e1' : isName ? '#0f172a' : isId ? '#0d9488' : '#334155',
-                                      fontWeight: isName ? 700 : undefined,
+                                      fontWeight: isName || resolved ? 700 : undefined,
                                     }}>
                                       {val === null ? (
                                         <span style={{ fontStyle:'italic', color:'#cbd5e1' }}>null</span>
                                       ) : isRole ? (
                                         <RoleBadge role={String(val)} />
+                                      ) : resolved ? (
+                                        <span title={val} style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
+                                          <span style={{ color: '#0f172a', fontWeight: 700 }}>
+                                            {resolved.icon} {resolved.name}
+                                          </span>
+                                          {resolved.club && (
+                                            <span style={{ fontSize: 9, color: '#0d9488', fontWeight: 600 }}>
+                                              ({resolved.club})
+                                            </span>
+                                          )}
+                                          <span style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 400 }}>
+                                            {val.slice(0, 8)}…
+                                          </span>
+                                        </span>
                                       ) : (
                                         String(val)
                                       )}
                                     </td>
                                   )
                                 })}
+                                {/* Root Status Column */}
+                                <td className="sa-td" style={{ whiteSpace:'nowrap' }}>
+                                  {rowStatus ? (
+                                    <span style={{ display:'inline-block', background: rowStatus.bg, color: rowStatus.color, borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>
+                                      {rowStatus.label}
+                                    </span>
+                                  ) : (
+                                    <span style={{ display:'inline-block', background: '#d1fae5', color: '#059669', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>
+                                      Healthy
+                                    </span>
+                                  )}
+                                </td>
+                                {/* Direct Actions Column */}
+                                {['profiles', 'teams', 'athletes'].includes(dbTable) && (
+                                  <td className="sa-td" style={{ textAlign:'right', whiteSpace:'nowrap' }}>
+                                    {dbTable === 'profiles' && row.role !== 'superadmin' && (
+                                      <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteUserDirect(row.id, row.full_name || row.email)} disabled={acting}>
+                                        🗑 Delete User
+                                      </Btn>
+                                    )}
+                                    {dbTable === 'teams' && (
+                                      <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteTeamDirect(row.id, row.name)} disabled={acting}>
+                                        🗑 Wipe Team
+                                      </Btn>
+                                    )}
+                                    {dbTable === 'athletes' && (
+                                      <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={async () => {
+                                        if (!confirm(`Delete athlete "${row.name}"? This will remove all associated database records.`)) return
+                                        setActing(true)
+                                        try {
+                                          const { error } = await supabase.from('athletes').delete().eq('id', row.id)
+                                          if (error) throw error
+                                          showToast(`Deleted athlete "${row.name}" successfully!`)
+                                          loadProfiles()
+                                          loadTable('athletes')
+                                        } catch (err) { showToast('Deletion failed: ' + err.message, 'error') }
+                                        finally { setActing(false) }
+                                      }} disabled={acting}>
+                                        🗑 Delete Athlete
+                                      </Btn>
+                                    )}
+                                  </td>
+                                )}
                               </tr>
                             )
                           })}

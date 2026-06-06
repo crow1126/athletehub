@@ -467,6 +467,8 @@ export default function LandingPage() {
         @media (max-width: 900px) {
           .nav-links-center { display: none; }
           .nav-hamburger { display: block; }
+          .nav-pricing-btn { display: none; }
+          .nav-cta { display: none; }
           .features-grid { grid-template-columns: repeat(2,1fr); }
           .pricing-grid { grid-template-columns: 1fr; max-width: 480px; }
           .stats-grid { grid-template-columns: repeat(2,1fr); gap: 28px; }
@@ -476,6 +478,7 @@ export default function LandingPage() {
         @media (max-width: 640px) {
           .lp-nav { padding: 0 20px; }
           .hero { padding: 120px 20px 0; }
+          .hero-h1 { font-size: clamp(32px, 8vw, 48px); line-height: 1.1; }
           .hero-visual { margin: 36px 16px 0; }
           .hero-img-wrapper { border-radius: 18px; }
           .hero-img { height: 360px; }

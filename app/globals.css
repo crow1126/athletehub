@@ -383,12 +383,15 @@ body {
     width: auto !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-    padding: 8px 14px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
     margin-bottom: 0 !important;
   }
 
   .settings-content {
     padding: 16px !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
   }
 
   .issue-grid,
@@ -397,6 +400,7 @@ body {
     grid-template-columns: 1fr !important;
   }
 
+  /* Settings tables: show as cards on mobile */
   .logins-table-header,
   .users-table-header {
     display: none !important;
@@ -406,13 +410,45 @@ body {
     display: flex !important;
     flex-direction: column !important;
     gap: 6px !important;
-    padding: 14px !important;
+    padding: 14px 16px !important;
+    border-radius: 0 !important;
   }
 
   .users-table-row {
     display: flex !important;
-    flex-wrap: wrap !important;
+    flex-direction: column !important;
     gap: 8px !important;
-    padding: 12px 14px !important;
+    padding: 14px 16px !important;
+  }
+
+  /* Users table: each grid row becomes a card row */
+  .users-table-row > div {
+    width: 100% !important;
+  }
+
+  /* Make settings content buttons full-width on mobile */
+  .settings-content .gm-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* Superadmin desktop title hidden on mobile */
+  .sa-desktop-title {
+    display: none !important;
+  }
+
+  /* Mobile-only elements shown on mobile */
+  .sa-mobile-only {
+    display: flex !important;
+  }
+
+  .sa-mobile-provision {
+    display: flex !important;
+  }
+
+  /* Smaller page header on mobile */
+  .page-outer h1,
+  .page-outer-wide h1 {
+    font-size: 20px !important;
   }
 }

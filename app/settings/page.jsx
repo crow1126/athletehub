@@ -334,6 +334,16 @@ export default function SettingsPage() {
         <style>{`
           .settings-wrap { display:grid; grid-template-columns:230px 1fr; gap:24px; align-items:start; }
           .settings-content { padding:30px; }
+
+          @media (max-width: 768px) {
+            .settings-wrap { display:flex; flex-direction:column; gap:16px; }
+            .settings-content { padding:16px; width:100%; box-sizing:border-box; }
+            .settings-tabs-card { width:100%; margin-bottom:8px; padding:8px!important; }
+            .settings-profile-header { display:none!important; }
+            .settings-tabs-list { display:flex!important; flex-direction:row!important; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:8px; padding:4px 0; }
+            .settings-tab-btn { width:auto!important; white-space:nowrap; flex-shrink:0; text-align:center!important; margin-bottom:0!important; }
+            .issue-grid, .recover-grid { grid-template-columns: 1fr!important; gap: 10px!important; }
+          }
         `}</style>
 
         <div className="settings-wrap">
@@ -486,43 +496,47 @@ export default function SettingsPage() {
                   <div style={{ padding:'28px',textAlign:'center',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:14,fontStyle:'italic',border:'1px solid var(--border)',marginTop:12 }}>No logins issued yet.</div>
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
-                    <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                      {['Staff','Username','Password','Role','Issued','Status','Action'].map(h=>(
-                        <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
-                      ))}
-                    </div>
-                    {staffLogins.map(login => (
-                      <div key={login.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
-                        onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
-                        onMouseLeave={e=>e.currentTarget.style.background=''}>
-                        <div>
-                          <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
-                          <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
+                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <div style={{ minWidth:720 }}>
+                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                          {['Staff','Username','Password','Role','Issued','Status','Action'].map(h=>(
+                            <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
+                          ))}
                         </div>
-                        <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
-                        <div style={{ display:'flex',alignItems:'center',gap:6 }}>
-                          {login.plain_password ? (
-                            <>
-                              <span style={{ fontSize:11,fontFamily:'monospace',background:'var(--surface2)',padding:'2px 8px',borderRadius:4,border:'1px solid var(--border)',color:'var(--text)' }}>
-                                {showPassword[login.id] ? login.plain_password : '••••••••'}
-                              </span>
-                              <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:14,padding:2,color:'var(--text3)' }}>
-                                {showPassword[login.id] ? '🙈' : '👁'}
-                              </button>
-                            </>
-                          ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>Not stored</span>}
-                        </div>
-                        <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
-                        <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
-                        <div><span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'● Active':'○ Revoked'}</span></div>
-                        <div>
-                          {login.is_active
-                            ? <button onClick={()=>revokeLogin(login.id)} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke {GM_ICON}</button>
-                            : <button onClick={()=>reactivateLogin(login.id)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore {GM_ICON}</button>
-                          }
-                        </div>
+                        {staffLogins.map(login => (
+                          <div key={login.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
+                            onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
+                            onMouseLeave={e=>e.currentTarget.style.background=''}>
+                            <div>
+                              <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
+                              <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
+                            </div>
+                            <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
+                            <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+                              {login.plain_password ? (
+                                <>
+                                  <span style={{ fontSize:11,fontFamily:'monospace',background:'var(--surface2)',padding:'2px 8px',borderRadius:4,border:'1px solid var(--border)',color:'var(--text)' }}>
+                                    {showPassword[login.id] ? login.plain_password : '••••••••'}
+                                  </span>
+                                  <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:14,padding:2,color:'var(--text3)' }}>
+                                    {showPassword[login.id] ? '🙈' : '👁'}
+                                  </button>
+                                </>
+                              ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>Not stored</span>}
+                            </div>
+                            <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
+                            <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
+                            <div><span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'● Active':'○ Revoked'}</span></div>
+                            <div>
+                              {login.is_active
+                                ? <button onClick={()=>revokeLogin(login.id)} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke {GM_ICON}</button>
+                                : <button onClick={()=>reactivateLogin(login.id)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore {GM_ICON}</button>
+                              }
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -578,55 +592,59 @@ export default function SettingsPage() {
                   <div style={{ padding:'28px',textAlign:'center',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:14,fontStyle:'italic',border:'1px solid var(--border)',marginTop:12 }}>No athletes registered yet. Please register athletes in the Athletes tab first.</div>
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
-                    <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                      {['Athlete','Username / Email','Role','Status','Actions'].map(h=>(
-                        <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
-                      ))}
-                    </div>
-                    {allAthletes.map(a => {
-                      const login = allUsers.find(u => u.athlete_id === a.id)
-                      return (
-                        <div key={a.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:(!login || login.is_active) ? 1 : 0.6 }}
-                          onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
-                          onMouseLeave={e=>e.currentTarget.style.background=''}>
-                          <div>
-                            <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{a.name}</div>
-                            <div style={{ fontSize:11,color:'var(--text3)' }}>{a.position || '—'} {a.back_number ? `· #${a.back_number}` : ''}</div>
-                          </div>
-                          <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>
-                            {login ? (login.username || login.email) : <span style={{ color:'var(--text3)',fontStyle:'italic' }}>— No Login —</span>}
-                          </div>
-                          <div>
-                            {login ? (
-                              <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS.player+'20',color:ROLE_COLORS.player,padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span>
-                            ) : '—'}
-                          </div>
-                          <div>
-                            {login ? (
-                              <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'✅ Active':'⛔ Revoked'}</span>
-                            ) : '—'}
-                          </div>
-                          <div>
-                            {login ? (
-                              <div style={{ display:'flex',gap:6 }}>
-                                <button onClick={()=>handlePlayerAction(login.id, 'reset_password')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Reset PW</button>
-                                {login.is_active ? (
-                                  <button onClick={()=>handlePlayerAction(login.id, 'revoke')} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke</button>
+                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <div style={{ minWidth:640 }}>
+                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                          {['Athlete','Username / Email','Role','Status','Actions'].map(h=>(
+                            <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
+                          ))}
+                        </div>
+                        {allAthletes.map(a => {
+                          const login = allUsers.find(u => u.athlete_id === a.id)
+                          return (
+                            <div key={a.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:(!login || login.is_active) ? 1 : 0.6 }}
+                              onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
+                              onMouseLeave={e=>e.currentTarget.style.background=''}>
+                              <div>
+                                <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{a.name}</div>
+                                <div style={{ fontSize:11,color:'var(--text3)' }}>{a.position || '—'} {a.back_number ? `· #${a.back_number}` : ''}</div>
+                              </div>
+                              <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>
+                                {login ? (login.username || login.email) : <span style={{ color:'var(--text3)',fontStyle:'italic' }}>— No Login —</span>}
+                              </div>
+                              <div>
+                                {login ? (
+                                  <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS.player+'20',color:ROLE_COLORS.player,padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span>
+                                ) : '—'}
+                              </div>
+                              <div>
+                                {login ? (
+                                  <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'✅ Active':'⛔ Revoked'}</span>
+                                ) : '—'}
+                              </div>
+                              <div>
+                                {login ? (
+                                  <div style={{ display:'flex',gap:6 }}>
+                                    <button onClick={()=>handlePlayerAction(login.id, 'reset_password')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Reset PW</button>
+                                    {login.is_active ? (
+                                      <button onClick={()=>handlePlayerAction(login.id, 'revoke')} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke</button>
+                                    ) : (
+                                      <button onClick={()=>handlePlayerAction(login.id, 'reactivate')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore</button>
+                                    )}
+                                  </div>
                                 ) : (
-                                  <button onClick={()=>handlePlayerAction(login.id, 'reactivate')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore</button>
+                                  <button onClick={()=>{
+                                    setPlayerForm(f => ({ ...f, athlete_id: a.id, username: a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20) }))
+                                    setShowPlayerForm(true)
+                                    setPlayerMsg({ text: '', type: '' })
+                                  }} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Create Login</button>
                                 )}
                               </div>
-                            ) : (
-                              <button onClick={()=>{
-                                setPlayerForm(f => ({ ...f, athlete_id: a.id, username: a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20) }))
-                                setShowPlayerForm(true)
-                                setPlayerMsg({ text: '', type: '' })
-                              }} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Create Login</button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -690,37 +708,41 @@ export default function SettingsPage() {
                   <div style={{ padding:'24px',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:13,fontStyle:'italic',border:'1px solid var(--border)',textAlign:'center' }}>No active staff logins.</div>
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden' }}>
-                    <div style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,padding:'10px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                      {['Staff','Username','Password','Role','Issued'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
-                    </div>
-                    {staffLogins.filter(l=>l.is_active).map((login,i)=>{
-                      const selected = recoverForm.login_id === login.id
-                      return (
-                        <div key={login.id} onClick={()=>setRecoverForm(f=>({...f,login_id:login.id}))}
-                          style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'#F0FDFA':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
-                          onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
-                          onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
-                          <div style={{ display:'flex',alignItems:'center',gap:7 }}>
-                            {selected && <span style={{ fontSize:14 }}>✅</span>}
-                            <div>
-                              <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
-                              <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
-                            </div>
-                          </div>
-                          <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
-                          <div style={{ display:'flex',alignItems:'center',gap:5 }}>
-                            {login.plain_password ? (
-                              <>
-                                <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text)' }}>{showPassword['tbl_'+login.id] ? login.plain_password : '••••••••'}</span>
-                                <button onClick={e=>{e.stopPropagation();setShowPassword(p=>({...p,['tbl_'+login.id]:!p['tbl_'+login.id]}))}} style={{ background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0 }}>{showPassword['tbl_'+login.id]?'🙈':'👁'}</button>
-                              </>
-                            ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>—</span>}
-                          </div>
-                          <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
-                          <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
+                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <div style={{ minWidth:580 }}>
+                        <div style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,padding:'10px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                          {['Staff','Username','Password','Role','Issued'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
                         </div>
-                      )
-                    })}
+                        {staffLogins.filter(l=>l.is_active).map((login,i)=>{
+                          const selected = recoverForm.login_id === login.id
+                          return (
+                            <div key={login.id} onClick={()=>setRecoverForm(f=>({...f,login_id:login.id}))}
+                              style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'#F0FDFA':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
+                              onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
+                              onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
+                              <div style={{ display:'flex',alignItems:'center',gap:7 }}>
+                                {selected && <span style={{ fontSize:14 }}>✅</span>}
+                                <div>
+                                  <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
+                                  <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
+                                </div>
+                              </div>
+                              <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
+                              <div style={{ display:'flex',alignItems:'center',gap:5 }}>
+                                {login.plain_password ? (
+                                  <>
+                                    <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text)' }}>{showPassword['tbl_'+login.id] ? login.plain_password : '••••••••'}</span>
+                                    <button onClick={e=>{e.stopPropagation();setShowPassword(p=>({...p,['tbl_'+login.id]:!p['tbl_'+login.id]}))}} style={{ background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0 }}>{showPassword['tbl_'+login.id]?'🙈':'👁'}</button>
+                                  </>
+                                ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>—</span>}
+                              </div>
+                              <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
+                              <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </div>
                 )}
                 <p style={{ fontSize:11,color:'var(--text3)',marginTop:10 }}>💡 Click any row to pre-select · 👁 to reveal password · 📋 to copy</p>
@@ -737,43 +759,47 @@ export default function SettingsPage() {
                 <MsgBox m={msg}/>
                 {allUsers.length===0 ? <p style={{ fontSize:13,color:'var(--text3)',fontStyle:'italic',marginTop:12 }}>No users yet.</p> : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:msg.text?12:0 }}>
-                    <div className="users-table-header" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                      {['Name','Email','Role','Status','Action'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
-                    </div>
-                    {allUsers.map(u=>(
-                      <div key={u.id} className="users-table-row" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:u.is_active!==false?1:0.6 }}
-                        onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
-                        onMouseLeave={e=>e.currentTarget.style.background=''}>
-                        <div style={{ display:'flex',alignItems:'center',gap:9 }}>
-                          <div style={{ width:32,height:32,borderRadius:'50%',background:ROLE_COLORS[u.role||'coach']+'33',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:ROLE_COLORS[u.role||'coach'],flexShrink:0 }}>{initials(u.full_name)}</div>
-                          <span style={{ fontSize:13,fontWeight:600,color:'var(--text)' }}>{u.full_name||'—'}</span>
+                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <div style={{ minWidth:580 }}>
+                        <div className="users-table-header" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                          {['Name','Email','Role','Status','Action'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
                         </div>
-                        <div style={{ fontSize:12,color:'var(--text3)',wordBreak:'break-all' }}>{u.email||'—'}</div>
-                        <div>
-                          <select 
-                            value={u.role||'coach'} 
-                            onChange={e=>updateUserRole(u.id,e.target.value)} 
-                            style={{ padding:'5px 10px',border:'1px solid var(--border)',borderRadius:'var(--r-sm)',fontSize:12,background:'var(--surface2)',color:'var(--text)',fontFamily:'var(--font)',cursor:'pointer',outline:'none' }}
-                          >
-                            {ROLES.map(r => {
-                              const isLocked = (subPlan === 'starting_xi' || subPlan === 'starter') && (r === 'analyst' || r === 'scout')
-                              return (
-                                <option key={r} value={r} disabled={isLocked}>
-                                  {r}{isLocked ? ' (Locked)' : ''}
-                                </option>
-                              )
-                            })}
-                          </select>
-                        </div>
-                        <div><span style={{ fontSize:10,fontWeight:700,background:u.is_active!==false?'var(--success-light)':'var(--danger-light)',color:u.is_active!==false?'var(--success)':'var(--danger)',padding:'3px 10px',borderRadius:99 }}>{u.is_active!==false?'Active':'Disabled'}</span></div>
-                        <div>
-                          {u.is_active!==false
-                            ? <button onClick={()=>toggleUserActive(u.id,true)}  className="gm-btn danger"  style={{ padding:'5px 10px',fontSize:11 }}>Disable {GM_ICON}</button>
-                            : <button onClick={()=>toggleUserActive(u.id,false)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Enable {GM_ICON}</button>
-                          }
-                        </div>
+                        {allUsers.map(u=>(
+                          <div key={u.id} className="users-table-row" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:u.is_active!==false?1:0.6 }}
+                            onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
+                            onMouseLeave={e=>e.currentTarget.style.background=''}>
+                            <div style={{ display:'flex',alignItems:'center',gap:9 }}>
+                              <div style={{ width:32,height:32,borderRadius:'50%',background:ROLE_COLORS[u.role||'coach']+'33',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:ROLE_COLORS[u.role||'coach'],flexShrink:0 }}>{initials(u.full_name)}</div>
+                              <span style={{ fontSize:13,fontWeight:600,color:'var(--text)',whiteSpace:'nowrap' }}>{u.full_name||'—'}</span>
+                            </div>
+                            <div style={{ fontSize:12,color:'var(--text3)',wordBreak:'break-all' }}>{u.email||'—'}</div>
+                            <div>
+                              <select 
+                                value={u.role||'coach'} 
+                                onChange={e=>updateUserRole(u.id,e.target.value)} 
+                                style={{ padding:'5px 10px',border:'1px solid var(--border)',borderRadius:'var(--r-sm)',fontSize:12,background:'var(--surface2)',color:'var(--text)',fontFamily:'var(--font)',cursor:'pointer',outline:'none' }}
+                              >
+                                {ROLES.map(r => {
+                                  const isLocked = (subPlan === 'starting_xi' || subPlan === 'starter') && (r === 'analyst' || r === 'scout')
+                                  return (
+                                    <option key={r} value={r} disabled={isLocked}>
+                                      {r}{isLocked ? ' (Locked)' : ''}
+                                    </option>
+                                  )
+                                })}
+                              </select>
+                            </div>
+                            <div><span style={{ fontSize:10,fontWeight:700,background:u.is_active!==false?'var(--success-light)':'var(--danger-light)',color:u.is_active!==false?'var(--success)':'var(--danger)',padding:'3px 10px',borderRadius:99,whiteSpace:'nowrap' }}>{u.is_active!==false?'Active':'Disabled'}</span></div>
+                            <div style={{ whiteSpace:'nowrap' }}>
+                              {u.is_active!==false
+                                ? <button onClick={()=>toggleUserActive(u.id,true)}  className="gm-btn danger"  style={{ padding:'5px 10px',fontSize:11 }}>Disable {GM_ICON}</button>
+                                : <button onClick={()=>toggleUserActive(u.id,false)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Enable {GM_ICON}</button>
+                              }
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
+                    </div>
                   </div>
                 )}
               </div>

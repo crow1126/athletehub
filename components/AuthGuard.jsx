@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { canAccessModule } from '@/lib/subscription'
 
 const PUBLIC_ROUTES  = ['/', '/login', '/auth/confirm', '/privacy', '/terms', '/security']
-const BILLING_BYPASS = ['/billing', '/login']
+const BILLING_BYPASS = ['/billing', '/login', '/pay']
 
 function pathToModule(path) {
   const map = {
@@ -43,7 +43,16 @@ export default function AuthGuard({ children }) {
       if (error || !profile) { await supabase.auth.signOut(); router.replace('/login?reason=profile_error'); return }
       if (profile.is_active === false) { await supabase.auth.signOut(); router.replace('/login?reason=disabled'); return }
 
-      if (!BILLING_BYPASS.includes(path) && profile.team_id) {
+      // /pay routes: require admin or superadmin, bypass subscription checks
+      if (path === '/pay' || path.startsWith('/pay/')) {
+        if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+          router.replace('/dashboard?reason=insufficient_permissions')
+          return
+        }
+        return // allow in
+      }
+
+      if (!BILLING_BYPASS.some(b => path === b || path.startsWith(b + '/')) && profile.team_id) {
         const { data: sub } = await supabase
           .from('subscriptions').select('status,plan,current_period_end,trial_ends_at')
           .eq('team_id', profile.team_id).single()
@@ -58,7 +67,6 @@ export default function AuthGuard({ children }) {
             if (profile.role === 'admin' || profile.role === 'superadmin') {
               router.replace('/billing?reason=expired')
             } else {
-              // Sign out first to prevent redirect loop between dashboard and login
               await supabase.auth.signOut()
               router.replace('/login?reason=subscription_expired')
             }

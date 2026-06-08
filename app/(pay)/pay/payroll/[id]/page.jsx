@@ -1,0 +1,256 @@
+'use client'
+import { useState, useEffect, useCallback, use } from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+
+const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const SIMULATE = process.env.NODE_ENV !== 'production'
+
+function StatusBadge({ status }) {
+  const map = {
+    draft:            { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8', label: 'Draft' },
+    pending_approval: { bg: 'rgba(245,158,11,0.12)',  color: '#FBB124', label: 'Pending' },
+    approved:         { bg: 'rgba(59,130,246,0.12)',  color: '#60A5FA', label: 'Approved' },
+    processing:       { bg: 'rgba(139,92,246,0.12)', color: '#A78BFA', label: 'Processing' },
+    completed:        { bg: 'rgba(16,185,129,0.12)', color: '#34D399', label: 'Completed' },
+    failed:           { bg: 'rgba(239,68,68,0.12)',  color: '#FCA5A5', label: 'Failed' },
+    pending:          { bg: 'rgba(245,158,11,0.12)', color: '#FBB124', label: 'Pending' },
+    success:          { bg: 'rgba(16,185,129,0.12)', color: '#34D399', label: 'Paid' },
+  }
+  const s = map[status] || map.draft
+  return <span className="pay-badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>
+}
+
+// Timeline step
+function TimelineStep({ done, active, label, sub }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
+      <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, border: `2px solid ${done ? '#10B981' : active ? '#F59E0B' : '#1E2D4A'}`, background: done ? 'rgba(16,185,129,0.15)' : active ? 'rgba(245,158,11,0.15)' : 'transparent', color: done ? '#10B981' : active ? '#F59E0B' : '#334155' }}>
+        {done ? '✓' : active ? '⬤' : '○'}
+      </div>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: done || active ? '#CBD5E1' : '#475569' }}>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{sub}</div>}
+      </div>
+    </div>
+  )
+}
+
+export default function PayrollRunDetailPage({ params }) {
+  const { id }    = use(params)
+  const router    = useRouter()
+  const [run,     setRun]      = useState(null)
+  const [items,   setItems]    = useState([])
+  const [wallet,  setWallet]   = useState(null)
+  const [loading, setLoading]  = useState(true)
+  const [action,  setAction]   = useState(null) // 'approving' | 'disbursing'
+  const [result,  setResult]   = useState(null)
+  const [error,   setError]    = useState(null)
+  const [teamId,  setTeamId]   = useState(null)
+
+  const load = useCallback(async (tid) => {
+    setLoading(true)
+    const [runRes, walletRes] = await Promise.all([
+      fetch(`/api/pay/payroll/${id}`),
+      tid ? fetch(`/api/pay/wallet?team_id=${tid}`) : Promise.resolve({ ok: false }),
+    ])
+    const runData    = await runRes.json()
+    const walletData = walletRes.ok ? await walletRes.json() : null
+    setLoading(false)
+    if (runRes.ok)  { setRun(runData.run); setItems(runData.items || []) }
+    if (walletData) setWallet(walletData.wallet)
+  }, [id])
+
+  useEffect(() => {
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: profile } = await supabase.from('profiles').select('team_id').eq('id', session.user.id).single()
+      setTeamId(profile?.team_id)
+      load(profile?.team_id)
+    }
+    init()
+  }, [load])
+
+  async function approve() {
+    setAction('approving'); setError(null)
+    const res  = await fetch(`/api/pay/payroll/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'approve' }),
+    })
+    const data = await res.json()
+    setAction(null)
+    if (!res.ok) return setError(data.error)
+    setResult(`✅ Approved! Fee: ${fmt(data.fee)}`)
+    load(teamId)
+  }
+
+  async function disburse() {
+    if (!confirm('This will trigger live MoMo transfers. Proceed?')) return
+    setAction('disbursing'); setError(null)
+    const res  = await fetch('/api/pay/disburse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ payroll_run_id: id }),
+    })
+    const data = await res.json()
+    setAction(null)
+    if (!res.ok) return setError(data.error)
+    const simNote = data.simulated ? ' (simulated)' : ''
+    setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ${data.failCount > 0 ? `⚠ ${data.failCount} failed.` : ''}`)
+    load(teamId)
+  }
+
+  async function cancel() {
+    if (!confirm('Cancel this payroll run?')) return
+    await fetch(`/api/pay/payroll/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cancel' }),
+    })
+    load(teamId)
+  }
+
+  if (loading) return <div style={{ padding: 64, textAlign: 'center', color: '#334155', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Loading…</div>
+  if (!run)    return <div style={{ padding: 64, textAlign: 'center', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Run not found</div>
+
+  const fee          = parseFloat((run.total_amount * 0.01).toFixed(2))
+  const totalRequired = run.total_amount + fee
+  const balance       = Number(wallet?.balance || 0)
+  const sufficient    = balance >= totalRequired
+
+  // Timeline
+  const isDraft      = run.status === 'draft'
+  const isApproved   = ['approved', 'processing', 'completed', 'failed'].includes(run.status)
+  const isDispatched = ['processing', 'completed', 'failed'].includes(run.status)
+  const isDone       = run.status === 'completed'
+
+  return (
+    <div style={{ padding: '32px', animation: 'fadeUp 0.35s ease' }}>
+      {/* Breadcrumb */}
+      <div style={{ fontSize: 12, color: '#475569', marginBottom: 20 }}>
+        <Link href="/pay" style={{ color: '#F59E0B', textDecoration: 'none' }}>ApexPay</Link>
+        {' / '}
+        <Link href="/pay/payroll" style={{ color: '#64748B', textDecoration: 'none' }}>Payroll</Link>
+        {' / '}
+        <span style={{ color: '#94A3B8' }}>{run.description}</span>
+      </div>
+
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em' }}>{run.description}</h1>
+            <StatusBadge status={run.status} />
+          </div>
+          <div style={{ fontSize: 13, color: '#475569' }}>
+            Created {new Date(run.created_at).toLocaleString()} by {run.created_by_profile?.full_name || 'Admin'}
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {(run.status === 'draft' || run.status === 'pending_approval') && (
+            <button className="pay-btn-ghost" onClick={cancel} disabled={!!action}>Cancel Run</button>
+          )}
+          {(run.status === 'draft' || run.status === 'pending_approval') && (
+            <button className="pay-btn-gold" onClick={approve} disabled={!!action}>
+              {action === 'approving' ? 'Approving…' : '✓ Approve Run'}
+            </button>
+          )}
+          {run.status === 'approved' && (
+            <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #065F46, #10B981)', animation: 'pulse-glow 2s infinite' }}>
+              {action === 'disbursing' ? '⏳ Disbursing…' : SIMULATE ? '⚡ Disburse (Simulated)' : '💸 Disburse Now'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Status messages */}
+      {result && <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, padding: '12px 18px', fontSize: 13, color: '#34D399', marginBottom: 20 }}>{result}</div>}
+      {error  && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 18px', fontSize: 13, color: '#FCA5A5', marginBottom: 20 }}>{error}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
+        {/* Left: items table */}
+        <div>
+          <div className="pay-card" style={{ overflow: 'hidden', marginBottom: 20 }}>
+            <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Recipients ({items.length})
+              </h3>
+            </div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+                <tr>
+                  {['Name', 'Phone', 'Base', 'Bonus', 'Allowance', 'Total', 'Status'].map(h => (
+                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#334155', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item, i) => (
+                  <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', animation: `fadeUp 0.3s ease ${i * 0.03}s both` }}>
+                    <td style={{ padding: '12px 16px' }}>
+                      <div style={{ fontWeight: 700, color: '#CBD5E1' }}>{item.name}</div>
+                      <div style={{ fontSize: 10, color: '#475569', textTransform: 'capitalize', marginTop: 2 }}>{item.recipient_type}</div>
+                    </td>
+                    <td style={{ padding: '12px 16px', color: '#64748B', fontFamily: 'monospace' }}>{item.phone}</td>
+                    <td style={{ padding: '12px 16px', color: '#94A3B8' }}>{fmt(item.base_salary)}</td>
+                    <td style={{ padding: '12px 16px', color: '#94A3B8' }}>{fmt(item.bonus)}</td>
+                    <td style={{ padding: '12px 16px', color: '#94A3B8' }}>{fmt(item.allowance)}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 800, color: '#34D399' }}>{fmt(item.total_amount)}</td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <StatusBadge status={item.status} />
+                      {item.moolre_status_msg && <div style={{ fontSize: 10, color: '#475569', marginTop: 3 }}>{item.moolre_status_msg}</div>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Right: summary + timeline */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Financial summary */}
+          <div className="pay-card" style={{ padding: 22 }}>
+            <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Financial Summary</h3>
+            {[
+              { label: 'Payroll Total', value: fmt(run.total_amount), color: '#F1F5F9' },
+              { label: 'Platform Fee (1%)', value: fmt(fee), color: '#94A3B8' },
+              { label: 'Total Deduction', value: fmt(totalRequired), color: '#F59E0B' },
+            ].map(r => (
+              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <span style={{ fontSize: 12, color: '#64748B' }}>{r.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: r.color }}>{r.value}</span>
+              </div>
+            ))}
+            <div style={{ padding: '12px 14px', borderRadius: 10, background: sufficient ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${sufficient ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, marginTop: 8 }}>
+              <div style={{ fontSize: 11, color: sufficient ? '#34D399' : '#FCA5A5', fontWeight: 700 }}>
+                {sufficient ? '✓ Wallet has sufficient funds' : '✗ Insufficient wallet balance'}
+              </div>
+              <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>Available: {fmt(balance)}</div>
+            </div>
+          </div>
+
+          {/* Approval info */}
+          {run.approved_at && (
+            <div className="pay-card" style={{ padding: 22 }}>
+              <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Approval</h3>
+              <div style={{ fontSize: 13, color: '#CBD5E1' }}>{run.approved_by_profile?.full_name || 'Admin'}</div>
+              <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{new Date(run.approved_at).toLocaleString()}</div>
+            </div>
+          )}
+
+          {/* Timeline */}
+          <div className="pay-card" style={{ padding: 22 }}>
+            <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Progress</h3>
+            <TimelineStep done={!isDraft} active={isDraft} label="Draft Created" sub={new Date(run.created_at).toLocaleDateString()} />
+            <TimelineStep done={isApproved} active={!isDraft && !isApproved} label="Admin Approved" sub={run.approved_at ? new Date(run.approved_at).toLocaleDateString() : undefined} />
+            <TimelineStep done={isDispatched} active={isApproved && !isDispatched} label="Disbursement Initiated" />
+            <TimelineStep done={isDone} active={isDispatched && !isDone} label="All Payments Confirmed" />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

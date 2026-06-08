@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 
-export function middleware(request) {
+export function proxy(request) {
   const url = request.nextUrl.clone()
   const host = request.headers.get('host') || ''
 
@@ -27,7 +27,7 @@ export function middleware(request) {
 
 export const config = {
   matcher: [
-    // Apply middleware to all pages, excluding specific static assets
+    // Apply proxy to all pages, excluding specific static assets
     '/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)',
   ],
 }

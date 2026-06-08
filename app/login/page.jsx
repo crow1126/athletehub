@@ -76,7 +76,16 @@ export default function LoginPage() {
         try {
           const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
           if (profile?.is_active !== false) {
-            if (profile?.role === 'superadmin') {
+            const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
+            if (isPaySub) {
+              router.replace('/')
+            } else if (profile?.role === 'accountant') {
+              const host = window.location.host
+              const protocol = window.location.protocol
+              window.location.href = host.startsWith('localhost:')
+                ? `${protocol}//pay.${host}`
+                : `${protocol}//pay.apextrackgh.com`
+            } else if (profile?.role === 'superadmin') {
               router.replace('/superadmin')
             } else if (profile?.role === 'player') {
               router.replace('/player-hub')
@@ -160,7 +169,16 @@ export default function LoginPage() {
         }
         setLoading(false); return
       }
-      if (profile?.role === 'superadmin') {
+      const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
+      if (isPaySub) {
+        router.replace('/')
+      } else if (profile?.role === 'accountant') {
+        const host = window.location.host
+        const protocol = window.location.protocol
+        window.location.href = host.startsWith('localhost:')
+          ? `${protocol}//pay.${host}`
+          : `${protocol}//pay.apextrackgh.com`
+      } else if (profile?.role === 'superadmin') {
         router.replace('/superadmin')
       } else if (profile?.role === 'player') {
         router.replace('/player-hub')

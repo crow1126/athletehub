@@ -43,13 +43,27 @@ export default function AuthGuard({ children }) {
       if (error || !profile) { await supabase.auth.signOut(); router.replace('/login?reason=profile_error'); return }
       if (profile.is_active === false) { await supabase.auth.signOut(); router.replace('/login?reason=disabled'); return }
 
-      // /pay routes: require admin or superadmin, bypass subscription checks
+      // /pay routes: require admin, superadmin, or accountant, bypass subscription checks
       if (path === '/pay' || path.startsWith('/pay/')) {
-        if (profile.role !== 'admin' && profile.role !== 'superadmin') {
+        if (profile.role !== 'admin' && profile.role !== 'superadmin' && profile.role !== 'accountant') {
           router.replace('/dashboard?reason=insufficient_permissions')
           return
         }
         return // allow in
+      }
+
+      // If user is accountant but trying to access non-pay routes, redirect to pay subdomain
+      if (profile.role === 'accountant') {
+        const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
+        if (!isPaySub) {
+          const host = window.location.host
+          const protocol = window.location.protocol
+          const redirectUrl = host.startsWith('localhost:')
+            ? `${protocol}//pay.${host}`
+            : `${protocol}//pay.apextrackgh.com`
+          window.location.href = redirectUrl
+          return
+        }
       }
 
       if (!BILLING_BYPASS.some(b => path === b || path.startsWith(b + '/')) && profile.team_id) {

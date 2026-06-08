@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, use } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { payFetch } from '@/lib/payFetch'
 
 const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const SIMULATE = process.env.NODE_ENV !== 'production'
@@ -48,26 +49,26 @@ export default function PayrollRunDetailPage({ params }) {
   const [result,  setResult]   = useState(null)
   const [error,   setError]    = useState(null)
   const [teamId,  setTeamId]   = useState(null)
+  const [role,    setRole]     = useState(null)
 
   const load = useCallback(async (tid) => {
     setLoading(true)
     const [runRes, walletRes] = await Promise.all([
-      fetch(`/api/pay/payroll/${id}`),
-      tid ? fetch(`/api/pay/wallet?team_id=${tid}`) : Promise.resolve({ ok: false }),
+      payFetch(`/api/pay/payroll/${id}`),
+      tid ? payFetch(`/api/pay/wallet?team_id=${tid}`) : Promise.resolve({ res: { ok: false }, data: {} }),
     ])
-    const runData    = await runRes.json()
-    const walletData = walletRes.ok ? await walletRes.json() : null
     setLoading(false)
-    if (runRes.ok)  { setRun(runData.run); setItems(runData.items || []) }
-    if (walletData) setWallet(walletData.wallet)
+    if (runRes.res.ok)  { setRun(runRes.data.run); setItems(runRes.data.items || []) }
+    if (walletRes.res.ok) setWallet(walletRes.data.wallet)
   }, [id])
 
   useEffect(() => {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const { data: profile } = await supabase.from('profiles').select('team_id').eq('id', session.user.id).single()
+      const { data: profile } = await supabase.from('profiles').select('team_id, role').eq('id', session.user.id).single()
       setTeamId(profile?.team_id)
+      setRole(profile?.role)
       load(profile?.team_id)
     }
     init()
@@ -75,12 +76,10 @@ export default function PayrollRunDetailPage({ params }) {
 
   async function approve() {
     setAction('approving'); setError(null)
-    const res  = await fetch(`/api/pay/payroll/${id}`, {
+    const { res, data } = await payFetch(`/api/pay/payroll/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'approve' }),
     })
-    const data = await res.json()
     setAction(null)
     if (!res.ok) return setError(data.error)
     setResult(`✅ Approved! Fee: ${fmt(data.fee)}`)
@@ -90,12 +89,10 @@ export default function PayrollRunDetailPage({ params }) {
   async function disburse() {
     if (!confirm('This will trigger live MoMo transfers. Proceed?')) return
     setAction('disbursing'); setError(null)
-    const res  = await fetch('/api/pay/disburse', {
+    const { res, data } = await payFetch('/api/pay/disburse', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ payroll_run_id: id }),
     })
-    const data = await res.json()
     setAction(null)
     if (!res.ok) return setError(data.error)
     const simNote = data.simulated ? ' (simulated)' : ''
@@ -105,12 +102,14 @@ export default function PayrollRunDetailPage({ params }) {
 
   async function cancel() {
     if (!confirm('Cancel this payroll run?')) return
-    await fetch(`/api/pay/payroll/${id}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+    await payFetch(`/api/pay/payroll/${id}`, {
+      method: 'PATCH',
       body: JSON.stringify({ action: 'cancel' }),
     })
     load(teamId)
   }
+
+  const isAdmin = ['admin', 'superadmin'].includes(role)
 
   if (loading) return <div style={{ padding: 64, textAlign: 'center', color: '#334155', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Loading…</div>
   if (!run)    return <div style={{ padding: 64, textAlign: 'center', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Run not found</div>
@@ -149,18 +148,21 @@ export default function PayrollRunDetailPage({ params }) {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
-          {(run.status === 'draft' || run.status === 'pending_approval') && (
+          {isAdmin && (run.status === 'draft' || run.status === 'pending_approval') && (
             <button className="pay-btn-ghost" onClick={cancel} disabled={!!action}>Cancel Run</button>
           )}
-          {(run.status === 'draft' || run.status === 'pending_approval') && (
+          {isAdmin && (run.status === 'draft' || run.status === 'pending_approval') && (
             <button className="pay-btn-gold" onClick={approve} disabled={!!action}>
               {action === 'approving' ? 'Approving…' : '✓ Approve Run'}
             </button>
           )}
-          {run.status === 'approved' && (
+          {isAdmin && run.status === 'approved' && (
             <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #065F46, #10B981)', animation: 'pulse-glow 2s infinite' }}>
               {action === 'disbursing' ? '⏳ Disbursing…' : SIMULATE ? '⚡ Disburse (Simulated)' : '💸 Disburse Now'}
             </button>
+          )}
+          {!isAdmin && (
+            <span style={{ fontSize: 12, color: '#475569', fontStyle: 'italic', alignSelf: 'center' }}>View only</span>
           )}
         </div>
       </div>

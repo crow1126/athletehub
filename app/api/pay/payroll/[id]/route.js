@@ -1,6 +1,6 @@
 // app/api/pay/payroll/[id]/route.js
 import { NextResponse } from 'next/server'
-import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
+import { createServiceClient, getRequester, canManageTeam, canAccessPay } from '@/lib/serverAuth'
 
 const db = createServiceClient()
 
@@ -16,7 +16,7 @@ export async function GET(req, { params }) {
       .eq('id', id)
       .single()
     if (runErr || !run) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    if (!canManageTeam(requester.profile, run.team_id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!canAccessPay(requester.profile, run.team_id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     const { data: items } = await db.from('pay_payroll_items')
       .select('*')

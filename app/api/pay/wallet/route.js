@@ -1,6 +1,5 @@
-// app/api/pay/wallet/route.js
 import { NextResponse } from 'next/server'
-import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
+import { createServiceClient, getRequester, canAccessPay } from '@/lib/serverAuth'
 
 const db = createServiceClient()
 
@@ -12,7 +11,7 @@ export async function GET(req) {
 
     const requester = await getRequester(req, db)
     if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
-    if (!canManageTeam(requester.profile, team_id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    if (!canAccessPay(requester.profile, team_id)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
     // Get or create wallet
     let { data: wallet } = await db.from('pay_wallets').select('*').eq('team_id', team_id).maybeSingle()

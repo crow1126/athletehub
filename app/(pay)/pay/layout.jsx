@@ -8,6 +8,7 @@ const NAV = [
   { href: '/pay',              label: 'Overview',     icon: '◈' },
   { href: '/pay/payroll',      label: 'Payroll',      icon: '💳' },
   { href: '/pay/transactions', label: 'Transactions', icon: '📋' },
+  { href: '/pay/settings',     label: 'Settings',     icon: '⚙️' },
 ]
 
 export default function PayLayout({ children }) {
@@ -96,11 +97,14 @@ export default function PayLayout({ children }) {
               {n.label}
             </Link>
           ))}
-          <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 16 }}>
-            <Link href="/dashboard" className="pay-nav-link" style={{ fontSize: 12 }}>
-              <span>←</span> Back to ApexTrack
-            </Link>
-          </div>
+          {/* Back to ApexTrack - hidden for accountants */}
+          {profile?.role !== 'accountant' && (
+            <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 16 }}>
+              <Link href="/dashboard" className="pay-nav-link" style={{ fontSize: 12 }}>
+                <span>←</span> Back to ApexTrack
+              </Link>
+            </div>
+          )}
         </nav>
 
         {/* User footer */}

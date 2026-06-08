@@ -98,9 +98,12 @@ function TopUpModal({ onClose, teamId }) {
 // ─── Page ─────────────────────────────────────────────────────────────────
 export default function PayOverviewPage() {
   const [teamId,     setTeamId]     = useState(null)
+  const [role,       setRole]       = useState(null)
   const [walletData, setWalletData] = useState(null)
   const [loading,    setLoading]    = useState(true)
   const [showTopUp,  setShowTopUp]  = useState(false)
+
+  const isAdmin = ['admin', 'superadmin'].includes(role)
 
   const load = useCallback(async (tid) => {
     if (!tid) return
@@ -114,8 +117,8 @@ export default function PayOverviewPage() {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
-      const { data: profile } = await supabase.from('profiles').select('team_id').eq('id', session.user.id).single()
-      if (profile?.team_id) { setTeamId(profile.team_id); load(profile.team_id) }
+      const { data: profile } = await supabase.from('profiles').select('team_id, role').eq('id', session.user.id).single()
+      if (profile?.team_id) { setTeamId(profile.team_id); setRole(profile.role); load(profile.team_id) }
     }
     init()
   }, [load])
@@ -143,7 +146,7 @@ export default function PayOverviewPage() {
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="pay-btn-ghost" onClick={() => load(teamId)}>↺ Refresh</button>
-          <button className="pay-btn-gold" onClick={() => setShowTopUp(true)}>+ Top Up Wallet</button>
+          {isAdmin && <button className="pay-btn-gold" onClick={() => setShowTopUp(true)}>+ Top Up Wallet</button>}
         </div>
       </div>
 
@@ -183,12 +186,16 @@ export default function PayOverviewPage() {
         <div className="pay-card" style={{ padding: 24 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: '#94A3B8', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Quick Actions</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <button className="pay-btn-gold" style={{ width: '100%' }} onClick={() => setShowTopUp(true)}>
-              💳 Top Up Wallet
-            </button>
-            <Link href="/pay/payroll" style={{ textDecoration: 'none' }}>
-              <button className="pay-btn-ghost" style={{ width: '100%' }}>📋 New Payroll Run</button>
-            </Link>
+            {isAdmin && (
+              <button className="pay-btn-gold" style={{ width: '100%' }} onClick={() => setShowTopUp(true)}>
+                💳 Top Up Wallet
+              </button>
+            )}
+            {isAdmin && (
+              <Link href="/pay/payroll" style={{ textDecoration: 'none' }}>
+                <button className="pay-btn-ghost" style={{ width: '100%' }}>📋 New Payroll Run</button>
+              </Link>
+            )}
             <Link href="/pay/transactions" style={{ textDecoration: 'none' }}>
               <button className="pay-btn-ghost" style={{ width: '100%' }}>📒 View Transactions</button>
             </Link>

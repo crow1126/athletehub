@@ -15,6 +15,8 @@ export function proxy(request) {
       !path.startsWith('/pay') &&
       !path.startsWith('/_next') &&
       !path.startsWith('/api') &&
+      !path.startsWith('/login') &&
+      !path.startsWith('/auth') &&
       !path.includes('.')
     ) {
       url.pathname = `/pay${path}`

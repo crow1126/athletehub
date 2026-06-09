@@ -223,7 +223,7 @@ export default function PayLayout({ children }) {
                 ))}
                 {profile?.role !== 'accountant' && (
                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <a href={mainUrl} className="pay-nav-link" style={{ fontSize: 13 }}>
+                    <a href={mainUrl} onClick={(e) => { e.preventDefault(); window.location.href = mainUrl; }} className="pay-nav-link" style={{ fontSize: 13 }}>
                       <span>←</span> Back to ApexTrack
                     </a>
                   </div>
@@ -308,7 +308,7 @@ export default function PayLayout({ children }) {
           ))}
           {profile?.role !== 'accountant' && (
             <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 16 }}>
-              <a href={mainUrl} className="pay-nav-link" style={{ fontSize: 12 }}>
+              <a href={mainUrl} onClick={(e) => { e.preventDefault(); window.location.href = mainUrl; }} className="pay-nav-link" style={{ fontSize: 12 }}>
                 <span>←</span> Back to ApexTrack
               </a>
             </div>

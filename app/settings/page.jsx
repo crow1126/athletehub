@@ -465,7 +465,19 @@ export default function SettingsPage() {
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
                         <label style={lbl}>Staff Member {issueForm.role !== 'accountant' && '*'}</label>
-                        <select value={issueForm.coach_id} onChange={e=>setIssueForm(f=>({...f,coach_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
+                        <select value={issueForm.coach_id} onChange={e => {
+                          const coachId = e.target.value
+                          const staff = allStaff.find(s => s.id === coachId)
+                          let autoRole = issueForm.role
+                          if (staff) {
+                            if (staff.staff_type === 'accountant') autoRole = 'accountant'
+                            else if (staff.staff_type === 'physio') autoRole = 'physio'
+                            else if (staff.staff_type === 'analyst') autoRole = 'analyst'
+                            else if (staff.staff_type === 'scout') autoRole = 'scout'
+                            else autoRole = 'coach'
+                          }
+                          setIssueForm(f => ({ ...f, coach_id: coachId, role: autoRole }))
+                        }} style={{ ...inp,background:'#fff' }}>
                           <option value="">{issueForm.role === 'accountant' ? '— No staff link (Accountant Only) —' : '— Select a staff member —'}</option>
                           {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
                         </select>

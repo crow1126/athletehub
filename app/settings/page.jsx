@@ -5,18 +5,19 @@ import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { fetchWithAuth, scopeTeam } from '@/lib/tenant'
 
-const ROLES = ['admin','coach','physio','analyst','scout','player']
+const ROLES = ['admin','coach','physio','analyst','scout','player','accountant']
 const ROLE_COLORS = {
   admin:'#006A6A', coach:'#27AE60', physio:'#E67E22',
-  analyst:'#9B59B6', scout:'#1ABC9C', player:'#2D6B6B',
+  analyst:'#9B59B6', scout:'#1ABC9C', player:'#2D6B6B', accountant:'#F59E0B'
 }
 const ROLE_LABELS = {
-  admin:   'Full system access — all modules',
-  coach:   'Dashboard, Athletes, Schedule, Medical, Performance',
-  physio:  'Dashboard, Athletes, Medical Hub only',
-  analyst: 'Dashboard, Athletes, Performance, Reports',
-  scout:   'Dashboard, Scouting, Athletes',
-  player:  'Dashboard only',
+  admin:      'Full system access — all modules',
+  coach:      'Dashboard, Athletes, Schedule, Medical, Performance',
+  physio:     'Dashboard, Athletes, Medical Hub only',
+  analyst:    'Dashboard, Athletes, Performance, Reports',
+  scout:      'Dashboard, Scouting, Athletes',
+  player:     'Dashboard only',
+  accountant: 'ApexPay portal access only — no main app access',
 }
 
 const GM_ICON = (
@@ -47,7 +48,7 @@ export default function SettingsPage() {
   const [msg,           setMsg]           = useState({ text:'', type:'' })
   const [profileForm,   setProfileForm]   = useState({ full_name:'', phone:'' })
   const [pwForm,        setPwForm]        = useState({ newPw:'', confirm:'' })
-  const [issueForm,     setIssueForm]     = useState({ coach_id:'', username:'', password:'', role:'physio', notes:'' })
+  const [issueForm,     setIssueForm]     = useState({ coach_id:'', username:'', password:'', role:'physio', notes:'', full_name:'' })
   const [issueSaving,   setIssueSaving]   = useState(false)
   const [issueMsg,      setIssueMsg]      = useState({ text:'', type:'' })
   const [showIssueForm, setShowIssueForm] = useState(false)
@@ -136,7 +137,10 @@ export default function SettingsPage() {
   }
 
   async function issueLogin() {
-    if (!issueForm.coach_id)            { flashIssue('Select a staff member.','error'); return }
+    if (!issueForm.coach_id && issueForm.role !== 'accountant') { flashIssue('Select a staff member.','error'); return }
+    if (issueForm.role === 'accountant' && !issueForm.coach_id && !issueForm.full_name?.trim()) {
+      flashIssue('Full Name is required for accountant.','error'); return
+    }
     const username = issueForm.username.trim().toLowerCase()
     if (!username)                      { flashIssue('Username is required.','error'); return }
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
@@ -145,11 +149,24 @@ export default function SettingsPage() {
     setIssueSaving(true); setIssueMsg({ text:'',type:'' })
     try {
       const staff = allStaff.find(s => s.id === issueForm.coach_id)
-      const res = await fetchWithAuth('/api/admin/create-user', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ username, password:issueForm.password, full_name:staff?.name||username, role:issueForm.role, coach_id:issueForm.coach_id, team_id:profile.team_id, notes:issueForm.notes }) })
+      const fullName = staff?.name || issueForm.full_name?.trim() || username
+      const res = await fetchWithAuth('/api/admin/create-user', { 
+        method:'POST', 
+        headers:{ 'Content-Type':'application/json' }, 
+        body: JSON.stringify({ 
+          username, 
+          password:issueForm.password, 
+          full_name:fullName, 
+          role:issueForm.role, 
+          coach_id:issueForm.coach_id || null, 
+          team_id:profile.team_id, 
+          notes:issueForm.notes 
+        }) 
+      })
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
-      flashIssue(`✅ Login created for ${staff?.name}!\n👤 Username: ${username}\n🔑 Password: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
-      setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'' })
+      flashIssue(`✅ Login created for ${fullName}!\n👤 Username: ${username}\n🔑 Password: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
+      setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'' })
       setShowIssueForm(false); await loadAll()
     } catch(err) { flashIssue('Error: '+err.message,'error') }
     setIssueSaving(false)
@@ -447,12 +464,18 @@ export default function SettingsPage() {
                     <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>🔑 New Login Credentials</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
-                        <label style={lbl}>Staff Member *</label>
+                        <label style={lbl}>Staff Member {issueForm.role !== 'accountant' && '*'}</label>
                         <select value={issueForm.coach_id} onChange={e=>setIssueForm(f=>({...f,coach_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
-                          <option value="">— Select a staff member —</option>
+                          <option value="">{issueForm.role === 'accountant' ? '— No staff link (Accountant Only) —' : '— Select a staff member —'}</option>
                           {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
                         </select>
                       </div>
+                      {issueForm.role === 'accountant' && !issueForm.coach_id && (
+                        <div>
+                          <label style={lbl}>Full Name *</label>
+                          <input type="text" value={issueForm.full_name || ''} onChange={e=>setIssueForm(f=>({...f,full_name:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Kwame Asante" onFocus={onFocus} onBlur={onBlur}/>
+                        </div>
+                      )}
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                         <div><label style={lbl}>Username *</label><input type="text" value={issueForm.username} onChange={e=>setIssueForm(f=>({...f,username:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. coach_kwame" onFocus={onFocus} onBlur={onBlur}/></div>
                         <div><label style={lbl}>Password *</label><input type="text" value={issueForm.password} onChange={e=>setIssueForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
@@ -474,6 +497,7 @@ export default function SettingsPage() {
                             </>
                           )}
                           <option value="player">player — Dashboard only</option>
+                          <option value="accountant">accountant — ApexPay portal access only</option>
                         </select>
                       </div>
                       <div><label style={lbl}>Notes (optional)</label><input value={issueForm.notes} onChange={e=>setIssueForm(f=>({...f,notes:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Temporary credentials" onFocus={onFocus} onBlur={onBlur}/></div>
@@ -508,8 +532,12 @@ export default function SettingsPage() {
                             onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                             onMouseLeave={e=>e.currentTarget.style.background=''}>
                             <div>
-                              <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
-                              <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
+                              <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>
+                                {login.coaches?.name || allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase())?.full_name || login.email || '—'}
+                              </div>
+                              <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>
+                                {login.coaches?.staff_type ? (login.coaches.staff_type||'').replace(/_/g,' ') : (login.role === 'accountant' ? 'ApexPay Accountant' : '')}
+                              </div>
                             </div>
                             <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
                             <div style={{ display:'flex',alignItems:'center',gap:6 }}>

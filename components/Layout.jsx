@@ -8,7 +8,7 @@ import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import {
   LayoutDashboard, Users, Shield, Calendar, Activity, Zap, 
   Search, FileText, BarChart3, Settings, ArrowRightLeft, CreditCard,
-  Menu, X
+  Wallet, Menu, X
 } from 'lucide-react'
 
 const ALL_NAV = [
@@ -24,6 +24,7 @@ const ALL_NAV = [
   { href:'/settings',    label:'Settings',    page:'settings'    },
   { href:'/transfers',   label:'Transfers',   page:'transfers'   },
   { href:'/billing',     label:'Billing',     page:'billing'     },
+  { href:'/pay',         label:'ApexPay',     page:'pay'         },
 ]
 
 const MOBILE_NAV = ['dashboard','athletes','schedule','injuries','settings']
@@ -50,6 +51,7 @@ const ICONS = {
   settings:    <Settings {...iconProps} />,
   billing:     <CreditCard {...iconProps} />,
   transfers:   <ArrowRightLeft {...iconProps} />,
+  pay:         <Wallet {...iconProps} />,
   menu:        <Menu size={24} strokeWidth={2} />,
   close:       <X size={24} strokeWidth={2} />,
 }
@@ -175,6 +177,20 @@ export default function Layout({ children }) {
               onClick={e => e.stopPropagation()}>
               {navLinks.map(({ href, label, page }) => {
                 const active = path === href || path.startsWith(href + '/')
+                if (page === 'pay') {
+                  const payUrl = typeof window !== 'undefined'
+                    ? (window.location.host.startsWith('localhost:')
+                      ? `${window.location.protocol}//pay.${window.location.host}`
+                      : `${window.location.protocol}//pay.apextrackgh.com`)
+                    : '/pay'
+                  return (
+                    <a key={href} href={payUrl}
+                      style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: C.text2, fontWeight: 500, fontSize:15, textDecoration:'none', borderLeft: '3px solid transparent' }}>
+                      <span style={{ color: C.text3 }}>{ICONS[page]}</span>
+                      {label}
+                    </a>
+                  )
+                }
                 return (
                   <Link key={href} href={href}
                     style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: active ? C.lagoon : C.text2, fontWeight: active ? 600 : 500, fontSize:15, textDecoration:'none', background: active ? 'var(--lagoon-alpha)' : 'transparent', borderLeft: active ? `3px solid ${C.lagoon}` : '3px solid transparent' }}>
@@ -253,6 +269,34 @@ export default function Layout({ children }) {
             const activeBg = 'var(--lagoon-alpha)'
             const activeColor = C.lagoon
             
+            if (page === 'pay') {
+              const payUrl = typeof window !== 'undefined'
+                ? (window.location.host.startsWith('localhost:')
+                  ? `${window.location.protocol}//pay.${window.location.host}`
+                  : `${window.location.protocol}//pay.apextrackgh.com`)
+                : '/pay'
+
+              return (
+                <a key={href} href={payUrl}
+                  style={{ 
+                    display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
+                    justifyContent: expanded ? 'flex-start' : 'center',
+                    borderRadius:12, 
+                    background: 'transparent', 
+                    color: C.text3, 
+                    fontWeight: 500, 
+                    fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = C.floralMuted; e.currentTarget.style.color = C.text2 }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text3 }}>
+                  <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', minWidth:24 }}>
+                    {ICONS[page] || ICONS.dashboard}
+                  </span>
+                  {expanded && <span style={{ overflow:'hidden', textOverflow:'ellipsis', marginTop:1 }}>{label}</span>}
+                </a>
+              )
+            }
+
             return (
               <Link key={href} href={href}
                 style={{ 

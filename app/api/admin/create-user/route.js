@@ -132,7 +132,7 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
-    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player']
+    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant']
     const profileDbRole = allowedDbRoles.includes(safeRole) ? safeRole : 'coach'
 
     const { error: profileError } = await db
@@ -157,11 +157,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
     }
 
-    if (coach_id) {
+    if (coach_id || safeRole === 'accountant') {
       const { error: loginError } = await db
         .from('staff_logins')
         .insert([{
-          coach_id,
+          coach_id: coach_id || null,
           email,
           username: username || null,
           role: safeRole,

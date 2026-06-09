@@ -211,20 +211,20 @@ export default function PayrollPage() {
       setTeamId(profile.team_id)
       loadRuns(profile.team_id)
 
-      // Load roster (players + staff) to help fill in recipients
+      // Load roster (athletes + coaches) to help fill in recipients
       const { data: roster } = await supabase
-        .from('players')
-        .select('id, full_name, phone')
+        .from('athletes')
+        .select('id, name, phone')
         .eq('team_id', profile.team_id)
-        .order('full_name')
+        .order('name')
       const { data: staff } = await supabase
-        .from('staff')
-        .select('id, full_name, phone')
+        .from('coaches')
+        .select('id, name, phone')
         .eq('team_id', profile.team_id)
-        .order('full_name')
+        .order('name')
       const combined = [
-        ...(roster || []).map(p => ({ ...p, type: 'player' })),
-        ...(staff  || []).map(s => ({ ...s, type: 'staff'  })),
+        ...(roster || []).map(p => ({ ...p, full_name: p.name, type: 'athlete' })),
+        ...(staff  || []).map(s => ({ ...s, full_name: s.name, type: 'coach'   })),
       ]
       setPlayers(combined)
     }

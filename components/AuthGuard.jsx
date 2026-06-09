@@ -54,16 +54,14 @@ export default function AuthGuard({ children }) {
 
       // If user is accountant but trying to access non-pay routes, redirect to pay subdomain
       if (profile.role === 'accountant') {
-        const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
+        const isPaySub = typeof window !== 'undefined' && window.location.hostname.startsWith('pay.')
         if (!isPaySub) {
           const host = window.location.host
           const protocol = window.location.protocol
           const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
           let redirectUrl = isIP
             ? `${protocol}//${host}/pay`
-            : (host.startsWith('localhost:')
-              ? `${protocol}//pay.${host}`
-              : `${protocol}//pay.apextrackgh.com`)
+            : `${protocol}//pay.${host}`
           
           if (session) {
             redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`

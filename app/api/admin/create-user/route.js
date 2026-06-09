@@ -154,6 +154,11 @@ export async function POST(req) {
 
     if (profileError) {
       console.error('Profile error:', profileError.message)
+      try {
+        await adminFetch(`users/${userId}`, 'DELETE')
+      } catch (cleanupErr) {
+        console.error('Failed to cleanup auth user after profile failure:', cleanupErr.message)
+      }
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
     }
 

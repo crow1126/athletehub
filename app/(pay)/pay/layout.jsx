@@ -123,9 +123,7 @@ export default function PayLayout({ children }) {
             <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 16 }}>
               {(() => {
                 const mainUrl = typeof window !== 'undefined'
-                  ? (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
-                    ? `${window.location.protocol}//${window.location.host.replace('pay.', '')}/dashboard`
-                    : `${window.location.protocol}//apextrackgh.com/dashboard`)
+                  ? `${window.location.protocol}//${window.location.host.replace(/^pay\./i, '')}/dashboard`
                   : '/dashboard'
                 return (
                   <a href={mainUrl} className="pay-nav-link" style={{ fontSize: 12 }}>

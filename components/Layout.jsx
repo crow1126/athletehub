@@ -124,9 +124,7 @@ export default function Layout({ children }) {
       
       let payUrl = isIP
         ? `${protocol}//${host}/pay`
-        : (host.startsWith('localhost:')
-          ? `${protocol}//pay.${host}`
-          : `${protocol}//pay.apextrackgh.com`)
+        : `${protocol}//pay.${host}`
       
       if (session) {
         payUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`

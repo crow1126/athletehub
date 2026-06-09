@@ -11,23 +11,22 @@ function StatusBadge({ status }) {
     draft:            { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8', label: 'Draft' },
     pending_approval: { bg: 'rgba(245,158,11,0.12)',  color: '#FBB124', label: 'Pending' },
     approved:         { bg: 'rgba(59,130,246,0.12)',  color: '#60A5FA', label: 'Approved' },
-    processing:       { bg: 'rgba(139,92,246,0.12)', color: '#A78BFA', label: 'Processing' },
-    completed:        { bg: 'rgba(16,185,129,0.12)', color: '#34D399', label: 'Completed' },
-    failed:           { bg: 'rgba(239,68,68,0.12)',  color: '#FCA5A5', label: 'Failed' },
+    processing:       { bg: 'rgba(139,92,246,0.12)',  color: '#A78BFA', label: 'Processing' },
+    completed:        { bg: 'rgba(16,185,129,0.12)',  color: '#34D399', label: 'Completed' },
+    failed:           { bg: 'rgba(239,68,68,0.12)',   color: '#FCA5A5', label: 'Failed' },
   }
   const s = map[status] || map.draft
   return <span className="pay-badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>
 }
 
-// ── Player/staff picker (from team roster) ────────────────────────────────
-function RecipientRow({ rec, index, onChange, onRemove, players }) {
-  const [name,   setName]   = useState(rec.name || '')
-  const [phone,  setPhone]  = useState(rec.phone || '')
-  const [base,   setBase]   = useState(rec.base_salary || '')
-  const [bonus,  setBonus]  = useState(rec.bonus || '')
-  const [allow,  setAllow]  = useState(rec.allowance || '')
+// ── Recipient row — mobile-friendly stacked card on mobile ────────────────
+function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
+  const [name,  setName]  = useState(rec.name || '')
+  const [phone, setPhone] = useState(rec.phone || '')
+  const [base,  setBase]  = useState(rec.base_salary || '')
+  const [bonus, setBonus] = useState(rec.bonus || '')
+  const [allow, setAllow] = useState(rec.allowance || '')
 
-  // Notify parent on any change
   function update(field, val) {
     const upd = { ...rec, name, phone, base_salary: base, bonus, allowance: allow, [field]: val }
     onChange(index, upd)
@@ -35,22 +34,67 @@ function RecipientRow({ rec, index, onChange, onRemove, players }) {
 
   const total = (Number(base || 0) + Number(bonus || 0) + Number(allow || 0)).toFixed(2)
 
+  if (isMobile) {
+    return (
+      <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '14px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recipient {index + 1}</span>
+          <button onClick={() => onRemove(index)} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#F87171', borderRadius: 6, width: 26, height: 26, cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div>
+            <label className="pay-lbl">Name / Recipient</label>
+            {players.length > 0 ? (
+              <select className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} value={rec.recipient_id || ''}
+                onChange={e => {
+                  const p = players.find(x => x.id === e.target.value)
+                  if (p) { setName(p.full_name); setPhone(p.phone || ''); onChange(index, { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }) }
+                }}>
+                <option value="">— Select —</option>
+                {players.map(p => <option key={p.id} value={p.id}>{p.full_name} ({p.type})</option>)}
+              </select>
+            ) : (
+              <input className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} placeholder="Name" value={name}
+                onChange={e => { setName(e.target.value); update('name', e.target.value) }} />
+            )}
+          </div>
+          <div>
+            <label className="pay-lbl">MoMo Phone</label>
+            <input className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} type="tel" inputMode="numeric" placeholder="0244000000" value={phone}
+              onChange={e => { setPhone(e.target.value); update('phone', e.target.value) }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+            {[
+              { label: 'Base', val: base, set: setBase, field: 'base_salary' },
+              { label: 'Bonus', val: bonus, set: setBonus, field: 'bonus' },
+              { label: 'Allow.', val: allow, set: setAllow, field: 'allowance' },
+            ].map(({ label, val, set, field }) => (
+              <div key={field}>
+                <label className="pay-lbl">{label}</label>
+                <input className="pay-inp" style={{ padding: '8px 10px', fontSize: 12 }} type="number" inputMode="decimal" min="0" placeholder="0.00" value={val}
+                  onChange={e => { set(e.target.value); update(field, e.target.value) }} />
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <span style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>Total payout</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#34D399' }}>GHS {total}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Desktop row
   return (
     <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
       <td style={{ padding: '8px 6px' }}>
         {players.length > 0 ? (
-          <select
-            className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }}
-            value={rec.recipient_id || ''}
+          <select className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} value={rec.recipient_id || ''}
             onChange={e => {
               const p = players.find(x => x.id === e.target.value)
-              if (p) {
-                const upd = { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }
-                setName(p.full_name); setPhone(p.phone || '')
-                onChange(index, upd)
-              }
-            }}
-          >
+              if (p) { setName(p.full_name); setPhone(p.phone || ''); onChange(index, { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }) }
+            }}>
             <option value="">— Select —</option>
             {players.map(p => <option key={p.id} value={p.id}>{p.full_name} ({p.type})</option>)}
           </select>
@@ -84,7 +128,7 @@ function RecipientRow({ rec, index, onChange, onRemove, players }) {
 }
 
 // ── Create payroll run modal ──────────────────────────────────────────────
-function CreateRunModal({ teamId, players, onClose, onCreated }) {
+function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
   const [description, setDescription] = useState('')
   const [recipients,  setRecipients]  = useState([
     { recipient_type: 'manual', recipient_id: null, name: '', phone: '', base_salary: '', bonus: '', allowance: '' }
@@ -92,9 +136,7 @@ function CreateRunModal({ teamId, players, onClose, onCreated }) {
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
 
-  function addRow() {
-    setRecipients(r => [...r, { recipient_type: 'manual', recipient_id: null, name: '', phone: '', base_salary: '', bonus: '', allowance: '' }])
-  }
+  function addRow() { setRecipients(r => [...r, { recipient_type: 'manual', recipient_id: null, name: '', phone: '', base_salary: '', bonus: '', allowance: '' }]) }
   function removeRow(i) { setRecipients(r => r.filter((_, idx) => idx !== i)) }
   function updateRow(i, upd) { setRecipients(r => r.map((x, idx) => idx === i ? upd : x)) }
 
@@ -103,23 +145,13 @@ function CreateRunModal({ teamId, players, onClose, onCreated }) {
 
   async function submit() {
     if (!description) return setError('Description is required')
-    const cleaned = recipients.map(r => ({
-      ...r,
-      base_salary: Number(r.base_salary || 0),
-      bonus:       Number(r.bonus || 0),
-      allowance:   Number(r.allowance || 0),
-    }))
+    const cleaned = recipients.map(r => ({ ...r, base_salary: Number(r.base_salary || 0), bonus: Number(r.bonus || 0), allowance: Number(r.allowance || 0) }))
     const noName  = cleaned.filter(r => !r.name)
     if (noName.length) return setError('All recipients must have a name')
     const noPhone = cleaned.filter(r => !r.phone)
     if (noPhone.length) return setError(`Missing MoMo phone for: ${noPhone.map(r => r.name).join(', ')}`)
-
     setLoading(true); setError(null)
-    const res = await fetch('/api/pay/payroll', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ team_id: teamId, description, recipients: cleaned }),
-    })
+    const res  = await fetch('/api/pay/payroll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_id: teamId, description, recipients: cleaned }) })
     const data = await res.json()
     setLoading(false)
     if (!res.ok) return setError(data.error || 'Failed to create run')
@@ -127,40 +159,48 @@ function CreateRunModal({ teamId, players, onClose, onCreated }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', animation: 'fadeUp 0.2s ease' }}>
-      <div className="pay-card" style={{ width: '90vw', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', padding: 32 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 800, color: '#F1F5F9', marginBottom: 6 }}>New Payroll Run</h2>
-        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 20 }}>Create a payroll run for review and disbursement.</p>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', animation: 'fadeUp 0.2s ease' }}
+      onClick={() => onClose()}>
+      <div className="pay-card"
+        style={{ width: isMobile ? '100%' : '92vw', maxWidth: isMobile ? '100%' : 860, maxHeight: isMobile ? '92vh' : '90vh', display: 'flex', flexDirection: 'column', padding: isMobile ? '20px 16px' : 32, borderRadius: isMobile ? '20px 20px 0 0' : 18, paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32 }}
+        onClick={e => e.stopPropagation()}>
+        {isMobile && <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)', margin: '0 auto 16px' }} />}
+        <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: '#F1F5F9', marginBottom: 4 }}>New Payroll Run</h2>
+        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 16 }}>Create a payroll run for review and disbursement.</p>
 
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 14 }}>
           <label className="pay-lbl">Payroll Description</label>
           <input className="pay-inp" placeholder="e.g. July 2025 Monthly Salaries" value={description} onChange={e => setDescription(e.target.value)} />
         </div>
 
-        {/* Recipient table */}
-        <div style={{ overflowX: 'auto', flex: 1, overflowY: 'auto', marginBottom: 16 }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                {['Name / Recipient', 'MoMo Phone', 'Base Salary', 'Bonus', 'Allowance', 'Total', ''].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '6px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#334155' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {recipients.map((r, i) => (
-                <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} />
-              ))}
-            </tbody>
-          </table>
+        {/* Recipients */}
+        <div style={{ flex: 1, overflowY: 'auto', marginBottom: 12 }}>
+          {isMobile ? (
+            <div>{recipients.map((r, i) => <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} isMobile />)}</div>
+          ) : (
+            <div className="pay-table-scroll">
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 600 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                    {['Name / Recipient', 'MoMo Phone', 'Base Salary', 'Bonus', 'Allowance', 'Total', ''].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '6px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#334155' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {recipients.map((r, i) => <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} isMobile={false} />)}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        <button onClick={addRow} style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 8, color: '#64748B', padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', marginBottom: 16 }}>
+        <button onClick={addRow} style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 8, color: '#64748B', padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', marginBottom: 14, width: '100%' }}>
           + Add Recipient
         </button>
 
         {/* Summary */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '14px 18px', marginBottom: 16, border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '12px 16px', marginBottom: 14, border: '1px solid rgba(255,255,255,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748B', marginBottom: 4 }}>
             <span>Payroll total</span><span style={{ color: '#CBD5E1', fontWeight: 700 }}>{fmt(total)}</span>
           </div>
@@ -172,7 +212,7 @@ function CreateRunModal({ teamId, players, onClose, onCreated }) {
           </div>
         </div>
 
-        {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#FCA5A5', marginBottom: 16 }}>{error}</div>}
+        {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#FCA5A5', marginBottom: 14 }}>{error}</div>}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="pay-btn-ghost" style={{ flex: 1 }} onClick={() => onClose()}>Cancel</button>
@@ -193,6 +233,14 @@ export default function PayrollPage() {
   const [players, setPlayers] = useState([])
   const [loading, setLoading] = useState(true)
   const [showNew, setShowNew] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const loadRuns = useCallback(async (tid) => {
     setLoading(true)
@@ -210,61 +258,72 @@ export default function PayrollPage() {
       if (!profile?.team_id) return
       setTeamId(profile.team_id)
       loadRuns(profile.team_id)
-
-      // Load roster (athletes + coaches) to help fill in recipients
-      const { data: roster } = await supabase
-        .from('athletes')
-        .select('id, name, phone')
-        .eq('team_id', profile.team_id)
-        .order('name')
-      const { data: staff } = await supabase
-        .from('coaches')
-        .select('id, name, phone')
-        .eq('team_id', profile.team_id)
-        .order('name')
-      const combined = [
+      const { data: roster } = await supabase.from('athletes').select('id, name, phone').eq('team_id', profile.team_id).order('name')
+      const { data: staff  } = await supabase.from('coaches').select('id, name, phone').eq('team_id', profile.team_id).order('name')
+      setPlayers([
         ...(roster || []).map(p => ({ ...p, full_name: p.name, type: 'athlete' })),
         ...(staff  || []).map(s => ({ ...s, full_name: s.name, type: 'coach'   })),
-      ]
-      setPlayers(combined)
+      ])
     }
     init()
   }, [loadRuns])
 
   return (
-    <div style={{ padding: '32px', animation: 'fadeUp 0.35s ease' }}>
+    <div className="pay-page" style={{ animation: 'fadeUp 0.35s ease' }}>
       {showNew && teamId && (
-        <CreateRunModal
-          teamId={teamId}
-          players={players}
+        <CreateRunModal teamId={teamId} players={players} isMobile={isMobile}
           onClose={() => setShowNew(false)}
           onCreated={(run) => { setShowNew(false); router.push(`/pay/payroll/${run.id}`) }}
         />
       )}
 
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 32 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 28, gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 4 }}>Payroll Runs</h1>
-          <p style={{ fontSize: 14, color: '#475569' }}>Create, approve, and disburse payroll for your squad and staff.</p>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 3 }}>Payroll Runs</h1>
+          <p style={{ fontSize: 13, color: '#475569' }}>Create, approve, and disburse payroll for your squad.</p>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button className="pay-btn-ghost" onClick={() => loadRuns(teamId)}>↺ Refresh</button>
-          <button className="pay-btn-gold" onClick={() => setShowNew(true)}>+ New Payroll Run</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="pay-btn-ghost" style={{ padding: '9px 14px', fontSize: 13 }} onClick={() => loadRuns(teamId)}>↺</button>
+          <button className="pay-btn-gold" style={{ padding: '9px 16px', fontSize: 13 }} onClick={() => setShowNew(true)}>+ New Run</button>
         </div>
       </div>
 
-      <div className="pay-card" style={{ overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#334155' }}>Loading payroll runs…</div>
-        ) : runs.length === 0 ? (
-          <div style={{ padding: 64, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 12 }}>📋</div>
-            <div style={{ fontSize: 16, fontWeight: 700, color: '#475569', marginBottom: 8 }}>No payroll runs yet</div>
-            <div style={{ fontSize: 13, color: '#334155', marginBottom: 20 }}>Create a payroll run to start disbursing salaries.</div>
-            <button className="pay-btn-gold" onClick={() => setShowNew(true)}>Create First Run</button>
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      {/* Content */}
+      {loading ? (
+        <div className="pay-card" style={{ padding: 48, textAlign: 'center', color: '#334155' }}>Loading payroll runs…</div>
+      ) : runs.length === 0 ? (
+        <div className="pay-card" style={{ padding: isMobile ? 40 : 64, textAlign: 'center' }}>
+          <div style={{ fontSize: isMobile ? 40 : 48, marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#475569', marginBottom: 8 }}>No payroll runs yet</div>
+          <div style={{ fontSize: 13, color: '#334155', marginBottom: 20 }}>Create a payroll run to start disbursing salaries.</div>
+          <button className="pay-btn-gold" onClick={() => setShowNew(true)}>Create First Run</button>
+        </div>
+      ) : isMobile ? (
+        /* Mobile: card list */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {runs.map((run, i) => (
+            <Link key={run.id} href={`/pay/payroll/${run.id}`} style={{ textDecoration: 'none', animation: `fadeUp 0.3s ease ${i * 0.04}s both`, display: 'block' }}>
+              <div className="pay-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#F1F5F9', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{run.description}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <StatusBadge status={run.status} />
+                    <span style={{ fontSize: 11, color: '#475569' }}>{new Date(run.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#34D399' }}>{fmt(run.total_amount)}</div>
+                  <div style={{ fontSize: 11, color: '#F59E0B', marginTop: 2, fontWeight: 600 }}>View →</div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        /* Desktop: full table */
+        <div className="pay-card pay-table-scroll" style={{ overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 560 }}>
             <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
               <tr>
                 {['Description', 'Total Amount', 'Status', 'Created By', 'Date', 'Action'].map(h => (
@@ -285,17 +344,15 @@ export default function PayrollPage() {
                   <td style={{ padding: '14px 20px', color: '#475569', fontSize: 11 }}>{new Date(run.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                   <td style={{ padding: '14px 20px' }}>
                     <Link href={`/pay/payroll/${run.id}`} style={{ textDecoration: 'none' }}>
-                      <button style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                        View →
-                      </button>
+                      <button style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>View →</button>
                     </Link>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

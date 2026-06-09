@@ -6,7 +6,7 @@ const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFraction
 
 function TxTypeBadge({ type }) {
   const map = {
-    top_up: { label: 'Top Up', bg: 'rgba(16,185,129,0.12)', color: '#34D399', icon: '⬆' },
+    top_up: { label: 'Top Up', bg: 'rgba(16,185,129,0.12)',  color: '#34D399', icon: '⬆' },
     payout: { label: 'Payout', bg: 'rgba(99,102,241,0.12)', color: '#818CF8', icon: '💸' },
     fee:    { label: 'Fee',    bg: 'rgba(245,158,11,0.12)', color: '#F59E0B', icon: '📊' },
   }
@@ -23,19 +23,59 @@ function StatusDot({ status }) {
   }
   const color = map[status] || '#64748B'
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 12, color, fontWeight: 700, textTransform: 'capitalize' }}>
-      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, display: 'inline-block', boxShadow: `0 0 6px ${color}` }} />
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color, fontWeight: 700, textTransform: 'capitalize' }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, display: 'inline-block', boxShadow: `0 0 5px ${color}`, flexShrink: 0 }} />
       {status}
     </span>
   )
 }
 
+/* ── Mobile transaction card ── */
+function TxCard({ t }) {
+  const isCredit = t.type === 'top_up'
+  return (
+    <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '13px 14px', border: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 38, height: 38, borderRadius: 10, background: isCredit ? 'rgba(16,185,129,0.1)' : 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
+        {t.type === 'top_up' ? '⬆' : t.type === 'fee' ? '📊' : '💸'}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+          <TxTypeBadge type={t.type} />
+          <StatusDot status={t.status} />
+        </div>
+        <div style={{ fontSize: 11, color: '#475569' }}>
+          {new Date(t.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+        </div>
+        {(t.metadata?.recipient || t.metadata?.email) && (
+          <div style={{ fontSize: 11, color: '#64748B', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {t.metadata?.recipient || t.metadata?.email}
+            {t.metadata?.simulated && <span style={{ marginLeft: 5, fontSize: 9, color: '#F59E0B' }}>⚡sim</span>}
+          </div>
+        )}
+      </div>
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 800, color: isCredit ? '#34D399' : t.type === 'fee' ? '#F59E0B' : '#818CF8' }}>
+          {isCredit ? '+' : '-'}{fmt(t.amount)}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function TransactionsPage() {
-  const [teamId, setTeamId] = useState(null)
-  const [txns,   setTxns]   = useState([])
-  const [filter, setFilter] = useState('all')
+  const [teamId,  setTeamId]  = useState(null)
+  const [txns,    setTxns]    = useState([])
+  const [filter,  setFilter]  = useState('all')
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
+  const [search,  setSearch]  = useState('')
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const load = useCallback(async (tid) => {
     setLoading(true)
@@ -71,71 +111,105 @@ export default function TransactionsPage() {
     fee:    txns.filter(t => t.type === 'fee'    && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0),
   }
 
+  const FILTERS = [
+    { key: 'all',    label: 'All' },
+    { key: 'top_up', label: 'Top-Ups' },
+    { key: 'payout', label: 'Payouts' },
+    { key: 'fee',    label: 'Fees' },
+  ]
+
   return (
-    <div style={{ padding: '32px', animation: 'fadeUp 0.35s ease' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
+    <div className="pay-page" style={{ animation: 'fadeUp 0.35s ease' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 24, gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: 28, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 4 }}>Transaction Ledger</h1>
-          <p style={{ fontSize: 14, color: '#475569' }}>Full audit trail of wallet top-ups, payouts, and fees.</p>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 3 }}>Transaction Ledger</h1>
+          <p style={{ fontSize: 13, color: '#475569' }}>Full audit trail of wallet top-ups, payouts, and fees.</p>
         </div>
-        <button className="pay-btn-ghost" onClick={() => load(teamId)}>↺ Refresh</button>
+        <button className="pay-btn-ghost" style={{ padding: '9px 14px', fontSize: 13 }} onClick={() => load(teamId)}>↺ Refresh</button>
       </div>
 
-      {/* Summary */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
-        {[
-          { label: 'Total Top-Ups',  value: fmt(totals.top_up), color: '#34D399', icon: '⬆' },
-          { label: 'Total Payouts',  value: fmt(totals.payout), color: '#818CF8', icon: '💸' },
-          { label: 'Platform Fees',  value: fmt(totals.fee),    color: '#F59E0B', icon: '📊' },
-        ].map(c => (
-          <div key={c.label} className="pay-card" style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{c.icon}</div>
-            <div>
-              <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.label}</div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: c.color, letterSpacing: '-0.03em', marginTop: 2 }}>{c.value}</div>
+      {/* Summary — 3-col on desktop, horizontal scroll chips on mobile */}
+      {isMobile ? (
+        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 16, scrollbarWidth: 'none' }}>
+          {[
+            { label: 'Top-Ups',  value: fmt(totals.top_up), color: '#34D399', icon: '⬆' },
+            { label: 'Payouts',  value: fmt(totals.payout), color: '#818CF8', icon: '💸' },
+            { label: 'Fees',     value: fmt(totals.fee),    color: '#F59E0B', icon: '📊' },
+          ].map(c => (
+            <div key={c.label} style={{ flexShrink: 0, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '12px 16px', minWidth: 140 }}>
+              <div style={{ fontSize: 10, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{c.icon} {c.label}</div>
+              <div style={{ fontSize: 16, fontWeight: 900, color: c.color }}>{c.value}</div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
+          {[
+            { label: 'Total Top-Ups', value: fmt(totals.top_up), color: '#34D399', icon: '⬆' },
+            { label: 'Total Payouts', value: fmt(totals.payout), color: '#818CF8', icon: '💸' },
+            { label: 'Platform Fees', value: fmt(totals.fee),    color: '#F59E0B', icon: '📊' },
+          ].map(c => (
+            <div key={c.label} className="pay-card" style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>{c.icon}</div>
+              <div>
+                <div style={{ fontSize: 11, color: '#475569', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{c.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 900, color: c.color, letterSpacing: '-0.03em', marginTop: 2 }}>{c.value}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Filters */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16, alignItems: 'center' }}>
+      {/* Search + Filter */}
+      <div style={{ marginBottom: 14 }}>
         <input
           className="pay-inp"
           placeholder="Search reference, name…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{ maxWidth: 260, padding: '8px 14px' }}
+          style={{ marginBottom: 10, fontSize: 14 }}
         />
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['all', 'top_up', 'payout', 'fee'].map(f => (
+        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 2 }}>
+          {FILTERS.map(f => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
+              key={f.key}
+              onClick={() => setFilter(f.key)}
               style={{
-                padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', border: 'none',
-                background: filter === f ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.04)',
-                color: filter === f ? '#F59E0B' : '#64748B',
+                flexShrink: 0, padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'inherit', border: 'none',
+                background: filter === f.key ? 'rgba(245,158,11,0.15)' : 'rgba(255,255,255,0.04)',
+                color: filter === f.key ? '#F59E0B' : '#64748B',
               }}
-            >
-              {f === 'all' ? 'All' : f === 'top_up' ? 'Top-Ups' : f === 'payout' ? 'Payouts' : 'Fees'}
-            </button>
+            >{f.label}</button>
           ))}
+          <span style={{ marginLeft: 'auto', fontSize: 12, color: '#475569', flexShrink: 0, alignSelf: 'center', paddingLeft: 8, whiteSpace: 'nowrap' }}>
+            {filtered.length} txn{filtered.length !== 1 ? 's' : ''}
+          </span>
         </div>
-        <span style={{ marginLeft: 'auto', fontSize: 12, color: '#475569' }}>{filtered.length} transaction{filtered.length !== 1 ? 's' : ''}</span>
       </div>
 
-      {/* Table */}
-      <div className="pay-card" style={{ overflow: 'hidden' }}>
-        {loading ? (
-          <div style={{ padding: 48, textAlign: 'center', color: '#334155' }}>Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div style={{ padding: 56, textAlign: 'center' }}>
-            <div style={{ fontSize: 40, marginBottom: 10 }}>📒</div>
-            <div style={{ color: '#475569', fontSize: 14 }}>No transactions found</div>
-          </div>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+      {/* Content */}
+      {loading ? (
+        <div className="pay-card" style={{ padding: 48, textAlign: 'center', color: '#334155' }}>Loading…</div>
+      ) : filtered.length === 0 ? (
+        <div className="pay-card" style={{ padding: 56, textAlign: 'center' }}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>📒</div>
+          <div style={{ color: '#475569', fontSize: 14 }}>No transactions found</div>
+        </div>
+      ) : isMobile ? (
+        /* Mobile: card list */
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {filtered.map((t, i) => (
+            <div key={t.id} style={{ animation: `fadeUp 0.2s ease ${Math.min(i, 12) * 0.03}s both` }}>
+              <TxCard t={t} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        /* Desktop: full table */
+        <div className="pay-card pay-table-scroll" style={{ overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 640 }}>
             <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
               <tr>
                 {['Date', 'Type', 'Amount', 'Status', 'Reference', 'Recipient / Note'].map(h => (
@@ -165,8 +239,8 @@ export default function TransactionsPage() {
               ))}
             </tbody>
           </table>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

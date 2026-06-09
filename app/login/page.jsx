@@ -78,13 +78,20 @@ export default function LoginPage() {
           if (profile?.is_active !== false) {
             const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
             if (isPaySub) {
-              router.replace('/')
+              window.location.href = '/'
             } else if (profile?.role === 'accountant') {
               const host = window.location.host
               const protocol = window.location.protocol
-              window.location.href = host.startsWith('localhost:')
-                ? `${protocol}//pay.${host}`
-                : `${protocol}//pay.apextrackgh.com`
+              const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+              let redirectUrl = isIP
+                ? `${protocol}//${host}/pay`
+                : (host.startsWith('localhost:')
+                  ? `${protocol}//pay.${host}`
+                  : `${protocol}//pay.apextrackgh.com`)
+              if (session) {
+                redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
+              }
+              window.location.href = redirectUrl
             } else if (profile?.role === 'superadmin') {
               router.replace('/superadmin')
             } else if (profile?.role === 'player') {
@@ -171,13 +178,22 @@ export default function LoginPage() {
       }
       const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
       if (isPaySub) {
-        router.replace('/')
+        window.location.href = '/'
       } else if (profile?.role === 'accountant') {
         const host = window.location.host
         const protocol = window.location.protocol
-        window.location.href = host.startsWith('localhost:')
-          ? `${protocol}//pay.${host}`
-          : `${protocol}//pay.apextrackgh.com`
+        const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+        let redirectUrl = isIP
+          ? `${protocol}//${host}/pay`
+          : (host.startsWith('localhost:')
+            ? `${protocol}//pay.${host}`
+            : `${protocol}//pay.apextrackgh.com`)
+        
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session) {
+          redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
+        }
+        window.location.href = redirectUrl
       } else if (profile?.role === 'superadmin') {
         router.replace('/superadmin')
       } else if (profile?.role === 'player') {

@@ -4,8 +4,12 @@ export function proxy(request) {
   const url = request.nextUrl.clone()
   const host = request.headers.get('host') || ''
 
-  // Subdomain match: pay.apextrackgh.com or local testing pay.localhost:3000
-  const isPaySubdomain = host.startsWith('pay.apextrackgh.com') || host.startsWith('pay.localhost')
+  // Match pay.apextrackgh.com and pay.localhost:PORT (any port)
+  const isPaySubdomain =
+    host === 'pay.apextrackgh.com' ||
+    host.startsWith('pay.apextrackgh.com:') ||
+    host.startsWith('pay.localhost') ||
+    host.startsWith('pay.127.0.0.1')
 
   if (isPaySubdomain) {
     const path = url.pathname
@@ -19,7 +23,7 @@ export function proxy(request) {
       !path.startsWith('/auth') &&
       !path.includes('.')
     ) {
-      url.pathname = `/pay${path}`
+      url.pathname = `/pay${path === '/' ? '' : path}`
       return NextResponse.rewrite(url)
     }
   }
@@ -29,7 +33,7 @@ export function proxy(request) {
 
 export const config = {
   matcher: [
-    // Apply proxy to all pages, excluding specific static assets
-    '/((?!api|_next/static|_next/image|favicon.ico|icon.png).*)',
+    // Run on every request except Next.js internals and static files
+    '/((?!_next/static|_next/image|favicon.ico|icon.png).*)',
   ],
 }

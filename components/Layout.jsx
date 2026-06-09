@@ -114,6 +114,30 @@ export default function Layout({ children }) {
     router.replace('/login')
   }
 
+  async function handleApexPayClick(e) {
+    e.preventDefault()
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const host = window.location.host
+      const protocol = window.location.protocol
+      const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+      
+      let payUrl = isIP
+        ? `${protocol}//${host}/pay`
+        : (host.startsWith('localhost:')
+          ? `${protocol}//pay.${host}`
+          : `${protocol}//pay.apextrackgh.com`)
+      
+      if (session) {
+        payUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
+      }
+      window.location.href = payUrl
+    } catch (err) {
+      console.error('ApexPay navigation error:', err)
+      window.location.href = '/pay'
+    }
+  }
+
   const role      = profile?.role || 'admin'
   const allowed   = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS['admin']
   const navLinks  = ALL_NAV.filter(n => allowed.includes(n.page))
@@ -178,13 +202,8 @@ export default function Layout({ children }) {
               {navLinks.map(({ href, label, page }) => {
                 const active = path === href || path.startsWith(href + '/')
                 if (page === 'pay') {
-                  const payUrl = typeof window !== 'undefined'
-                    ? (window.location.host.startsWith('localhost:')
-                      ? `${window.location.protocol}//pay.${window.location.host}`
-                      : `${window.location.protocol}//pay.apextrackgh.com`)
-                    : '/pay'
                   return (
-                    <a key={href} href={payUrl}
+                    <a key={href} href="/pay" onClick={handleApexPayClick}
                       style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: C.text2, fontWeight: 500, fontSize:15, textDecoration:'none', borderLeft: '3px solid transparent' }}>
                       <span style={{ color: C.text3 }}>{ICONS[page]}</span>
                       {label}
@@ -270,14 +289,8 @@ export default function Layout({ children }) {
             const activeColor = C.lagoon
             
             if (page === 'pay') {
-              const payUrl = typeof window !== 'undefined'
-                ? (window.location.host.startsWith('localhost:')
-                  ? `${window.location.protocol}//pay.${window.location.host}`
-                  : `${window.location.protocol}//pay.apextrackgh.com`)
-                : '/pay'
-
               return (
-                <a key={href} href={payUrl}
+                <a key={href} href="/pay" onClick={handleApexPayClick}
                   style={{ 
                     display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
                     justifyContent: expanded ? 'flex-start' : 'center',

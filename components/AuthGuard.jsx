@@ -58,9 +58,16 @@ export default function AuthGuard({ children }) {
         if (!isPaySub) {
           const host = window.location.host
           const protocol = window.location.protocol
-          const redirectUrl = host.startsWith('localhost:')
-            ? `${protocol}//pay.${host}`
-            : `${protocol}//pay.apextrackgh.com`
+          const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+          let redirectUrl = isIP
+            ? `${protocol}//${host}/pay`
+            : (host.startsWith('localhost:')
+              ? `${protocol}//pay.${host}`
+              : `${protocol}//pay.apextrackgh.com`)
+          
+          if (session) {
+            redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
+          }
           window.location.href = redirectUrl
           return
         }

@@ -19,6 +19,27 @@ export default function PayLayout({ children }) {
 
   useEffect(() => {
     async function load() {
+      // Detect and parse access_token and refresh_token from URL hash
+      if (typeof window !== 'undefined' && window.location.hash) {
+        const hash = window.location.hash.substring(1)
+        const params = new URLSearchParams(hash)
+        const accessToken = params.get('access_token')
+        const refreshToken = params.get('refresh_token')
+        
+        if (accessToken && refreshToken) {
+          try {
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken
+            })
+            // Clear hash immediately
+            window.history.replaceState(null, '', window.location.pathname + window.location.search)
+          } catch (e) {
+            console.error('Failed to restore SSO session:', e)
+          }
+        }
+      }
+
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }
       const { data } = await supabase
@@ -100,9 +121,18 @@ export default function PayLayout({ children }) {
           {/* Back to ApexTrack - hidden for accountants */}
           {profile?.role !== 'accountant' && (
             <div style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 12, marginTop: 16 }}>
-              <Link href="/dashboard" className="pay-nav-link" style={{ fontSize: 12 }}>
-                <span>←</span> Back to ApexTrack
-              </Link>
+              {(() => {
+                const mainUrl = typeof window !== 'undefined'
+                  ? (window.location.host.includes('localhost') || window.location.host.includes('127.0.0.1') || /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+                    ? `${window.location.protocol}//${window.location.host.replace('pay.', '')}/dashboard`
+                    : `${window.location.protocol}//apextrackgh.com/dashboard`)
+                  : '/dashboard'
+                return (
+                  <a href={mainUrl} className="pay-nav-link" style={{ fontSize: 12 }}>
+                    <span>←</span> Back to ApexTrack
+                  </a>
+                )
+              })()}
             </div>
           )}
         </nav>

@@ -56,7 +56,7 @@ export default function AuthGuard({ children }) {
       if (profile.role === 'accountant') {
         const isPaySub = typeof window !== 'undefined' && window.location.hostname.startsWith('pay.')
         if (!isPaySub) {
-          const host = window.location.host
+          const host = window.location.host.replace(/^www\./i, '')
           const protocol = window.location.protocol
           const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
           let redirectUrl = isIP

@@ -118,7 +118,7 @@ export default function Layout({ children }) {
     e.preventDefault()
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const host = window.location.host
+      const host = window.location.host.replace(/^www\./i, '')
       const protocol = window.location.protocol
       const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
       

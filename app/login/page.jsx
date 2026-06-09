@@ -80,7 +80,7 @@ export default function LoginPage() {
             if (isPaySub) {
               window.location.href = '/'
             } else if (profile?.role === 'accountant') {
-              const host = window.location.host
+              const host = window.location.host.replace(/^www\./i, '')
               const protocol = window.location.protocol
               const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
               let redirectUrl = isIP
@@ -180,7 +180,7 @@ export default function LoginPage() {
       if (isPaySub) {
         window.location.href = '/'
       } else if (profile?.role === 'accountant') {
-        const host = window.location.host
+        const host = window.location.host.replace(/^www\./i, '')
         const protocol = window.location.protocol
         const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
         let redirectUrl = isIP

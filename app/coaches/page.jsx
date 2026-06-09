@@ -16,6 +16,7 @@ const STAFF_TYPES = [
   { value:'analyst',          label:'Performance Analyst', icon:'📊', color:'#9B59B6', dept:'Analytics'  },
   { value:'scout',            label:'Scout',               icon:'🔍', color:'#1ABC9C', dept:'Scouting'   },
   { value:'kit_manager',      label:'Kit Manager',         icon:'👕', color:'#F39C12', dept:'Other'      },
+  { value:'accountant',       label:'Accountant',          icon:'💰', color:'#F59E0B', dept:'Other'      },
   { value:'other',            label:'Other',               icon:'👤', color:'#7F8C8D', dept:'Other'      },
 ]
 
@@ -273,13 +274,14 @@ export default function CoachesPage() {
                   <div style={{ padding:'14px 18px' }}>
                     {coach.speciality&&<div style={{ fontSize:12,color:'var(--text2)',marginBottom:12,background:'var(--surface2)',padding:'7px 12px',borderRadius:'var(--r-sm)',display:'flex',gap:6,alignItems:'center',border:'1px solid var(--border)' }}><span>⭐</span><span><strong>Speciality:</strong> {coach.speciality}</span></div>}
 
-                    {['physio','medical','sports_scientist','analyst','scout'].includes(coach.staff_type)&&(
-                      <div style={{ background:coach.staff_type==='physio'?'#FEF9E7':coach.staff_type==='medical'||coach.staff_type==='sports_scientist'?'#FDEDEC':coach.staff_type==='analyst'?'#F3E5F5':'#E0F7F5',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:coach.staff_type==='physio'?'#B36200':coach.staff_type==='medical'||coach.staff_type==='sports_scientist'?'#C0392B':coach.staff_type==='analyst'?'#6A1B9A':'#0E8A7E',marginBottom:10 }}>
+                    {['physio','medical','sports_scientist','analyst','scout','accountant'].includes(coach.staff_type)&&(
+                      <div style={{ background:coach.staff_type==='physio'?'#FEF9E7':coach.staff_type==='medical'||coach.staff_type==='sports_scientist'?'#FDEDEC':coach.staff_type==='analyst'?'#F3E5F5':coach.staff_type==='accountant'?'#FEF9E7':'#E0F7F5',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:coach.staff_type==='physio'?'#B36200':coach.staff_type==='medical'||coach.staff_type==='sports_scientist'?'#C0392B':coach.staff_type==='analyst'?'#6A1B9A':coach.staff_type==='accountant'?'#B36200':'#0E8A7E',marginBottom:10 }}>
                         {coach.staff_type==='physio'&&'🩺 Medical access — injury records & rehab'}
                         {coach.staff_type==='medical'&&'⚕️ Medical officer — clinical oversight'}
                         {coach.staff_type==='sports_scientist'&&'🔬 Sports science — GPS & load monitoring'}
                         {coach.staff_type==='analyst'&&'📊 Performance analyst — xG, xA & metrics'}
                         {coach.staff_type==='scout'&&'🔍 Scout — recruitment & talent ID'}
+                        {coach.staff_type==='accountant'&&'💰 Accountant — ApexPay portal access'}
                       </div>
                     )}
 
@@ -349,7 +351,7 @@ export default function CoachesPage() {
                   <optgroup label="🎯 Coaching"><option value="head_coach">Head Coach</option><option value="assistant_coach">Assistant Coach</option><option value="fitness_coach">Fitness Coach</option></optgroup>
                   <optgroup label="🩺 Medical"><option value="physio">Physiotherapist</option><option value="sports_scientist">Sports Scientist</option><option value="medical">Medical Officer</option></optgroup>
                   <optgroup label="📊 Analytics & Scouting"><option value="analyst">Performance Analyst</option><option value="scout">Scout</option></optgroup>
-                  <optgroup label="⚙ Other"><option value="kit_manager">Kit Manager</option><option value="other">Other</option></optgroup>
+                  <optgroup label="⚙ Other"><option value="kit_manager">Kit Manager</option><option value="accountant">Accountant</option><option value="other">Other</option></optgroup>
                 </select>
               </div>
 

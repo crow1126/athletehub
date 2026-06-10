@@ -32,22 +32,8 @@ export default function PayLayout({ children }) {
 
   useEffect(() => {
     async function load() {
-      // SSO — parse access_token / refresh_token from URL hash
-      if (typeof window !== 'undefined' && window.location.hash) {
-        const hash   = window.location.hash.substring(1)
-        const params = new URLSearchParams(hash)
-        const accessToken  = params.get('access_token')
-        const refreshToken = params.get('refresh_token')
-        if (accessToken && refreshToken) {
-          try {
-            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-            window.history.replaceState(null, '', window.location.pathname + window.location.search)
-          } catch (e) {
-            console.error('Failed to restore SSO session:', e)
-          }
-        }
-      }
-
+      // Session is now provided by the shared .apextrackgh.com cookie —
+      // no token extraction from URL hash required.
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }
       const { data } = await supabase

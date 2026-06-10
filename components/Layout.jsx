@@ -114,26 +114,17 @@ export default function Layout({ children }) {
     router.replace('/login')
   }
 
-  async function handleApexPayClick(e) {
+  function handleApexPayClick(e) {
     e.preventDefault()
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      const host = window.location.host.replace(/^www\./i, '')
-      const protocol = window.location.protocol
-      const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
-      
-      let payUrl = isIP
-        ? `${protocol}//${host}/pay`
-        : `${protocol}//pay.${host}`
-      
-      if (session) {
-        payUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
-      }
-      window.location.href = payUrl
-    } catch (err) {
-      console.error('ApexPay navigation error:', err)
-      window.location.href = '/pay'
-    }
+    // Cookie is scoped to the apex domain — no token passing needed.
+    // The shared session cookie is sent automatically on the pay subdomain.
+    const host     = window.location.host.replace(/^www\./i, '')
+    const protocol = window.location.protocol
+    const isIP     = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+    const payUrl   = isIP
+      ? `${protocol}//${host}/pay`
+      : `${protocol}//pay.${host}`
+    window.location.href = payUrl
   }
 
   const role      = profile?.role || 'admin'

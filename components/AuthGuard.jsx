@@ -52,20 +52,17 @@ export default function AuthGuard({ children }) {
         return // allow in
       }
 
-      // If user is accountant but trying to access non-pay routes, redirect to pay subdomain
+      // If user is accountant but trying to access non-pay routes, redirect to pay subdomain.
+      // No token passing needed — the shared .apextrackgh.com cookie is already present.
       if (profile.role === 'accountant') {
         const isPaySub = typeof window !== 'undefined' && window.location.hostname.startsWith('pay.')
         if (!isPaySub) {
-          const host = window.location.host.replace(/^www\./i, '')
+          const host     = window.location.host.replace(/^www\./i, '')
           const protocol = window.location.protocol
-          const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
-          let redirectUrl = isIP
+          const isIP     = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
+          const redirectUrl = isIP
             ? `${protocol}//${host}/pay`
             : `${protocol}//pay.${host}`
-          
-          if (session) {
-            redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
-          }
           window.location.href = redirectUrl
           return
         }

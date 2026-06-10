@@ -15,20 +15,20 @@ const NAV = [
 const C = {
   bg:          '#F0FBF4',          // --floral      mint bg
   sidebar:     '#FFFFFF',          // --floral-dark  sidebar / cards
-  muted:       '#E8F7EE',          // --floral-muted hover
-  border:      '#D4EDDE',          // --border
-  teal:        '#0D9488',          // --lagoon
-  tealLight:   '#14B8A6',          // --lagoon-light
-  tealDeep:    '#0F766E',          // --lagoon-deep
-  tealAlpha:   'rgba(13,148,136,0.10)', // --lagoon-alpha
-  text:        '#0F2218',          // --text
-  text2:       '#1E4433',          // --text2
-  text3:       '#5A7A68',          // --text3
-  success:     '#059669',
+  muted:       '#E2F5E9',          // --floral-muted hover
+  border:      '#82C29A',          // --border (darkened for contrast)
+  teal:        '#0B7A70',          // --lagoon (darkened for contrast)
+  tealLight:   '#0D9488',          // --lagoon-light
+  tealDeep:    '#0A5C54',          // --lagoon-deep
+  tealAlpha:   'rgba(11,122,112,0.10)', // --lagoon-alpha
+  text:        '#0B1E14',          // --text
+  text2:       '#102A1C',          // --text2 (darkened for contrast)
+  text3:       '#243E30',          // --text3 (darkened for contrast)
+  success:     '#047857',
   successBg:   '#D1FAE5',
-  shadow:      '0 1px 3px rgba(13,100,60,0.06)',
-  shadowMd:    '0 4px 8px rgba(13,100,60,0.08)',
-  shadowLg:    '0 10px 20px rgba(13,100,60,0.08)',
+  shadow:      '0 1px 3px rgba(10,80,50,0.08)',
+  shadowMd:    '0 4px 8px rgba(10,80,50,0.10)',
+  shadowLg:    '0 10px 20px rgba(10,80,50,0.10)',
 }
 
 export default function PayLayout({ children }) {
@@ -95,11 +95,11 @@ export default function PayLayout({ children }) {
     .pay-nav-link {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 12px; border-radius: 12px;
-      text-decoration: none; font-size: 14px; font-weight: 500;
+      text-decoration: none; font-size: 14px; font-weight: 600;
       transition: all 0.18s; color: ${C.text3};
     }
     .pay-nav-link:hover  { background: ${C.muted}; color: ${C.text2}; }
-    .pay-nav-link.active { background: ${C.tealAlpha}; color: ${C.teal}; font-weight: 700; }
+    .pay-nav-link.active { background: ${C.tealAlpha}; color: ${C.teal}; font-weight: 800; }
 
     /* ── Shared component classes (used by page.jsx children) ── */
     .pay-card {
@@ -113,12 +113,12 @@ export default function PayLayout({ children }) {
       background: ${C.teal}; color: #fff; border: none; border-radius: 10px;
       padding: 11px 20px; font-size: 14px; font-weight: 700;
       cursor: pointer; font-family: inherit; transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(13,148,136,0.2);
+      box-shadow: 0 4px 12px rgba(13,122,112,0.2);
     }
-    .pay-btn-primary:hover { background: ${C.tealDeep}; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,148,136,0.3); }
+    .pay-btn-primary:hover { background: ${C.tealDeep}; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,122,112,0.3); }
     /* Legacy alias so existing page files keep working */
-    .pay-btn-gold { background: ${C.teal}; color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13,148,136,0.2); }
-    .pay-btn-gold:hover  { background: ${C.tealDeep}; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,148,136,0.3); }
+    .pay-btn-gold { background: ${C.teal}; color: #fff; border: none; border-radius: 10px; padding: 11px 20px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; transition: all 0.2s; box-shadow: 0 4px 12px rgba(13,122,112,0.2); }
+    .pay-btn-gold:hover  { background: ${C.tealDeep}; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(13,122,112,0.3); }
     .pay-btn-ghost {
       background: ${C.muted}; color: ${C.text2};
       border: 1px solid ${C.border}; border-radius: 10px;
@@ -138,6 +138,14 @@ export default function PayLayout({ children }) {
       font-family: inherit; outline: none; transition: border-color 0.18s;
     }
     .pay-inp:focus { border-color: ${C.teal}; box-shadow: 0 0 0 3px ${C.tealAlpha}; }
+    select.pay-inp {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23243E30' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 36px;
+    }
     .pay-lbl {
       display: block; font-size: 11px; font-weight: 700;
       letter-spacing: 0.08em; text-transform: uppercase;

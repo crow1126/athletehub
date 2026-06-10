@@ -4,16 +4,37 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 
+const C = {
+  text:      '#0B1E14',
+  text2:     '#102A1C',
+  text3:     '#243E30',
+  teal:      '#0B7A70',
+  tealDeep:  '#0A5C54',
+  tealAlpha: 'rgba(11,122,112,0.10)',
+  border:    '#82C29A',
+  muted:     '#E2F5E9',
+  bg:        '#F0FBF4',
+  card:      'rgba(255,255,255,0.92)',
+  success:   '#047857',
+  successBg: '#D1FAE5',
+  danger:    '#B91C1C',
+  dangerBg:  '#FEE2E2',
+  warning:   '#B45309',
+  warningBg: '#FEF3C7',
+  info:      '#1D4ED8',
+  infoBg:    '#DBEAFE',
+}
+
 const fmt = (n) => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 function StatusBadge({ status }) {
   const map = {
-    draft:            { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8', label: 'Draft' },
-    pending_approval: { bg: 'rgba(245,158,11,0.12)',  color: '#FBB124', label: 'Pending' },
-    approved:         { bg: 'rgba(59,130,246,0.12)',  color: '#60A5FA', label: 'Approved' },
-    processing:       { bg: 'rgba(139,92,246,0.12)',  color: '#A78BFA', label: 'Processing' },
-    completed:        { bg: 'rgba(16,185,129,0.12)',  color: '#34D399', label: 'Completed' },
-    failed:           { bg: 'rgba(239,68,68,0.12)',   color: '#FCA5A5', label: 'Failed' },
+    draft:            { bg: 'rgba(36,62,48,0.10)', color: C.text3, label: 'Draft' },
+    pending_approval: { bg: C.warningBg,             color: C.warning, label: 'Pending' },
+    approved:         { bg: C.infoBg,                color: C.info, label: 'Approved' },
+    processing:       { bg: 'rgba(109,40,217,0.10)', color: '#6D28D9', label: 'Processing' },
+    completed:        { bg: C.successBg,             color: C.success, label: 'Completed' },
+    failed:           { bg: C.dangerBg,              color: C.danger, label: 'Failed' },
   }
   const s = map[status] || map.draft
   return <span className="pay-badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>
@@ -36,22 +57,22 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
 
   if (isMobile) {
     return (
-      <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 12, padding: '14px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: 10 }}>
+      <div style={{ background: C.muted, borderRadius: 12, padding: '14px', border: `1px solid ${C.border}`, marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recipient {index + 1}</span>
-          <button onClick={() => onRemove(index)} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#F87171', borderRadius: 6, width: 26, height: 26, cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
+          <span style={{ fontSize: 12, fontWeight: 700, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recipient {index + 1}</span>
+          <button onClick={() => onRemove(index)} style={{ background: C.dangerBg, border: 'none', color: C.danger, borderRadius: 6, width: 26, height: 26, cursor: 'pointer', fontSize: 14, lineHeight: 1, fontWeight: 'bold' }}>×</button>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div>
             <label className="pay-lbl">Name / Recipient</label>
             {players.length > 0 ? (
-              <select className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} value={rec.recipient_id || ''}
+              <select className="pay-inp" style={{ padding: '9px 12px', fontSize: 13, background: '#ffffff', color: C.text, border: `1px solid ${C.border}` }} value={rec.recipient_id || ''}
                 onChange={e => {
                   const p = players.find(x => x.id === e.target.value)
                   if (p) { setName(p.full_name); setPhone(p.phone || ''); onChange(index, { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }) }
                 }}>
                 <option value="">— Select —</option>
-                {players.map(p => <option key={p.id} value={p.id}>{p.full_name} ({p.type})</option>)}
+                {players.map(p => <option key={p.id} value={p.id} style={{ color: C.text }}>{p.full_name} ({p.type})</option>)}
               </select>
             ) : (
               <input className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} placeholder="Name" value={name}
@@ -76,9 +97,9 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
               </div>
             ))}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-            <span style={{ fontSize: 12, color: '#64748B', fontWeight: 600 }}>Total payout</span>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#34D399' }}>GHS {total}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 6, borderTop: `1px solid ${C.border}` }}>
+            <span style={{ fontSize: 12, color: C.text3, fontWeight: 600 }}>Total payout</span>
+            <span style={{ fontSize: 14, fontWeight: 800, color: C.success }}>GHS {total}</span>
           </div>
         </div>
       </div>
@@ -87,16 +108,16 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
 
   // Desktop row
   return (
-    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+    <tr style={{ borderBottom: `1px solid ${C.border}` }}>
       <td style={{ padding: '8px 6px' }}>
         {players.length > 0 ? (
-          <select className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} value={rec.recipient_id || ''}
+          <select className="pay-inp" style={{ padding: '7px 10px', fontSize: 12, background: '#ffffff', color: C.text, border: `1px solid ${C.border}` }} value={rec.recipient_id || ''}
             onChange={e => {
               const p = players.find(x => x.id === e.target.value)
               if (p) { setName(p.full_name); setPhone(p.phone || ''); onChange(index, { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }) }
             }}>
             <option value="">— Select —</option>
-            {players.map(p => <option key={p.id} value={p.id}>{p.full_name} ({p.type})</option>)}
+            {players.map(p => <option key={p.id} value={p.id} style={{ color: C.text }}>{p.full_name} ({p.type})</option>)}
           </select>
         ) : (
           <input className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} placeholder="Name" value={name}
@@ -119,9 +140,9 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
         <input className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} type="number" min="0" placeholder="0.00" value={allow}
           onChange={e => { setAllow(e.target.value); update('allowance', e.target.value) }} />
       </td>
-      <td style={{ padding: '8px 6px', fontWeight: 700, color: '#34D399', fontSize: 13, textAlign: 'right' }}>GHS {total}</td>
+      <td style={{ padding: '8px 6px', fontWeight: 700, color: C.success, fontSize: 13, textAlign: 'right' }}>GHS {total}</td>
       <td style={{ padding: '8px 6px', textAlign: 'center' }}>
-        <button onClick={() => onRemove(index)} style={{ background: 'rgba(239,68,68,0.1)', border: 'none', color: '#F87171', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>
+        <button onClick={() => onRemove(index)} style={{ background: C.dangerBg, border: 'none', color: C.danger, borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: 16, lineHeight: 1, fontWeight: 'bold' }}>×</button>
       </td>
     </tr>
   )
@@ -159,14 +180,14 @@ function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', animation: 'fadeUp 0.2s ease' }}
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(11,30,20,0.5)', zIndex: 9999, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', animation: 'fadeUp 0.2s ease' }}
       onClick={() => onClose()}>
       <div className="pay-card"
-        style={{ width: isMobile ? '100%' : '92vw', maxWidth: isMobile ? '100%' : 860, maxHeight: isMobile ? '92vh' : '90vh', display: 'flex', flexDirection: 'column', padding: isMobile ? '20px 16px' : 32, borderRadius: isMobile ? '20px 20px 0 0' : 18, paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32 }}
+        style={{ width: isMobile ? '100%' : '92vw', maxWidth: isMobile ? '100%' : 860, maxHeight: isMobile ? '92vh' : '90vh', display: 'flex', flexDirection: 'column', padding: isMobile ? '20px 16px' : 32, borderRadius: isMobile ? '20px 20px 0 0' : 18, paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32, background: '#ffffff', border: `1px solid ${C.border}` }}
         onClick={e => e.stopPropagation()}>
-        {isMobile && <div style={{ width: 36, height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.12)', margin: '0 auto 16px' }} />}
-        <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: '#F1F5F9', marginBottom: 4 }}>New Payroll Run</h2>
-        <p style={{ fontSize: 13, color: '#64748B', marginBottom: 16 }}>Create a payroll run for review and disbursement.</p>
+        {isMobile && <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: '0 auto 16px' }} />}
+        <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: C.text, marginBottom: 4 }}>New Payroll Run</h2>
+        <p style={{ fontSize: 13, color: C.text3, marginBottom: 16 }}>Create a payroll run for review and disbursement.</p>
 
         <div style={{ marginBottom: 14 }}>
           <label className="pay-lbl">Payroll Description</label>
@@ -181,9 +202,9 @@ function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
             <div className="pay-table-scroll">
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 600 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <tr style={{ borderBottom: `1px solid ${C.border}` }}>
                     {['Name / Recipient', 'MoMo Phone', 'Base Salary', 'Bonus', 'Allowance', 'Total', ''].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '6px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#334155' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '6px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: C.text3 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -195,24 +216,24 @@ function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
           )}
         </div>
 
-        <button onClick={addRow} style={{ background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.15)', borderRadius: 8, color: '#64748B', padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', marginBottom: 14, width: '100%' }}>
+        <button onClick={addRow} style={{ background: C.muted, border: `1px dashed ${C.border}`, borderRadius: 8, color: C.text2, padding: '9px 16px', cursor: 'pointer', fontSize: 13, fontFamily: 'inherit', marginBottom: 14, width: '100%', fontWeight: 'bold' }}>
           + Add Recipient
         </button>
 
         {/* Summary */}
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 10, padding: '12px 16px', marginBottom: 14, border: '1px solid rgba(255,255,255,0.06)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748B', marginBottom: 4 }}>
-            <span>Payroll total</span><span style={{ color: '#CBD5E1', fontWeight: 700 }}>{fmt(total)}</span>
+        <div style={{ background: C.muted, borderRadius: 10, padding: '12px 16px', marginBottom: 14, border: `1px solid ${C.border}` }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.text3, marginBottom: 4 }}>
+            <span>Payroll total</span><span style={{ color: C.text, fontWeight: 700 }}>{fmt(total)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: '#64748B', marginBottom: 4 }}>
-            <span>Platform fee (1%)</span><span style={{ color: '#CBD5E1' }}>{fmt(fee)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: C.text3, marginBottom: 4 }}>
+            <span>Platform fee (1%)</span><span style={{ color: C.text }}>{fmt(fee)}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#F1F5F9', fontWeight: 800, borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 8, marginTop: 4 }}>
-            <span>Total wallet deduction</span><span style={{ color: '#F59E0B' }}>{fmt(total + fee)}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: C.text, fontWeight: 800, borderTop: `1px solid ${C.border}`, paddingTop: 8, marginTop: 4 }}>
+            <span>Total wallet deduction</span><span style={{ color: C.warning }}>{fmt(total + fee)}</span>
           </div>
         </div>
 
-        {error && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#FCA5A5', marginBottom: 14 }}>{error}</div>}
+        {error && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: C.danger, marginBottom: 14 }}>{error}</div>}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="pay-btn-ghost" style={{ flex: 1 }} onClick={() => onClose()}>Cancel</button>
@@ -280,8 +301,8 @@ export default function PayrollPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: isMobile ? 16 : 28, gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em', marginBottom: 3 }}>Payroll Runs</h1>
-          <p style={{ fontSize: 13, color: '#475569' }}>Create, approve, and disburse payroll for your squad.</p>
+          <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 900, color: C.text, letterSpacing: '-0.04em', marginBottom: 3 }}>Payroll Runs</h1>
+          <p style={{ fontSize: 13, color: C.text3 }}>Create, approve, and disburse payroll for your squad.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="pay-btn-ghost" style={{ padding: '9px 14px', fontSize: 13 }} onClick={() => loadRuns(teamId)}>↺</button>
@@ -291,12 +312,12 @@ export default function PayrollPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="pay-card" style={{ padding: 48, textAlign: 'center', color: '#334155' }}>Loading payroll runs…</div>
+        <div className="pay-card" style={{ padding: 48, textAlign: 'center', color: C.text3 }}>Loading payroll runs…</div>
       ) : runs.length === 0 ? (
         <div className="pay-card" style={{ padding: isMobile ? 40 : 64, textAlign: 'center' }}>
           <div style={{ fontSize: isMobile ? 40 : 48, marginBottom: 12 }}>📋</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#475569', marginBottom: 8 }}>No payroll runs yet</div>
-          <div style={{ fontSize: 13, color: '#334155', marginBottom: 20 }}>Create a payroll run to start disbursing salaries.</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: C.text2, marginBottom: 8 }}>No payroll runs yet</div>
+          <div style={{ fontSize: 13, color: C.text3, marginBottom: 20 }}>Create a payroll run to start disbursing salaries.</div>
           <button className="pay-btn-gold" onClick={() => setShowNew(true)}>Create First Run</button>
         </div>
       ) : isMobile ? (
@@ -306,15 +327,15 @@ export default function PayrollPage() {
             <Link key={run.id} href={`/pay/payroll/${run.id}`} style={{ textDecoration: 'none', animation: `fadeUp 0.3s ease ${i * 0.04}s both`, display: 'block' }}>
               <div className="pay-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#F1F5F9', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{run.description}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{run.description}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <StatusBadge status={run.status} />
-                    <span style={{ fontSize: 11, color: '#475569' }}>{new Date(run.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span style={{ fontSize: 11, color: C.text3 }}>{new Date(run.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                   </div>
                 </div>
                 <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#34D399' }}>{fmt(run.total_amount)}</div>
-                  <div style={{ fontSize: 11, color: '#F59E0B', marginTop: 2, fontWeight: 600 }}>View →</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: C.teal }}>{fmt(run.total_amount)}</div>
+                  <div style={{ fontSize: 11, color: C.warning, marginTop: 2, fontWeight: 600 }}>View →</div>
                 </div>
               </div>
             </Link>
@@ -324,27 +345,27 @@ export default function PayrollPage() {
         /* Desktop: full table */
         <div className="pay-card pay-table-scroll" style={{ overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 560 }}>
-            <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+            <thead style={{ background: C.muted }}>
               <tr>
                 {['Description', 'Total Amount', 'Status', 'Created By', 'Date', 'Action'].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '14px 20px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#334155', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '14px 20px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: C.text3, borderBottom: `1px solid ${C.border}` }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {runs.map((run, i) => (
-                <tr key={run.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', animation: `fadeUp 0.3s ease ${i * 0.04}s both` }}>
+                <tr key={run.id} style={{ borderBottom: `1px solid ${C.border}`, animation: `fadeUp 0.3s ease ${i * 0.04}s both` }}>
                   <td style={{ padding: '14px 20px' }}>
-                    <div style={{ fontWeight: 700, color: '#F1F5F9' }}>{run.description}</div>
-                    <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{run.id.slice(0, 8)}…</div>
+                    <div style={{ fontWeight: 700, color: C.text }}>{run.description}</div>
+                    <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{run.id.slice(0, 8)}…</div>
                   </td>
-                  <td style={{ padding: '14px 20px', fontWeight: 700, color: '#34D399' }}>{fmt(run.total_amount)}</td>
+                  <td style={{ padding: '14px 20px', fontWeight: 700, color: C.teal }}>{fmt(run.total_amount)}</td>
                   <td style={{ padding: '14px 20px' }}><StatusBadge status={run.status} /></td>
-                  <td style={{ padding: '14px 20px', color: '#64748B', fontSize: 12 }}>{run.created_by_profile?.full_name || '—'}</td>
-                  <td style={{ padding: '14px 20px', color: '#475569', fontSize: 11 }}>{new Date(run.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
+                  <td style={{ padding: '14px 20px', color: C.text2, fontSize: 12 }}>{run.created_by_profile?.full_name || '—'}</td>
+                  <td style={{ padding: '14px 20px', color: C.text3, fontSize: 11 }}>{new Date(run.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
                   <td style={{ padding: '14px 20px' }}>
                     <Link href={`/pay/payroll/${run.id}`} style={{ textDecoration: 'none' }}>
-                      <button style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.25)', color: '#F59E0B', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>View →</button>
+                      <button style={{ background: C.muted, border: `1px solid ${C.border}`, color: C.teal, borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>View →</button>
                     </Link>
                   </td>
                 </tr>

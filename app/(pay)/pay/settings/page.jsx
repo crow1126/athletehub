@@ -3,13 +3,36 @@ import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { payFetch } from '@/lib/payFetch'
 
+const C = {
+  text:      '#0B1E14',
+  text2:     '#102A1C',
+  text3:     '#243E30',
+  teal:      '#0B7A70',
+  tealDeep:  '#0A5C54',
+  tealAlpha: 'rgba(11,122,112,0.10)',
+  border:    '#82C29A',
+  muted:     '#E2F5E9',
+  bg:        '#F0FBF4',
+  card:      'rgba(255,255,255,0.92)',
+  success:   '#047857',
+  successBg: '#D1FAE5',
+  danger:    '#B91C1C',
+  dangerBg:  '#FEE2E2',
+  warning:   '#B45309',
+  warningBg: '#FEF3C7',
+  info:      '#1D4ED8',
+  infoBg:    '#DBEAFE',
+  purple:    '#6D28D9',
+  purpleBg:  '#F3E8FF',
+}
+
 function initials(name = '') {
   return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() || '??'
 }
 
 const BADGE = {
-  active:   { bg: 'rgba(16,185,129,0.12)', color: '#10B981', label: 'Active' },
-  inactive: { bg: 'rgba(239,68,68,0.12)',  color: '#EF4444', label: 'Inactive' },
+  active:   { bg: C.successBg, color: C.success, label: 'Active' },
+  inactive: { bg: C.dangerBg,  color: C.danger, label: 'Inactive' },
 }
 
 export default function PaySettingsPage() {
@@ -87,30 +110,30 @@ export default function PaySettingsPage() {
     <div className="pay-page" style={{ maxWidth: isMobile ? '100%' : 860, margin: '0 auto', animation: 'fadeUp 0.4s ease' }}>
       {/* Header */}
       <div style={{ marginBottom: isMobile ? 20 : 28 }}>
-        <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: '#F1F5F9', letterSpacing: '-0.03em', margin: 0 }}>Settings</h1>
-        <p style={{ color: '#64748B', fontSize: 13, marginTop: 4 }}>
+        <h1 style={{ fontSize: isMobile ? 22 : 26, fontWeight: 800, color: C.text, letterSpacing: '-0.03em', margin: 0 }}>Settings</h1>
+        <p style={{ color: C.text3, fontSize: 13, marginTop: 4 }}>
           {isAdmin ? "Manage accountant logins for your club's ApexPay portal" : 'Your portal access settings'}
         </p>
       </div>
 
       {/* Flash messages */}
-      {error   && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 16px', color: '#F87171', marginBottom: 16, fontSize: 14 }}>{error}</div>}
-      {success && <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, padding: '12px 16px', color: '#34D399', marginBottom: 16, fontSize: 14 }}>{success}</div>}
+      {error   && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 10, padding: '12px 16px', color: C.danger, marginBottom: 16, fontSize: 14 }}>{error}</div>}
+      {success && <div style={{ background: C.successBg, border: `1px solid ${C.success}`, borderRadius: 10, padding: '12px 16px', color: C.success, marginBottom: 16, fontSize: 14 }}>{success}</div>}
 
       {/* Profile card */}
-      <div className="pay-card" style={{ padding: isMobile ? '16px' : '24px', marginBottom: isMobile ? 20 : 28, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <div style={{ width: isMobile ? 46 : 56, height: isMobile ? 46 : 56, borderRadius: '50%', background: 'rgba(245,158,11,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 16 : 20, fontWeight: 800, color: '#F59E0B', flexShrink: 0 }}>
+      <div className="pay-card" style={{ padding: isMobile ? '16px' : '24px', marginBottom: isMobile ? 20 : 28, display: 'flex', alignItems: 'center', gap: 16, background: '#ffffff', border: `1px solid ${C.border}` }}>
+        <div style={{ width: isMobile ? 46 : 56, height: isMobile ? 46 : 56, borderRadius: '50%', background: C.warningBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? 16 : 20, fontWeight: 800, color: C.warning, flexShrink: 0, border: `1px solid ${C.border}` }}>
           {initials(profile?.full_name)}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: '#F1F5F9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.full_name || '—'}</div>
-          <div style={{ fontSize: 12, color: '#64748B', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.email}</div>
+          <div style={{ fontSize: isMobile ? 15 : 18, fontWeight: 700, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.full_name || '—'}</div>
+          <div style={{ fontSize: 12, color: C.text3, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.email}</div>
           <div style={{ marginTop: 8, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 99, padding: '3px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ background: C.warningBg, color: C.warning, border: `1px solid ${C.warning}`, borderRadius: 99, padding: '3px 10px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {profile?.role}
             </span>
             {profile?.teams?.name && (
-              <span style={{ background: 'rgba(100,116,139,0.12)', color: '#94A3B8', border: '1px solid rgba(100,116,139,0.2)', borderRadius: 99, padding: '3px 10px', fontSize: 10, fontWeight: 600 }}>
+              <span style={{ background: C.muted, color: C.text2, border: `1px solid ${C.border}`, borderRadius: 99, padding: '3px 10px', fontSize: 10, fontWeight: 600 }}>
                 {profile.teams.name}
               </span>
             )}
@@ -123,8 +146,8 @@ export default function PaySettingsPage() {
         <div>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16, gap: 10, flexWrap: 'wrap' }}>
             <div>
-              <h2 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: '#E2E8F0', margin: 0 }}>Accountant Accounts</h2>
-              <p style={{ fontSize: 12, color: '#64748B', marginTop: 3 }}>
+              <h2 style={{ fontSize: isMobile ? 15 : 17, fontWeight: 700, color: C.text, margin: 0 }}>Accountant Accounts</h2>
+              <p style={{ fontSize: 12, color: C.text3, marginTop: 3 }}>
                 Accountants can view wallet, payroll &amp; transactions — but cannot approve or disburse.
               </p>
             </div>
@@ -136,7 +159,7 @@ export default function PaySettingsPage() {
 
           {/* Create form */}
           {showForm && (
-            <form onSubmit={handleCreate} className="pay-card" style={{ padding: isMobile ? 16 : 24, marginBottom: 20, animation: 'fadeUp 0.25s ease' }}>
+            <form onSubmit={handleCreate} className="pay-card" style={{ padding: isMobile ? 16 : 24, marginBottom: 20, animation: 'fadeUp 0.25s ease', background: '#ffffff', border: `1px solid ${C.border}` }}>
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginBottom: 14 }}>
                 <div>
                   <label className="pay-lbl">Full Name</label>
@@ -154,7 +177,7 @@ export default function PaySettingsPage() {
                 <input className="pay-inp" type="password" placeholder="Min 8 characters" value={form.password}
                   onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   style={{ maxWidth: isMobile ? '100%' : 360 }} />
-                <div style={{ fontSize: 11, color: '#475569', marginTop: 5 }}>The accountant should change this after first login.</div>
+                <div style={{ fontSize: 11, color: C.text3, marginTop: 5 }}>The accountant should change this after first login.</div>
               </div>
               <button className="pay-btn-gold" type="submit" disabled={saving} style={{ width: isMobile ? '100%' : 'auto' }}>
                 {saving ? 'Creating…' : 'Create Accountant'}
@@ -164,40 +187,40 @@ export default function PaySettingsPage() {
 
           {/* Accountant list */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: 48, color: '#475569', fontSize: 14 }}>Loading…</div>
+            <div style={{ textAlign: 'center', padding: 48, color: C.text3, fontSize: 14 }}>Loading…</div>
           ) : accountants.length === 0 ? (
-            <div className="pay-card" style={{ padding: '32px 24px', textAlign: 'center' }}>
+            <div className="pay-card" style={{ padding: '32px 24px', textAlign: 'center', background: '#ffffff', border: `1px solid ${C.border}` }}>
               <div style={{ fontSize: 32, marginBottom: 10 }}>👤</div>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#94A3B8' }}>No accountants yet</div>
-              <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>Add an accountant above to grant read-only portal access.</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: C.text2 }}>No accountants yet</div>
+              <div style={{ fontSize: 13, color: C.text3, marginTop: 4 }}>Add an accountant above to grant read-only portal access.</div>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {accountants.map(acc => {
                 const badge = acc.is_active ? BADGE.active : BADGE.inactive
                 return (
-                  <div key={acc.id} className="pay-card" style={{ padding: isMobile ? '14px' : '16px 20px' }}>
+                  <div key={acc.id} className="pay-card" style={{ padding: isMobile ? '14px' : '16px 20px', background: '#ffffff', border: `1px solid ${C.border}` }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: isMobile ? 10 : 0 }}>
                       {/* Avatar */}
-                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(100,116,139,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#94A3B8', flexShrink: 0 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: '50%', background: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: C.text2, flexShrink: 0, border: `1px solid ${C.border}` }}>
                         {initials(acc.full_name)}
                       </div>
                       {/* Info */}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 14, fontWeight: 700, color: '#E2E8F0' }}>{acc.full_name}</div>
-                        <div style={{ fontSize: 12, color: '#64748B', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.email}</div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{acc.full_name}</div>
+                        <div style={{ fontSize: 12, color: C.text3, marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.email}</div>
                       </div>
                       {/* Status badge */}
-                      <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.color}30`, borderRadius: 99, padding: '3px 10px', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
+                      <span style={{ background: badge.bg, color: badge.color, border: `1px solid ${badge.color}`, borderRadius: 99, padding: '3px 10px', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>
                         {badge.label}
                       </span>
                     </div>
 
                     {/* Footer row — date + actions */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: isMobile ? 0 : 0, paddingTop: isMobile ? 10 : 0, borderTop: isMobile ? '1px solid rgba(255,255,255,0.06)' : 'none', ...(!isMobile && { display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'flex-end' }) }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: isMobile ? 0 : 0, paddingTop: isMobile ? 10 : 0, borderTop: isMobile ? `1px solid ${C.border}` : 'none', ...(!isMobile && { display: 'flex', alignItems: 'center', gap: 16, justifyContent: 'flex-end' }) }}>
                       {isMobile ? (
                         <>
-                          <span style={{ fontSize: 11, color: '#475569' }}>
+                          <span style={{ fontSize: 11, color: C.text3 }}>
                             Joined {new Date(acc.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </span>
                           <div style={{ display: 'flex', gap: 8 }}>
@@ -205,14 +228,14 @@ export default function PaySettingsPage() {
                               {acc.is_active ? 'Deactivate' : 'Activate'}
                             </button>
                             <button onClick={() => handleDelete(acc)} disabled={deleting === acc.id}
-                              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#F87171', padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 8, color: C.danger, padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                               {deleting === acc.id ? '…' : 'Delete'}
                             </button>
                           </div>
                         </>
                       ) : (
                         <>
-                          <div style={{ fontSize: 11, color: '#475569', flexShrink: 0 }}>
+                          <div style={{ fontSize: 11, color: C.text3, flexShrink: 0 }}>
                             {new Date(acc.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                           </div>
                           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -220,8 +243,8 @@ export default function PaySettingsPage() {
                               {acc.is_active ? 'Deactivate' : 'Activate'}
                             </button>
                             <button onClick={() => handleDelete(acc)} disabled={deleting === acc.id}
-                              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 8, color: '#F87171', padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }}>
-                              {deleting === acc.id ? '…' : 'Delete'}
+                              style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 8, color: C.danger, padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.18s' }}>
+                                {deleting === acc.id ? '…' : 'Delete'}
                             </button>
                           </div>
                         </>
@@ -237,10 +260,10 @@ export default function PaySettingsPage() {
 
       {/* Accountant read-only notice */}
       {!isAdmin && !loading && (
-        <div className="pay-card" style={{ padding: isMobile ? 20 : 28 }}>
-          <h2 style={{ fontSize: 15, fontWeight: 700, color: '#E2E8F0', margin: '0 0 8px' }}>Portal Access</h2>
-          <p style={{ fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
-            Your account has <strong style={{ color: '#F59E0B' }}>read-only</strong> access to the ApexPay portal.
+        <div className="pay-card" style={{ padding: isMobile ? 20 : 28, background: '#ffffff', border: `1px solid ${C.border}` }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: C.text2, margin: '0 0 8px' }}>Portal Access</h2>
+          <p style={{ fontSize: 13, color: C.text3, lineHeight: 1.6 }}>
+            Your account has <strong style={{ color: C.warning }}>read-only</strong> access to the ApexPay portal.
             You can view the wallet balance, payroll runs, and transaction history for your club.
             Contact your club administrator to request additional permissions.
           </p>

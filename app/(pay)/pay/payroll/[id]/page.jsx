@@ -5,19 +5,40 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { payFetch } from '@/lib/payFetch'
 
+const C = {
+  text:      '#0B1E14',
+  text2:     '#102A1C',
+  text3:     '#243E30',
+  teal:      '#0B7A70',
+  tealDeep:  '#0A5C54',
+  tealAlpha: 'rgba(11,122,112,0.10)',
+  border:    '#82C29A',
+  muted:     '#E2F5E9',
+  bg:        '#F0FBF4',
+  card:      'rgba(255,255,255,0.92)',
+  success:   '#047857',
+  successBg: '#D1FAE5',
+  danger:    '#B91C1C',
+  dangerBg:  '#FEE2E2',
+  warning:   '#B45309',
+  warningBg: '#FEF3C7',
+  info:      '#1D4ED8',
+  infoBg:    '#DBEAFE',
+}
+
 const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 const SIMULATE = process.env.NODE_ENV !== 'production'
 
 function StatusBadge({ status }) {
   const map = {
-    draft:            { bg: 'rgba(100,116,139,0.15)', color: '#94A3B8', label: 'Draft' },
-    pending_approval: { bg: 'rgba(245,158,11,0.12)',  color: '#FBB124', label: 'Pending' },
-    approved:         { bg: 'rgba(59,130,246,0.12)',  color: '#60A5FA', label: 'Approved' },
-    processing:       { bg: 'rgba(139,92,246,0.12)', color: '#A78BFA', label: 'Processing' },
-    completed:        { bg: 'rgba(16,185,129,0.12)', color: '#34D399', label: 'Completed' },
-    failed:           { bg: 'rgba(239,68,68,0.12)',  color: '#FCA5A5', label: 'Failed' },
-    pending:          { bg: 'rgba(245,158,11,0.12)', color: '#FBB124', label: 'Pending' },
-    success:          { bg: 'rgba(16,185,129,0.12)', color: '#34D399', label: 'Paid' },
+    draft:            { bg: 'rgba(36,62,48,0.10)', color: C.text3, label: 'Draft' },
+    pending_approval: { bg: C.warningBg,             color: C.warning, label: 'Pending' },
+    approved:         { bg: C.infoBg,                color: C.info, label: 'Approved' },
+    processing:       { bg: 'rgba(109,40,217,0.10)', color: '#6D28D9', label: 'Processing' },
+    completed:        { bg: C.successBg,             color: C.success, label: 'Completed' },
+    failed:           { bg: C.dangerBg,              color: C.danger, label: 'Failed' },
+    pending:          { bg: C.warningBg,             color: C.warning, label: 'Pending' },
+    success:          { bg: C.successBg,             color: C.success, label: 'Paid' },
   }
   const s = map[status] || map.draft
   return <span className="pay-badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>
@@ -27,12 +48,25 @@ function StatusBadge({ status }) {
 function TimelineStep({ done, active, label, sub }) {
   return (
     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
-      <div style={{ width: 28, height: 28, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, border: `2px solid ${done ? '#10B981' : active ? '#F59E0B' : '#1E2D4A'}`, background: done ? 'rgba(16,185,129,0.15)' : active ? 'rgba(245,158,11,0.15)' : 'transparent', color: done ? '#10B981' : active ? '#F59E0B' : '#334155' }}>
+      <div style={{
+        width: 28,
+        height: 28,
+        borderRadius: '50%',
+        flexShrink: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 13,
+        fontWeight: 800,
+        border: `2px solid ${done ? C.success : active ? C.warning : C.border}`,
+        background: done ? C.successBg : active ? C.warningBg : 'transparent',
+        color: done ? C.success : active ? C.warning : C.text3
+      }}>
         {done ? '✓' : active ? '⬤' : '○'}
       </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, color: done || active ? '#CBD5E1' : '#475569' }}>{label}</div>
-        {sub && <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{sub}</div>}
+        <div style={{ fontSize: 13, fontWeight: 700, color: done || active ? C.text : C.text3 }}>{label}</div>
+        {sub && <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{sub}</div>}
       </div>
     </div>
   )
@@ -111,8 +145,8 @@ export default function PayrollRunDetailPage({ params }) {
 
   const isAdmin = ['admin', 'superadmin'].includes(role)
 
-  if (loading) return <div style={{ padding: 64, textAlign: 'center', color: '#334155', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Loading…</div>
-  if (!run)    return <div style={{ padding: 64, textAlign: 'center', color: '#EF4444', fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Run not found</div>
+  if (loading) return <div style={{ padding: 64, textAlign: 'center', color: C.text3, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Loading…</div>
+  if (!run)    return <div style={{ padding: 64, textAlign: 'center', color: C.danger, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Run not found</div>
 
   const fee          = parseFloat((run.total_amount * 0.01).toFixed(2))
   const totalRequired = run.total_amount + fee
@@ -128,22 +162,22 @@ export default function PayrollRunDetailPage({ params }) {
   return (
     <div style={{ padding: '32px', animation: 'fadeUp 0.35s ease' }}>
       {/* Breadcrumb */}
-      <div style={{ fontSize: 12, color: '#475569', marginBottom: 20 }}>
-        <Link href="/pay" style={{ color: '#F59E0B', textDecoration: 'none' }}>ApexPay</Link>
+      <div style={{ fontSize: 12, color: C.text3, marginBottom: 20 }}>
+        <Link href="/pay" style={{ color: C.teal, textDecoration: 'none', fontWeight: 600 }}>ApexPay</Link>
         {' / '}
-        <Link href="/pay/payroll" style={{ color: '#64748B', textDecoration: 'none' }}>Payroll</Link>
+        <Link href="/pay/payroll" style={{ color: C.text3, textDecoration: 'none', fontWeight: 600 }}>Payroll</Link>
         {' / '}
-        <span style={{ color: '#94A3B8' }}>{run.description}</span>
+        <span style={{ color: C.text }}>{run.description}</span>
       </div>
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 900, color: '#F1F5F9', letterSpacing: '-0.04em' }}>{run.description}</h1>
+            <h1 style={{ fontSize: 26, fontWeight: 900, color: C.text, letterSpacing: '-0.04em' }}>{run.description}</h1>
             <StatusBadge status={run.status} />
           </div>
-          <div style={{ fontSize: 13, color: '#475569' }}>
+          <div style={{ fontSize: 13, color: C.text3 }}>
             Created {new Date(run.created_at).toLocaleString()} by {run.created_by_profile?.full_name || 'Admin'}
           </div>
         </div>
@@ -157,52 +191,52 @@ export default function PayrollRunDetailPage({ params }) {
             </button>
           )}
           {isAdmin && run.status === 'approved' && (
-            <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #065F46, #10B981)', animation: 'pulse-glow 2s infinite' }}>
+            <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #0A5C54, #0B7A70)' }}>
               {action === 'disbursing' ? '⏳ Disbursing…' : SIMULATE ? '⚡ Disburse (Simulated)' : '💸 Disburse Now'}
             </button>
           )}
           {!isAdmin && (
-            <span style={{ fontSize: 12, color: '#475569', fontStyle: 'italic', alignSelf: 'center' }}>View only</span>
+            <span style={{ fontSize: 12, color: C.text3, fontStyle: 'italic', alignSelf: 'center' }}>View only</span>
           )}
         </div>
       </div>
 
       {/* Status messages */}
-      {result && <div style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 10, padding: '12px 18px', fontSize: 13, color: '#34D399', marginBottom: 20 }}>{result}</div>}
-      {error  && <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '12px 18px', fontSize: 13, color: '#FCA5A5', marginBottom: 20 }}>{error}</div>}
+      {result && <div style={{ background: C.successBg, border: `1px solid ${C.success}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.success, marginBottom: 20 }}>{result}</div>}
+      {error  && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.danger, marginBottom: 20 }}>{error}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
         {/* Left: items table */}
         <div>
           <div className="pay-card" style={{ overflow: 'hidden', marginBottom: 20 }}>
-            <div style={{ padding: '18px 24px', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <div style={{ padding: '18px 24px', borderBottom: `1px solid ${C.border}`, background: C.muted }}>
+              <h3 style={{ fontSize: 14, fontWeight: 700, color: C.text2, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                 Recipients ({items.length})
               </h3>
             </div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-              <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+              <thead style={{ background: C.muted }}>
                 <tr>
                   {['Name', 'Phone', 'Base', 'Bonus', 'Allowance', 'Total', 'Status'].map(h => (
-                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#334155', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>{h}</th>
+                    <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: C.text3, borderBottom: `1px solid ${C.border}` }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {items.map((item, i) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)', animation: `fadeUp 0.3s ease ${i * 0.03}s both` }}>
+                  <tr key={item.id} style={{ borderBottom: `1px solid ${C.border}`, animation: `fadeUp 0.3s ease ${i * 0.03}s both` }}>
                     <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontWeight: 700, color: '#CBD5E1' }}>{item.name}</div>
-                      <div style={{ fontSize: 10, color: '#475569', textTransform: 'capitalize', marginTop: 2 }}>{item.recipient_type}</div>
+                      <div style={{ fontWeight: 700, color: C.text }}>{item.name}</div>
+                      <div style={{ fontSize: 10, color: C.text3, textTransform: 'capitalize', marginTop: 2 }}>{item.recipient_type}</div>
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#64748B', fontFamily: 'monospace' }}>{item.phone}</td>
-                    <td style={{ padding: '12px 16px', color: '#94A3B8' }}>{fmt(item.base_salary)}</td>
-                    <td style={{ padding: '12px 16px', color: '#94A3B8' }}>{fmt(item.bonus)}</td>
-                    <td style={{ padding: '12px 16px', color: '#94A3B8' }}>{fmt(item.allowance)}</td>
-                    <td style={{ padding: '12px 16px', fontWeight: 800, color: '#34D399' }}>{fmt(item.total_amount)}</td>
+                    <td style={{ padding: '12px 16px', color: C.text2, fontFamily: 'monospace' }}>{item.phone}</td>
+                    <td style={{ padding: '12px 16px', color: C.text3 }}>{fmt(item.base_salary)}</td>
+                    <td style={{ padding: '12px 16px', color: C.text3 }}>{fmt(item.bonus)}</td>
+                    <td style={{ padding: '12px 16px', color: C.text3 }}>{fmt(item.allowance)}</td>
+                    <td style={{ padding: '12px 16px', fontWeight: 800, color: C.success }}>{fmt(item.total_amount)}</td>
                     <td style={{ padding: '12px 16px' }}>
                       <StatusBadge status={item.status} />
-                      {item.moolre_status_msg && <div style={{ fontSize: 10, color: '#475569', marginTop: 3 }}>{item.moolre_status_msg}</div>}
+                      {item.moolre_status_msg && <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{item.moolre_status_msg}</div>}
                     </td>
                   </tr>
                 ))}
@@ -215,37 +249,37 @@ export default function PayrollRunDetailPage({ params }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Financial summary */}
           <div className="pay-card" style={{ padding: 22 }}>
-            <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Financial Summary</h3>
+            <h3 style={{ fontSize: 12, fontWeight: 700, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Financial Summary</h3>
             {[
-              { label: 'Payroll Total', value: fmt(run.total_amount), color: '#F1F5F9' },
-              { label: 'Platform Fee (1%)', value: fmt(fee), color: '#94A3B8' },
-              { label: 'Total Deduction', value: fmt(totalRequired), color: '#F59E0B' },
+              { label: 'Payroll Total', value: fmt(run.total_amount), color: C.text },
+              { label: 'Platform Fee (1%)', value: fmt(fee), color: C.text3 },
+              { label: 'Total Deduction', value: fmt(totalRequired), color: C.warning },
             ].map(r => (
-              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 10, borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                <span style={{ fontSize: 12, color: '#64748B' }}>{r.label}</span>
+              <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 10, borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ fontSize: 12, color: C.text3 }}>{r.label}</span>
                 <span style={{ fontSize: 13, fontWeight: 800, color: r.color }}>{r.value}</span>
               </div>
             ))}
-            <div style={{ padding: '12px 14px', borderRadius: 10, background: sufficient ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${sufficient ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`, marginTop: 8 }}>
-              <div style={{ fontSize: 11, color: sufficient ? '#34D399' : '#FCA5A5', fontWeight: 700 }}>
+            <div style={{ padding: '12px 14px', borderRadius: 10, background: sufficient ? C.successBg : C.dangerBg, border: `1px solid ${sufficient ? C.success : C.danger}`, marginTop: 8 }}>
+              <div style={{ fontSize: 11, color: sufficient ? C.success : C.danger, fontWeight: 700 }}>
                 {sufficient ? '✓ Wallet has sufficient funds' : '✗ Insufficient wallet balance'}
               </div>
-              <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>Available: {fmt(balance)}</div>
+              <div style={{ fontSize: 11, color: C.text2, marginTop: 2 }}>Available: {fmt(balance)}</div>
             </div>
           </div>
 
           {/* Approval info */}
           {run.approved_at && (
             <div className="pay-card" style={{ padding: 22 }}>
-              <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Approval</h3>
-              <div style={{ fontSize: 13, color: '#CBD5E1' }}>{run.approved_by_profile?.full_name || 'Admin'}</div>
-              <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{new Date(run.approved_at).toLocaleString()}</div>
+              <h3 style={{ fontSize: 12, fontWeight: 700, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Approval</h3>
+              <div style={{ fontSize: 13, color: C.text }}>{run.approved_by_profile?.full_name || 'Admin'}</div>
+              <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>{new Date(run.approved_at).toLocaleString()}</div>
             </div>
           )}
 
           {/* Timeline */}
           <div className="pay-card" style={{ padding: 22 }}>
-            <h3 style={{ fontSize: 12, fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Progress</h3>
+            <h3 style={{ fontSize: 12, fontWeight: 700, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 16 }}>Progress</h3>
             <TimelineStep done={!isDraft} active={isDraft} label="Draft Created" sub={new Date(run.created_at).toLocaleDateString()} />
             <TimelineStep done={isApproved} active={!isDraft && !isApproved} label="Admin Approved" sub={run.approved_at ? new Date(run.approved_at).toLocaleDateString() : undefined} />
             <TimelineStep done={isDispatched} active={isApproved && !isDispatched} label="Disbursement Initiated" />

@@ -18,16 +18,17 @@ const PUBLIC_PREFIXES = ['/login', '/auth', '/privacy', '/terms', '/security', '
 const PUBLIC_EXACT    = ['/']
 
 export async function proxy(request) {
-  const url  = request.nextUrl.clone()
-  const host = request.headers.get('host') || ''
+  const url      = request.nextUrl.clone()
+  const host     = request.headers.get('host') || ''
   const hostname = host.split(':')[0]
 
-  // ── 1. Subdomain rewrite (pay.apextrackgh.com → /pay) ─────────────────────
+  // ── 1. Decide if subdomain rewrite is needed (don't return yet) ───────────
   const isPaySubdomain =
     hostname === 'pay.apextrackgh.com' ||
     hostname.startsWith('pay.localhost') ||
     hostname.startsWith('pay.127.0.0.1')
 
+  let rewriteUrl = null
   if (isPaySubdomain) {
     const path = url.pathname
     if (
@@ -39,22 +40,27 @@ export async function proxy(request) {
       !path.includes('.')
     ) {
       url.pathname = `/pay${path === '/' ? '' : path}`
-      return NextResponse.rewrite(url)
+      rewriteUrl = url
     }
   }
 
   // ── 2. Skip auth check for public routes & static assets ──────────────────
-  const { pathname } = request.nextUrl
+  // Check against the rewritten path so /pay/* routes are also guarded.
+  const checkPath = rewriteUrl?.pathname ?? request.nextUrl.pathname
   const isPublic =
-    PUBLIC_EXACT.includes(pathname) ||
-    PUBLIC_PREFIXES.some(p => pathname.startsWith(p)) ||
-    pathname.match(/\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot|ico)$/)
+    PUBLIC_EXACT.includes(checkPath) ||
+    PUBLIC_PREFIXES.some(p => checkPath.startsWith(p)) ||
+    checkPath.match(/\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot|ico)$/)
 
-  if (isPublic) return NextResponse.next()
+  if (isPublic) {
+    return rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
+  }
 
   // ── 3. Session validation + cookie refresh ─────────────────────────────────
+  // Build the final response object now (rewrite or passthrough) so the
+  // refreshed Supabase cookie can be attached to it before we return.
+  const response     = rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
   const cookieDomain = getCookieDomain(hostname)
-  const response = NextResponse.next()
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -82,7 +88,7 @@ export async function proxy(request) {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    // Always redirect to the main domain login, never the pay subdomain
+    // Always redirect to the main domain login, never stay on the pay subdomain
     const loginUrl = isPaySubdomain
       ? new URL('https://apextrackgh.com/login', request.url)
       : new URL('/login', request.url)

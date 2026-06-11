@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { payFetch } from '@/lib/payFetch'
 
 const C = {
   text:      '#0B1E14',
@@ -172,8 +173,7 @@ function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
     const noPhone = cleaned.filter(r => !r.phone)
     if (noPhone.length) return setError(`Missing MoMo phone for: ${noPhone.map(r => r.name).join(', ')}`)
     setLoading(true); setError(null)
-    const res  = await fetch('/api/pay/payroll', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ team_id: teamId, description, recipients: cleaned }) })
-    const data = await res.json()
+    const { res, data } = await payFetch('/api/pay/payroll', { method: 'POST', body: JSON.stringify({ team_id: teamId, description, recipients: cleaned }) })
     setLoading(false)
     if (!res.ok) return setError(data.error || 'Failed to create run')
     onCreated(data.run)
@@ -265,8 +265,7 @@ export default function PayrollPage() {
 
   const loadRuns = useCallback(async (tid) => {
     setLoading(true)
-    const res  = await fetch(`/api/pay/payroll?team_id=${tid}`)
-    const data = await res.json()
+    const { res, data } = await payFetch(`/api/pay/payroll?team_id=${tid}`)
     setLoading(false)
     if (res.ok) setRuns(data.runs || [])
   }, [])

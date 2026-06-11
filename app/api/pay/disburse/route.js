@@ -6,7 +6,7 @@ import { initiateTransfer, normalizeGhPhone } from '@/lib/moolre'
 
 const db = createServiceClient()
 const PLATFORM_FEE_RATE = 0.01 // 1%
-const SIMULATE = process.env.NODE_ENV !== 'production' // mock mode in dev
+const SIMULATE = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true' // mock mode in dev/test
 
 export async function POST(req) {
   try {
@@ -48,20 +48,20 @@ export async function POST(req) {
 
     // Deduct wallet balance
     await db.from('pay_wallets').update({
-      balance:    parseFloat(wallet.balance) - totalRequired,
+      balance: parseFloat(wallet.balance) - totalRequired,
       updated_at: new Date().toISOString(),
     }).eq('team_id', run.team_id)
 
     // Log platform fee transaction
     await db.from('pay_transactions').insert({
-      team_id:        run.team_id,
-      wallet_id:      wallet.id,
-      type:           'fee',
-      amount:         fee,
-      status:         'success',
-      reference:      `APAY-FEE-${payroll_run_id}-${Date.now()}`,
+      team_id: run.team_id,
+      wallet_id: wallet.id,
+      type: 'fee',
+      amount: fee,
+      status: 'success',
+      reference: `APAY-FEE-${payroll_run_id}-${Date.now()}`,
       payroll_run_id,
-      metadata:       { fee_rate: PLATFORM_FEE_RATE, payroll_total: run.total_amount },
+      metadata: { fee_rate: PLATFORM_FEE_RATE, payroll_total: run.total_amount },
     })
 
     // Disburse each item
@@ -71,34 +71,34 @@ export async function POST(req) {
 
     for (const item of items) {
       const ref = `APAY-PAY-${item.id.slice(0, 8)}-${Date.now()}`
-      let itemStatus  = 'processing'
-      let moolreRef   = ref
-      let statusMsg   = null
+      let itemStatus = 'processing'
+      let moolreRef = ref
+      let statusMsg = null
 
       if (SIMULATE) {
         // ── Sandbox simulator: instantly mark success ──
         itemStatus = 'success'
-        statusMsg  = 'Simulated disbursement (dev mode)'
+        statusMsg = 'Simulated disbursement (dev mode)'
         successCount++
       } else {
         const phone = normalizeGhPhone(item.phone)
         if (!phone) {
           itemStatus = 'failed'
-          statusMsg  = 'Invalid phone number'
+          statusMsg = 'Invalid phone number'
           failCount++
         } else {
           const result = await initiateTransfer({
-            amount:    item.total_amount,
+            amount: item.total_amount,
             recipient: phone,
             reference: ref,
           })
           if (result.ok) {
             itemStatus = 'processing' // Will be confirmed via webhook
-            moolreRef  = result.data?.reference || ref
+            moolreRef = result.data?.reference || ref
             successCount++
           } else {
             itemStatus = 'failed'
-            statusMsg  = result.error
+            statusMsg = result.error
             failCount++
           }
         }
@@ -106,23 +106,23 @@ export async function POST(req) {
 
       // Update item status
       await db.from('pay_payroll_items').update({
-        status:            itemStatus,
-        moolre_ref:        moolreRef,
+        status: itemStatus,
+        moolre_ref: moolreRef,
         moolre_status_msg: statusMsg,
-        updated_at:        new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       }).eq('id', item.id)
 
       // Log transaction
       await db.from('pay_transactions').insert({
-        team_id:         run.team_id,
-        wallet_id:       wallet.id,
-        type:            'payout',
-        amount:          item.total_amount,
-        status:          itemStatus,
-        reference:       moolreRef,
+        team_id: run.team_id,
+        wallet_id: wallet.id,
+        type: 'payout',
+        amount: item.total_amount,
+        status: itemStatus,
+        reference: moolreRef,
         payroll_run_id,
         payroll_item_id: item.id,
-        metadata:        { recipient: item.name, phone: item.phone, simulated: SIMULATE },
+        metadata: { recipient: item.name, phone: item.phone, simulated: SIMULATE },
       })
 
       results.push({ id: item.id, name: item.name, status: itemStatus, statusMsg })

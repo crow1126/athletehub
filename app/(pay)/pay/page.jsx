@@ -5,26 +5,26 @@ import { supabase } from '@/lib/supabase'
 import { payFetch } from '@/lib/payFetch'
 
 const C = {
-  text:      '#0B1E14',
-  text2:     '#102A1C',
-  text3:     '#243E30',
-  teal:      '#0B7A70',
-  tealDeep:  '#0A5C54',
+  text: '#0B1E14',
+  text2: '#102A1C',
+  text3: '#243E30',
+  teal: '#0B7A70',
+  tealDeep: '#0A5C54',
   tealAlpha: 'rgba(11,122,112,0.10)',
-  border:    '#82C29A',
-  muted:     '#E2F5E9',
-  bg:        '#F0FBF4',
-  card:      'rgba(255,255,255,0.92)',
-  success:   '#047857',
+  border: '#82C29A',
+  muted: '#E2F5E9',
+  bg: '#F0FBF4',
+  card: 'rgba(255,255,255,0.92)',
+  success: '#047857',
   successBg: '#D1FAE5',
-  danger:    '#B91C1C',
-  dangerBg:  '#FEE2E2',
-  warning:   '#B45309',
+  danger: '#B91C1C',
+  dangerBg: '#FEE2E2',
+  warning: '#B45309',
   warningBg: '#FEF3C7',
 }
 
 const fmt = (n) => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const SIMULATE = process.env.NODE_ENV !== 'production'
+const SIMULATE = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true'
 
 // ─── Stat card ────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, sub, accent }) {
@@ -41,12 +41,12 @@ function StatCard({ label, value, icon, sub, accent }) {
 // ─── Status badge ─────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
-    draft:            { bg: 'rgba(36,62,48,0.10)', color: C.text3,      dot: C.text3,      label: 'Draft' },
-    pending_approval: { bg: C.warningBg,             color: C.warning,    dot: C.warning,    label: 'Pending' },
-    approved:         { bg: C.tealAlpha,             color: C.teal,       dot: C.teal,       label: 'Approved' },
-    processing:       { bg: 'rgba(109,40,217,0.10)', color: '#6D28D9',    dot: '#6D28D9',    label: 'Processing' },
-    completed:        { bg: C.successBg,             color: C.success,    dot: C.success,    label: 'Completed' },
-    failed:           { bg: C.dangerBg,              color: C.danger,     dot: C.danger,     label: 'Failed' },
+    draft: { bg: 'rgba(36,62,48,0.10)', color: C.text3, dot: C.text3, label: 'Draft' },
+    pending_approval: { bg: C.warningBg, color: C.warning, dot: C.warning, label: 'Pending' },
+    approved: { bg: C.tealAlpha, color: C.teal, dot: C.teal, label: 'Approved' },
+    processing: { bg: 'rgba(109,40,217,0.10)', color: '#6D28D9', dot: '#6D28D9', label: 'Processing' },
+    completed: { bg: C.successBg, color: C.success, dot: C.success, label: 'Completed' },
+    failed: { bg: C.dangerBg, color: C.danger, dot: C.danger, label: 'Failed' },
   }
   const s = map[status] || map.draft
   return (
@@ -59,10 +59,10 @@ function StatusBadge({ status }) {
 
 // ─── Top-up modal ─────────────────────────────────────────────────────────
 function TopUpModal({ onClose, teamId }) {
-  const [amount,  setAmount]  = useState('')
-  const [email,   setEmail]   = useState('')
+  const [amount, setAmount] = useState('')
+  const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState(null)
+  const [error, setError] = useState(null)
 
   async function submit(e) {
     e.preventDefault()
@@ -120,12 +120,12 @@ function TopUpModal({ onClose, teamId }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 export default function PayOverviewPage() {
-  const [teamId,     setTeamId]     = useState(null)
-  const [role,       setRole]       = useState(null)
+  const [teamId, setTeamId] = useState(null)
+  const [role, setRole] = useState(null)
   const [walletData, setWalletData] = useState(null)
-  const [loading,    setLoading]    = useState(true)
-  const [showTopUp,  setShowTopUp]  = useState(false)
-  const [isMobile,   setIsMobile]   = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [showTopUp, setShowTopUp] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -154,8 +154,8 @@ export default function PayOverviewPage() {
     init()
   }, [load])
 
-  const wallet     = walletData?.wallet
-  const stats      = walletData?.stats
+  const wallet = walletData?.wallet
+  const stats = walletData?.stats
   const recentRuns = walletData?.recentRuns || []
 
   return (
@@ -212,10 +212,10 @@ export default function PayOverviewPage() {
 
       {/* Stat grid */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16, marginBottom: isMobile ? 16 : 24 }}>
-        <StatCard label="Total Topped Up"  value={loading ? '…' : fmt(stats?.totalTopUps)}   icon="⬆" sub="All-time deposits"      accent={C.success} />
-        <StatCard label="Total Disbursed"  value={loading ? '…' : fmt(stats?.totalDisbursed)} icon="💸" sub="All-time payouts"       accent={C.teal} />
-        <StatCard label="Pending Payouts"  value={loading ? '…' : fmt(stats?.pendingAmount)}  icon="⏳" sub="Awaiting confirmation"  accent={C.warning} />
-        <StatCard label="Platform Fees"    value={loading ? '…' : fmt(stats?.totalFees)}       icon="📊" sub="1% per run"             accent="#6D28D9" />
+        <StatCard label="Total Topped Up" value={loading ? '…' : fmt(stats?.totalTopUps)} icon="⬆" sub="All-time deposits" accent={C.success} />
+        <StatCard label="Total Disbursed" value={loading ? '…' : fmt(stats?.totalDisbursed)} icon="💸" sub="All-time payouts" accent={C.teal} />
+        <StatCard label="Pending Payouts" value={loading ? '…' : fmt(stats?.pendingAmount)} icon="⏳" sub="Awaiting confirmation" accent={C.warning} />
+        <StatCard label="Platform Fees" value={loading ? '…' : fmt(stats?.totalFees)} icon="📊" sub="1% per run" accent="#6D28D9" />
       </div>
 
       {/* Quick Actions + Recent Runs */}

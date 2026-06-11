@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/serverAuth'
 
 export async function POST(req) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_ENABLE_SIMULATION !== 'true') {
     return NextResponse.json({ error: 'Not available in production' }, { status: 403 })
   }
 

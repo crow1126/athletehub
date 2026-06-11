@@ -6,39 +6,39 @@ import { supabase } from '@/lib/supabase'
 import { payFetch } from '@/lib/payFetch'
 
 const C = {
-  text:      '#0B1E14',
-  text2:     '#102A1C',
-  text3:     '#243E30',
-  teal:      '#0B7A70',
-  tealDeep:  '#0A5C54',
+  text: '#0B1E14',
+  text2: '#102A1C',
+  text3: '#243E30',
+  teal: '#0B7A70',
+  tealDeep: '#0A5C54',
   tealAlpha: 'rgba(11,122,112,0.10)',
-  border:    '#82C29A',
-  muted:     '#E2F5E9',
-  bg:        '#F0FBF4',
-  card:      'rgba(255,255,255,0.92)',
-  success:   '#047857',
+  border: '#82C29A',
+  muted: '#E2F5E9',
+  bg: '#F0FBF4',
+  card: 'rgba(255,255,255,0.92)',
+  success: '#047857',
   successBg: '#D1FAE5',
-  danger:    '#B91C1C',
-  dangerBg:  '#FEE2E2',
-  warning:   '#B45309',
+  danger: '#B91C1C',
+  dangerBg: '#FEE2E2',
+  warning: '#B45309',
   warningBg: '#FEF3C7',
-  info:      '#1D4ED8',
-  infoBg:    '#DBEAFE',
+  info: '#1D4ED8',
+  infoBg: '#DBEAFE',
 }
 
 const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const SIMULATE = process.env.NODE_ENV !== 'production'
+const SIMULATE = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true'
 
 function StatusBadge({ status }) {
   const map = {
-    draft:            { bg: 'rgba(36,62,48,0.10)', color: C.text3, label: 'Draft' },
-    pending_approval: { bg: C.warningBg,             color: C.warning, label: 'Pending' },
-    approved:         { bg: C.infoBg,                color: C.info, label: 'Approved' },
-    processing:       { bg: 'rgba(109,40,217,0.10)', color: '#6D28D9', label: 'Processing' },
-    completed:        { bg: C.successBg,             color: C.success, label: 'Completed' },
-    failed:           { bg: C.dangerBg,              color: C.danger, label: 'Failed' },
-    pending:          { bg: C.warningBg,             color: C.warning, label: 'Pending' },
-    success:          { bg: C.successBg,             color: C.success, label: 'Paid' },
+    draft: { bg: 'rgba(36,62,48,0.10)', color: C.text3, label: 'Draft' },
+    pending_approval: { bg: C.warningBg, color: C.warning, label: 'Pending' },
+    approved: { bg: C.infoBg, color: C.info, label: 'Approved' },
+    processing: { bg: 'rgba(109,40,217,0.10)', color: '#6D28D9', label: 'Processing' },
+    completed: { bg: C.successBg, color: C.success, label: 'Completed' },
+    failed: { bg: C.dangerBg, color: C.danger, label: 'Failed' },
+    pending: { bg: C.warningBg, color: C.warning, label: 'Pending' },
+    success: { bg: C.successBg, color: C.success, label: 'Paid' },
   }
   const s = map[status] || map.draft
   return <span className="pay-badge" style={{ background: s.bg, color: s.color }}>{s.label}</span>
@@ -73,17 +73,17 @@ function TimelineStep({ done, active, label, sub }) {
 }
 
 export default function PayrollRunDetailPage({ params }) {
-  const { id }    = use(params)
-  const router    = useRouter()
-  const [run,     setRun]      = useState(null)
-  const [items,   setItems]    = useState([])
-  const [wallet,  setWallet]   = useState(null)
-  const [loading, setLoading]  = useState(true)
-  const [action,  setAction]   = useState(null) // 'approving' | 'disbursing'
-  const [result,  setResult]   = useState(null)
-  const [error,   setError]    = useState(null)
-  const [teamId,  setTeamId]   = useState(null)
-  const [role,    setRole]     = useState(null)
+  const { id } = use(params)
+  const router = useRouter()
+  const [run, setRun] = useState(null)
+  const [items, setItems] = useState([])
+  const [wallet, setWallet] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [action, setAction] = useState(null) // 'approving' | 'disbursing'
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+  const [teamId, setTeamId] = useState(null)
+  const [role, setRole] = useState(null)
 
   const load = useCallback(async (tid) => {
     setLoading(true)
@@ -92,7 +92,7 @@ export default function PayrollRunDetailPage({ params }) {
       tid ? payFetch(`/api/pay/wallet?team_id=${tid}`) : Promise.resolve({ res: { ok: false }, data: {} }),
     ])
     setLoading(false)
-    if (runRes.res.ok)  { setRun(runRes.data.run); setItems(runRes.data.items || []) }
+    if (runRes.res.ok) { setRun(runRes.data.run); setItems(runRes.data.items || []) }
     if (walletRes.res.ok) setWallet(walletRes.data.wallet)
   }, [id])
 
@@ -146,18 +146,18 @@ export default function PayrollRunDetailPage({ params }) {
   const isAdmin = ['admin', 'superadmin'].includes(role)
 
   if (loading) return <div style={{ padding: 64, textAlign: 'center', color: C.text3, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Loading…</div>
-  if (!run)    return <div style={{ padding: 64, textAlign: 'center', color: C.danger, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Run not found</div>
+  if (!run) return <div style={{ padding: 64, textAlign: 'center', color: C.danger, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>Run not found</div>
 
-  const fee          = parseFloat((run.total_amount * 0.01).toFixed(2))
+  const fee = parseFloat((run.total_amount * 0.01).toFixed(2))
   const totalRequired = run.total_amount + fee
-  const balance       = Number(wallet?.balance || 0)
-  const sufficient    = balance >= totalRequired
+  const balance = Number(wallet?.balance || 0)
+  const sufficient = balance >= totalRequired
 
   // Timeline
-  const isDraft      = run.status === 'draft'
-  const isApproved   = ['approved', 'processing', 'completed', 'failed'].includes(run.status)
+  const isDraft = run.status === 'draft'
+  const isApproved = ['approved', 'processing', 'completed', 'failed'].includes(run.status)
   const isDispatched = ['processing', 'completed', 'failed'].includes(run.status)
-  const isDone       = run.status === 'completed'
+  const isDone = run.status === 'completed'
 
   return (
     <div style={{ padding: '32px', animation: 'fadeUp 0.35s ease' }}>
@@ -203,7 +203,7 @@ export default function PayrollRunDetailPage({ params }) {
 
       {/* Status messages */}
       {result && <div style={{ background: C.successBg, border: `1px solid ${C.success}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.success, marginBottom: 20 }}>{result}</div>}
-      {error  && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.danger, marginBottom: 20 }}>{error}</div>}
+      {error && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.danger, marginBottom: 20 }}>{error}</div>}
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
         {/* Left: items table */}

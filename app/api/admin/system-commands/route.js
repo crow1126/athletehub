@@ -26,6 +26,11 @@ export async function POST(req) {
       console.log('Initiating full system data wipe (excluding superadmin)...')
 
       const tables = [
+        'pay_transactions',
+        'pay_payroll_items',
+        'pay_payroll_runs',
+        'pay_wallets',
+        'notification_logs',
         'billing_events',
         'subscriptions',
         'staff_logins',
@@ -128,7 +133,12 @@ export async function POST(req) {
         'staff_logins',
         'subscriptions',
         'billing_events',
-        'teams'
+        'teams',
+        'notification_logs',
+        'pay_wallets',
+        'pay_payroll_runs',
+        'pay_payroll_items',
+        'pay_transactions'
       ]
 
       if (!allowedTables.includes(tableName)) {
@@ -271,6 +281,14 @@ export async function POST(req) {
       await db.from('subscriptions').delete().eq('team_id', teamId)
       await db.from('billing_events').delete().eq('team_id', teamId)
       await db.from('athletes').delete().eq('team_id', teamId)
+      await db.from('scouting_reports').delete().eq('team_id', teamId)
+      await db.from('injuries').delete().eq('team_id', teamId)
+      await db.from('performance_stats').delete().eq('team_id', teamId)
+      await db.from('notification_logs').delete().eq('team_id', teamId)
+      // Pay tables
+      await db.from('pay_transactions').delete().eq('team_id', teamId)
+      await db.from('pay_payroll_runs').delete().eq('team_id', teamId)
+      await db.from('pay_wallets').delete().eq('team_id', teamId)
 
       // 5. Delete the team itself
       const { error: deleteTeamErr } = await db

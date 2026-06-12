@@ -933,10 +933,17 @@ export default function SuperadminPage() {
                               )}
 
                               {/* Team ID */}
-                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                                 <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>Team ID</span>
-                                <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace' }}>{t.id?.slice(0,18)}…</span>
+                                <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
+                                  <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
+                                  <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID">📋</button>
+                                </div>
                               </div>
+                              <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center', marginTop:8 }} disabled={acting}>
+                                🗑 Wipe Team
+                              </Btn>
                             </div>
                           </div>
                         )
@@ -989,12 +996,16 @@ export default function SuperadminPage() {
                               ) : (
                                 <div style={{ fontSize:12, color:'#94a3b8', fontStyle:'italic' }}>No linked users</div>
                               )}
-                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
                                 <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>Team ID</span>
-                                <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace' }}>{t.id?.slice(0,18)}…</span>
+                                <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
+                                  <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
+                                  <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID">📋</button>
+                                </div>
                               </div>
-                              <Btn variant="danger" onClick={() => { setTargetTeamId(t.id); setSection('maintenance') }} style={{ fontSize:11, width:'100%', justifyContent:'center' }}>
-                                🗑 Wipe This Team
+                              <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center' }} disabled={acting}>
+                                🗑 Wipe Team
                               </Btn>
                             </div>
                           </div>

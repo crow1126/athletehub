@@ -6,7 +6,13 @@ import { initiateTransfer, normalizeGhPhone } from '@/lib/moolre'
 
 const db = createServiceClient()
 const PLATFORM_FEE_RATE = 0.01 // 1%
-const SIMULATE = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true' // mock mode in dev/test
+
+const MOOLRE_USER = (process.env.MOOLRE_API_USER || process.env.MOOLRE_USER)?.trim()
+const MOOLRE_SECRET = (process.env.MOOLRE_SECRET_KEY || process.env.MOOLRE_API_KEY)?.trim()
+const HAS_MOOLRE_CONFIG = !!(MOOLRE_USER && MOOLRE_SECRET)
+
+// If Moolre keys are configured, do NOT use local mock simulation — we want to call the actual Moolre API (hitting the sandbox url).
+const SIMULATE = (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true') && !HAS_MOOLRE_CONFIG
 
 export async function POST(req) {
   try {

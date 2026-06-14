@@ -170,7 +170,15 @@ export async function POST(req) {
     const finalStatus = failCount === 0 ? 'completed' : successCount > 0 ? 'completed' : 'failed'
     await db.from('pay_payroll_runs').update({ status: finalStatus }).eq('id', payroll_run_id)
 
-    return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE })
+    const debugEnv = {
+      MOOLRE_BASE_URL,
+      MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER.trim()})` : '(not set)',
+      MOOLRE_SECRET_KEY:     process.env.MOOLRE_SECRET_KEY ? `set(len:${process.env.MOOLRE_SECRET_KEY.length})` : '(not set)',
+      MOOLRE_API_KEY:        process.env.MOOLRE_API_KEY ? `set(len:${process.env.MOOLRE_API_KEY.length})` : '(not set)',
+      MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
+    }
+
+    return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE, _debug: debugEnv })
   } catch (e) {
     console.error('[pay/disburse]', e)
     return NextResponse.json({ error: e.message }, { status: 500 })

@@ -130,7 +130,12 @@ export default function PayrollRunDetailPage({ params }) {
     setAction(null)
     if (!res.ok) return setError(data.error)
     const simNote = data.simulated ? ' (simulated)' : ''
-    setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ${data.failCount > 0 ? `⚠ ${data.failCount} failed.` : ''}`)
+    const dbg = data._debug ? '\n\nEnv: ' + JSON.stringify(data._debug) : ''
+    if (data.successCount === 0) {
+      setError(`❌ Disbursement failed.${dbg}`)
+    } else {
+      setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ⚠ ${data.failCount} failed.${dbg}`)
+    }
     load(teamId)
   }
 

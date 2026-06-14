@@ -58,7 +58,7 @@ function StatusBadge({ status }) {
 }
 
 // ─── Top-up modal ─────────────────────────────────────────────────────────
-function TopUpModal({ onClose, teamId }) {
+function TopUpModal({ onClose, teamId, isSimulation }) {
   const [amount, setAmount] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -79,7 +79,7 @@ function TopUpModal({ onClose, teamId }) {
     }
     if (data.checkout_url) {
       window.open(data.checkout_url, '_blank')
-    } else if (process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true') {
+    } else if (isSimulation) {
       await payFetch('/api/pay/dev-topup-confirm', {
         method: 'POST',
         body: JSON.stringify({ reference: data.reference, amount_ghs: Number(amount), team_id: teamId }),
@@ -108,7 +108,7 @@ function TopUpModal({ onClose, teamId }) {
             <input className="pay-inp" type="email" inputMode="email" placeholder="admin@club.com" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           {error && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: C.danger, marginBottom: 16 }}>{error}</div>}
-          {SIMULATE && <div style={{ background: C.warningBg, border: `1px solid ${C.warning}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: C.warning, marginBottom: 16 }}>⚡ Dev mode — payment will be simulated instantly</div>}
+          {isSimulation && <div style={{ background: C.warningBg, border: `1px solid ${C.warning}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: C.warning, marginBottom: 16 }}>⚡ Dev mode — payment will be simulated instantly</div>}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="pay-btn-ghost" style={{ flex: 1 }} onClick={() => onClose(false)}>Cancel</button>
             <button type="submit" className="pay-btn-gold" style={{ flex: 2 }} disabled={loading}>
@@ -129,6 +129,11 @@ export default function PayOverviewPage() {
   const [loading, setLoading] = useState(true)
   const [showTopUp, setShowTopUp] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [isSimulation, setIsSimulation] = useState(false)
+
+  useEffect(() => {
+    setIsSimulation(process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true')
+  }, [])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -164,7 +169,7 @@ export default function PayOverviewPage() {
   return (
     <div className="pay-page" style={{ animation: 'fadeUp 0.35s ease' }}>
       {showTopUp && teamId && (
-        <TopUpModal teamId={teamId} onClose={(refresh) => { setShowTopUp(false); if (refresh) load(teamId) }} />
+        <TopUpModal teamId={teamId} isSimulation={isSimulation} onClose={(refresh) => { setShowTopUp(false); if (refresh) load(teamId) }} />
       )}
 
       {/* Header */}
@@ -204,7 +209,7 @@ export default function PayOverviewPage() {
             <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.70)' }}>
               Available balance · Last updated {wallet?.updated_at ? new Date(wallet.updated_at).toLocaleString() : 'never'}
             </div>
-            {SIMULATE && (
+            {isSimulation && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.25)' }}>
                 <span style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>⚡ Dev mode — instant transfer simulation ON</span>
               </div>

@@ -136,6 +136,33 @@ export async function POST(req) {
         metadata: { recipient: item.name, phone: item.phone, simulated: SIMULATE },
       })
 
+      if (itemStatus === 'failed') {
+        const itemFee = parseFloat((item.total_amount * PLATFORM_FEE_RATE).toFixed(2))
+        const refundAmount = item.total_amount + itemFee
+
+        // Refund wallet
+        const { data: w } = await db.from('pay_wallets').select('balance').eq('id', wallet.id).single()
+        if (w) {
+          await db.from('pay_wallets').update({
+            balance: parseFloat(w.balance) + refundAmount,
+            updated_at: new Date().toISOString(),
+          }).eq('id', wallet.id)
+        }
+
+        // Log refund transaction
+        await db.from('pay_transactions').insert({
+          team_id: run.team_id,
+          wallet_id: wallet.id,
+          type: 'refund',
+          amount: refundAmount,
+          status: 'success',
+          reference: `APAY-REFUND-${item.id.slice(0, 8)}-${Date.now()}`,
+          payroll_run_id,
+          payroll_item_id: item.id,
+          metadata: { reason: statusMsg || 'Transfer failed', original_item_amount: item.total_amount, refunded_fee: itemFee },
+        })
+      }
+
       results.push({ id: item.id, name: item.name, status: itemStatus, statusMsg })
     }
 

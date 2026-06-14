@@ -42,6 +42,36 @@ export async function POST(req) {
   const finalStatus = isSuccess ? 'success' : 'failed'
   const statusMsg = event?.message || (isSuccess ? 'Completed via Moolre' : 'Failed via Moolre')
 
+  const PLATFORM_FEE_RATE = 0.01
+
+  // If the transaction was processing and now failed, trigger a rollback refund
+  if (finalStatus === 'failed' && txn.status === 'processing') {
+    const itemFee = parseFloat((txn.amount * PLATFORM_FEE_RATE).toFixed(2))
+    const refundAmount = txn.amount + itemFee
+
+    // Refund wallet
+    const { data: w } = await db.from('pay_wallets').select('balance').eq('id', txn.wallet_id).single()
+    if (w) {
+      await db.from('pay_wallets').update({
+        balance: parseFloat(w.balance) + refundAmount,
+        updated_at: new Date().toISOString(),
+      }).eq('id', txn.wallet_id)
+    }
+
+    // Log refund transaction
+    await db.from('pay_transactions').insert({
+      team_id: txn.team_id,
+      wallet_id: txn.wallet_id,
+      type: 'refund',
+      amount: refundAmount,
+      status: 'success',
+      reference: `APAY-REFUND-WH-${txn.id.slice(0, 8)}-${Date.now()}`,
+      payroll_run_id: txn.payroll_run_id,
+      payroll_item_id: txn.pay_payroll_items?.id,
+      metadata: { reason: statusMsg || 'Failed via Moolre Webhook', original_item_amount: txn.amount, refunded_fee: itemFee },
+    })
+  }
+
   // Update transaction
   await db.from('pay_transactions').update({
     status:     finalStatus,

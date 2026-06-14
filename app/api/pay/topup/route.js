@@ -40,7 +40,17 @@ export async function POST(req) {
     })
 
     if (!result.ok) {
-      return NextResponse.json({ error: result.error || 'Failed to create payment link' }, { status: 502 })
+      // Debug: surface which env vars are present (no secret values exposed)
+      const debugEnv = {
+        MOOLRE_BASE_URL:      process.env.MOOLRE_BASE_URL || '(not set)',
+        MOOLRE_API_USER:      process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER})` : '(not set)',
+        MOOLRE_USER:          process.env.MOOLRE_USER ? `set(${process.env.MOOLRE_USER})` : '(not set)',
+        MOOLRE_PUBLIC_KEY:    process.env.MOOLRE_PUBLIC_KEY ? 'set' : '(not set)',
+        MOOLRE_API_PUBKEY:    process.env.MOOLRE_API_PUBKEY ? 'set' : '(not set)',
+        MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
+      }
+      console.error('[pay/topup] Moolre error:', result.error, '| env vars:', JSON.stringify(debugEnv))
+      return NextResponse.json({ error: result.error || 'Failed to create payment link', _debug: debugEnv }, { status: 502 })
     }
 
     // Log pending transaction

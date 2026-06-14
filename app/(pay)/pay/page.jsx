@@ -24,7 +24,7 @@ const C = {
 }
 
 const fmt = (n) => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const SIMULATE = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true'
+
 
 // ─── Stat card ────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, sub, accent }) {
@@ -73,10 +73,13 @@ function TopUpModal({ onClose, teamId }) {
       body: JSON.stringify({ team_id: teamId, amount_ghs: Number(amount), email }),
     })
     setLoading(false)
-    if (!res.ok) return setError(data.error || 'Failed')
+    if (!res.ok) {
+      const dbg = data._debug ? '\n\nEnv: ' + JSON.stringify(data._debug) : ''
+      return setError((data.error || 'Failed') + dbg)
+    }
     if (data.checkout_url) {
       window.open(data.checkout_url, '_blank')
-    } else if (SIMULATE) {
+    } else if (process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true') {
       await payFetch('/api/pay/dev-topup-confirm', {
         method: 'POST',
         body: JSON.stringify({ reference: data.reference, amount_ghs: Number(amount), team_id: teamId }),

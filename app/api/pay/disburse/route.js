@@ -170,12 +170,18 @@ export async function POST(req) {
     const finalStatus = failCount === 0 ? 'completed' : successCount > 0 ? 'completed' : 'failed'
     await db.from('pay_payroll_runs').update({ status: finalStatus }).eq('id', payroll_run_id)
 
+    const moolreErrors = results
+      .filter(r => r.status === 'failed' && r.statusMsg)
+      .map(r => `${r.name}: "${r.statusMsg}"`)
+
     const debugEnv = {
       MOOLRE_BASE_URL,
       MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER.trim()})` : '(not set)',
-      MOOLRE_SECRET_KEY:     process.env.MOOLRE_SECRET_KEY ? `set(len:${process.env.MOOLRE_SECRET_KEY.length})` : '(not set)',
+      MOOLRE_SECRET_KEY_LEN: process.env.MOOLRE_SECRET_KEY?.length ?? 'not set',
+      MOOLRE_SECRET_KEY_TRIMMED_LEN: process.env.MOOLRE_SECRET_KEY?.trim().length ?? 'not set',
       MOOLRE_API_KEY:        process.env.MOOLRE_API_KEY ? `set(len:${process.env.MOOLRE_API_KEY.length})` : '(not set)',
       MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
+      moolre_errors: moolreErrors,
     }
 
     return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE, _debug: debugEnv })

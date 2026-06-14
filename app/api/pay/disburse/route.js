@@ -82,30 +82,35 @@ export async function POST(req) {
       let statusMsg = null
 
       if (SIMULATE) {
-        // ── Sandbox simulator: instantly mark success ──
+        // ── Simulator: instantly mark success (no Moolre call) ──
         itemStatus = 'success'
-        statusMsg = 'Simulated disbursement (dev mode)'
+        statusMsg = 'Simulated disbursement'
         successCount++
+        console.log(`[disburse] SIMULATED item ${item.id} (${item.name}): GHS ${item.total_amount}`)
       } else {
         const phone = normalizeGhPhone(item.phone)
         if (!phone) {
           itemStatus = 'failed'
           statusMsg = 'Invalid phone number'
           failCount++
+          console.error(`[disburse] Invalid phone for ${item.name}: "${item.phone}"`)
         } else {
+          console.log(`[disburse] Initiating transfer → ${item.name} | phone: ${phone} | amount: GHS ${item.total_amount} | ref: ${ref}`)
           const result = await initiateTransfer({
-            amount: item.total_amount,
+            amount:    item.total_amount,
             recipient: phone,
             reference: ref,
           })
+          console.log(`[disburse] Moolre response for ${item.name}:`, JSON.stringify(result))
           if (result.ok) {
-            itemStatus = 'processing' // Will be confirmed via webhook
+            itemStatus = 'processing' // Confirmed via Moolre webhook
             moolreRef = result.data?.reference || ref
             successCount++
           } else {
             itemStatus = 'failed'
             statusMsg = result.error
             failCount++
+            console.error(`[disburse] Transfer FAILED for ${item.name}:`, result.error)
           }
         }
       }

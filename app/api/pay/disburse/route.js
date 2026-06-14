@@ -174,12 +174,18 @@ export async function POST(req) {
       .filter(r => r.status === 'failed' && r.statusMsg)
       .map(r => `${r.name}: "${r.statusMsg}"`)
 
+    const maskKey = (val) => {
+      if (!val) return '(not set)'
+      const trimmed = val.trim()
+      if (trimmed.length < 8) return `set(len:${trimmed.length})`
+      return `set(len:${trimmed.length}, mask:${trimmed.substring(0, 4)}...${trimmed.substring(trimmed.length - 4)})`
+    }
+
     const debugEnv = {
       MOOLRE_BASE_URL,
       MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER.trim()})` : '(not set)',
-      MOOLRE_SECRET_KEY_LEN: process.env.MOOLRE_SECRET_KEY?.length ?? 'not set',
-      MOOLRE_SECRET_KEY_TRIMMED_LEN: process.env.MOOLRE_SECRET_KEY?.trim().length ?? 'not set',
-      MOOLRE_API_KEY:        process.env.MOOLRE_API_KEY ? `set(len:${process.env.MOOLRE_API_KEY.length})` : '(not set)',
+      MOOLRE_SECRET_KEY:     maskKey(process.env.MOOLRE_SECRET_KEY),
+      MOOLRE_API_KEY:        maskKey(process.env.MOOLRE_API_KEY),
       MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
       moolre_errors: moolreErrors,
     }

@@ -27,7 +27,7 @@ const C = {
 }
 
 const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const SIMULATE = process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true'
+
 
 function StatusBadge({ status }) {
   const map = {
@@ -197,7 +197,7 @@ export default function PayrollRunDetailPage({ params }) {
           )}
           {isAdmin && run.status === 'approved' && (
             <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #0A5C54, #0B7A70)' }}>
-              {action === 'disbursing' ? '⏳ Disbursing…' : SIMULATE ? '⚡ Disburse (Simulated)' : '💸 Disburse Now'}
+              {action === 'disbursing' ? '⏳ Disbursing…' : '💸 Disburse Now'}
             </button>
           )}
           {!isAdmin && (
@@ -208,7 +208,11 @@ export default function PayrollRunDetailPage({ params }) {
 
       {/* Status messages */}
       {result && <div style={{ background: C.successBg, border: `1px solid ${C.success}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.success, marginBottom: 20 }}>{result}</div>}
-      {error && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.danger, marginBottom: 20 }}>{error}</div>}
+      {error && (
+        <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 10, padding: '12px 18px', fontSize: 13, color: C.danger, marginBottom: 20 }}>
+          <pre style={{ margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12 }}>{error}</pre>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20 }}>
         {/* Left: items table */}

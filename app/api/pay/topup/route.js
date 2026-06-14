@@ -26,6 +26,13 @@ export async function POST(req) {
 
     const reference = `APAY-TOPUP-${team_id.slice(0, 8)}-${Date.now()}`
 
+    // ── Simulation bypass (no Moolre call) ──────────────────────────────
+    if (process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true') {
+      console.log('[pay/topup] Simulation mode — skipping Moolre, reference:', reference)
+      return NextResponse.json({ ok: true, checkout_url: null, reference, simulated: true })
+    }
+    // ────────────────────────────────────────────────────────────────────
+
     const protocol = req.headers.get('x-forwarded-proto') || 'https'
     const host = req.headers.get('host')
 
@@ -40,16 +47,13 @@ export async function POST(req) {
     })
 
     if (!result.ok) {
-      // Debug: surface which env vars are present (no secret values exposed)
       const debugEnv = {
-        MOOLRE_BASE_URL:      process.env.MOOLRE_BASE_URL || '(not set)',
-        MOOLRE_API_USER:      process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER})` : '(not set)',
-        MOOLRE_USER:          process.env.MOOLRE_USER ? `set(${process.env.MOOLRE_USER})` : '(not set)',
-        MOOLRE_PUBLIC_KEY:    process.env.MOOLRE_PUBLIC_KEY ? 'set' : '(not set)',
-        MOOLRE_API_PUBKEY:    process.env.MOOLRE_API_PUBKEY ? 'set' : '(not set)',
+        MOOLRE_BASE_URL:       process.env.MOOLRE_BASE_URL || '(not set)',
+        MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER})` : '(not set)',
+        MOOLRE_PUBLIC_KEY:     process.env.MOOLRE_PUBLIC_KEY ? 'set' : '(not set)',
         MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
       }
-      console.error('[pay/topup] Moolre error:', result.error, '| env vars:', JSON.stringify(debugEnv))
+      console.error('[pay/topup] Moolre error:', result.error, '| env:', JSON.stringify(debugEnv))
       return NextResponse.json({ error: result.error || 'Failed to create payment link', _debug: debugEnv }, { status: 502 })
     }
 

@@ -1,19 +1,28 @@
 // app/api/pay/dev-topup-confirm/route.js
-// DEV-ONLY: instantly credits wallet for simulator mode (no Moolre call)
+// SIMULATION ONLY: instantly credits wallet without real Moolre payment.
+// Requires NEXT_PUBLIC_ENABLE_SIMULATION=true AND valid admin session.
 import { NextResponse } from 'next/server'
-import { createServiceClient } from '@/lib/serverAuth'
+import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
 
 export async function POST(req) {
-  if (process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_ENABLE_SIMULATION !== 'true') {
-    return NextResponse.json({ error: 'Not available in production' }, { status: 403 })
+  // Must be explicitly enabled — never runs silently in production
+  if (process.env.NEXT_PUBLIC_ENABLE_SIMULATION !== 'true') {
+    return NextResponse.json({ error: 'Simulation mode is not enabled' }, { status: 403 })
   }
+
+  // Must be an authenticated team admin
+  const db = createServiceClient()
+  const requester = await getRequester(req, db)
+  if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
 
   const { reference, amount_ghs, team_id } = await req.json()
   if (!reference || !amount_ghs || !team_id) {
     return NextResponse.json({ error: 'reference, amount_ghs, and team_id required' }, { status: 400 })
   }
 
-  const db = createServiceClient()
+  if (!canManageTeam(requester.profile, team_id)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   // Get or create wallet
   let { data: wallet } = await db.from('pay_wallets').select('*').eq('team_id', team_id).maybeSingle()
@@ -22,7 +31,7 @@ export async function POST(req) {
     wallet = w
   }
 
-  // Credit
+  // Credit wallet
   await db.from('pay_wallets').update({
     balance:    parseFloat(wallet.balance) + parseFloat(amount_ghs),
     updated_at: new Date().toISOString(),
@@ -42,9 +51,13 @@ export async function POST(req) {
       amount:    parseFloat(amount_ghs),
       status:    'success',
       reference,
-      metadata:  { simulated: true },
+      metadata:  { simulated: true, initiated_by: requester.profile.id },
     })
   }
 
-  return NextResponse.json({ ok: true, credited: amount_ghs, new_balance: parseFloat(wallet.balance) + parseFloat(amount_ghs) })
+  return NextResponse.json({
+    ok: true,
+    credited: amount_ghs,
+    new_balance: parseFloat(wallet.balance) + parseFloat(amount_ghs),
+  })
 }

@@ -29,6 +29,15 @@ export async function POST(req) {
   try { event = JSON.parse(body) }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
+  // Verify secret in JSON payload
+  if (process.env.MOOLRE_WEBHOOK_SECRET) {
+    const payloadSecret = event.data?.secret || event.secret
+    if (payloadSecret && payloadSecret !== process.env.MOOLRE_WEBHOOK_SECRET) {
+      console.warn('[Moolre Webhook] Invalid webhook secret')
+      return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 })
+    }
+  }
+
   console.log('[Moolre Webhook] Status:', event?.status, 'Code:', event?.code)
 
   // ── Handle successful charge ───────────────────────────────────────────────

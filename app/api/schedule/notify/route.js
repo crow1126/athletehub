@@ -1,5 +1,5 @@
 // app/api/schedule/notify/route.js
-// Sends SMS notifications to all athletes in a team when a session is scheduled
+// Sends immediate SMS notifications when a session is scheduled + writes a bell notification
 import { NextResponse }                           from 'next/server'
 import { createServiceClient, getRequester }      from '@/lib/serverAuth'
 import { sendBulkSMS, buildScheduleSMS }          from '@/lib/moolre'
@@ -45,6 +45,17 @@ export async function POST(req) {
     }
 
     if (!athletes || athletes.length === 0) {
+      // Still write a bell notification even if no SMS sent
+      try {
+        await supabase.from('notifications').insert({
+          team_id,
+          type:       'sms_schedule',
+          title:      session.title,
+          body:       `${session.type} on ${session.date} at ${session.time} — ${session.venue}`,
+          session_id,
+          sent_count: 0,
+        })
+      } catch (nErr) { console.warn('[notify] notifications insert skipped:', nErr.message) }
       return NextResponse.json({ ok: true, sent: 0, failed: 0, message: 'No athletes with phone numbers found' })
     }
 
@@ -66,7 +77,7 @@ export async function POST(req) {
     // Send bulk SMS
     const { sent, failed, error: smsError } = await sendBulkSMS(recipients)
 
-    // Log the notification event
+    // Log the SMS audit event
     await supabase.from('notification_logs').insert({
       team_id,
       session_id,
@@ -75,6 +86,18 @@ export async function POST(req) {
       fail_count: failed,
       created_by: requester.profile.id,
     }).maybeSingle() // non-blocking — table may not exist yet
+
+    // ── Write a bell notification ──────────────────────────────────────────
+    try {
+      await supabase.from('notifications').insert({
+        team_id,
+        type:       'sms_schedule',
+        title:      session.title,
+        body:       `${session.type} · ${session.date} at ${session.time} — ${session.venue}`,
+        session_id,
+        sent_count: sent,
+      })
+    } catch (nErr) { console.warn('[notify] notifications insert skipped:', nErr.message) }
 
     return NextResponse.json({ ok: true, sent, failed, total: athletes.length, smsError: smsError || null })
 

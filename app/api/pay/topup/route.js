@@ -1,8 +1,7 @@
 // app/api/pay/topup/route.js
-// Wallet top-up — Moolre payment API removed.
-// Use the simulation bypass for dev/test; wire a new payment provider here when ready.
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
+import { createCharge } from '@/lib/moolre'
 
 const db = createServiceClient()
 
@@ -27,18 +26,51 @@ export async function POST(req) {
 
     const reference = `APAY-TOPUP-${team_id.slice(0, 8)}-${Date.now()}`
 
-    // ── Simulation bypass ────────────────────────────────────────────────────
+    // ── Simulation bypass (no Moolre call) ──────────────────────────────
     if (process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true') {
-      console.log('[pay/topup] Simulation mode — reference:', reference)
+      console.log('[pay/topup] Simulation mode — skipping Moolre, reference:', reference)
       return NextResponse.json({ ok: true, checkout_url: null, reference, simulated: true })
     }
-    // ────────────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────────────
 
-    // Moolre payment API removed — return informative error until a replacement is wired
-    return NextResponse.json(
-      { error: 'Online wallet top-up is temporarily unavailable. Please contact support to top up manually.' },
-      { status: 503 }
-    )
+    const protocol = req.headers.get('x-forwarded-proto') || 'https'
+    const host = req.headers.get('host')
+
+    const result = await createCharge({
+      email,
+      amount_ghs: parseFloat(amount_ghs),
+      reference,
+      plan:        'wallet_topup',
+      team_id,
+      callbackUrl: `${protocol}://${host}/api/webhooks/pay/moolre-topup`,
+      redirectUrl: `${protocol}://${host}/pay`,
+    })
+
+    if (!result.ok) {
+      const debugEnv = {
+        MOOLRE_BASE_URL:       process.env.MOOLRE_BASE_URL || '(not set)',
+        MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER})` : '(not set)',
+        MOOLRE_PUBLIC_KEY:     process.env.MOOLRE_PUBLIC_KEY ? 'set' : '(not set)',
+        MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
+      }
+      console.error('[pay/topup] Moolre error:', result.error, '| env:', JSON.stringify(debugEnv))
+      return NextResponse.json({ error: result.error || 'Failed to create payment link', _debug: debugEnv }, { status: 502 })
+    }
+
+    // Log pending transaction
+    const { data: wData } = await db.from('pay_wallets').select('id').eq('team_id', team_id).maybeSingle()
+    await db.from('pay_transactions').insert({
+      team_id,
+      wallet_id:   wData?.id,
+      type:        'top_up',
+      amount:      parseFloat(amount_ghs),
+      status:      'pending',
+      reference,
+      metadata:    { email, initiated_by: requester.profile.id },
+    })
+
+    const checkout_url = result.data?.checkout_url || result.data?.authorization_url || null
+    return NextResponse.json({ ok: true, checkout_url, reference, data: result.data })
   } catch (e) {
     console.error('[pay/topup]', e)
     return NextResponse.json({ error: e.message }, { status: 500 })

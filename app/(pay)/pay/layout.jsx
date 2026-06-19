@@ -1,8 +1,9 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { Bell } from 'lucide-react'
 
 const NAV = [
   { href: '/pay',              label: 'Overview',     icon: '◈' },
@@ -31,6 +32,186 @@ const C = {
   shadowLg:    '0 10px 20px rgba(10,80,50,0.10)',
 }
 
+const NOTIF_TYPE_LABELS = {
+  sms_schedule: '📅 Session Scheduled',
+  sms_reminder: '⏰ Session Reminder',
+}
+
+function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef, onMarkRead }) {
+  return (
+    <div style={{ position: 'relative' }} ref={panelRef}>
+      <button
+        id="bell-notification-btn"
+        onClick={onToggle}
+        title="Notifications"
+        style={{
+          position: 'relative',
+          background: panelOpen ? C.tealAlpha : 'none',
+          border: `1px solid ${panelOpen ? C.teal : 'transparent'}`,
+          cursor: 'pointer',
+          color: panelOpen ? C.teal : C.text2,
+          padding: 6,
+          borderRadius: 10,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          transition: 'all 0.15s',
+          flexShrink: 0,
+        }}
+        onMouseEnter={e => {
+          if (!panelOpen) { e.currentTarget.style.background = C.muted; e.currentTarget.style.color = C.text }
+        }}
+        onMouseLeave={e => {
+          if (!panelOpen) { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = C.text2 }
+        }}
+      >
+        <Bell size={20} strokeWidth={2} />
+        {unreadCount > 0 && (
+          <span style={{
+            position: 'absolute',
+            top: 2, right: 2,
+            minWidth: 16, height: 16,
+            borderRadius: '50%',
+            background: '#EF4444',
+            color: '#fff',
+            fontSize: 9,
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            lineHeight: 1,
+            padding: '0 3px',
+            boxShadow: `0 0 0 2px ${C.sidebar}`,
+            animation: 'notifPing 2s ease infinite',
+          }}>
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+
+      {panelOpen && (
+        <div
+          id="notification-panel"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 10px)',
+            right: 0,
+            width: 340,
+            maxHeight: 480,
+            background: C.sidebar,
+            border: `1px solid ${C.border}`,
+            borderRadius: 16,
+            boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+            zIndex: 300,
+            overflow: 'hidden',
+            animation: 'notifDrop 0.18s cubic-bezier(0.16,1,0.3,1)',
+          }}
+        >
+          {/* Panel header */}
+          <div style={{
+            padding: '14px 18px',
+            borderBottom: `1px solid ${C.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Notifications</div>
+              {unreadCount > 0 && (
+                <div style={{ fontSize: 11, color: C.text3, marginTop: 2 }}>
+                  {unreadCount} unread
+                </div>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={onMarkRead}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 8,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: C.teal,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+
+          {/* Notification list */}
+          <div style={{ overflowY: 'auto', maxHeight: 400 }}>
+            {notifications.length === 0 ? (
+              <div style={{
+                padding: '40px 18px',
+                textAlign: 'center',
+                color: C.text3,
+                fontSize: 13,
+              }}>
+                <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
+                No notifications yet
+              </div>
+            ) : notifications.map(n => {
+              const isUnread = !n.read_at
+              const timeAgo = getTimeAgo(n.created_at)
+              return (
+                <div
+                  key={n.id}
+                  style={{
+                    padding: '13px 18px',
+                    borderBottom: `1px solid ${C.border}`,
+                    background: isUnread ? C.tealAlpha : 'transparent',
+                    borderLeft: isUnread ? `3px solid ${C.teal}` : '3px solid transparent',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: isUnread ? 700 : 600, color: C.text, marginBottom: 2 }}>
+                        {NOTIF_TYPE_LABELS[n.type] || n.title}
+                      </div>
+                      {n.body && (
+                        <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.4, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                          {n.body}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 10, color: C.text3 }}>{timeAgo}</span>
+                        {n.sent_count > 0 && (
+                          <span style={{ fontSize: 10, color: C.teal, fontWeight: 700 }}>
+                            📱 {n.sent_count} SMS sent
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {isUnread && (
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: C.teal, flexShrink: 0, marginTop: 4 }} />
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function getTimeAgo(isoStr) {
+  const diff = Date.now() - new Date(isoStr).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1)  return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24)  return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 export default function PayLayout({ children }) {
   const path   = usePathname()
   const router = useRouter()
@@ -38,6 +219,13 @@ export default function PayLayout({ children }) {
   const [team,     setTeam]     = useState(null)
   const [isMobile, setIsMobile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+
+  // ── Notifications state ──
+  const [notifications,  setNotifications]  = useState([])
+  const [notifOpen,      setNotifOpen]      = useState(false)
+  const notifPanelRef = useRef(null)
+
+  const unreadCount = notifications.filter(n => !n.read_at).length
 
   /* Detect mobile */
   useEffect(() => {
@@ -49,6 +237,18 @@ export default function PayLayout({ children }) {
 
   /* Close menu on route change */
   useEffect(() => { setMenuOpen(false) }, [path])
+
+  // Close notification panel when clicking outside
+  useEffect(() => {
+    if (!notifOpen) return
+    function handleClickOutside(e) {
+      if (notifPanelRef.current && !notifPanelRef.current.contains(e.target)) {
+        setNotifOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [notifOpen])
 
   useEffect(() => {
     async function load() {
@@ -64,6 +264,49 @@ export default function PayLayout({ children }) {
     }
     load()
   }, [])
+
+  // ── Load + subscribe to notifications once profile is loaded ──
+  const fetchNotifications = useCallback(async (teamId) => {
+    if (!teamId) return
+    const { data } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('team_id', teamId)
+      .order('created_at', { ascending: false })
+      .limit(20)
+    if (data) setNotifications(data)
+  }, [])
+
+  useEffect(() => {
+    const teamId = profile?.team_id
+    if (!teamId) return
+
+    fetchNotifications(teamId)
+
+    // Realtime subscription
+    const channel = supabase
+      .channel(`pay_notifications:${teamId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `team_id=eq.${teamId}` },
+        () => fetchNotifications(teamId)
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [profile?.team_id, fetchNotifications])
+
+  async function handleMarkAllRead() {
+    const unreadIds = notifications.filter(n => !n.read_at).map(n => n.id)
+    if (unreadIds.length === 0) return
+    const now = new Date().toISOString()
+    // Optimistic update
+    setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read_at: now } : n))
+    await supabase
+      .from('notifications')
+      .update({ read_at: now })
+      .in('id', unreadIds)
+  }
 
   async function signOut() {
     await supabase.auth.signOut()
@@ -90,6 +333,8 @@ export default function PayLayout({ children }) {
     @keyframes fadeUp   { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
     @keyframes slideIn  { from { transform: translateX(-100%); } to { transform: translateX(0); } }
     @keyframes tealPulse { 0%,100% { box-shadow: 0 0 12px rgba(13,148,136,0.2); } 50% { box-shadow: 0 0 28px rgba(13,148,136,0.45); } }
+    @keyframes notifDrop { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes notifPing { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 
     /* ── Sidebar nav link ── */
     .pay-nav-link {
@@ -271,9 +516,21 @@ export default function PayLayout({ children }) {
             </svg>
           </button>
           <Brand size={28} />
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: C.successBg, borderRadius: 99, padding: '4px 10px', border: `1px solid rgba(5,150,105,0.25)` }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.success, boxShadow: `0 0 6px ${C.success}` }} />
-            <span style={{ fontSize: 10, fontWeight: 700, color: C.success }}>Live</span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* Bell — mobile */}
+            <BellButton
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onToggle={() => setNotifOpen(v => !v)}
+              panelOpen={notifOpen}
+              panelRef={notifPanelRef}
+              onMarkRead={handleMarkAllRead}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: C.successBg, borderRadius: 99, padding: '4px 10px', border: `1px solid rgba(5,150,105,0.25)` }}>
+              <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.success, boxShadow: `0 0 6px ${C.success}` }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: C.success }}>Live</span>
+            </div>
           </div>
         </header>
 
@@ -426,6 +683,17 @@ export default function PayLayout({ children }) {
             <span style={{ fontSize: 12, color: C.text3, fontWeight: 500 }}>
               {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
             </span>
+            
+            {/* Bell — desktop */}
+            <BellButton
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onToggle={() => setNotifOpen(v => !v)}
+              panelOpen={notifOpen}
+              panelRef={notifPanelRef}
+              onMarkRead={handleMarkAllRead}
+            />
+
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: C.successBg, borderRadius: 99, padding: '5px 14px', border: `1px solid rgba(5,150,105,0.25)` }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: C.success, boxShadow: `0 0 8px ${C.success}` }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: C.success }}>ApexPay Live</span>

@@ -1,14 +1,18 @@
 // app/api/pay/disburse/route.js
 // Triggers bulk disbursement for an approved payroll run
-// NOTE: Moolre disbursement API removed — simulation mode only until a new provider is wired.
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
+import { initiateTransfer, normalizeGhPhone } from '@/lib/moolre'
 
 const db = createServiceClient()
 const PLATFORM_FEE_RATE = 0.01 // 1%
 
-// Disbursement is simulation-only until a payment provider is re-wired.
-const SIMULATE = true
+const MOOLRE_BASE_URL = (process.env.MOOLRE_BASE_URL || 'https://api.moolre.com').trim()
+const IS_SANDBOX = MOOLRE_BASE_URL.includes('sandbox.moolre.com')
+
+// Only call real Moolre API when explicitly pointed at sandbox.
+// In dev/staging without sandbox URL, simulate locally to avoid accidental real transfers.
+const SIMULATE = !IS_SANDBOX && (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true')
 
 export async function POST(req) {
   try {
@@ -77,11 +81,39 @@ export async function POST(req) {
       let moolreRef = ref
       let statusMsg = null
 
-      // ── Simulation only — no live transfer provider wired yet ──────────
-      itemStatus = 'success'
-      statusMsg = 'Simulated disbursement'
-      successCount++
-      console.log(`[disburse] SIMULATED item ${item.id} (${item.name}): GHS ${item.total_amount}`)
+      if (SIMULATE) {
+        // ── Simulator: instantly mark success (no Moolre call) ──
+        itemStatus = 'success'
+        statusMsg = 'Simulated disbursement'
+        successCount++
+        console.log(`[disburse] SIMULATED item ${item.id} (${item.name}): GHS ${item.total_amount}`)
+      } else {
+        const phone = normalizeGhPhone(item.phone)
+        if (!phone) {
+          itemStatus = 'failed'
+          statusMsg = 'Invalid phone number'
+          failCount++
+          console.error(`[disburse] Invalid phone for ${item.name}: "${item.phone}"`)
+        } else {
+          console.log(`[disburse] Initiating transfer → ${item.name} | phone: ${phone} | amount: GHS ${item.total_amount} | ref: ${ref}`)
+          const result = await initiateTransfer({
+            amount:    item.total_amount,
+            recipient: phone,
+            reference: ref,
+          })
+          console.log(`[disburse] Moolre response for ${item.name}:`, JSON.stringify(result))
+          if (result.ok) {
+            itemStatus = 'processing' // Confirmed via Moolre webhook
+            moolreRef = result.data?.reference || ref
+            successCount++
+          } else {
+            itemStatus = 'failed'
+            statusMsg = result.error
+            failCount++
+            console.error(`[disburse] Transfer FAILED for ${item.name}:`, result.error)
+          }
+        }
+      }
 
       // Update item status
       await db.from('pay_payroll_items').update({
@@ -138,7 +170,27 @@ export async function POST(req) {
     const finalStatus = failCount === 0 ? 'completed' : successCount > 0 ? 'completed' : 'failed'
     await db.from('pay_payroll_runs').update({ status: finalStatus }).eq('id', payroll_run_id)
 
-    return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE })
+    const moolreErrors = results
+      .filter(r => r.status === 'failed' && r.statusMsg)
+      .map(r => `${r.name}: "${r.statusMsg}"`)
+
+    const maskKey = (val) => {
+      if (!val) return '(not set)'
+      const trimmed = val.trim()
+      if (trimmed.length < 8) return `set(len:${trimmed.length})`
+      return `set(len:${trimmed.length}, mask:${trimmed.substring(0, 4)}...${trimmed.substring(trimmed.length - 4)})`
+    }
+
+    const debugEnv = {
+      MOOLRE_BASE_URL,
+      MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER.trim()})` : '(not set)',
+      MOOLRE_SECRET_KEY:     maskKey(process.env.MOOLRE_SECRET_KEY),
+      MOOLRE_API_KEY:        maskKey(process.env.MOOLRE_API_KEY),
+      MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
+      moolre_errors: moolreErrors,
+    }
+
+    return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE, _debug: debugEnv })
   } catch (e) {
     console.error('[pay/disburse]', e)
     return NextResponse.json({ error: e.message }, { status: 500 })

@@ -70,8 +70,9 @@ const C = {
 }
 
 const NOTIF_TYPE_LABELS = {
-  sms_schedule: '📅 Session Scheduled',
-  sms_reminder: '⏰ Session Reminder',
+  sms_schedule: 'Training Session Scheduled',
+  sms_reminder: 'Session Reminder',
+  general:      'Team Announcement',
 }
 
 // ─── Bell Notification Panel ───────────────────────────────────────────────
@@ -195,8 +196,9 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
                 No notifications yet
               </div>
             ) : notifications.map(n => {
-              const isUnread = !n.read_at
+              const isUnread = !n._isRead
               const timeAgo = getTimeAgo(n.created_at)
+              const typeLabel = NOTIF_TYPE_LABELS[n.type] || n.title
               return (
                 <div
                   key={n.id}
@@ -211,7 +213,7 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: isUnread ? 700 : 600, color: C.text, marginBottom: 2 }}>
-                        {NOTIF_TYPE_LABELS[n.type] || n.title}
+                        {typeLabel}
                       </div>
                       {n.body && (
                         <div style={{ fontSize: 11, color: C.text2, lineHeight: 1.4, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
@@ -221,8 +223,8 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, color: C.text3 }}>{timeAgo}</span>
                         {n.sent_count > 0 && (
-                          <span style={{ fontSize: 10, color: C.lagoon, fontWeight: 700 }}>
-                            📱 {n.sent_count} SMS sent
+                          <span style={{ fontSize: 10, color: C.lagoon, fontWeight: 600 }}>
+                            {n.sent_count} {n.sent_count === 1 ? 'member' : 'members'} notified via SMS
                           </span>
                         )}
                       </div>
@@ -266,9 +268,10 @@ export default function Layout({ children }) {
   // ── Notifications state ──
   const [notifications,  setNotifications]  = useState([])
   const [notifOpen,      setNotifOpen]      = useState(false)
+  const [currentUserId,  setCurrentUserId]  = useState(null)
   const notifPanelRef = useRef(null)
 
-  const unreadCount = notifications.filter(n => !n.read_at).length
+  const unreadCount = notifications.filter(n => !n._isRead).length
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -296,6 +299,8 @@ export default function Layout({ children }) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { router.replace('/login'); return }
+        // Capture the auth user ID for per-user notification reads
+        setCurrentUserId(session.user.id)
         const { data } = await supabase
           .from('profiles')
           // ── KEY FIX: added club_name and club_logo_url to the select ──
@@ -313,46 +318,68 @@ export default function Layout({ children }) {
   }, [])
 
   // ── Load + subscribe to notifications once profile is loaded ──
-  const fetchNotifications = useCallback(async (teamId) => {
-    if (!teamId) return
-    const { data } = await supabase
+  const fetchNotifications = useCallback(async (teamId, userId) => {
+    if (!teamId || !userId) return
+    // Fetch notifications + this user's read records in one query
+    const { data: notifs } = await supabase
       .from('notifications')
-      .select('*')
+      .select('*, notification_reads!left(id, user_id, read_at)')
       .eq('team_id', teamId)
       .order('created_at', { ascending: false })
-      .limit(20)
-    if (data) setNotifications(data)
+      .limit(30)
+
+    if (notifs) {
+      // Annotate each notification with a per-user _isRead flag
+      const annotated = notifs.map(n => ({
+        ...n,
+        _isRead: Array.isArray(n.notification_reads)
+          ? n.notification_reads.some(r => r.user_id === userId)
+          : false,
+      }))
+      setNotifications(annotated)
+    }
   }, [])
 
   useEffect(() => {
     const teamId = profile?.team_id
-    if (!teamId) return
+    if (!teamId || !currentUserId) return
 
-    fetchNotifications(teamId)
+    fetchNotifications(teamId, currentUserId)
 
-    // Realtime subscription
+    // Realtime: re-fetch when new notifications arrive OR when read state changes for any user
     const channel = supabase
-      .channel(`notifications:${teamId}`)
+      .channel(`notifications:${teamId}:${currentUserId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'notifications', filter: `team_id=eq.${teamId}` },
-        () => fetchNotifications(teamId)
+        () => fetchNotifications(teamId, currentUserId)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notification_reads' },
+        () => fetchNotifications(teamId, currentUserId)
       )
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [profile?.team_id, fetchNotifications])
+  }, [profile?.team_id, currentUserId, fetchNotifications])
 
   async function handleMarkAllRead() {
-    const unreadIds = notifications.filter(n => !n.read_at).map(n => n.id)
+    if (!currentUserId) return
+    const unreadIds = notifications.filter(n => !n._isRead).map(n => n.id)
     if (unreadIds.length === 0) return
     const now = new Date().toISOString()
-    // Optimistic update
-    setNotifications(prev => prev.map(n => unreadIds.includes(n.id) ? { ...n, read_at: now } : n))
+    // Optimistic update — only flips _isRead for THIS user's local state
+    setNotifications(prev => prev.map(n =>
+      unreadIds.includes(n.id) ? { ...n, _isRead: true } : n
+    ))
+    // Persist: upsert one read record per notification per user — never touches other users
     await supabase
-      .from('notifications')
-      .update({ read_at: now })
-      .in('id', unreadIds)
+      .from('notification_reads')
+      .upsert(
+        unreadIds.map(notification_id => ({ notification_id, user_id: currentUserId, read_at: now })),
+        { onConflict: 'notification_id,user_id' }
+      )
   }
 
   async function handleSignOut() {

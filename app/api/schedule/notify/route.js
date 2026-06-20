@@ -47,11 +47,12 @@ export async function POST(req) {
     if (!athletes || athletes.length === 0) {
       // Still write a bell notification even if no SMS sent
       try {
+        const dateStr = new Date(session.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
         await supabase.from('notifications').insert({
           team_id,
           type:       'sms_schedule',
           title:      session.title,
-          body:       `${session.type} on ${session.date} at ${session.time} — ${session.venue}`,
+          body:       `A ${session.type} session — "${session.title}" — has been scheduled for ${dateStr} at ${session.time} (${session.duration} min) at ${session.venue}. No athlete phone numbers are currently on file.`,
           session_id,
           sent_count: 0,
         })
@@ -87,13 +88,14 @@ export async function POST(req) {
       created_by: requester.profile.id,
     }).maybeSingle() // non-blocking — table may not exist yet
 
-    // ── Write a bell notification ──────────────────────────────────────────
+    // ── Write a bell notification ───────────────────────────────────────────────────────
     try {
+      const dateStr = new Date(session.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
       await supabase.from('notifications').insert({
         team_id,
         type:       'sms_schedule',
         title:      session.title,
-        body:       `${session.type} · ${session.date} at ${session.time} — ${session.venue}`,
+        body:       `A ${session.type} session — "${session.title}" — has been scheduled for ${dateStr} at ${session.time} (${session.duration} min) at ${session.venue}. ${sent} ${sent === 1 ? 'athlete has' : 'athletes have'} been notified via SMS.`,
         session_id,
         sent_count: sent,
       })

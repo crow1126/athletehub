@@ -70,12 +70,26 @@ export default function PerformancePage(){
           const athleteName = athlete ? athlete.name : 'an athlete'
           const dateStr = new Date(form.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
           
-          await supabase.from('notifications').insert({
-            team_id: teamId,
-            type: 'performance',
-            title: 'Performance Stats Published',
-            body: `Performance statistics have been published for ${athleteName} (Rating: ${payload.rating}/10) for the match on ${dateStr} against ${form.opponent || 'the opponent'}.`,
-          })
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session?.access_token) {
+            const res = await fetch('/api/notifications/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+              },
+              body: JSON.stringify({
+                team_id: teamId,
+                type: 'performance',
+                title: 'Performance Stats Published',
+                body: `Performance statistics have been published for ${athleteName} (Rating: ${payload.rating}/10) for the match on ${dateStr} against ${form.opponent || 'the opponent'}.`,
+              }),
+            })
+            if (!res.ok) {
+              const errData = await res.json()
+              console.error('Failed to create notification via API:', errData.error)
+            }
+          }
         } catch (err) {
           console.error('Failed to create performance notification:', err)
         }

@@ -73,6 +73,7 @@ const NOTIF_TYPE_LABELS = {
   sms_schedule: 'Training Session Scheduled',
   sms_reminder: 'Session Reminder',
   general:      'Team Announcement',
+  performance:  'Performance Stats Published',
 }
 
 // ─── Bell Notification Panel ───────────────────────────────────────────────

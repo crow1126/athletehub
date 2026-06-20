@@ -53,8 +53,37 @@ export default function PerformancePage(){
     if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
     const payload={...form,team_id:teamId,minutes_played:parseInt(form.minutes_played)||0,goals:parseInt(form.goals)||0,assists:parseInt(form.assists)||0,shots:parseInt(form.shots)||0,shots_on_target:parseInt(form.shots_on_target)||0,passes:parseInt(form.passes)||0,pass_accuracy:parseFloat(form.pass_accuracy)||0,distance_km:parseFloat(form.distance_km)||0,sprint_count:parseInt(form.sprint_count)||0,duels_won:parseInt(form.duels_won)||0,duels_total:parseInt(form.duels_total)||0,xg:parseFloat(form.xg)||0,xa:parseFloat(form.xa)||0,rating:parseFloat(form.rating)||0}
-    if (editId){const {error}=await scopeTeam(supabase.from('performance_stats').update(payload).eq('id',editId), teamId);if(error)alert(error.message);else{setShowForm(false);fetchData()}}
-    else{const {error}=await supabase.from('performance_stats').insert([payload]);if(error)alert(error.message);else{setShowForm(false);setForm(EMPTY);fetchData()}}
+    if (editId){
+      const {error}=await scopeTeam(supabase.from('performance_stats').update(payload).eq('id',editId), teamId)
+      if(error) alert(error.message)
+      else {
+        setShowForm(false)
+        fetchData()
+      }
+    }
+    else {
+      const {error}=await supabase.from('performance_stats').insert([payload])
+      if(error) alert(error.message)
+      else {
+        try {
+          const athlete = athletes.find(a => a.id === form.athlete_id)
+          const athleteName = athlete ? athlete.name : 'an athlete'
+          const dateStr = new Date(form.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+          
+          await supabase.from('notifications').insert({
+            team_id: teamId,
+            type: 'performance',
+            title: 'Performance Stats Published',
+            body: `Performance statistics have been published for ${athleteName} (Rating: ${payload.rating}/10) for the match on ${dateStr} against ${form.opponent || 'the opponent'}.`,
+          })
+        } catch (err) {
+          console.error('Failed to create performance notification:', err)
+        }
+        setShowForm(false)
+        setForm(EMPTY)
+        fetchData()
+      }
+    }
     setSaving(false)
   }
 

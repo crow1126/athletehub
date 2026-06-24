@@ -22,6 +22,32 @@ export async function proxy(request) {
   const host     = request.headers.get('host') || ''
   const hostname = host.split(':')[0]
 
+  // ── CORS / Origin protection for API routes (exclude webhooks & crons) ─────
+  const pathname = request.nextUrl.pathname
+  if (pathname.startsWith('/api/') && !pathname.startsWith('/api/webhooks/') && !pathname.startsWith('/api/cron/')) {
+    const origin = request.headers.get('origin')
+    const referer = request.headers.get('referer')
+    
+    try {
+      if (origin) {
+        const originUrl = new URL(origin)
+        if (originUrl.host !== host) {
+          console.warn(`[CORS Blocked] Origin: ${origin} does not match Host: ${host}`)
+          return new NextResponse('Forbidden (CORS Policy)', { status: 403 })
+        }
+      } else if (referer) {
+        const refererUrl = new URL(referer)
+        if (refererUrl.host !== host) {
+          console.warn(`[CORS Blocked] Referer: ${referer} does not match Host: ${host}`)
+          return new NextResponse('Forbidden (CORS Policy)', { status: 403 })
+        }
+      }
+    } catch (err) {
+      console.error('[CORS Check Error]', err.message)
+      return new NextResponse('Bad Request', { status: 400 })
+    }
+  }
+
   // ── 1. Decide if subdomain rewrite is needed (don't return yet) ───────────
   const isPaySubdomain =
     hostname === 'pay.apextrackgh.com' ||

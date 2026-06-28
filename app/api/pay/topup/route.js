@@ -2,16 +2,33 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
 import { createCharge } from '@/lib/moolre'
+import { payLimiter } from '@/lib/rateLimit'
+import { sanitizeUUID, sanitizeAmount, sanitizeEmail } from '@/lib/sanitize'
+import log from '@/lib/logger'
 
 const db = createServiceClient()
 
 export async function POST(req) {
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const limited = payLimiter(req)
+  if (!limited.ok) return limited.response
+
   try {
     const body = await req.json()
-    const { team_id, amount_ghs, email } = body
 
-    if (!team_id || !amount_ghs || !email) {
-      return NextResponse.json({ error: 'team_id, amount_ghs, and email are required' }, { status: 400 })
+    // ── Input sanitization ─────────────────────────────────────────────────
+    const team_id    = sanitizeUUID(body.team_id)
+    const amount_ghs = sanitizeAmount(body.amount_ghs, { min: 1, max: 10000 })
+    const email      = sanitizeEmail(body.email)
+
+    if (!team_id) {
+      return NextResponse.json({ error: 'Invalid team_id' }, { status: 400 })
+    }
+    if (!amount_ghs) {
+      return NextResponse.json({ error: 'amount_ghs must be a valid number between 1 and 10,000' }, { status: 400 })
+    }
+    if (!email) {
+      return NextResponse.json({ error: 'Valid email address is required' }, { status: 400 })
     }
 
     const requester = await getRequester(req, db)
@@ -26,19 +43,14 @@ export async function POST(req) {
 
     const reference = `APAY-TOPUP-${team_id.slice(0, 8)}-${Date.now()}`
 
-    // ── Simulation bypass (no Moolre call) ──────────────────────────────
-    if (process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true') {
-      console.log('[pay/topup] Simulation mode — skipping Moolre, reference:', reference)
-      return NextResponse.json({ ok: true, checkout_url: null, reference, simulated: true })
-    }
-    // ────────────────────────────────────────────────────────────────────
-
     const protocol = req.headers.get('x-forwarded-proto') || 'https'
     const host = req.headers.get('host')
 
+    log.info('pay/topup initiated', { team_id, amount_ghs, reference, initiated_by: requester.profile.id })
+
     const result = await createCharge({
       email,
-      amount_ghs: parseFloat(amount_ghs),
+      amount_ghs,
       reference,
       plan:        'wallet_topup',
       team_id,
@@ -47,14 +59,8 @@ export async function POST(req) {
     })
 
     if (!result.ok) {
-      const debugEnv = {
-        MOOLRE_BASE_URL:       process.env.MOOLRE_BASE_URL || '(not set)',
-        MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER})` : '(not set)',
-        MOOLRE_PUBLIC_KEY:     process.env.MOOLRE_PUBLIC_KEY ? 'set' : '(not set)',
-        MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
-      }
-      console.error('[pay/topup] Moolre error:', result.error, '| env:', JSON.stringify(debugEnv))
-      return NextResponse.json({ error: result.error || 'Failed to create payment link', _debug: debugEnv }, { status: 502 })
+      log.error('pay/topup Moolre charge failed', { error: result.error, team_id, reference })
+      return NextResponse.json({ error: result.error || 'Failed to create payment link' }, { status: 502 })
     }
 
     // Log pending transaction
@@ -63,16 +69,17 @@ export async function POST(req) {
       team_id,
       wallet_id:   wData?.id,
       type:        'top_up',
-      amount:      parseFloat(amount_ghs),
+      amount:      amount_ghs,
       status:      'pending',
       reference,
       metadata:    { email, initiated_by: requester.profile.id },
     })
 
     const checkout_url = result.data?.checkout_url || result.data?.authorization_url || null
+    log.info('pay/topup checkout created', { reference, checkout_url: !!checkout_url })
     return NextResponse.json({ ok: true, checkout_url, reference, data: result.data })
   } catch (e) {
-    console.error('[pay/topup]', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    log.error('pay/topup unhandled exception', { message: e.message })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

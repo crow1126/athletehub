@@ -20,16 +20,19 @@ const lbl={display:'block',fontSize:11,fontWeight:700,letterSpacing:'0.08em',tex
 const EMPTY={athlete_id:'',match_date:new Date().toISOString().split('T')[0],opponent:'',minutes_played:90,goals:0,assists:0,shots:0,shots_on_target:0,passes:0,pass_accuracy:0,distance_km:0,sprint_count:0,duels_won:0,duels_total:0,xg:0,xa:0,rating:0,notes:''}
 
 export default function PerformancePage(){
-  const [stats,    setStats]    = useState([])
-  const [athletes, setAthletes] = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [editId,   setEditId]   = useState(null)
-  const [saving,   setSaving]   = useState(false)
-  const [deleting, setDeleting] = useState(null)
-  const [form,     setForm]     = useState(EMPTY)
-  const [selAth,   setSelAth]   = useState('all')
-  const [teamId,   setTeamId]   = useState(null)
+  const [stats,        setStats]       = useState([])
+  const [athletes,     setAthletes]    = useState([])
+  const [loading,      setLoading]     = useState(true)
+  const [showForm,     setShowForm]    = useState(false)
+  const [editId,       setEditId]      = useState(null)
+  const [saving,       setSaving]      = useState(false)
+  const [deleting,     setDeleting]    = useState(null)
+  const [form,         setForm]        = useState(EMPTY)
+  const [selAth,       setSelAth]      = useState('all')
+  const [teamId,       setTeamId]      = useState(null)
+  const [unpublished,  setUnpublished] = useState([])  // unnotified stat rows
+  const [publishing,   setPublishing]  = useState(false)
+  const [publishMsg,   setPublishMsg]  = useState('')
 
   const fetchData=useCallback(async()=>{
     setLoading(true)
@@ -39,7 +42,11 @@ export default function PerformancePage(){
       scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url)'), currentTeamId).order('match_date',{ascending:false}),
       scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url'), currentTeamId).order('name'),
     ])
-    setStats(s||[]);setAthletes(a||[]);setLoading(false)
+    setStats(s||[])
+    setAthletes(a||[])
+    // Track entries awaiting notification
+    setUnpublished((s||[]).filter(r => r.notified === false))
+    setLoading(false)
   },[])
 
   useEffect(()=>{fetchData()},[fetchData])
@@ -52,53 +59,63 @@ export default function PerformancePage(){
     if (!form.athlete_id) return alert('Select athlete.')
     if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
-    const payload={...form,team_id:teamId,minutes_played:parseInt(form.minutes_played)||0,goals:parseInt(form.goals)||0,assists:parseInt(form.assists)||0,shots:parseInt(form.shots)||0,shots_on_target:parseInt(form.shots_on_target)||0,passes:parseInt(form.passes)||0,pass_accuracy:parseFloat(form.pass_accuracy)||0,distance_km:parseFloat(form.distance_km)||0,sprint_count:parseInt(form.sprint_count)||0,duels_won:parseInt(form.duels_won)||0,duels_total:parseInt(form.duels_total)||0,xg:parseFloat(form.xg)||0,xa:parseFloat(form.xa)||0,rating:parseFloat(form.rating)||0}
+    const payload={
+      ...form,
+      team_id:teamId,
+      notified:false,           // always saved as draft until analyst publishes
+      minutes_played:parseInt(form.minutes_played)||0,
+      goals:parseInt(form.goals)||0,
+      assists:parseInt(form.assists)||0,
+      shots:parseInt(form.shots)||0,
+      shots_on_target:parseInt(form.shots_on_target)||0,
+      passes:parseInt(form.passes)||0,
+      pass_accuracy:parseFloat(form.pass_accuracy)||0,
+      distance_km:parseFloat(form.distance_km)||0,
+      sprint_count:parseInt(form.sprint_count)||0,
+      duels_won:parseInt(form.duels_won)||0,
+      duels_total:parseInt(form.duels_total)||0,
+      xg:parseFloat(form.xg)||0,
+      xa:parseFloat(form.xa)||0,
+      rating:parseFloat(form.rating)||0,
+    }
     if (editId){
       const {error}=await scopeTeam(supabase.from('performance_stats').update(payload).eq('id',editId), teamId)
       if(error) alert(error.message)
-      else {
-        setShowForm(false)
-        fetchData()
-      }
-    }
-    else {
+      else { setShowForm(false); fetchData() }
+    } else {
       const {error}=await supabase.from('performance_stats').insert([payload])
       if(error) alert(error.message)
-      else {
-        try {
-          const athlete = athletes.find(a => a.id === form.athlete_id)
-          const athleteName = athlete ? athlete.name : 'an athlete'
-          const dateStr = new Date(form.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-          
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session?.access_token) {
-            const res = await fetch('/api/notifications/create', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-              },
-              body: JSON.stringify({
-                team_id: teamId,
-                type: 'performance',
-                title: 'Performance Stats Published',
-                body: `Performance statistics have been published for ${athleteName} (Rating: ${payload.rating}/10) for the match on ${dateStr} against ${form.opponent || 'the opponent'}.`,
-              }),
-            })
-            if (!res.ok) {
-              const errData = await res.json()
-              console.error('Failed to create notification via API:', errData.error)
-            }
-          }
-        } catch (err) {
-          console.error('Failed to create performance notification:', err)
-        }
-        setShowForm(false)
-        setForm(EMPTY)
-        fetchData()
-      }
+      // ⬇ No per-save notification — analyst uses Publish & Notify All when done
+      else { setShowForm(false); setForm(EMPTY); fetchData() }
     }
     setSaving(false)
+  }
+
+  async function handlePublishNotify(){
+    if (!teamId || publishing) return
+    setPublishing(true)
+    setPublishMsg('')
+    try {
+      const { data:{ session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/performance/publish-notify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`,
+        },
+        body: JSON.stringify({ team_id: teamId }),
+      })
+      const data = await res.json()
+      if (res.ok && data.ok) {
+        setPublishMsg(`✓ ${data.message}`)
+        fetchData() // refresh — unpublished list will clear
+      } else {
+        setPublishMsg(`Error: ${data.error || 'Failed to publish'}`)
+      }
+    } catch(err) {
+      setPublishMsg(`Error: ${err.message}`)
+    }
+    setPublishing(false)
   }
 
   async function handleDelete(id){
@@ -120,6 +137,57 @@ export default function PerformancePage(){
       <div className="page-outer">
         <PageHeader label="Analytics" title="Performance" subtitle="Match stats, xG, xA and player analytics"
           action={<button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>
+
+        {/* ── Publish & Notify All banner ── */}
+        {unpublished.length > 0 && (
+          <div className="fade-up" style={{
+            background: 'linear-gradient(135deg, rgba(13,148,136,0.08), rgba(20,184,166,0.05))',
+            border: '1.5px solid rgba(13,148,136,0.25)',
+            borderRadius: 14,
+            padding: '14px 20px',
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:22 }}>📊</span>
+              <div>
+                <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>
+                  {unpublished.length} player{unpublished.length !== 1 ? 's\'' : '\'s'} stats saved — not yet notified
+                </div>
+                <div style={{ fontSize:12, color:'var(--text3)', marginTop:2 }}>
+                  {unpublished.slice(0,4).map(s => s.athletes?.name?.split(' ')[0]).filter(Boolean).join(', ')}
+                  {unpublished.length > 4 ? ` and ${unpublished.length - 4} more` : ''}
+                </div>
+              </div>
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              {publishMsg && (
+                <span style={{ fontSize:12, fontWeight:600, color: publishMsg.startsWith('✓') ? '#0D9488' : 'var(--danger)' }}>
+                  {publishMsg}
+                </span>
+              )}
+              <button
+                onClick={handlePublishNotify}
+                disabled={publishing}
+                style={{
+                  background: publishing ? '#94A3B8' : 'linear-gradient(135deg,#0F766E,#0D9488)',
+                  color:'#fff', border:'none', borderRadius:10,
+                  padding:'9px 18px', fontSize:13, fontWeight:700,
+                  cursor: publishing ? 'not-allowed' : 'pointer',
+                  fontFamily:'var(--font)',
+                  boxShadow:'0 4px 12px rgba(13,148,136,0.25)',
+                  whiteSpace:'nowrap',
+                }}
+              >
+                {publishing ? 'Sending…' : '🔔 Publish & Notify All'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Leaderboard with photos */}
         {lb.length>0&&(

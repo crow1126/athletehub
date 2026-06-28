@@ -3,6 +3,9 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
 import { initiateTransfer, normalizeGhPhone } from '@/lib/moolre'
+import { payLimiter } from '@/lib/rateLimit'
+import { sanitizeUUID } from '@/lib/sanitize'
+import log from '@/lib/logger'
 
 const db = createServiceClient()
 const PLATFORM_FEE_RATE = 0.01 // 1%
@@ -15,9 +18,14 @@ const IS_SANDBOX = MOOLRE_BASE_URL.includes('sandbox.moolre.com')
 const SIMULATE = !IS_SANDBOX && (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true')
 
 export async function POST(req) {
+  // ── Rate limiting ──────────────────────────────────────────────────────────
+  const limited = payLimiter(req)
+  if (!limited.ok) return limited.response
+
   try {
-    const { payroll_run_id } = await req.json()
-    if (!payroll_run_id) return NextResponse.json({ error: 'payroll_run_id required' }, { status: 400 })
+    const body = await req.json()
+    const payroll_run_id = sanitizeUUID(body.payroll_run_id)
+    if (!payroll_run_id) return NextResponse.json({ error: 'Valid payroll_run_id (UUID) is required' }, { status: 400 })
 
     const requester = await getRequester(req, db)
     if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
@@ -86,22 +94,22 @@ export async function POST(req) {
         itemStatus = 'success'
         statusMsg = 'Simulated disbursement'
         successCount++
-        console.log(`[disburse] SIMULATED item ${item.id} (${item.name}): GHS ${item.total_amount}`)
+        log.info('disburse simulated item', { item_id: item.id, name: item.name, amount: item.total_amount })
       } else {
         const phone = normalizeGhPhone(item.phone)
         if (!phone) {
           itemStatus = 'failed'
           statusMsg = 'Invalid phone number'
           failCount++
-          console.error(`[disburse] Invalid phone for ${item.name}: "${item.phone}"`)
+          log.error('disburse invalid phone', { name: item.name })
         } else {
-          console.log(`[disburse] Initiating transfer → ${item.name} | phone: ${phone} | amount: GHS ${item.total_amount} | ref: ${ref}`)
+          log.info('disburse initiating transfer', { name: item.name, amount: item.total_amount, ref })
           const result = await initiateTransfer({
             amount:    item.total_amount,
             recipient: phone,
             reference: ref,
           })
-          console.log(`[disburse] Moolre response for ${item.name}:`, JSON.stringify(result))
+          log.info('disburse Moolre response', { name: item.name, ok: result.ok })
           if (result.ok) {
             itemStatus = 'processing' // Confirmed via Moolre webhook
             moolreRef = result.data?.reference || ref
@@ -110,7 +118,7 @@ export async function POST(req) {
             itemStatus = 'failed'
             statusMsg = result.error
             failCount++
-            console.error(`[disburse] Transfer FAILED for ${item.name}:`, result.error)
+            log.error('disburse transfer failed', { name: item.name, error: result.error })
           }
         }
       }
@@ -170,29 +178,11 @@ export async function POST(req) {
     const finalStatus = failCount === 0 ? 'completed' : successCount > 0 ? 'completed' : 'failed'
     await db.from('pay_payroll_runs').update({ status: finalStatus }).eq('id', payroll_run_id)
 
-    const moolreErrors = results
-      .filter(r => r.status === 'failed' && r.statusMsg)
-      .map(r => `${r.name}: "${r.statusMsg}"`)
+    log.info('disburse completed', { payroll_run_id, successCount, failCount, finalStatus, simulated: SIMULATE })
 
-    const maskKey = (val) => {
-      if (!val) return '(not set)'
-      const trimmed = val.trim()
-      if (trimmed.length < 8) return `set(len:${trimmed.length})`
-      return `set(len:${trimmed.length}, mask:${trimmed.substring(0, 4)}...${trimmed.substring(trimmed.length - 4)})`
-    }
-
-    const debugEnv = {
-      MOOLRE_BASE_URL,
-      MOOLRE_API_USER:       process.env.MOOLRE_API_USER ? `set(${process.env.MOOLRE_API_USER.trim()})` : '(not set)',
-      MOOLRE_SECRET_KEY:     maskKey(process.env.MOOLRE_SECRET_KEY),
-      MOOLRE_API_KEY:        maskKey(process.env.MOOLRE_API_KEY),
-      MOOLRE_ACCOUNT_NUMBER: process.env.MOOLRE_ACCOUNT_NUMBER ? `set(${process.env.MOOLRE_ACCOUNT_NUMBER})` : '(not set)',
-      moolre_errors: moolreErrors,
-    }
-
-    return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE, _debug: debugEnv })
+    return NextResponse.json({ ok: true, successCount, failCount, results, simulated: SIMULATE })
   } catch (e) {
-    console.error('[pay/disburse]', e)
-    return NextResponse.json({ error: e.message }, { status: 500 })
+    log.error('pay/disburse unhandled exception', { message: e.message })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

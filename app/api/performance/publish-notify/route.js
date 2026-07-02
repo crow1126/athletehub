@@ -55,18 +55,10 @@ export async function POST(req) {
     // Get opponent(s) — use most recent entry's opponent
     const opponent = unpublished[0]?.opponent || null
 
-    // List player names (up to 5, then "and X more")
-    const names = unpublished
-      .map(s => s.athletes?.name?.split(' ')[0])
-      .filter(Boolean)
-    const nameList = names.length <= 5
-      ? names.join(', ')
-      : `${names.slice(0, 5).join(', ')} and ${names.length - 5} more`
-
     const notifTitle = `📊 Performance Stats Published`
     const notifBody = opponent
-      ? `Match stats for ${playerCount} player${playerCount !== 1 ? 's' : ''} (${nameList}) have been published for the match on ${dateStr} vs ${opponent}.`
-      : `Match stats for ${playerCount} player${playerCount !== 1 ? 's' : ''} (${nameList}) have been published for ${dateStr}.`
+      ? `New performance stats have been published for the match on ${dateStr} vs ${opponent}.`
+      : `New performance stats have been published for ${dateStr}.`
 
     // Insert one team-wide notification
     const { error: notifErr } = await db

@@ -2,16 +2,13 @@
 // Triggers bulk disbursement for an approved payroll run
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, canManageTeam } from '@/lib/serverAuth'
-import { initiateTransfer, normalizeGhPhone } from '@/lib/moolre'
+import { initiateTransfer, normalizeGhPhone, getWalletBalance, MOOLRE_BASE_URL, IS_SANDBOX } from '@/lib/moolre'
 import { payLimiter } from '@/lib/rateLimit'
 import { sanitizeUUID } from '@/lib/sanitize'
 import log from '@/lib/logger'
 
 const db = createServiceClient()
 const PLATFORM_FEE_RATE = 0.01 // 1%
-
-const MOOLRE_BASE_URL = (process.env.MOOLRE_BASE_URL || 'https://api.moolre.com').trim()
-const IS_SANDBOX = MOOLRE_BASE_URL.includes('sandbox.moolre.com')
 
 // Only call real Moolre API when explicitly pointed at sandbox.
 // In dev/staging without sandbox URL, simulate locally to avoid accidental real transfers.
@@ -51,10 +48,26 @@ export async function POST(req) {
     const fee = parseFloat((run.total_amount * PLATFORM_FEE_RATE).toFixed(2))
     const totalRequired = run.total_amount + fee
 
+    // ── DB balance guard ───────────────────────────────────────────────────────
     if (!wallet || wallet.balance < totalRequired) {
       return NextResponse.json({
         error: `Insufficient balance. Need GHS ${totalRequired.toFixed(2)}, have GHS ${(wallet?.balance || 0).toFixed(2)}`,
       }, { status: 400 })
+    }
+
+    // ── Live Moolre pre-flight balance check (skip in simulation mode) ─────────
+    if (!SIMULATE) {
+      const liveBalance = await getWalletBalance()
+      if (!liveBalance.ok) {
+        log.warn('disburse: could not fetch live Moolre balance — proceeding with DB balance only', { error: liveBalance.error })
+      } else if (liveBalance.balance < totalRequired) {
+        log.error('disburse: live Moolre balance insufficient', { live: liveBalance.balance, required: totalRequired })
+        return NextResponse.json({
+          error: `Live Moolre wallet balance insufficient. Need GHS ${totalRequired.toFixed(2)}, Moolre reports GHS ${liveBalance.balance.toFixed(2)}. Please top up your Moolre account.`,
+        }, { status: 400 })
+      } else {
+        log.info('disburse: live Moolre balance check passed', { live: liveBalance.balance, required: totalRequired })
+      }
     }
 
     // Mark run as processing
@@ -131,7 +144,8 @@ export async function POST(req) {
         updated_at: new Date().toISOString(),
       }).eq('id', item.id)
 
-      // Log transaction
+      // Log transaction with masked phone number
+      const maskedPhone = item.phone && item.phone.length > 4 ? `****${item.phone.slice(-4)}` : (item.phone || '')
       await db.from('pay_transactions').insert({
         team_id: run.team_id,
         wallet_id: wallet.id,
@@ -141,7 +155,7 @@ export async function POST(req) {
         reference: moolreRef,
         payroll_run_id,
         payroll_item_id: item.id,
-        metadata: { recipient: item.name, phone: item.phone, simulated: SIMULATE },
+        metadata: { recipient: item.name, phone: maskedPhone, simulated: SIMULATE },
       })
 
       if (itemStatus === 'failed') {

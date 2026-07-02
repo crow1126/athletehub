@@ -130,10 +130,47 @@ export default function PayOverviewPage() {
   const [showTopUp, setShowTopUp] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [isSimulation, setIsSimulation] = useState(false)
+  const [verifyStatus, setVerifyStatus] = useState(null) // { type: 'success' | 'error' | 'loading', text: string }
 
   useEffect(() => {
     setIsSimulation(process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true')
   }, [])
+
+  // Auto-verify payment on success redirect
+  useEffect(() => {
+    if (typeof window === 'undefined' || !teamId) return
+    const params = new URLSearchParams(window.location.search)
+    const status = params.get('status')
+    const ref = params.get('reference')
+
+    if (status === 'success' && ref && ref.startsWith('APAY-TOPUP-')) {
+      async function verify() {
+        setVerifyStatus({ type: 'loading', text: 'Verifying your payment with Moolre... Please do not close this page.' })
+        try {
+          const response = await fetch('/api/pay/topup/verify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reference: ref }),
+          })
+          const data = await response.json()
+          if (response.ok && data.ok) {
+            setVerifyStatus({ type: 'success', text: data.message || 'Payment successfully verified and wallet credited!' })
+            load(teamId)
+          } else {
+            setVerifyStatus({ type: 'error', text: data.error || 'Failed to verify payment status.' })
+          }
+        } catch (err) {
+          setVerifyStatus({ type: 'error', text: 'An error occurred while verifying the payment.' })
+        }
+        // Clean URL query parameters
+        const url = new URL(window.location.href)
+        url.searchParams.delete('status')
+        url.searchParams.delete('reference')
+        window.history.replaceState({}, '', url.pathname + url.search)
+      }
+      verify()
+    }
+  }, [teamId, load])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -185,6 +222,38 @@ export default function PayOverviewPage() {
           {isAdmin && <button className="pay-btn-gold" style={{ padding: '9px 16px', fontSize: 13 }} onClick={() => setShowTopUp(true)}>+ Top Up</button>}
         </div>
       </div>
+
+      {/* Verification Status Banner */}
+      {verifyStatus && (
+        <div style={{
+          background: verifyStatus.type === 'loading' ? C.warningBg : verifyStatus.type === 'success' ? C.successBg : C.dangerBg,
+          border: `1px solid ${verifyStatus.type === 'loading' ? C.warning : verifyStatus.type === 'success' ? C.success : C.danger}`,
+          color: verifyStatus.type === 'loading' ? C.warning : verifyStatus.type === 'success' ? C.success : C.danger,
+          borderRadius: 12,
+          padding: '12px 18px',
+          marginBottom: 20,
+          fontSize: 13,
+          fontWeight: 600,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          animation: 'fadeUp 0.3s ease'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{verifyStatus.type === 'loading' ? '⏳' : verifyStatus.type === 'success' ? '✅' : '❌'}</span>
+            <span>{verifyStatus.text}</span>
+          </div>
+          {verifyStatus.type !== 'loading' && (
+            <button
+              onClick={() => setVerifyStatus(null)}
+              style={{ background: 'none', border: 'none', color: 'inherit', fontWeight: 'bold', cursor: 'pointer', fontSize: 16 }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Wallet hero — teal gradient matching ApexTrack brand */}
       <div style={{

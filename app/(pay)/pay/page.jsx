@@ -132,6 +132,14 @@ export default function PayOverviewPage() {
   const [isSimulation, setIsSimulation] = useState(false)
   const [verifyStatus, setVerifyStatus] = useState(null) // { type: 'success' | 'error' | 'loading', text: string }
 
+  const load = useCallback(async (tid) => {
+    if (!tid) return
+    setLoading(true)
+    const { res, data } = await payFetch(`/api/pay/wallet?team_id=${tid}`)
+    setLoading(false)
+    if (res.ok) setWalletData(data)
+  }, [])
+
   useEffect(() => {
     setIsSimulation(process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true')
   }, [])
@@ -179,16 +187,6 @@ export default function PayOverviewPage() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  const isAdmin = ['admin', 'superadmin'].includes(role)
-
-  const load = useCallback(async (tid) => {
-    if (!tid) return
-    setLoading(true)
-    const { res, data } = await payFetch(`/api/pay/wallet?team_id=${tid}`)
-    setLoading(false)
-    if (res.ok) setWalletData(data)
-  }, [])
-
   useEffect(() => {
     async function init() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -199,6 +197,7 @@ export default function PayOverviewPage() {
     init()
   }, [load])
 
+  const isAdmin = ['admin', 'superadmin'].includes(role)
   const wallet = walletData?.wallet
   const stats = walletData?.stats
   const recentRuns = walletData?.recentRuns || []

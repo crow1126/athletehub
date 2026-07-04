@@ -37,10 +37,10 @@ function getStaffType(val) { return STAFF_TYPES.find(t=>t.value===val)||{label:v
 function StaffAvatar({ staff, size=54 }) {
   const [err, setErr] = useState(false)
   if (staff?.photo_url && !err) {
-    return <img src={staff.photo_url} alt={staff.name} onError={()=>setErr(true)} style={{ width:size,height:size,borderRadius:'50%',objectFit:'cover',border:'3px solid rgba(255,255,255,0.5)',flexShrink:0,boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}/>
+    return <img src={staff.photo_url} alt={staff.name} onError={()=>setErr(true)} style={{ width:size,height:size,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--border)',flexShrink:0,boxShadow:'0 2px 8px rgba(0,0,0,0.08)' }}/>
   }
   return (
-    <div style={{ width:size,height:size,borderRadius:'50%',flexShrink:0,background:'rgba(255,255,255,0.22)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.32,fontWeight:800,color:'#fff',border:'2px solid rgba(255,255,255,0.4)' }}>
+    <div style={{ width:size,height:size,borderRadius:'50%',flexShrink:0,background:'var(--surface3,#e2e8f0)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.32,fontWeight:800,color:'var(--text2)',border:'2px solid var(--border)' }}>
       {initials(staff?.name)}
     </div>
   )
@@ -248,26 +248,26 @@ export default function CoachesPage() {
                   onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='var(--shadow-lg)'}}
                   onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='var(--shadow-sm)'}}>
 
-                  <div style={{ background:`linear-gradient(135deg,${st.color}EE,${st.color}88)`,padding:'18px 20px' }}>
+                  <div style={{ background:'var(--surface2)',borderBottom:'1px solid var(--border)',padding:'18px 20px' }}>
                     <div style={{ display:'flex',gap:12,alignItems:'flex-start' }}>
                       <StaffAvatar staff={coach} size={54}/>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:10,color:'rgba(255,255,255,0.7)',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:3 }}>{st.icon} {st.label}</div>
-                        <div style={{ fontSize:16,fontWeight:800,color:'#fff',marginBottom:3 }}>{coach.name}</div>
-                        <div style={{ fontSize:11,color:'rgba(255,255,255,0.65)' }}>
+                        <div style={{ fontSize:10,color:'var(--text3)',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:3 }}>{st.icon} {st.label}</div>
+                        <div style={{ fontSize:16,fontWeight:800,color:'var(--text)',marginBottom:3 }}>{coach.name}</div>
+                        <div style={{ fontSize:11,color:'var(--text2)' }}>
                           {coach.experience_years?`${coach.experience_years} yrs exp`:''}
                           {coach.phone?(coach.experience_years?` · ${coach.phone}`:coach.phone):''}
                         </div>
-                        {coach.email&&<div style={{ fontSize:11,color:'rgba(255,255,255,0.55)',marginTop:2 }}>✉ {coach.email}</div>}
+                        {coach.email&&<div style={{ fontSize:11,color:'var(--text3)',marginTop:2 }}>✉ {coach.email}</div>}
                       </div>
-                      <span style={{ fontSize:9,fontWeight:700,background:coach.is_active!==false?'rgba(39,174,96,0.3)':'rgba(231,76,60,0.3)',color:coach.is_active!==false?'#A8F0C0':'#F5A0A0',padding:'3px 9px',borderRadius:99,flexShrink:0,letterSpacing:'0.06em',textTransform:'uppercase',border:`1px solid ${coach.is_active!==false?'rgba(39,174,96,0.4)':'rgba(231,76,60,0.4)'}` }}>
+                      <span style={{ fontSize:9,fontWeight:700,background:coach.is_active!==false?'var(--success-light,rgba(39,174,96,0.12))':'var(--danger-light)',color:coach.is_active!==false?'var(--success,#16a34a)':'var(--danger)',padding:'3px 9px',borderRadius:99,flexShrink:0,letterSpacing:'0.06em',textTransform:'uppercase',border:`1px solid ${coach.is_active!==false?'rgba(39,174,96,0.25)':'rgba(231,76,60,0.25)'}` }}>
                         {coach.is_active!==false?'● Active':'○ Inactive'}
                       </span>
                     </div>
                     <div style={{ display:'flex',gap:6,marginTop:12,flexWrap:'wrap' }}>
-                      <button onClick={()=>openEdit(coach)} style={{ background:'rgba(255,255,255,0.2)',color:'#fff',border:'1px solid rgba(255,255,255,0.3)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>✏ Edit</button>
-                      <button onClick={()=>toggleActive(coach.id,coach.is_active!==false)} style={{ background:'rgba(255,255,255,0.12)',color:'#fff',border:'1px solid rgba(255,255,255,0.22)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>{coach.is_active!==false?'⏸ Deactivate':'▶ Activate'}</button>
-                      <button onClick={()=>handleDelete(coach.id,coach.name)} disabled={deleting===coach.id} style={{ background:'rgba(231,76,60,0.25)',color:'#fdd',border:'1px solid rgba(231,76,60,0.35)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',opacity:deleting===coach.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===coach.id?'…':'🗑 Remove'}</button>
+                      <button onClick={()=>openEdit(coach)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>✏ Edit</button>
+                      <button onClick={()=>toggleActive(coach.id,coach.is_active!==false)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>{coach.is_active!==false?'⏸ Deactivate':'▶ Activate'}</button>
+                      <button onClick={()=>handleDelete(coach.id,coach.name)} disabled={deleting===coach.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'1px solid rgba(231,76,60,0.25)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',opacity:deleting===coach.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===coach.id?'…':'🗑 Remove'}</button>
                     </div>
                   </div>
 
@@ -275,7 +275,7 @@ export default function CoachesPage() {
                     {coach.speciality&&<div style={{ fontSize:12,color:'var(--text2)',marginBottom:12,background:'var(--surface2)',padding:'7px 12px',borderRadius:'var(--r-sm)',display:'flex',gap:6,alignItems:'center',border:'1px solid var(--border)' }}><span>⭐</span><span><strong>Speciality:</strong> {coach.speciality}</span></div>}
 
                     {['physio','medical','sports_scientist','analyst','scout','accountant'].includes(coach.staff_type)&&(
-                      <div style={{ background:coach.staff_type==='physio'?'#FEF9E7':coach.staff_type==='medical'||coach.staff_type==='sports_scientist'?'#FDEDEC':coach.staff_type==='analyst'?'#F3E5F5':coach.staff_type==='accountant'?'#FEF9E7':'#E0F7F5',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:coach.staff_type==='physio'?'#B36200':coach.staff_type==='medical'||coach.staff_type==='sports_scientist'?'#C0392B':coach.staff_type==='analyst'?'#6A1B9A':coach.staff_type==='accountant'?'#B36200':'#0E8A7E',marginBottom:10 }}>
+                      <div style={{ background:'var(--surface2)',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:'var(--text2)',marginBottom:10,border:'1px solid var(--border)' }}>
                         {coach.staff_type==='physio'&&'🩺 Medical access — injury records & rehab'}
                         {coach.staff_type==='medical'&&'⚕️ Medical officer — clinical oversight'}
                         {coach.staff_type==='sports_scientist'&&'🔬 Sports science — GPS & load monitoring'}

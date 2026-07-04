@@ -74,8 +74,7 @@ function TopUpModal({ onClose, teamId, isSimulation }) {
     })
     setLoading(false)
     if (!res.ok) {
-      const dbg = data._debug ? '\n\nEnv: ' + JSON.stringify(data._debug) : ''
-      return setError((data.error || 'Failed') + dbg)
+      return setError(data.error || 'Failed')
     }
     if (data.checkout_url) {
       window.open(data.checkout_url, '_blank')
@@ -315,17 +314,7 @@ export default function PayOverviewPage() {
               <button className="pay-btn-ghost" style={{ width: '100%' }}>📒 View Transactions</button>
             </Link>
           </div>
-          {!isMobile && (
-            <div style={{ marginTop: 20, padding: 14, background: C.muted, borderRadius: 10, border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Webhook URLs</div>
-              <div style={{ fontSize: 10, color: C.text, wordBreak: 'break-all', lineHeight: 1.6 }}>
-                <div style={{ color: C.text3, marginBottom: 2 }}>Top-Up:</div>
-                <code style={{ fontSize: 9, color: C.text2, fontWeight: 'bold' }}>/api/webhooks/pay/moolre-topup</code>
-                <div style={{ color: C.text3, marginTop: 6, marginBottom: 2 }}>Disbursement:</div>
-                <code style={{ fontSize: 9, color: C.text2, fontWeight: 'bold' }}>/api/webhooks/pay/moolre-disburse</code>
-              </div>
-            </div>
-          )}
+
         </div>
 
         {/* Recent runs */}

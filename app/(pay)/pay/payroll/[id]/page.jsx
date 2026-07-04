@@ -147,7 +147,6 @@ export default function PayrollRunDetailPage({ params }) {
       return
     }
     const simNote = data.simulated ? ' (simulated)' : ''
-    const dbg = data._debug ? '\n\nEnv: ' + JSON.stringify(data._debug) : ''
     if (data.successCount === 0 && data.failCount > 0) {
       const firstErr = data.results?.[0]?.statusMsg || ''
       const isAuthErr = firstErr.toLowerCase().includes('authentication') || firstErr.toLowerCase().includes('ain01')
@@ -162,10 +161,10 @@ export default function PayrollRunDetailPage({ params }) {
           '⬇ Workaround: Click "Export CSV" to download this payroll and upload it manually to app.moolre.com → Bulk Payouts.'
         )
       } else {
-        setError(`❌ All disbursements failed. ${firstErr}${dbg}`)
+        setError(`❌ All disbursements failed. ${firstErr}`)
       }
     } else {
-      setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ⚠ ${data.failCount} failed.${dbg}`)
+      setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ⚠ ${data.failCount} failed.`)
     }
     load(teamId)
   }

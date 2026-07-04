@@ -4,7 +4,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { canAccessModule } from '@/lib/subscription'
 
-const PUBLIC_ROUTES  = ['/', '/login', '/auth/confirm', '/auth/reset-password', '/privacy', '/terms', '/security']
+const PUBLIC_ROUTES  = ['/', '/login', '/auth/confirm', '/auth/reset-password', '/forgot-password', '/privacy', '/terms', '/security']
 const BILLING_BYPASS = ['/billing', '/login', '/pay']
 
 function pathToModule(path) {

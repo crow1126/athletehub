@@ -130,22 +130,7 @@ export default function LoginPage() {
     setResendLoading(false)
   }
 
-  async function handleForgotPassword(e) {
-    e.preventDefault(); setError(''); setSuccess('')
-    const resetEmail = email.trim().toLowerCase()
-    if (!resetEmail || !resetEmail.includes('@')) {
-      setError('Please enter your email address above first.')
-      return
-    }
-    setLoading(true)
-    const { error: resetErr } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
-    })
-    setLoading(false)
-    if (resetErr) { setError(resetErr.message); return }
-    setSuccess('Password reset email sent! Check your inbox and click the link to set a new password.')
-    setForgotMode(false)
-  }
+
 
   async function handleLogin(e) {
     e.preventDefault(); setError(''); setSuccess(''); setNeedsVerification(false)
@@ -545,36 +530,14 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {forgotMode ? (
-                    <form onSubmit={handleForgotPassword} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                      <div style={{ background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.18)', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#0D5C57' }}>
-                        Enter your email address and we'll send you a link to reset your password.
-                      </div>
-                      {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>⚠️ {error}</div>}
-                      {success && <div style={{ background: '#E8F8EE', border: '1px solid rgba(39,174,96,0.3)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#1B6B3A', fontWeight: 600 }}>✓ {success}</div>}
-                      <div>
-                        <label className="auth-field-label">Email Address</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" autoComplete="email" style={inp} onFocus={focusInp} onBlur={blurInp} required />
-                      </div>
-                      <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#0D9488,#0F766E)', color: '#FFFFFF', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.7 : 1, boxShadow: '0 4px 14px rgba(13,148,136,0.3)', transition: 'all 0.2s' }}>
-                        {loading ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#FFFFFF', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} /> Sending…</> : 'Send Reset Link →'}
-                      </button>
-                      <p style={{ textAlign: 'center', fontSize: 12, color: '#64748B' }}>
-                        <button type="button" onClick={() => { setForgotMode(false); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>← Back to Sign In</button>
-                      </p>
-                    </form>
-                  ) : (
-                    <>
-                      <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#0D9488,#0F766E)', color: '#FFFFFF', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.7 : 1, boxShadow: '0 4px 14px rgba(13,148,136,0.3)', transition: 'all 0.2s' }}>
-                        {loading ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#FFFFFF', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} /> Signing in…</> : 'Sign In →'}
-                      </button>
-                      <p style={{ textAlign: 'center', fontSize: 12, color: '#64748B' }}>
-                        <button type="button" onClick={() => { setForgotMode(true); setError(''); setSuccess(''); }} style={{ background: 'none', border: 'none', color: '#94A3B8', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Forgot password?</button>
-                        {'  ·  '}
-                        No account? <button type="button" onClick={() => { setTab('signup'); setError(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Register here</button>
-                      </p>
-                    </>
-                  )}
+                  <button type="submit" disabled={loading} style={{ width: '100%', padding: '13px', background: 'linear-gradient(135deg,#0D9488,#0F766E)', color: '#FFFFFF', border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.7 : 1, boxShadow: '0 4px 14px rgba(13,148,136,0.3)', transition: 'all 0.2s' }}>
+                    {loading ? <><span style={{ width: 15, height: 15, border: '2px solid rgba(255,255,255,0.35)', borderTopColor: '#FFFFFF', borderRadius: '50%', animation: 'spin 0.6s linear infinite', display: 'inline-block' }} /> Signing in…</> : 'Sign In →'}
+                  </button>
+                  <p style={{ textAlign: 'center', fontSize: 12, color: '#64748B' }}>
+                    <Link href="/forgot-password" style={{ color: '#94A3B8', fontWeight: 600, textDecoration: 'none' }}>Forgot password?</Link>
+                    {'  ·  '}
+                    No account? <button type="button" onClick={() => { setTab('signup'); setError(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Register here</button>
+                  </p>
                 </form>
               ) : (
                 <form className="auth-form" onSubmit={handleSignup}>

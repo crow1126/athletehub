@@ -159,9 +159,9 @@ function BillingContent(){
   const [loading,   setLoading]   = useState(true)
   const [tab,       setTab]       = useState('overview')
   const [isAdmin,   setIsAdmin]   = useState(false)
-  const [selPlan,   setSelPlan]   = useState('captain')
+  const [selPlan,   setSelPlan]   = useState(null)
   const [paying,    setPaying]    = useState(false)
-  const [payMethod, setPayMethod] = useState('paystack')
+  const [payMethod, setPayMethod] = useState(null)
   const [msg,       setMsg]       = useState({text:'',type:''})
   const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' | 'annual'
 
@@ -201,9 +201,9 @@ function BillingContent(){
   useEffect(()=>{load()},[load])
   useEffect(()=>{ if(upgradeReason==='upgrade_required'||upgradeReason==='expired') setTab('upgrade') },[upgradeReason])
 
-  // Compute pricing
-  const planPrice = billingCycle === 'monthly' ? PLANS[selPlan].price : Math.round(PLANS[selPlan].price * 12 * 0.8)
-  const planUsd   = billingCycle === 'monthly' ? PLANS[selPlan].usd   : Math.round(PLANS[selPlan].usd * 12 * 0.8)
+  // Compute pricing safely
+  const planPrice = selPlan ? (billingCycle === 'monthly' ? PLANS[selPlan].price : Math.round(PLANS[selPlan].price * 12 * 0.8)) : 0
+  const planUsd   = selPlan ? (billingCycle === 'monthly' ? PLANS[selPlan].usd   : Math.round(PLANS[selPlan].usd * 12 * 0.8)) : 0
 
   async function handlePaystack(){
     if(!selPlan){flash('Select a plan first.','error');return}
@@ -282,11 +282,19 @@ function BillingContent(){
   const maxDays = sub?.plan === 'trial' ? 30 : 30
   const billingProgress = Math.min(100, Math.max(0, ((maxDays - days) / maxDays) * 100))
 
+  // Logo brand component for Page Header action slot
+  const apexBrand = (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', padding: '6px 14px', animation: 'fadeInScale 0.25s ease' }}>
+      <img src="/logo.png" alt="Apex Track" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+      <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: '-0.02em' }}>Apex <span style={{ color: 'var(--lagoon)' }}>Track</span></span>
+    </div>
+  )
+
   return(
     <Layout>
       <style dangerouslySetInnerHTML={{ __html: customStyles }} />
       <div className="page-outer" style={{maxWidth: 960}}>
-        <PageHeader label="Subscription" title="Billing & Plan" subtitle="Manage your Apex Track subscription"/>
+        <PageHeader label="Subscription" title="Billing & Plan" subtitle="Manage your Apex Track subscription" action={apexBrand}/>
 
         {upgradeReason==='upgrade_required'&&blockedModule&&(
           <AlertBanner variant="warning" action={
@@ -374,7 +382,8 @@ function BillingContent(){
                   <div style={{
                     height:'100%',
                     width:`${billingProgress}%`,
-                    background:'linear-gradient(90deg, var(--lagoon-light), var(--lagoon))',
+                    background:'gradient(90deg, var(--lagoon-light), var(--lagoon))',
+                    background: 'linear-gradient(90deg, var(--lagoon-light), var(--lagoon))',
                     borderRadius:99,
                     transition:'width 0.8s ease-in-out',
                   }}/>
@@ -533,17 +542,23 @@ function BillingContent(){
               </div>
               <div style={{display:'flex',flexDirection:'column',gap:18,maxWidth:520}}>
 
-                {/* Summary Box */}
-                <div style={{background:'var(--surface2,rgba(255,255,255,0.6))',borderRadius:'var(--r-md)',padding:'18px',border:'1px solid var(--border)'}}>
-                  <div style={{fontSize:10,color:'var(--text3)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:12}}>Order Summary</div>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
-                    <span style={{fontSize:13,color:'var(--text2)',fontWeight:600}}>{PLANS[selPlan]?.label} ({billingCycle==='monthly'?'Monthly':'Annual'})</span>
-                    <span style={{fontSize:16,fontWeight:900,color:'var(--text)'}}>GHS {planPrice.toLocaleString()}</span>
+                {/* Summary Box / Placeholder */}
+                {selPlan ? (
+                  <div style={{background:'var(--surface2,rgba(255,255,255,0.6))',borderRadius:'var(--r-md)',padding:'18px',border:'1px solid var(--border)',animation:'fadeInScale 0.2s ease'}}>
+                    <div style={{fontSize:10,color:'var(--text3)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:12}}>Order Summary</div>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
+                      <span style={{fontSize:13,color:'var(--text2)',fontWeight:600}}>{PLANS[selPlan]?.label} ({billingCycle==='monthly'?'Monthly':'Annual'})</span>
+                      <span style={{fontSize:16,fontWeight:900,color:'var(--text)'}}>GHS {planPrice.toLocaleString()}</span>
+                    </div>
+                    <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--text3)'}}>
+                      <span>Billing period</span><span>{billingCycle==='monthly'?'30 days':'365 days'} starting today</span>
+                    </div>
                   </div>
-                  <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--text3)'}}>
-                    <span>Billing period</span><span>{billingCycle==='monthly'?'30 days':'365 days'} starting today</span>
+                ) : (
+                  <div style={{background:'var(--surface2,rgba(255,255,255,0.4))',borderRadius:'var(--r-md)',padding:'20px',border:'1px dashed var(--border)',textAlign:'center',color:'var(--text3)',fontSize:12}}>
+                    Select a plan above to view order summary
                   </div>
-                </div>
+                )}
 
                 {/* Mobile Money Notice Block */}
                 <div style={{background:'rgba(13,148,136,0.05)',borderRadius:'var(--r-md)',padding:'14px 18px',border:'1px solid rgba(13,148,136,0.15)',fontSize:12,color:'var(--text2)',lineHeight:1.7,display:'flex',gap:12,alignItems:'flex-start'}}>
@@ -586,14 +601,23 @@ function BillingContent(){
                 </div>
 
                 {/* Dynamic Provider Checkout Buttons */}
-                {payMethod==='paystack'
-                  ?<button onClick={handlePaystack} disabled={paying||!isAdmin} className="gm-btn btn-hover-effect" style={{justifyContent:'center',width:'100%',padding:'14px',opacity:paying||!isAdmin?0.65:1,cursor:paying||!isAdmin?'not-allowed':'pointer'}}>
+                {!selPlan ? (
+                  <button disabled className="gm-btn" style={{justifyContent:'center',width:'100%',padding:'14px',opacity:0.5,cursor:'not-allowed'}}>
+                    Select a plan to proceed
+                  </button>
+                ) : !payMethod ? (
+                  <button disabled className="gm-btn" style={{justifyContent:'center',width:'100%',padding:'14px',opacity:0.5,cursor:'not-allowed'}}>
+                    Select a payment method
+                  </button>
+                ) : payMethod==='paystack' ? (
+                  <button onClick={handlePaystack} disabled={paying||!isAdmin} className="gm-btn btn-hover-effect" style={{justifyContent:'center',width:'100%',padding:'14px',opacity:paying||!isAdmin?0.65:1,cursor:paying||!isAdmin?'not-allowed':'pointer'}}>
                     {paying?<>{Icon.spinner(16)} Connecting to Paystack…</>:`Pay GHS ${planPrice.toLocaleString()} with Paystack`}
                   </button>
-                  :<button onClick={handleMoolre} disabled={paying||!isAdmin} className="gm-btn btn-hover-effect" style={{justifyContent:'center',width:'100%',padding:'14px',opacity:paying||!isAdmin?0.65:1,cursor:paying||!isAdmin?'not-allowed':'pointer'}}>
+                ) : (
+                  <button onClick={handleMoolre} disabled={paying||!isAdmin} className="gm-btn btn-hover-effect" style={{justifyContent:'center',width:'100%',padding:'14px',opacity:paying||!isAdmin?0.65:1,cursor:paying||!isAdmin?'not-allowed':'pointer'}}>
                     {paying?<>{Icon.spinner(16)} Connecting to Moolre…</>:`Pay GHS ${planPrice.toLocaleString()} with Moolre`}
                   </button>
-                }
+                )}
                 {!isAdmin&&<div style={{fontSize:12,color:'var(--text3)',textAlign:'center'}}>Only club admins can change the subscription plan.</div>}
               </div>
             </div>

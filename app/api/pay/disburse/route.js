@@ -24,6 +24,21 @@ export async function POST(req) {
     const payroll_run_id = sanitizeUUID(body.payroll_run_id)
     if (!payroll_run_id) return NextResponse.json({ error: 'Valid payroll_run_id (UUID) is required' }, { status: 400 })
 
+    // Diagnostic logging for keys in production Vercel logs
+    const k1 = process.env.MOOLRE_SECRET_KEY?.trim()
+    const k2 = process.env.MOOLRE_API_KEY?.trim()
+    const pub = process.env.MOOLRE_PUBLIC_KEY?.trim()
+    const user = process.env.MOOLRE_API_USER?.trim()
+    console.log('[disburse env diagnostic] env check:', {
+      base_url: MOOLRE_BASE_URL,
+      user,
+      has_k1: !!k1,
+      has_k2: !!k2,
+      k1_snippet: k1 ? `${k1.substring(0, 5)}...${k1.substring(k1.length - 5)}` : 'none',
+      k2_snippet: k2 ? `${k2.substring(0, 5)}...${k2.substring(k2.length - 5)}` : 'none',
+      pub_snippet: pub ? `${pub.substring(0, 5)}...${pub.substring(pub.length - 5)}` : 'none',
+    })
+
     const requester = await getRequester(req, db)
     if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
 

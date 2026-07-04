@@ -14,7 +14,7 @@ function getCookieDomain(hostname) {
 }
 
 // Routes that don't require authentication
-const PUBLIC_PREFIXES = ['/login', '/auth', '/privacy', '/terms', '/security', '/api/']
+const PUBLIC_PREFIXES = ['/login', '/auth', '/privacy', '/terms', '/security', '/api/', '/forgot-password']
 const PUBLIC_EXACT    = ['/']
 
 export async function proxy(request) {

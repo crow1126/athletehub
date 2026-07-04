@@ -614,11 +614,7 @@ export default function LoginPage() {
                 </form>
               )}
 
-              <div className="auth-trust">
-                {[['🔒', 'TLS Encrypted'], ['🏟️', 'Club-scoped data'], ['🛡️', 'GDPR-aware']].map(([ico, lbl]) => (
-                  <div key={lbl} className="auth-trust-item"><span style={{ fontSize: 13 }}>{ico}</span>{lbl}</div>
-                ))}
-              </div>
+
             </div>
           </div>
         </div>

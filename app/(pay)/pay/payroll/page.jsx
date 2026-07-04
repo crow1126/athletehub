@@ -82,8 +82,15 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
           </div>
           <div>
             <label className="pay-lbl">MoMo Phone</label>
-            <input className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} type="tel" inputMode="numeric" placeholder="0244000000" value={phone}
-              onChange={e => { setPhone(e.target.value); update('phone', e.target.value) }} />
+            <input 
+              className="pay-inp" 
+              style={{ padding: '9px 12px', fontSize: 13 }} 
+              type="text" 
+              placeholder="0244000000" 
+              value={rec.recipient_id && phone ? `****${String(phone).slice(-4)}` : phone}
+              onChange={e => { setPhone(e.target.value); update('phone', e.target.value) }} 
+              disabled={!!rec.recipient_id}
+            />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {[
@@ -126,8 +133,14 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
         )}
       </td>
       <td style={{ padding: '8px 6px' }}>
-        <input className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} placeholder="0244000000" value={phone}
-          onChange={e => { setPhone(e.target.value); update('phone', e.target.value) }} />
+        <input 
+          className="pay-inp" 
+          style={{ padding: '7px 10px', fontSize: 12 }} 
+          placeholder="0244000000" 
+          value={rec.recipient_id && phone ? `****${String(phone).slice(-4)}` : phone}
+          onChange={e => { setPhone(e.target.value); update('phone', e.target.value) }} 
+          disabled={!!rec.recipient_id}
+        />
       </td>
       <td style={{ padding: '8px 6px' }}>
         <input className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} type="number" min="0" placeholder="0.00" value={base}

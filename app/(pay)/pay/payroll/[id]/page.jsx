@@ -158,7 +158,8 @@ export default function PayrollRunDetailPage({ params }) {
           'To fix:\n' +
           '1. Go to app.moolre.com → Wallets\n' +
           '2. Edit your Coreva wallet → Enable "API Transactions"\n' +
-          '3. Or email support@moolre.com to activate API disbursements.'
+          '3. Or email support@moolre.com to activate API disbursements.\n\n' +
+          '⬇ Workaround: Click "Export CSV" to download this payroll and upload it manually to app.moolre.com → Bulk Payouts.'
         )
       } else {
         setError(`❌ All disbursements failed. ${firstErr}${dbg}`)
@@ -177,6 +178,27 @@ export default function PayrollRunDetailPage({ params }) {
     })
     load(teamId)
   }
+
+  function exportCSV() {
+    const rows = [
+      ['name', 'phone', 'amount', 'narration'],
+      ...items.map(item => [
+        item.name,
+        item.phone,
+        Number(item.total_amount).toFixed(2),
+        `${run.description} - ApexTrack Payroll`,
+      ])
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `payroll-${run.description.replace(/\s+/g, '-').toLowerCase()}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
 
   const isAdmin = ['admin', 'superadmin'].includes(role)
 
@@ -223,6 +245,15 @@ export default function PayrollRunDetailPage({ params }) {
           {isAdmin && (run.status === 'draft' || run.status === 'pending_approval') && (
             <button className="pay-btn-gold" onClick={approve} disabled={!!action}>
               {action === 'approving' ? 'Approving…' : '✓ Approve Run'}
+            </button>
+          )}
+          {isAdmin && run.status === 'approved' && (
+            <button
+              onClick={exportCSV}
+              style={{ background: C.muted, border: `1px solid ${C.border}`, color: C.teal, borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
+              title="Download CSV for Moolre Bulk Payouts"
+            >
+              ⬇ Export CSV
             </button>
           )}
           {isAdmin && run.status === 'approved' && (

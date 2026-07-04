@@ -18,10 +18,10 @@ const GM_ICON = (
 )
 
 const PLANS = {
-  starting_xi: { label:'Starting XI', price:199, usd:13, color:'#004F4F', bg:'#E0F0F0', popular:false,
+  starting_xi: { label:'Starting XI', price:5, usd:13, color:'#004F4F', bg:'#E0F0F0', popular:false,
     features:['Up to 40 athletes','Squad Roster','Training Scheduler','Injury Hub','Basic Reports (PDF export)','Admin + Coach + Physio roles','Email support'],
     locked:['Performance Analytics','Scouting Module + Transfers','Advanced Reports','Analyst role','Custom club branding'] },
-  captain: { label:'Captain', price:499, usd:33, color:'#1B7A3E', bg:'#E8F8EE', popular:true,
+  captain: { label:'Captain', price:10, usd:33, color:'#1B7A3E', bg:'#E8F8EE', popular:true,
     features:['Unlimited athletes','Everything in Starting XI','Performance Analytics (xG, xA, match ratings)','Scouting Module + Transfers','Advanced Reports (board/medical)','All 4 roles including Analyst','Custom club branding','Priority support + onboarding'],
     locked:[] },
 }

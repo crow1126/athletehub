@@ -24,11 +24,12 @@ export async function POST(req) {
   try { event = JSON.parse(rawBody) }
   catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  // Verify secret in JSON payload
+  // Verify secret in JSON payload (Moolre sends wallet secret in payload)
   if (process.env.MOOLRE_WEBHOOK_SECRET) {
-    const payloadSecret = event.data?.secret || event.secret
+    const payloadSecret = event?.secret || event?.data?.secret || event?.data?.callback_secret
+    console.log('[pay/topup webhook] Payload secret present:', !!payloadSecret)
     if (payloadSecret && payloadSecret !== process.env.MOOLRE_WEBHOOK_SECRET) {
-      console.warn('[pay/topup webhook] Invalid webhook secret')
+      console.warn('[pay/topup webhook] Invalid webhook secret — got:', payloadSecret?.slice(0, 8) + '...')
       return NextResponse.json({ error: 'Invalid webhook secret' }, { status: 401 })
     }
   }

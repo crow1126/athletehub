@@ -128,11 +128,41 @@ export default function PayrollRunDetailPage({ params }) {
       body: JSON.stringify({ payroll_run_id: id }),
     })
     setAction(null)
-    if (!res.ok) return setError(data.error)
+    if (!res.ok) {
+      const msg = data.error || 'Disbursement failed'
+      // Provide actionable guidance for the most common failure
+      if (msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('ain01')) {
+        setError(
+          '❌ Moolre API Authentication Error\n\n' +
+          'Your Moolre account does not have API payouts enabled.\n\n' +
+          'To fix this:\n' +
+          '1. Go to app.moolre.com → Wallets\n' +
+          '2. Edit your Coreva wallet\n' +
+          '3. Enable "API Transactions" toggle\n' +
+          '4. Or contact Moolre support at support@moolre.com'
+        )
+      } else {
+        setError(msg)
+      }
+      return
+    }
     const simNote = data.simulated ? ' (simulated)' : ''
     const dbg = data._debug ? '\n\nEnv: ' + JSON.stringify(data._debug) : ''
-    if (data.successCount === 0) {
-      setError(`❌ Disbursement failed.${dbg}`)
+    if (data.successCount === 0 && data.failCount > 0) {
+      const firstErr = data.results?.[0]?.statusMsg || ''
+      const isAuthErr = firstErr.toLowerCase().includes('authentication') || firstErr.toLowerCase().includes('ain01')
+      if (isAuthErr) {
+        setError(
+          '❌ Moolre API Authentication Error — all transfers failed.\n\n' +
+          'Your Moolre account does not have API payouts enabled.\n\n' +
+          'To fix:\n' +
+          '1. Go to app.moolre.com → Wallets\n' +
+          '2. Edit your Coreva wallet → Enable "API Transactions"\n' +
+          '3. Or email support@moolre.com to activate API disbursements.'
+        )
+      } else {
+        setError(`❌ All disbursements failed. ${firstErr}${dbg}`)
+      }
     } else {
       setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ⚠ ${data.failCount} failed.${dbg}`)
     }
@@ -238,7 +268,9 @@ export default function PayrollRunDetailPage({ params }) {
                       <div style={{ fontWeight: 700, color: C.text }}>{item.name}</div>
                       <div style={{ fontSize: 10, color: C.text3, textTransform: 'capitalize', marginTop: 2 }}>{item.recipient_type}</div>
                     </td>
-                    <td style={{ padding: '12px 16px', color: C.text2, fontFamily: 'monospace' }}>{item.phone}</td>
+                    <td style={{ padding: '12px 16px', color: C.text2, fontFamily: 'monospace' }}>
+                      {item.phone ? `****${String(item.phone).slice(-4)}` : '—'}
+                    </td>
                     <td style={{ padding: '12px 16px', color: C.text3 }}>{fmt(item.base_salary)}</td>
                     <td style={{ padding: '12px 16px', color: C.text3 }}>{fmt(item.bonus)}</td>
                     <td style={{ padding: '12px 16px', color: C.text3 }}>{fmt(item.allowance)}</td>

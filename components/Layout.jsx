@@ -193,7 +193,7 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
                 color: C.text3,
                 fontSize: 13,
               }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}></div>
+                <div style={{ marginBottom: 12, display:'flex', justifyContent:'center', color:'var(--text3)' }}><Bell size={28} strokeWidth={1.5}/></div>
                 No notifications yet
               </div>
             ) : notifications.map(n => {

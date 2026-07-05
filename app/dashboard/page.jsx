@@ -6,7 +6,7 @@ import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
-import { Users, Shield, Calendar, Activity, Zap } from 'lucide-react'
+import { Users, Shield, Calendar, Activity, Zap, UserPlus, Eye, BarChart3, FileText, Settings } from 'lucide-react'
 
 const AV_COLORS = ['#006A6A','#008080','#2D6B6B','#5A9494','#004F4F','#5C3058']
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -307,17 +307,17 @@ export default function Dashboard() {
               <h3 style={{ fontSize:14,fontWeight:700,marginBottom:12 }}>Quick Actions</h3>
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8 }}>
                 {[
-                  { icon:'', label:'Add Athlete',  href:'/athletes',  bg:'var(--milk-muted)', color:'var(--plum)' },
-                  { icon:'', label:'Schedule',     href:'/schedule',  bg:'#E8F8EE',           color:'#1B7A3E'    },
-                  { icon:'', label:'Scout',        href:'/scouting',  bg:'#F3E5F5',           color:'#6A1B9A'    },
-                  { icon:'', label:'Reports',      href:'/reports',   bg:'#FEF9E7',           color:'#B36200'    },
-                  { icon:'', label:'Contracts',    href:'/contracts', bg:'#E0F7F5',           color:'#0E8A7E'    },
-                  { icon:'', label:'Settings',    href:'/settings',  bg:'var(--surface2)',   color:'var(--plum)'},
+                  { icon:<UserPlus size={20} strokeWidth={2}/>, label:'Add Athlete',  href:'/athletes',  bg:'var(--milk-muted)', color:'var(--plum)' },
+                  { icon:<Calendar size={20} strokeWidth={2}/>, label:'Schedule',     href:'/schedule',  bg:'#E8F8EE',           color:'#1B7A3E'    },
+                  { icon:<Eye size={20} strokeWidth={2}/>,      label:'Scout',        href:'/scouting',  bg:'#F3E5F5',           color:'#6A1B9A'    },
+                  { icon:<BarChart3 size={20} strokeWidth={2}/>, label:'Reports',      href:'/reports',   bg:'#FEF9E7',           color:'#B36200'    },
+                  { icon:<FileText size={20} strokeWidth={2}/>, label:'Contracts',    href:'/contracts', bg:'#E0F7F5',           color:'#0E8A7E'    },
+                  { icon:<Settings size={20} strokeWidth={2}/>, label:'Settings',    href:'/settings',  bg:'var(--surface2)',   color:'var(--plum)'},
                 ].map(({ icon,label,href,bg,color })=>(
                   <Link key={label} href={href} style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:'11px 8px',borderRadius:10,background:bg,border:'1px solid var(--border)',textAlign:'center',textDecoration:'none',transition:'var(--transition)' }}
                     onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='var(--shadow-md)'}}
                     onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none'}}>
-                    <span style={{ fontSize:20 }}>{icon}</span>
+                    <span style={{ display:'flex',alignItems:'center',justifyContent:'center',height:24,color }}>{icon}</span>
                     <span style={{ fontSize:11,fontWeight:700,color,lineHeight:1.2 }}>{label}</span>
                   </Link>
                 ))}

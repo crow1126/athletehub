@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 /* ── Animated canvas orbs ── */
@@ -526,7 +527,7 @@ export default function LoginPage() {
                     <label className="auth-field-label">Password</label>
                     <div style={{ position: 'relative' }}>
                       <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" style={{ ...inp, paddingRight: 46 }} onFocus={focusInp} onBlur={blurInp} />
-                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? 'Hide' : 'Show'}</button>
+                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
                     </div>
                   </div>
 
@@ -589,7 +590,7 @@ export default function LoginPage() {
                     <label className="auth-field-label">Password</label>
                     <div style={{ position: 'relative' }}>
                       <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" autoComplete="new-password" style={{ ...inp, paddingRight: 46 }} onFocus={focusInp} onBlur={blurInp} />
-                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? 'Hide' : 'Show'}</button>
+                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? <EyeOff size={16}/> : <Eye size={16}/>}</button>
                     </div>
                   </div>
 

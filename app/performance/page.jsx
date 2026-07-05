@@ -153,7 +153,7 @@ export default function PerformancePage(){
             flexWrap: 'wrap',
           }}>
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <span style={{ fontSize:22 }}>📊</span>
+              <span style={{ fontSize:22 }}></span>
               <div>
                 <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>
                   {unpublished.length} player{unpublished.length !== 1 ? 's\'' : '\'s'} stats saved — not yet notified
@@ -183,7 +183,7 @@ export default function PerformancePage(){
                   whiteSpace:'nowrap',
                 }}
               >
-                {publishing ? 'Sending…' : '🔔 Publish & Notify All'}
+                {publishing ? 'Sending…' : 'Publish & Notify All'}
               </button>
             </div>
           </div>
@@ -192,7 +192,7 @@ export default function PerformancePage(){
         {/* Leaderboard with photos */}
         {lb.length>0&&(
           <div className="fade-up" style={{ marginBottom:24 }}>
-            <h2 style={{ fontSize:16,fontWeight:700,marginBottom:14 }}>🏆 Top Performers</h2>
+            <h2 style={{ fontSize:16,fontWeight:700,marginBottom:14 }}>Top Performers</h2>
             <div className="stat-grid-5" style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:12 }}>
               {lb.map((a,i)=>(
                 <div key={a.id} className="card" style={{ padding:'16px 14px',textAlign:'center',transition:'var(--transition)' }}
@@ -205,7 +205,7 @@ export default function PerformancePage(){
                   <div style={{ fontSize:13,fontWeight:700,color:'var(--text)',marginBottom:2 }}>{a.name.split(' ')[0]}</div>
                   <div style={{ fontSize:11,color:'var(--text3)',marginBottom:10 }}>{a.position}</div>
                   <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:4 }}>
-                    {[['⚽',a.goals,'G'],['🅰️',a.assists,'A'],['🎯',a.avgRating,'Avg'],['🏃',a.matches,'Matches']].map(([ic,v,l])=>(
+                    {[['',a.goals,'G'],['🅰️',a.assists,'A'],['',a.avgRating,'Avg'],['',a.matches,'Matches']].map(([ic,v,l])=>(
                       <div key={l} style={{ background:'var(--surface2)',borderRadius:6,padding:'4px 6px' }}>
                         <div style={{ fontSize:13,fontWeight:800,color:'var(--text)' }}>{v}</div>
                         <div style={{ fontSize:9,color:'var(--text3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.05em' }}>{l}</div>
@@ -231,7 +231,7 @@ export default function PerformancePage(){
           <div className="table-scroll-wrap">
           <div className="table-scroll-inner table-scroll-wide">
           <div className="table-header-row" style={{ display:'grid',gridTemplateColumns:'1.8fr 0.9fr 0.9fr 0.6fr 0.6fr 0.6fr 0.6fr 0.8fr 0.7fr 0.6fr 0.7fr 1fr',gap:6,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-            {['Athlete','Date','Opponent','Min','⚽','🅰️','xG','xA','Pass%','Dist','Rating','Actions'].map(h=>(
+            {['Athlete','Date','Opponent','Min','','🅰️','xG','xA','Pass%','Dist','Rating','Actions'].map(h=>(
               <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
             ))}
           </div>

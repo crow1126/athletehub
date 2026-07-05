@@ -30,8 +30,8 @@ const fmt = n => `GHS ${Number(n || 0).toLocaleString('en-GH', { minimumFraction
 function TxTypeBadge({ type }) {
   const map = {
     top_up: { label: 'Top Up', bg: C.successBg,  color: C.success, icon: '⬆' },
-    payout: { label: 'Payout', bg: C.tealAlpha,  color: C.teal, icon: '💸' },
-    fee:    { label: 'Fee',    bg: C.warningBg,  color: C.warning, icon: '📊' },
+    payout: { label: 'Payout', bg: C.tealAlpha,  color: C.teal, icon: '' },
+    fee:    { label: 'Fee',    bg: C.warningBg,  color: C.warning, icon: '' },
   }
   const s = map[type] || { label: type, bg: 'rgba(36,62,48,0.10)', color: C.text3, icon: '•' }
   return <span className="pay-badge" style={{ background: s.bg, color: s.color }}>{s.icon} {s.label}</span>
@@ -59,7 +59,7 @@ function TxCard({ t }) {
   return (
     <div style={{ background: C.muted, borderRadius: 12, padding: '13px 14px', border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ width: 38, height: 38, borderRadius: 10, background: isCredit ? C.successBg : C.tealAlpha, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0, border: `1px solid ${C.border}` }}>
-        {t.type === 'top_up' ? '⬆' : t.type === 'fee' ? '📊' : '💸'}
+        {t.type === 'top_up' ? '⬆' : t.type === 'fee' ? '' : ''}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
@@ -72,7 +72,7 @@ function TxCard({ t }) {
         {(t.metadata?.recipient || t.metadata?.email) && (
           <div style={{ fontSize: 11, color: C.text2, marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {t.metadata?.recipient || t.metadata?.email}
-            {t.metadata?.simulated && <span style={{ marginLeft: 5, fontSize: 9, color: C.warning, fontWeight: 'bold' }}>⚡sim</span>}
+            {t.metadata?.simulated && <span style={{ marginLeft: 5, fontSize: 9, color: C.warning, fontWeight: 'bold' }}>sim</span>}
           </div>
         )}
       </div>
@@ -157,8 +157,8 @@ export default function TransactionsPage() {
         <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 4, marginBottom: 16, scrollbarWidth: 'none' }}>
           {[
             { label: 'Top-Ups',  value: fmt(totals.top_up), color: C.success, icon: '⬆' },
-            { label: 'Payouts',  value: fmt(totals.payout), color: C.teal, icon: '💸' },
-            { label: 'Fees',     value: fmt(totals.fee),    color: C.warning, icon: '📊' },
+            { label: 'Payouts',  value: fmt(totals.payout), color: C.teal, icon: '' },
+            { label: 'Fees',     value: fmt(totals.fee),    color: C.warning, icon: '' },
           ].map(c => (
             <div key={c.label} style={{ flexShrink: 0, background: C.muted, border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 16px', minWidth: 140 }}>
               <div style={{ fontSize: 10, color: C.text3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{c.icon} {c.label}</div>
@@ -170,8 +170,8 @@ export default function TransactionsPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 24 }}>
           {[
             { label: 'Total Top-Ups', value: fmt(totals.top_up), color: C.success, icon: '⬆' },
-            { label: 'Total Payouts', value: fmt(totals.payout), color: C.teal, icon: '💸' },
-            { label: 'Platform Fees', value: fmt(totals.fee),    color: C.warning, icon: '📊' },
+            { label: 'Total Payouts', value: fmt(totals.payout), color: C.teal, icon: '' },
+            { label: 'Platform Fees', value: fmt(totals.fee),    color: C.warning, icon: '' },
           ].map(c => (
             <div key={c.label} className="pay-card" style={{ padding: '18px 22px', display: 'flex', alignItems: 'center', gap: 14 }}>
               <div style={{ width: 40, height: 40, borderRadius: 12, background: C.muted, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, border: `1px solid ${C.border}`, color: c.color }}>{c.icon}</div>
@@ -218,7 +218,7 @@ export default function TransactionsPage() {
         <div className="pay-card" style={{ padding: 48, textAlign: 'center', color: C.text3 }}>Loading…</div>
       ) : filtered.length === 0 ? (
         <div className="pay-card" style={{ padding: 56, textAlign: 'center' }}>
-          <div style={{ fontSize: 40, marginBottom: 10 }}>📒</div>
+          <div style={{ fontSize: 40, marginBottom: 10 }}></div>
           <div style={{ color: C.text3, fontSize: 14 }}>No transactions found</div>
         </div>
       ) : isMobile ? (
@@ -257,7 +257,7 @@ export default function TransactionsPage() {
                   </td>
                   <td style={{ padding: '11px 18px', color: C.text2, fontSize: 12 }}>
                     {t.metadata?.recipient || t.metadata?.email || '—'}
-                    {t.metadata?.simulated && <span style={{ marginLeft: 6, fontSize: 10, color: C.warning, fontWeight: 'bold' }}>⚡sim</span>}
+                    {t.metadata?.simulated && <span style={{ marginLeft: 6, fontSize: 10, color: C.warning, fontWeight: 'bold' }}>sim</span>}
                   </td>
                 </tr>
               ))}

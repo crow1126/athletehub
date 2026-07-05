@@ -8,8 +8,8 @@ import { Bell } from 'lucide-react'
 const NAV = [
   { href: '/pay',              label: 'Overview',     icon: '◈' },
   { href: '/pay/payroll',      label: 'Payroll',      icon: '💳' },
-  { href: '/pay/transactions', label: 'Transactions', icon: '📋' },
-  { href: '/pay/settings',     label: 'Settings',     icon: '⚙️' },
+  { href: '/pay/transactions', label: 'Transactions', icon: '' },
+  { href: '/pay/settings',     label: 'Settings',     icon: '' },
 ]
 
 // ── ApexTrack colour tokens (mirrors globals.css :root) ──────────────────────
@@ -33,8 +33,8 @@ const C = {
 }
 
 const NOTIF_TYPE_LABELS = {
-  sms_schedule: '📅 Session Scheduled',
-  sms_reminder: '⏰ Session Reminder',
+  sms_schedule: 'Session Scheduled',
+  sms_reminder: 'Session Reminder',
 }
 
 function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef, onMarkRead }) {
@@ -152,7 +152,7 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
                 color: C.text3,
                 fontSize: 13,
               }}>
-                <div style={{ fontSize: 28, marginBottom: 8 }}>🔔</div>
+                <div style={{ fontSize: 28, marginBottom: 8 }}></div>
                 No notifications yet
               </div>
             ) : notifications.map(n => {

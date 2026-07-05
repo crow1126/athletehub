@@ -55,7 +55,7 @@ export async function POST(req) {
     // Get opponent(s) — use most recent entry's opponent
     const opponent = unpublished[0]?.opponent || null
 
-    const notifTitle = `📊 Performance Stats Published`
+    const notifTitle = `Performance Stats Published`
     const notifBody = opponent
       ? `New performance stats have been published for the match on ${dateStr} vs ${opponent}.`
       : `New performance stats have been published for ${dateStr}.`

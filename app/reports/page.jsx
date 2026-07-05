@@ -8,13 +8,13 @@ import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
 const REPORT_CARDS = [
-  { id:'athletes',    icon:'👥', title:'Athletes Report',         desc:'Full squad roster — positions, clubs, regions, coaches, and status',                   color:'#4A90E2', sheets:'1 sheet'  },
-  { id:'injuries',    icon:'🩺', title:'Injury Report',           desc:'Complete injury records with severity, dates, recovery notes and status',               color:'#E74C3C', sheets:'1 sheet'  },
-  { id:'performance', icon:'📊', title:'Performance Report',      desc:'Match stats per athlete — goals, assists, xG, xA, pass accuracy, distance, ratings',   color:'#9B59B6', sheets:'1 sheet'  },
-  { id:'sessions',    icon:'📅', title:'Training Sessions',       desc:'All scheduled training sessions with venue, coach, type and duration',                  color:'#27AE60', sheets:'1 sheet'  },
-  { id:'coaches',     icon:'🎽', title:'Staff Report',            desc:'Technical, medical, analytics and scouting staff roster with roles',                    color:'#E67E22', sheets:'1 sheet'  },
-  { id:'contracts',   icon:'💰', title:'Contracts & Finance',     desc:'Player contracts, wages, bonuses and automatic wage bill summary sheet',                color:'#1B7A3E', sheets:'2 sheets' },
-  { id:'summary',     icon:'📋', title:'Full Summary Report',     desc:'Everything in one workbook — all 6 modules combined with an overview cover sheet',      color:'#E67E22', sheets:'7 sheets', featured: true },
+  { id:'athletes',    icon:'', title:'Athletes Report',         desc:'Full squad roster — positions, clubs, regions, coaches, and status',                   color:'#4A90E2', sheets:'1 sheet'  },
+  { id:'injuries',    icon:'', title:'Injury Report',           desc:'Complete injury records with severity, dates, recovery notes and status',               color:'#E74C3C', sheets:'1 sheet'  },
+  { id:'performance', icon:'', title:'Performance Report',      desc:'Match stats per athlete — goals, assists, xG, xA, pass accuracy, distance, ratings',   color:'#9B59B6', sheets:'1 sheet'  },
+  { id:'sessions',    icon:'', title:'Training Sessions',       desc:'All scheduled training sessions with venue, coach, type and duration',                  color:'#27AE60', sheets:'1 sheet'  },
+  { id:'coaches',     icon:'', title:'Staff Report',            desc:'Technical, medical, analytics and scouting staff roster with roles',                    color:'#E67E22', sheets:'1 sheet'  },
+  { id:'contracts',   icon:'', title:'Contracts & Finance',     desc:'Player contracts, wages, bonuses and automatic wage bill summary sheet',                color:'#1B7A3E', sheets:'2 sheets' },
+  { id:'summary',     icon:'', title:'Full Summary Report',     desc:'Everything in one workbook — all 6 modules combined with an overview cover sheet',      color:'#E67E22', sheets:'7 sheets', featured: true },
 ]
 
 export default function ReportsPage() {
@@ -107,10 +107,10 @@ export default function ReportsPage() {
       URL.revokeObjectURL(url)
 
       const cardTitle = REPORT_CARDS.find(r => r.id === reportId)?.title || 'Report'
-      setStatusMsg({ text: `✅ "${cardTitle}" downloaded successfully!`, type: 'success' })
+      setStatusMsg({ text: `"${cardTitle}" downloaded successfully!`, type: 'success' })
       setTimeout(() => setStatusMsg({ text: '', type: '' }), 5000)
     } catch (err) {
-      setStatusMsg({ text: '❌ ' + err.message, type: 'error' })
+      setStatusMsg({ text: '' + err.message, type: 'error' })
     }
     setGenerating(null)
   }
@@ -128,11 +128,11 @@ export default function ReportsPage() {
         {/* Stats row */}
         <div className="fade-up stat-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
           {[
-            { label:'Total Athletes',    value: loading ? '…' : athletes.length,         icon:'👥', color:'#4A90E2' },
-            { label:'Active Athletes',   value: loading ? '…' : activeAthletes,          icon:'✅', color:'#27AE60' },
-            { label:'Injury Records',    value: loading ? '…' : injuries.length,         icon:'🩺', color:'#E74C3C' },
-            { label:'Performance Logs',  value: loading ? '…' : performance.length,      icon:'📊', color:'#9B59B6' },
-            { label:'Active Contracts',  value: loading ? '…' : activeContracts.length,  icon:'💰', color:'#1B7A3E' },
+            { label:'Total Athletes',    value: loading ? '…' : athletes.length,         icon:'', color:'#4A90E2' },
+            { label:'Active Athletes',   value: loading ? '…' : activeAthletes,          icon:'', color:'#27AE60' },
+            { label:'Injury Records',    value: loading ? '…' : injuries.length,         icon:'', color:'#E74C3C' },
+            { label:'Performance Logs',  value: loading ? '…' : performance.length,      icon:'', color:'#9B59B6' },
+            { label:'Active Contracts',  value: loading ? '…' : activeContracts.length,  icon:'', color:'#1B7A3E' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, transition: 'var(--transition)' }}
               onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='var(--shadow-md)' }}
@@ -222,8 +222,8 @@ export default function ReportsPage() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)' }}>📅 {period}</span>
-                      <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)' }}>📋 {card.sheets}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)' }}>{period}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)' }}>{card.sheets}</span>
                       <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', padding: '3px 10px', borderRadius: 99, border: '1px solid var(--border)' }}>Excel .xlsx</span>
                     </div>
 
@@ -258,7 +258,7 @@ export default function ReportsPage() {
         {/* Finance snapshot */}
         {!loading && contracts.length > 0 && (
           <div className="card fade-up" style={{ padding: '22px 26px', marginTop: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>💰 Financial Snapshot</h3>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 14 }}>Financial Snapshot</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
               {[
                 ['Weekly Wage Bill',  `GHS ${weeklyWage.toFixed(2)}`],

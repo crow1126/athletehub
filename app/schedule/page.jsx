@@ -316,7 +316,7 @@ export default function SchedulePage() {
       {/* SMS status toast */}
       {smsStatus && (
         <div style={{ position:'fixed', bottom:28, right:28, zIndex:300, background: smsStatus.error ? '#7F1D1D' : smsStatus.sent === 0 ? '#1E293B' : '#0F172A', color:'#fff', borderRadius:14, padding:'14px 20px', fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:360, animation:'fadeInUp 0.3s ease' }}>
-          <span style={{ fontSize:20 }}>{smsStatus.error ? '⚠️' : smsStatus.sent > 0 ? '📱' : '📭'}</span>
+          <span style={{ fontSize:20 }}>{smsStatus.error ? '' : smsStatus.sent > 0 ? '📱' : '📭'}</span>
           <div style={{ flex:1 }}>
             <div style={{ fontWeight:700, marginBottom:2 }}>
               {smsStatus.error ? 'SMS Failed' : smsStatus.sent > 0 ? 'SMS Notifications Sent' : 'No SMS Sent'}
@@ -326,7 +326,7 @@ export default function SchedulePage() {
                 ? smsStatus.error
                 : smsStatus.sent === 0 && smsStatus.total === 0
                   ? 'No athletes have phone numbers registered.'
-                  : `✅ ${smsStatus.sent} delivered${smsStatus.failed > 0 ? ` · ⚠️ ${smsStatus.failed} failed` : ''} of ${smsStatus.total} athletes`
+                  : `${smsStatus.sent} delivered${smsStatus.failed > 0 ? ` · ${smsStatus.failed} failed` : ''} of ${smsStatus.total} athletes`
               }
             </div>
           </div>

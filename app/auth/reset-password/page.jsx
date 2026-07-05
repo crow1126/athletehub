@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
             {done ? (
               /* Success state */
               <div style={{ textAlign:'center', padding:'8px 0' }}>
-                <div style={{ fontSize:52, marginBottom:16 }}>✅</div>
+                <div style={{ fontSize:52, marginBottom:16 }}></div>
                 <h2 style={{ fontSize:22, fontWeight:800, color:'#0F172A', marginBottom:8 }}>Password updated!</h2>
                 <p style={{ fontSize:14, color:'#64748B', lineHeight:1.6 }}>Your password has been changed successfully.<br />Redirecting you to sign in…</p>
               </div>
@@ -139,7 +139,7 @@ export default function ResetPasswordPage() {
             ) : sessionReady === 'error' ? (
               /* Invalid / expired link */
               <div style={{ textAlign:'center', padding:'8px 0' }}>
-                <div style={{ fontSize:44, marginBottom:14 }}>⚠️</div>
+                <div style={{ fontSize:44, marginBottom:14 }}></div>
                 <h2 style={{ fontSize:18, fontWeight:700, color:'#0F172A', marginBottom:8 }}>Invalid or expired link</h2>
                 <p style={{ fontSize:13, color:'#64748B', marginBottom:20, lineHeight:1.6 }}>This password reset link has expired or already been used. Please request a new one.</p>
                 <a href="/login" style={{ display:'inline-block', padding:'11px 24px', background:'linear-gradient(135deg,#0D9488,#0F766E)', color:'#fff', borderRadius:10, fontSize:14, fontWeight:700, textDecoration:'none' }}>Back to Sign In</a>
@@ -162,7 +162,7 @@ export default function ResetPasswordPage() {
 
                 {error && (
                   <div style={{ background:'#F9E8E8', border:'1px solid rgba(180,50,50,0.18)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#8B2020', fontWeight:600 }}>
-                    ⚠️ {error}
+                    {error}
                   </div>
                 )}
 
@@ -180,7 +180,7 @@ export default function ResetPasswordPage() {
                       required
                     />
                     <button type="button" onClick={() => setShowPass(v => !v)} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#94A3B8', padding:0 }}>
-                      {showPass ? '🙈' : '👁️'}
+                      {showPass ? 'Hide' : 'Show'}
                     </button>
                   </div>
                 </div>

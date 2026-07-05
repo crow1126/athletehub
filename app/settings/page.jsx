@@ -165,7 +165,7 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
-      flashIssue(`✅ Login created for ${fullName}!\n👤 Username: ${username}\n🔑 Password: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
+      flashIssue(`Login created for ${fullName}!\n👤 Username: ${username}\nPassword: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
       setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'' })
       setShowIssueForm(false); await loadAll()
     } catch(err) { flashIssue('Error: '+err.message,'error') }
@@ -197,7 +197,7 @@ export default function SettingsPage() {
         setPlayerSaving(false)
         return
       }
-      flashPlayer(`✅ Login created for ${athlete?.name}!\n👤 Username: ${username}\n🔑 Password: ${playerForm.password}\n\nShare these credentials securely.`, 'success')
+      flashPlayer(`Login created for ${athlete?.name}!\n👤 Username: ${username}\nPassword: ${playerForm.password}\n\nShare these credentials securely.`, 'success')
       setPlayerForm({ athlete_id: '', username: '', password: '' })
       setShowPlayerForm(false)
       await loadAll()
@@ -236,9 +236,9 @@ export default function SettingsPage() {
         return
       }
       if (action === 'reset_password') {
-        flash(`✅ Password reset successfully. New password: ${extra.new_password}`, 'success')
+        flash(`Password reset successfully. New password: ${extra.new_password}`, 'success')
       } else {
-        flash(`✅ Action "${action}" completed successfully.`, 'success')
+        flash(`Action "${action}" completed successfully.`, 'success')
       }
       await loadAll()
     } catch (err) {
@@ -264,7 +264,7 @@ export default function SettingsPage() {
       const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
       if (!res.ok) { flashRecover(data.error||'Reset failed.','error'); setRecoverSaving(false); return }
-      flashRecover(`✅ Password reset for ${login.coaches?.name||login.email}!\n📧 ${login.email}\n🔑 ${recoverForm.new_password}`, 'success')
+      flashRecover(`Password reset for ${login.coaches?.name||login.email}!\n📧 ${login.email}\n${recoverForm.new_password}`, 'success')
       setRecoverForm({ login_id:'', new_password:'', confirm_password:'' }); await loadAll()
     } catch(err) { flashRecover('Error: '+err.message,'error') }
     setRecoverSaving(false)
@@ -278,7 +278,7 @@ export default function SettingsPage() {
     const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'revoke' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
-    flash('✅ Login revoked.'); await loadAll()
+    flash('Login revoked.'); await loadAll()
   }
 
   async function reactivateLogin(loginId) {
@@ -289,7 +289,7 @@ export default function SettingsPage() {
     const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
-    flash('✅ Login reactivated.'); await loadAll()
+    flash('Login reactivated.'); await loadAll()
   }
 
   async function updateUserRole(userId, role) {
@@ -316,17 +316,17 @@ export default function SettingsPage() {
     const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, action:current?'revoke':'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
-    flash(current ? '✅ User disabled.' : '✅ User enabled.'); await loadAll()
+    flash(current ? 'User disabled.' : 'User enabled.'); await loadAll()
   }
 
   const TABS = [
     { id:'profile',  label:'👤 My Profile',     show: true    },
-    { id:'security', label:'🔒 Security',        show: true    },
-    { id:'logins',   label:'🔑 Issue Logins',    show: isAdmin },
-    { id:'players',  label:'⚽ Player Accounts',  show: isAdmin },
-    { id:'recover',  label:'🔓 Recover Logins',  show: isAdmin },
-    { id:'users',    label:'👥 User Management', show: isAdmin },
-    { id:'system',   label:'⚙️ System',          show: isAdmin },
+    { id:'security', label:'Security',        show: true    },
+    { id:'logins',   label:'Issue Logins',    show: isAdmin },
+    { id:'players',  label:'Player Accounts',  show: isAdmin },
+    { id:'recover',  label:'Recover Logins',  show: isAdmin },
+    { id:'users',    label:'User Management', show: isAdmin },
+    { id:'system',   label:'System',          show: isAdmin },
   ].filter(t => t.show)
 
   const MsgBox = ({ m }) => !m.text ? null : (
@@ -372,7 +372,7 @@ export default function SettingsPage() {
                 {initials(profile?.full_name)}
               </div>
               <div style={{ fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:4 }}>{profile?.full_name||'User'}</div>
-              {profile?.teams?.name && <div style={{ fontSize:11,color:'var(--text3)',marginBottom:6 }}>🏟 {profile.teams.name}</div>}
+              {profile?.teams?.name && <div style={{ fontSize:11,color:'var(--text3)',marginBottom:6 }}>{profile.teams.name}</div>}
               <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[profile?.role||'admin']+'20',color:ROLE_COLORS[profile?.role||'admin'],padding:'2px 12px',borderRadius:99,letterSpacing:'0.08em',textTransform:'uppercase' }}>
                 {profile?.role||'user'}
               </span>
@@ -415,7 +415,7 @@ export default function SettingsPage() {
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Security</h2>
                 {!isAdmin ? (
                   <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'24px 28px' }}>
-                    <div style={{ fontSize:26,marginBottom:12 }}>🔒</div>
+                    <div style={{ fontSize:26,marginBottom:12 }}></div>
                     <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:8 }}>Password changes are managed by your admin</h3>
                     <p style={{ fontSize:14,color:'var(--text2)',lineHeight:1.7,marginBottom:18 }}>
                       For security, staff accounts cannot change their own passwords. Contact your club administrator if you need your password changed.
@@ -423,8 +423,8 @@ export default function SettingsPage() {
                     <div style={{ background:'rgba(255,255,255,0.7)',borderRadius:'var(--r-md)',padding:'14px 18px',border:'1px solid rgba(0,106,106,0.12)' }}>
                       <div style={{ fontSize:11,fontWeight:700,color:'var(--text3)',letterSpacing:'0.06em',textTransform:'uppercase',marginBottom:8 }}>Your admin can</div>
                       <div style={{ fontSize:13,color:'var(--text2)',lineHeight:2 }}>
-                        <div>🔓 Reset your password via <strong>Settings → Recover Logins</strong></div>
-                        <div>🚫 Revoke or restore your account access</div>
+                        <div>Reset your password via <strong>Settings → Recover Logins</strong></div>
+                        <div>Revoke or restore your account access</div>
                         <div>👤 Update your role and permissions</div>
                       </div>
                     </div>
@@ -437,7 +437,7 @@ export default function SettingsPage() {
                       <div><label style={lbl}>Confirm New Password</label><input type="password" value={pwForm.confirm} onChange={e=>setPwForm(f=>({...f,confirm:e.target.value}))} style={inp} placeholder="Repeat password" onFocus={onFocus} onBlur={onBlur}/></div>
                       <MsgBox m={msg}/>
                       <button onClick={changePassword} disabled={saving} className="gm-btn" style={{ width:'fit-content',opacity:saving?0.7:1 }}>
-                        {saving?'⏳ Changing…':'Update Password'} {!saving&&GM_ICON}
+                        {saving?'Changing…':'Update Password'} {!saving&&GM_ICON}
                       </button>
                     </div>
                   </>
@@ -461,7 +461,7 @@ export default function SettingsPage() {
 
                 {showIssueForm && (
                   <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
-                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>🔑 New Login Credentials</h3>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>New Login Credentials</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
                         <label style={lbl}>Staff Member {issueForm.role !== 'accountant' && '*'}</label>
@@ -515,7 +515,7 @@ export default function SettingsPage() {
                       <div><label style={lbl}>Notes (optional)</label><input value={issueForm.notes} onChange={e=>setIssueForm(f=>({...f,notes:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Temporary credentials" onFocus={onFocus} onBlur={onBlur}/></div>
                       <MsgBox m={issueMsg}/>
                       <button onClick={issueLogin} disabled={issueSaving} className="gm-btn" style={{ width:'fit-content',opacity:issueSaving?0.7:1 }}>
-                        {issueSaving?'⏳ Creating…':'🔑 Issue Login Now'} {!issueSaving&&GM_ICON}
+                        {issueSaving?'Creating…':'Issue Login Now'} {!issueSaving&&GM_ICON}
                       </button>
                     </div>
                   </div>
@@ -559,7 +559,7 @@ export default function SettingsPage() {
                                     {showPassword[login.id] ? login.plain_password : '••••••••'}
                                   </span>
                                   <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:14,padding:2,color:'var(--text3)' }}>
-                                    {showPassword[login.id] ? '🙈' : '👁'}
+                                    {showPassword[login.id] ? 'Hide' : 'Show'}
                                   </button>
                                 </>
                               ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>Not stored</span>}
@@ -598,7 +598,7 @@ export default function SettingsPage() {
 
                 {showPlayerForm && (
                   <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:24,marginBottom:24 }}>
-                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>⚽ Create Player Login</h3>
+                    <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>Create Player Login</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
                         <label style={lbl}>Athlete *</label>
@@ -616,7 +616,7 @@ export default function SettingsPage() {
                       </div>
                       <MsgBox m={playerMsg}/>
                       <button onClick={createPlayerLogin} disabled={playerSaving} className="gm-btn" style={{ width:'fit-content',opacity:playerSaving?0.7:1 }}>
-                        {playerSaving?'⏳ Creating…':'⚽ Create Login Now'} {!playerSaving&&GM_ICON}
+                        {playerSaving?'Creating…':'Create Login Now'} {!playerSaving&&GM_ICON}
                       </button>
                     </div>
                   </div>
@@ -659,7 +659,7 @@ export default function SettingsPage() {
                               </div>
                               <div>
                                 {login ? (
-                                  <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'✅ Active':'⛔ Revoked'}</span>
+                                  <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'Active':'Revoked'}</span>
                                 ) : '—'}
                               </div>
                               <div>
@@ -696,7 +696,7 @@ export default function SettingsPage() {
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Recover Staff Logins</h2>
                 <p style={{ fontSize:14,color:'var(--text3)',marginBottom:24 }}>Reset a staff member's forgotten password. See current stored passwords in the Issue Logins tab.</p>
                 <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
-                  <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>🔓 Set New Password for Staff</h3>
+                  <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>Set New Password for Staff</h3>
                   <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
                     <div>
                       <label style={lbl}>Staff Member *</label>
@@ -717,14 +717,14 @@ export default function SettingsPage() {
                             <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
                               <span style={{ fontSize:12,color:'#0D9488' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
                               <span style={{ fontSize:12,color:'#0D9488' }}>👤 {login.username || login.email}</span>
-                              <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>🎭 {login.role}</span>
+                              <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>{login.role}</span>
                             </div>
                             {login.plain_password && (
                               <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--floral-muted)',borderRadius:6,border:'1px solid var(--border)' }}>
                                 <span style={{ fontSize:11,fontWeight:700,color:'#0D9488' }}>Current password:</span>
                                 <span style={{ fontFamily:'monospace',fontSize:13,color:'var(--text)',fontWeight:600 }}>{showPassword['recover_'+login.id] ? login.plain_password : '••••••••'}</span>
-                                <button onClick={()=>setShowPassword(p=>({...p,['recover_'+login.id]:!p['recover_'+login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:2 }}>{showPassword['recover_'+login.id] ? '🙈' : '👁'}</button>
-                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>📋 Copy</button>
+                                <button onClick={()=>setShowPassword(p=>({...p,['recover_'+login.id]:!p['recover_'+login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:2 }}>{showPassword['recover_'+login.id] ? 'Hide' : 'Show'}</button>
+                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
                               </div>
                             )}
                             {!login.plain_password && <div style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>No stored password — set a new one below.</div>}
@@ -738,7 +738,7 @@ export default function SettingsPage() {
                     </div>
                     <MsgBox m={recoverMsg}/>
                     <button onClick={recoverLogin} disabled={recoverSaving} className="gm-btn" style={{ width:'fit-content',opacity:recoverSaving?0.7:1 }}>
-                      {recoverSaving?'⏳ Resetting…':'🔓 Reset Password Now'} {!recoverSaving&&GM_ICON}
+                      {recoverSaving?'Resetting…':'Reset Password Now'} {!recoverSaving&&GM_ICON}
                     </button>
                   </div>
                 </div>
@@ -761,7 +761,7 @@ export default function SettingsPage() {
                               onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
                               onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
                               <div style={{ display:'flex',alignItems:'center',gap:7 }}>
-                                {selected && <span style={{ fontSize:14 }}>✅</span>}
+                                {selected && <span style={{ fontSize:14 }}></span>}
                                 <div>
                                   <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
                                   <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
@@ -772,7 +772,7 @@ export default function SettingsPage() {
                                 {login.plain_password ? (
                                   <>
                                     <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text)' }}>{showPassword['tbl_'+login.id] ? login.plain_password : '••••••••'}</span>
-                                    <button onClick={e=>{e.stopPropagation();setShowPassword(p=>({...p,['tbl_'+login.id]:!p['tbl_'+login.id]}))}} style={{ background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0 }}>{showPassword['tbl_'+login.id]?'🙈':'👁'}</button>
+                                    <button onClick={e=>{e.stopPropagation();setShowPassword(p=>({...p,['tbl_'+login.id]:!p['tbl_'+login.id]}))}} style={{ background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0 }}>{showPassword['tbl_'+login.id]?'Hide':'Show'}</button>
                                   </>
                                 ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>—</span>}
                               </div>
@@ -785,7 +785,7 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
-                <p style={{ fontSize:11,color:'var(--text3)',marginTop:10 }}>💡 Click any row to pre-select · 👁 to reveal password · 📋 to copy</p>
+                <p style={{ fontSize:11,color:'var(--text3)',marginTop:10 }}>Click any row to pre-select · Show to reveal password · to copy</p>
               </div>
             )}
 
@@ -850,7 +850,7 @@ export default function SettingsPage() {
               <div>
                 <h2 style={{ fontSize:20,fontWeight:700,marginBottom:22 }}>System Information</h2>
                 <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:'18px 22px',marginBottom:22 }}>
-                  <div style={{ fontSize:13,fontWeight:700,color:'#0D9488',marginBottom:10 }}>🏟 Your Club</div>
+                  <div style={{ fontSize:13,fontWeight:700,color:'#0D9488',marginBottom:10 }}>Your Club</div>
                   <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }}>
                     {[['Club Name',profile?.teams?.name||'—'],['Short Name',profile?.teams?.short_name||'—'],['Team ID',profile?.team_id||'—'],['Your Role',profile?.role||'—']].map(([label,value])=>(
                       <div key={label} style={{ background:'rgba(255,255,255,0.7)',borderRadius:'var(--r-sm)',padding:'10px 14px' }}>

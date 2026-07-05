@@ -41,14 +41,14 @@ function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
     <div style={{ display:'flex',flexWrap:'wrap',gap:6 }}>
       {(loggedBy||loggedAt)&&(
         <div style={{ display:'inline-flex',alignItems:'center',gap:5,background:'rgba(74,144,226,0.08)',border:'1px solid rgba(74,144,226,0.18)',borderRadius:99,padding:'4px 12px' }}>
-          <div style={{ width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#4A90E2,#2E6FC4)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><span style={{ fontSize:9,color:'#fff' }}>✍</span></div>
+          <div style={{ width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#4A90E2,#2E6FC4)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><span style={{ fontSize:9,color:'#fff' }}></span></div>
           {loggedBy&&<span style={{ fontSize:11,fontWeight:700,color:'#2E6FC4' }}>{loggedBy}</span>}
           {loggedAt&&<span style={{ fontSize:10,color:'#7A9CC4' }}>· {fmt(loggedAt)}</span>}
         </div>
       )}
       {updatedBy&&(
         <div style={{ display:'inline-flex',alignItems:'center',gap:5,background:'rgba(155,89,182,0.08)',border:'1px solid rgba(155,89,182,0.18)',borderRadius:99,padding:'4px 12px' }}>
-          <div style={{ width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#9B59B6,#7D3C98)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><span style={{ fontSize:9,color:'#fff' }}>✏</span></div>
+          <div style={{ width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#9B59B6,#7D3C98)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><span style={{ fontSize:9,color:'#fff' }}></span></div>
           <span style={{ fontSize:11,fontWeight:700,color:'#7D3C98' }}>{updatedBy}</span>
           {updatedAt&&<span style={{ fontSize:10,color:'#9B59B6' }}>· {fmt(updatedAt)}</span>}
         </div>
@@ -60,13 +60,13 @@ function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
 function InlineSelect({ value, options, onSave, renderValue }) {
   const [ed,setEd]=useState(false)
   if (ed) return <select autoFocus defaultValue={value} onChange={e=>{onSave(e.target.value);setEd(false)}} onBlur={()=>setEd(false)} style={{ padding:'4px 8px',border:'1px solid #0D9488',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)' }}>{options.map(o=><option key={o}>{o}</option>)}</select>
-  return <div onClick={()=>setEd(true)} style={{ cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4 }} title="Click to edit">{renderValue()}<span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}>✏</span></div>
+  return <div onClick={()=>setEd(true)} style={{ cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4 }} title="Click to edit">{renderValue()}<span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}></span></div>
 }
 
 function InlineText({ value, onSave, style={} }) {
   const [ed,setEd]=useState(false)
   if (ed) return <input autoFocus defaultValue={value} style={{ padding:'4px 8px',border:'1px solid #0D9488',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)',...style }} onBlur={e=>{onSave(e.target.value);setEd(false)}} onKeyDown={e=>{if(e.key==='Enter'){onSave(e.target.value);setEd(false)}if(e.key==='Escape')setEd(false)}}/>
-  return <div onClick={()=>setEd(true)} style={{ cursor:'text',display:'inline-flex',alignItems:'center',gap:4,...style }} title="Click to edit"><span>{value||'—'}</span><span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}>✏</span></div>
+  return <div onClick={()=>setEd(true)} style={{ cursor:'text',display:'inline-flex',alignItems:'center',gap:4,...style }} title="Click to edit"><span>{value||'—'}</span><span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}></span></div>
 }
 
 // Match "Register Athlete" modal look & feel
@@ -178,9 +178,9 @@ export default function InjuriesPage() {
         {/* Stats */}
         <div className="fade-up stat-grid-3" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:24 }}>
           {[
-            {label:'Total Records',  value:injuries.length, icon:'📋', color:'#4A90E2', bg:'#E8F4FF'},
-            {label:'Active Injuries',value:activeCnt,       icon:'🚨', color:'#E74C3C', bg:'#FDEDEC'},
-            {label:'Recovered',      value:recovCnt,        icon:'✅', color:'#27AE60', bg:'#E8F8EE'},
+            {label:'Total Records',  value:injuries.length, icon:'', color:'#4A90E2', bg:'#E8F4FF'},
+            {label:'Active Injuries',value:activeCnt,       icon:'', color:'#E74C3C', bg:'#FDEDEC'},
+            {label:'Recovered',      value:recovCnt,        icon:'', color:'#27AE60', bg:'#E8F8EE'},
           ].map(s=>(
             <div key={s.label} className="card" style={{ padding:'18px 22px',display:'flex',alignItems:'center',gap:16,borderLeft:`4px solid ${s.color}` }}>
               <div style={{ width:48,height:48,borderRadius:14,background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,flexShrink:0 }}>{s.icon}</div>
@@ -283,7 +283,7 @@ export default function InjuriesPage() {
             })}
           </div>
         )}
-        <p style={{ fontSize:11,color:'var(--text3)',marginTop:12 }}>💡 Click any field to edit inline.</p>
+        <p style={{ fontSize:11,color:'var(--text3)',marginTop:12 }}>Click any field to edit inline.</p>
       </div>
 
       {/* Modal */}
@@ -329,9 +329,9 @@ export default function InjuriesPage() {
               {currentUser&&(
                 <div style={{ background:'linear-gradient(135deg,rgba(74,144,226,0.08),rgba(74,144,226,0.03))',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid rgba(74,144,226,0.2)',position:'relative',overflow:'hidden' }}>
                   <div style={{ position:'absolute',top:0,left:0,width:3,height:'100%',background:'linear-gradient(180deg,#E74C3C,#4A90E2)',borderRadius:'3px 0 0 3px' }}/>
-                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:4 }}>📋 Will be stamped as:</div>
+                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:4 }}>Will be stamped as:</div>
                   <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'rgba(74,144,226,0.1)',borderRadius:99,padding:'4px 12px' }}>
-                    <span style={{ fontSize:12 }}>✍</span>
+                    <span style={{ fontSize:12 }}></span>
                     <span style={{ fontSize:12,fontWeight:700,color:'#2E6FC4' }}>{currentUser.full_name}</span>
                     <span style={{ fontSize:11,color:'#7A9CC4' }}>· {nowStr}</span>
                   </div>

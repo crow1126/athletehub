@@ -327,7 +327,7 @@ export default function PayrollPage() {
         <div className="pay-card" style={{ padding: 48, textAlign: 'center', color: C.text3 }}>Loading payroll runs…</div>
       ) : runs.length === 0 ? (
         <div className="pay-card" style={{ padding: isMobile ? 40 : 64, textAlign: 'center' }}>
-          <div style={{ fontSize: isMobile ? 40 : 48, marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: isMobile ? 40 : 48, marginBottom: 12 }}></div>
           <div style={{ fontSize: 16, fontWeight: 700, color: C.text2, marginBottom: 8 }}>No payroll runs yet</div>
           <div style={{ fontSize: 13, color: C.text3, marginBottom: 20 }}>Create a payroll run to start disbursing salaries.</div>
           <button className="pay-btn-gold" onClick={() => setShowNew(true)}>Create First Run</button>

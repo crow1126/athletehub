@@ -514,7 +514,7 @@ export default function AthleteReport() {
           {/* Active injury alert */}
           {activeInj.length > 0 && (
             <div className="alert-banner">
-              <span style={{ fontSize:18,lineHeight:1 }}>⚠</span>
+              <span style={{ fontSize:18,lineHeight:1 }}></span>
               <div>
                 <div style={{ fontSize:11,fontWeight:700,color:'#C53030',marginBottom:2 }}>ACTIVE INJURY ALERT</div>
                 <div style={{ fontSize:10.5,color:'#742A2A' }}>

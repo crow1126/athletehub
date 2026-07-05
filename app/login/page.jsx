@@ -503,10 +503,10 @@ export default function LoginPage() {
                     <p style={{ fontSize: 13, color: '#64748B' }}>Sign in to your Apex Track account</p>
                   </div>
 
-                  {disabled && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.2)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>🚫 Account disabled. Contact your administrator.</div>}
-                  {subExpired && <div style={{ background: '#FEF9E7', border: '1px solid rgba(183,119,13,0.3)', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#7A5A0A' }}>🔒 Subscription cancelled. Contact your club admin.</div>}
+                  {disabled && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.2)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>Account disabled. Contact your administrator.</div>}
+                  {subExpired && <div style={{ background: '#FEF9E7', border: '1px solid rgba(183,119,13,0.3)', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#7A5A0A' }}>Subscription cancelled. Contact your club admin.</div>}
                   {success && <div style={{ background: '#E8F8EE', border: '1px solid rgba(39,174,96,0.3)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#1B6B3A', fontWeight: 600 }}>✓ {success}</div>}
-                  {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>⚠️ {error}</div>}
+                  {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>{error}</div>}
                   {needsVerification && (
                     <button
                       type="button"
@@ -526,7 +526,7 @@ export default function LoginPage() {
                     <label className="auth-field-label">Password</label>
                     <div style={{ position: 'relative' }}>
                       <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" style={{ ...inp, paddingRight: 46 }} onFocus={focusInp} onBlur={blurInp} />
-                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? '🙈' : '👁️'}</button>
+                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? 'Hide' : 'Show'}</button>
                     </div>
                   </div>
 
@@ -546,7 +546,7 @@ export default function LoginPage() {
                     <p style={{ fontSize: 13, color: '#64748B' }}>Join Apex Track — free to get started</p>
                   </div>
 
-                  {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>⚠️ {error}</div>}
+                  {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>{error}</div>}
                   {success && <div style={{ background: '#E8F8EE', border: '1px solid rgba(39,174,96,0.3)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#1B6B3A', fontWeight: 600 }}>✓ {success}</div>}
 
                   <div>
@@ -563,7 +563,7 @@ export default function LoginPage() {
                       <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#F0FDFA', border: '2px dashed #CCFBF1', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {logoPreview
                           ? <img src={logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 20, color: '#94A3B8' }}>🏟️</span>
+                          : <span style={{ fontSize: 20, color: '#94A3B8' }}></span>
                         }
                       </div>
                       <div style={{ flex: 1 }}>
@@ -589,7 +589,7 @@ export default function LoginPage() {
                     <label className="auth-field-label">Password</label>
                     <div style={{ position: 'relative' }}>
                       <input type={showPass ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" autoComplete="new-password" style={{ ...inp, paddingRight: 46 }} onFocus={focusInp} onBlur={blurInp} />
-                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? '🙈' : '👁️'}</button>
+                      <button type="button" onClick={() => setShowPass(v => !v)} style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#94A3B8', padding: 0, display: 'flex', alignItems: 'center' }}>{showPass ? 'Hide' : 'Show'}</button>
                     </div>
                   </div>
 

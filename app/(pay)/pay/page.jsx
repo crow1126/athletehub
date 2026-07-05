@@ -83,7 +83,7 @@ function TopUpModal({ onClose, teamId, isSimulation }) {
         method: 'POST',
         body: JSON.stringify({ reference: data.reference, amount_ghs: Number(amount), team_id: teamId }),
       })
-      alert(`✅ Simulated top-up of ${fmt(amount)} completed!`)
+      alert(`Simulated top-up of ${fmt(amount)} completed!`)
     }
     onClose(true)
   }
@@ -107,11 +107,11 @@ function TopUpModal({ onClose, teamId, isSimulation }) {
             <input className="pay-inp" type="email" inputMode="email" placeholder="admin@club.com" value={email} onChange={e => setEmail(e.target.value)} required />
           </div>
           {error && <div style={{ background: C.dangerBg, border: `1px solid ${C.danger}`, borderRadius: 8, padding: '10px 14px', fontSize: 13, color: C.danger, marginBottom: 16 }}>{error}</div>}
-          {isSimulation && <div style={{ background: C.warningBg, border: `1px solid ${C.warning}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: C.warning, marginBottom: 16 }}>⚡ Dev mode — payment will be simulated instantly</div>}
+          {isSimulation && <div style={{ background: C.warningBg, border: `1px solid ${C.warning}`, borderRadius: 8, padding: '8px 14px', fontSize: 12, color: C.warning, marginBottom: 16 }}>Dev mode — payment will be simulated instantly</div>}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" className="pay-btn-ghost" style={{ flex: 1 }} onClick={() => onClose(false)}>Cancel</button>
             <button type="submit" className="pay-btn-gold" style={{ flex: 2 }} disabled={loading}>
-              {loading ? 'Processing…' : '💸 Top Up Now'}
+              {loading ? 'Processing…' : 'Top Up Now'}
             </button>
           </div>
         </form>
@@ -239,7 +239,7 @@ export default function PayOverviewPage() {
           animation: 'fadeUp 0.3s ease'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>{verifyStatus.type === 'loading' ? '⏳' : verifyStatus.type === 'success' ? '✅' : '❌'}</span>
+            <span>{verifyStatus.type === 'loading' ? '' : verifyStatus.type === 'success' ? '' : ''}</span>
             <span>{verifyStatus.text}</span>
           </div>
           {verifyStatus.type !== 'loading' && (
@@ -278,7 +278,7 @@ export default function PayOverviewPage() {
             </div>
             {isSimulation && (
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.25)' }}>
-                <span style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>⚡ Dev mode — instant transfer simulation ON</span>
+                <span style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>Dev mode — instant transfer simulation ON</span>
               </div>
             )}
           </>
@@ -288,9 +288,9 @@ export default function PayOverviewPage() {
       {/* Stat grid */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16, marginBottom: isMobile ? 16 : 24 }}>
         <StatCard label="Total Topped Up" value={loading ? '…' : fmt(stats?.totalTopUps)} icon="⬆" sub="All-time deposits" accent={C.success} />
-        <StatCard label="Total Disbursed" value={loading ? '…' : fmt(stats?.totalDisbursed)} icon="💸" sub="All-time payouts" accent={C.teal} />
-        <StatCard label="Pending Payouts" value={loading ? '…' : fmt(stats?.pendingAmount)} icon="⏳" sub="Awaiting confirmation" accent={C.warning} />
-        <StatCard label="Platform Fees" value={loading ? '…' : fmt(stats?.totalFees)} icon="📊" sub="1% per run" accent="#6D28D9" />
+        <StatCard label="Total Disbursed" value={loading ? '…' : fmt(stats?.totalDisbursed)} icon="" sub="All-time payouts" accent={C.teal} />
+        <StatCard label="Pending Payouts" value={loading ? '…' : fmt(stats?.pendingAmount)} icon="" sub="Awaiting confirmation" accent={C.warning} />
+        <StatCard label="Platform Fees" value={loading ? '…' : fmt(stats?.totalFees)} icon="" sub="1% per run" accent="#6D28D9" />
       </div>
 
       {/* Quick Actions + Recent Runs */}
@@ -307,11 +307,11 @@ export default function PayOverviewPage() {
             )}
             {isAdmin && (
               <Link href="/pay/payroll" style={{ textDecoration: 'none' }}>
-                <button className="pay-btn-ghost" style={{ width: '100%' }}>📋 New Payroll Run</button>
+                <button className="pay-btn-ghost" style={{ width: '100%' }}>New Payroll Run</button>
               </Link>
             )}
             <Link href="/pay/transactions" style={{ textDecoration: 'none' }}>
-              <button className="pay-btn-ghost" style={{ width: '100%' }}>📒 View Transactions</button>
+              <button className="pay-btn-ghost" style={{ width: '100%' }}>View Transactions</button>
             </Link>
           </div>
 
@@ -327,7 +327,7 @@ export default function PayOverviewPage() {
             <div style={{ color: C.text3, fontSize: 14, textAlign: 'center', padding: 32 }}>Loading…</div>
           ) : recentRuns.length === 0 ? (
             <div style={{ textAlign: 'center', padding: isMobile ? 24 : 40 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>💸</div>
+              <div style={{ fontSize: 32, marginBottom: 8 }}></div>
               <div style={{ color: C.text3, fontSize: 13 }}>No payroll runs yet</div>
               <Link href="/pay/payroll">
                 <button className="pay-btn-gold" style={{ marginTop: 14, fontSize: 13, padding: '9px 18px' }}>Create First Payroll</button>

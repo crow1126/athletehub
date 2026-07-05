@@ -252,7 +252,7 @@ export default function Dashboard() {
                       <span style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{s.title}</span>
                       <span style={{ fontSize:10,fontWeight:700,background:(SESSION_COLORS[s.type]||'#006A6A')+'20',color:SESSION_COLORS[s.type]||'#006A6A',padding:'2px 7px',borderRadius:6,whiteSpace:'nowrap' }}>{s.type}</span>
                     </div>
-                    <div style={{ fontSize:11,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>📍 {s.venue} · ⏱ {s.duration}min</div>
+                    <div style={{ fontSize:11,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>📍 {s.venue} · {s.duration}min</div>
                   </div>
                 </div>
               )
@@ -282,7 +282,7 @@ export default function Dashboard() {
           {/* Medical alerts */}
           <div className="card fade-up fade-up-1" style={{ padding:0,overflow:'hidden' }}>
             <div style={{ background:'linear-gradient(90deg,#004F4F,#006A6A)',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
-              <h3 style={{ fontSize:14,fontWeight:700,color:'#FFFCF6' }}>🩺 Medical Alerts</h3>
+              <h3 style={{ fontSize:14,fontWeight:700,color:'#FFFCF6' }}>Medical Alerts</h3>
               <Link href="/injuries" style={{ fontSize:11,color:'rgba(255,252,246,0.85)',fontWeight:600,background:'rgba(255,252,246,0.15)',padding:'3px 10px',borderRadius:99,textDecoration:'none' }}>View all</Link>
             </div>
             <div style={{ padding:'6px 0' }}>
@@ -307,12 +307,12 @@ export default function Dashboard() {
               <h3 style={{ fontSize:14,fontWeight:700,marginBottom:12 }}>Quick Actions</h3>
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8 }}>
                 {[
-                  { icon:'➕', label:'Add Athlete',  href:'/athletes',  bg:'var(--milk-muted)', color:'var(--plum)' },
-                  { icon:'📅', label:'Schedule',     href:'/schedule',  bg:'#E8F8EE',           color:'#1B7A3E'    },
-                  { icon:'🔍', label:'Scout',        href:'/scouting',  bg:'#F3E5F5',           color:'#6A1B9A'    },
-                  { icon:'📄', label:'Reports',      href:'/reports',   bg:'#FEF9E7',           color:'#B36200'    },
-                  { icon:'💰', label:'Contracts',    href:'/contracts', bg:'#E0F7F5',           color:'#0E8A7E'    },
-                  { icon:'⚙️', label:'Settings',    href:'/settings',  bg:'var(--surface2)',   color:'var(--plum)'},
+                  { icon:'', label:'Add Athlete',  href:'/athletes',  bg:'var(--milk-muted)', color:'var(--plum)' },
+                  { icon:'', label:'Schedule',     href:'/schedule',  bg:'#E8F8EE',           color:'#1B7A3E'    },
+                  { icon:'', label:'Scout',        href:'/scouting',  bg:'#F3E5F5',           color:'#6A1B9A'    },
+                  { icon:'', label:'Reports',      href:'/reports',   bg:'#FEF9E7',           color:'#B36200'    },
+                  { icon:'', label:'Contracts',    href:'/contracts', bg:'#E0F7F5',           color:'#0E8A7E'    },
+                  { icon:'', label:'Settings',    href:'/settings',  bg:'var(--surface2)',   color:'var(--plum)'},
                 ].map(({ icon,label,href,bg,color })=>(
                   <Link key={label} href={href} style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:'11px 8px',borderRadius:10,background:bg,border:'1px solid var(--border)',textAlign:'center',textDecoration:'none',transition:'var(--transition)' }}
                     onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='var(--shadow-md)'}}

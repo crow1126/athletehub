@@ -100,7 +100,7 @@ export default function GlobalError({ error, reset }) {
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
           </div>
-          <div className="badge">⚠️ Critical Error</div>
+          <div className="badge">Critical Error</div>
           <h1>Something went seriously wrong</h1>
           <p>
             A critical error occurred that prevented the application from loading.

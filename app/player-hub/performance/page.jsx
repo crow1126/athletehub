@@ -55,7 +55,7 @@ export default function MyPerformance() {
     return (
       <PlayerLayout>
         <div style={{ padding: '40px', maxWidth: 600, margin: '40px auto', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>⚽</div>
+          <div style={{ fontSize: 48, marginBottom: 20 }}></div>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: 'var(--text)' }}>No Linked Athlete Profile</h2>
           <p style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.6 }}>
             Your player login has not been linked to a player card yet. Contact your club administrator.
@@ -180,7 +180,7 @@ export default function MyPerformance() {
       <div className="perf-outer">
         {/* Season Aggregates */}
         <div>
-          <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>🏆 Season Aggregate Statistics</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>Season Aggregate Statistics</h2>
           <div className="aggregates-grid">
             {[
               { label: 'Appearances', val: totalMatches, sub: `${totalMinutes} Min Played` },
@@ -202,7 +202,7 @@ export default function MyPerformance() {
 
         {/* Match Logs Table */}
         <div className="match-logs-card">
-          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>⚽ Match History Logs</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 16 }}>Match History Logs</h2>
 
           {stats.length === 0 ? (
             <div style={{ padding: 48, textAlign: 'center', color: 'var(--text3)', fontSize: 13, fontStyle: 'italic' }}>

@@ -67,7 +67,7 @@ export default function PlayerDashboard() {
     return (
       <PlayerLayout>
         <div style={{ padding: '40px', maxWidth: 600, margin: '40px auto', textAlign: 'center' }}>
-          <div style={{ fontSize: 48, marginBottom: 20 }}>⚽</div>
+          <div style={{ fontSize: 48, marginBottom: 20 }}></div>
           <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12, color: 'var(--text)' }}>No Linked Athlete Profile</h2>
           <p style={{ fontSize: 14, color: 'var(--text3)', lineHeight: 1.6 }}>
             Your player login has not been linked to a player card yet. Please contact your club administrator to link this account to your athlete record.

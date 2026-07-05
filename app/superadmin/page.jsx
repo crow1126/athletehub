@@ -85,7 +85,7 @@ function Toast({ toast }) {
   const isErr = toast.type === 'error'
   return (
     <div style={{ position:'fixed', bottom:24, right:24, zIndex:9999, background:isErr?'#7f1d1d':'#064e3b', color:isErr?'#fca5a5':'#6ee7b7', padding:'12px 20px', borderRadius:12, fontSize:13, fontWeight:700, boxShadow:'0 10px 30px rgba(0,0,0,0.15)', maxWidth:340, border:`1px solid ${isErr?'#ef444440':'#10b98140'}`, display:'flex', alignItems:'center', gap:10 }}>
-      <span style={{ color:isErr?'#ef4444':'#10b981', fontSize:16 }}>{isErr?'⚠':'✓'}</span>
+      <span style={{ color:isErr?'#ef4444':'#10b981', fontSize:16 }}>{isErr?'':'✓'}</span>
       <span>{toast.msg}</span>
     </div>
   )
@@ -212,7 +212,7 @@ export default function SuperadminPage() {
     if (!val) return null
     if (colName === 'team_id' || (colName === 'id' && dbTable === 'teams')) {
       const team = teams.find(t => t.id === val)
-      return team ? { name: team.name, icon: '🏟️', type: 'team' } : null
+      return team ? { name: team.name, icon: '', type: 'team' } : null
     }
     if (colName === 'profile_id' || colName === 'user_id' || colName === 'admin_id' || (colName === 'id' && dbTable === 'profiles')) {
       const p = profiles.find(x => x.id === val)
@@ -220,7 +220,7 @@ export default function SuperadminPage() {
     }
     if (colName === 'athlete_id' || (colName === 'id' && dbTable === 'athletes')) {
       const a = athletes.find(x => x.id === val)
-      return a ? { name: a.name, icon: '🏃‍♂️', type: 'athlete' } : null
+      return a ? { name: a.name, icon: '', type: 'athlete' } : null
     }
     return null
   }
@@ -420,7 +420,7 @@ export default function SuperadminPage() {
       const provRes = await fetch('/api/signup-provision', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:authData.user.id, full_name:newName.trim(), club_name:newClub.trim(), email:newEmail.trim().toLowerCase() }) })
       const provData = await provRes.json()
       if (!provRes.ok) throw new Error(provData.error || 'Provision failed')
-      showToast('✅ Account provisioned — verification email sent!')
+      showToast('Account provisioned — verification email sent!')
       setAddModal(false); setNewName(''); setNewEmail(''); setNewPassword(''); setNewClub('')
       loadProfiles(); loadTeams()
     } catch (err) { showToast('Provisioning failed: ' + err.message, 'error') }
@@ -604,7 +604,7 @@ export default function SuperadminPage() {
           <div style={{ padding:'20px 16px 16px', borderBottom:'1px solid #e2e8f0', display:'flex', alignItems:'center', gap:12 }}>
             <img src="/logo.png" alt="AthleteHub" style={{ width:42, height:42, objectFit:'contain', borderRadius:10, background:'#f0fdfa', padding:4 }}
               onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
-            <div style={{ display:'none', width:42, height:42, borderRadius:10, background:'linear-gradient(135deg,#0d9488,#0f766e)', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff' }}>⚡</div>
+            <div style={{ display:'none', width:42, height:42, borderRadius:10, background:'linear-gradient(135deg,#0d9488,#0f766e)', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff' }}></div>
             <div>
               <div style={{ fontSize:14, fontWeight:800, color:'#0f172a', lineHeight:1.2 }}>AthleteHub</div>
               <div style={{ fontSize:10, color:'#0d9488', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:1 }}>Superadmin</div>
@@ -699,7 +699,7 @@ export default function SuperadminPage() {
                   <div className="sa-filter-row">
                     <div style={{ position:'relative', flex:'1 1 240px', maxWidth:340 }}>
                       <input className="sa-custom-input" placeholder="Search name, email, or club…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft:36 }} />
-                      <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}>🔍</span>
+                      <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}></span>
                     </div>
                     <div className="sa-filter-btns">
                       {['all','pending','approved','rejected'].map(f => (
@@ -719,7 +719,7 @@ export default function SuperadminPage() {
                   {/* Summary */}
                   <div style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
                     {clubs.length} club{clubs.length !== 1 ? 's' : ''} · {filtered.length} total accounts
-                    {orphans.length > 0 && <span style={{ color:'#e11d48', marginLeft:10 }}>⚠ {orphans.length} orphaned</span>}
+                    {orphans.length > 0 && <span style={{ color:'#e11d48', marginLeft:10 }}>{orphans.length} orphaned</span>}
                   </div>
 
                   {loading ? (
@@ -757,7 +757,7 @@ export default function SuperadminPage() {
                                 <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{group.users.length} user{group.users.length !== 1 ? 's' : ''} attached</div>
                               </div>
                               {/* Aggregate status indicators */}
-                              {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>⏳ Has Pending</span>}
+                              {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Has Pending</span>}
                               {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>✓ All Approved</span>}
                               {/* User count badge */}
                               <span style={{ fontSize:12, fontWeight:800, background:'#f1f5f9', color:'#334155', borderRadius:99, padding:'2px 10px', flexShrink:0, minWidth:28, textAlign:'center' }}>{group.users.length}</span>
@@ -780,14 +780,14 @@ export default function SuperadminPage() {
                                       <div style={{ fontSize:10, color:'#0d9488', fontFamily:'monospace', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
                                         <span>ID: {p.id}</span>
                                         <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.id); showToast('Copied User ID!') }}
-                                          style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID">📋</button>
+                                          style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID"></button>
                                       </div>
                                     </div>
                                     {/* Status */}
                                     <Pill status={p.registration_status || 'pending'} />
                                     {/* Lock */}
                                     <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:10, padding:'3px 8px', flexShrink:0 }}>
-                                      {p.is_active ? '🔓 Active' : '🔒 Blocked'}
+                                      {p.is_active ? 'Active' : 'Blocked'}
                                     </Btn>
                                     {/* Actions */}
                                     <div style={{ display:'flex', gap:5, flexShrink:0 }}>
@@ -797,7 +797,7 @@ export default function SuperadminPage() {
                                       {p.registration_status !== 'rejected' && (
                                         <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✕ Reject</Btn>
                                       )}
-                                      <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>🗑 Delete</Btn>
+                                      <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>Delete</Btn>
                                     </div>
                                   </div>
                                 ))}
@@ -816,7 +816,7 @@ export default function SuperadminPage() {
                             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background: expandedUser === '__orphans__' ? '#fff5f5' : '#fff', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.background='#fff5f5'}
                             onMouseLeave={e => e.currentTarget.style.background=expandedUser === '__orphans__' ? '#fff5f5' : '#fff'}>
-                            <div style={{ width:42, height:42, borderRadius:'50%', background:'#ffe4e6', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>⚠</div>
+                            <div style={{ width:42, height:42, borderRadius:'50%', background:'#ffe4e6', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}></div>
                             <div style={{ flex:1 }}>
                               <div style={{ fontWeight:800, fontSize:15, color:'#e11d48' }}>Orphaned / No Club Assigned</div>
                               <div style={{ fontSize:11, color:'#f87171', marginTop:2 }}>{orphans.length} account{orphans.length !== 1 ? 's' : ''} — no club linked, may need cleanup</div>
@@ -839,12 +839,12 @@ export default function SuperadminPage() {
                                     <div style={{ fontSize:10, color:'#e11d48', fontFamily:'monospace', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
                                       <span>ID: {p.id}</span>
                                       <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.id); showToast('Copied User ID!') }}
-                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#f87171', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID">📋</button>
+                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#f87171', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID"></button>
                                     </div>
                                   </div>
                                   <Pill status={p.registration_status || 'pending'} />
                                   <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:10, padding:'3px 8px', flexShrink:0 }}>
-                                    {p.is_active ? '🔓 Active' : '🔒 Blocked'}
+                                    {p.is_active ? 'Active' : 'Blocked'}
                                   </Btn>
                                   <div style={{ display:'flex', gap:5, flexShrink:0 }}>
                                     {p.registration_status !== 'approved' && (
@@ -853,7 +853,7 @@ export default function SuperadminPage() {
                                     {p.registration_status !== 'rejected' && (
                                       <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✕ Reject</Btn>
                                     )}
-                                    <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>🗑 Delete</Btn>
+                                    <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>Delete</Btn>
                                   </div>
                                 </div>
                               ))}
@@ -938,11 +938,11 @@ export default function SuperadminPage() {
                                 <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
                                   <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
                                   <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
-                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID">📋</button>
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID"></button>
                                 </div>
                               </div>
                               <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center', marginTop:8 }} disabled={acting}>
-                                🗑 Wipe Team
+                                Wipe Team
                               </Btn>
                             </div>
                           </div>
@@ -1001,11 +1001,11 @@ export default function SuperadminPage() {
                                 <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
                                   <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
                                   <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
-                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID">📋</button>
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID"></button>
                                 </div>
                               </div>
                               <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center' }} disabled={acting}>
-                                🗑 Wipe Team
+                                Wipe Team
                               </Btn>
                             </div>
                           </div>
@@ -1041,7 +1041,7 @@ export default function SuperadminPage() {
                   {/* Delete Team by ID */}
                   <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
                     <h2 style={{ fontSize:13, fontWeight:700, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                      🏟️ Delete Team, Athletes &amp; Roots
+                      Delete Team, Athletes &amp; Roots
                     </h2>
                     <p style={{ fontSize:12, color:'#64748b', marginBottom:14, lineHeight:1.6 }}>
                       Purge a team completely — athletes, contracts, coaches, subscriptions, profiles — by Team ID.
@@ -1057,7 +1057,7 @@ export default function SuperadminPage() {
                   {/* Table & System Cleanup */}
                   <div className="sa-card">
                     <h2 style={{ fontSize:13, fontWeight:700, color:'#0f172a', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                      ⚙️ Table &amp; System Cleanup
+                      Table &amp; System Cleanup
                     </h2>
                     <p style={{ fontSize:12, color:'#64748b', marginBottom:14, lineHeight:1.6 }}>
                       Wipe specific table data or trigger a system-wide clean (superadmin preserved).
@@ -1183,12 +1183,12 @@ export default function SuperadminPage() {
                                   <td className="sa-td" style={{ textAlign:'right', whiteSpace:'nowrap' }}>
                                     {dbTable === 'profiles' && row.role !== 'superadmin' && (
                                       <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteUserDirect(row.id, row.full_name || row.email)} disabled={acting}>
-                                        🗑 Delete User
+                                        Delete User
                                       </Btn>
                                     )}
                                     {dbTable === 'teams' && (
                                       <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteTeamDirect(row.id, row.name)} disabled={acting}>
-                                        🗑 Wipe Team
+                                        Wipe Team
                                       </Btn>
                                     )}
                                     {dbTable === 'athletes' && (
@@ -1204,7 +1204,7 @@ export default function SuperadminPage() {
                                         } catch (err) { showToast('Deletion failed: ' + err.message, 'error') }
                                         finally { setActing(false) }
                                       }} disabled={acting}>
-                                        🗑 Delete Athlete
+                                        Delete Athlete
                                       </Btn>
                                     )}
                                   </td>

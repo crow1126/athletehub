@@ -10,12 +10,12 @@ import Link from 'next/link'
 const TRANSFER_TYPES = ['All','sold','bought','free_agent','loan_out','loan_in','return_from_loan']
 
 const TYPE_META = {
-  sold:              { label:'Sold',              icon:'💰', color:'#C0392B', bg:'#FDEDEC' },
-  bought:            { label:'Bought',            icon:'✅', color:'#1B7A3E', bg:'#E8F8EE' },
-  free_agent:        { label:'Free Agent',        icon:'🔓', color:'#B7770D', bg:'#FEF9E7' },
-  loan_out:          { label:'Loan Out',          icon:'➡️', color:'#065A82', bg:'#E6F0F8' },
+  sold:              { label:'Sold',              icon:'', color:'#C0392B', bg:'#FDEDEC' },
+  bought:            { label:'Bought',            icon:'', color:'#1B7A3E', bg:'#E8F8EE' },
+  free_agent:        { label:'Free Agent',        icon:'', color:'#B7770D', bg:'#FEF9E7' },
+  loan_out:          { label:'Loan Out',          icon:'', color:'#065A82', bg:'#E6F0F8' },
   loan_in:           { label:'Loan In',           icon:'⬅️', color:'#6A1B9A', bg:'#F3E5F5' },
-  return_from_loan:  { label:'Return from Loan',  icon:'🔄', color:'#2D6B6B', bg:'#E0F0F0' },
+  return_from_loan:  { label:'Return from Loan',  icon:'', color:'#2D6B6B', bg:'#E0F0F0' },
 }
 
 const AV_COLORS = ['#006A6A','#008080','#2D6B6B','#004F4F','#5A9494','#003D3D']
@@ -168,7 +168,7 @@ export default function TransfersPage() {
         transfer_status: statusMap[form.transfer_type] || 'contracted',
       }).eq('id', form.athlete_id), profile.team_id)
 
-      flash('✅ Transfer recorded successfully.')
+      flash('Transfer recorded successfully.')
       setForm(EMPTY_FORM)
       setShowForm(false)
       await load()
@@ -234,10 +234,10 @@ export default function TransfersPage() {
         {/* Stats row */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12,marginBottom:24}}>
           {[
-            {icon:'💰',label:'Players Sold',    value:totalSold,   color:'#C0392B'},
-            {icon:'✅',label:'Players Bought',  value:totalBought, color:'#1B7A3E'},
-            {icon:'📈',label:'Fees Received',   value:totalFee>0?`GHS ${totalFee.toLocaleString()}`:'—', color:'#006A6A'},
-            {icon:'📉',label:'Fees Spent',      value:totalSpent>0?`GHS ${totalSpent.toLocaleString()}`:'—', color:'#B7770D'},
+            {icon:'',label:'Players Sold',    value:totalSold,   color:'#C0392B'},
+            {icon:'',label:'Players Bought',  value:totalBought, color:'#1B7A3E'},
+            {icon:'',label:'Fees Received',   value:totalFee>0?`GHS ${totalFee.toLocaleString()}`:'—', color:'#006A6A'},
+            {icon:'',label:'Fees Spent',      value:totalSpent>0?`GHS ${totalSpent.toLocaleString()}`:'—', color:'#B7770D'},
           ].map(s=>(
             <div key={s.label} className="card" style={{padding:'16px 18px'}}>
               <div style={{fontSize:20,marginBottom:6}}>{s.icon}</div>
@@ -250,7 +250,7 @@ export default function TransfersPage() {
         {/* Record Transfer Form */}
         {showForm && (
           <div className="card" style={{padding:24,marginBottom:24,borderLeft:'4px solid #0D9488'}}>
-            <h3 style={{fontSize:16,fontWeight:700,color:'var(--text)',marginBottom:20}}>📋 Record New Transfer</h3>
+            <h3 style={{fontSize:16,fontWeight:700,color:'var(--text)',marginBottom:20}}>Record New Transfer</h3>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:16}}>
 
               <div>
@@ -279,7 +279,7 @@ export default function TransfersPage() {
                       Selected Athlete: {athletes.find(a => String(a.id) === String(form.athlete_id))?.name}
                     </h4>
                     <p style={{ margin: '4px 0 0 0', fontSize: 11.5, color: 'var(--text2)', lineHeight: 1.5 }}>
-                      💡 <strong>Historical records are stored.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain preserved in the system and are still visible on their athlete profile page.
+                      <strong>Historical records are stored.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain preserved in the system and are still visible on their athlete profile page.
                     </p>
                   </div>
                 </div>
@@ -340,7 +340,7 @@ export default function TransfersPage() {
 
             <div style={{display:'flex',gap:10,marginTop:20}}>
               <button onClick={handleSave} disabled={saving} className="btn-blue" style={{padding:'11px 28px',opacity:saving?0.7:1}}>
-                {saving?'Saving…':'✅ Save Transfer'}
+                {saving?'Saving…':'Save Transfer'}
               </button>
               <button onClick={()=>{setShowForm(false);setForm(EMPTY_FORM)}} style={{padding:'11px 20px',background:'var(--surface2)',color:'var(--text2)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)'}}>
                 Cancel
@@ -351,7 +351,7 @@ export default function TransfersPage() {
 
         {/* Filters + Search */}
         <div style={{display:'flex',gap:10,marginBottom:20,flexWrap:'wrap',alignItems:'center'}}>
-          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="🔍 Search player, club..." style={{...inp,width:220,padding:'8px 14px',fontSize:13}}/>
+          <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search player, club..." style={{...inp,width:220,padding:'8px 14px',fontSize:13}}/>
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {TRANSFER_TYPES.map(t=>(
               <button key={t} onClick={()=>setFilter(t)}
@@ -432,7 +432,7 @@ export default function TransfersPage() {
         </div>
 
         <div style={{marginTop:16,padding:'12px 16px',background:'#F0FDFA',borderRadius:'var(--r-md)',border:'1px solid var(--border)',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>
-          💡 <strong>Historical records are preserved.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain in the system and are still visible on their athlete profile page.
+          <strong>Historical records are preserved.</strong> When a player is sold or transferred, their full performance history, injury records, and stats from your club remain in the system and are still visible on their athlete profile page.
         </div>
 
       </div>

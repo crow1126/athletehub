@@ -299,7 +299,7 @@ export default function AthletesPage() {
         />
 
         <div className="ath-filters fade-up">
-          <input placeholder="🔍 Search name, club, region…" value={search} onChange={e=>setSearch(e.target.value)}
+          <input placeholder="Search name, club, region…" value={search} onChange={e=>setSearch(e.target.value)}
             className="form-inp"
             style={{ ...inp, maxWidth:300 }} />
           <select value={posFilter} onChange={e=>setPosFilter(e.target.value)} className="form-inp" style={{ ...inp, maxWidth:180 }}>
@@ -381,7 +381,7 @@ export default function AthletesPage() {
             {/* Modal Body */}
             <div className="modal-inner" style={{ padding:24, display:'flex', flexDirection:'column', gap:16 }}>
               {formError && (
-                <div style={{ background:'#FFE4E6', border:'1px solid rgba(225,29,72,0.2)', borderRadius:'10px', padding:'10px 14px', fontSize:13, color:'#E11D48', fontWeight:600 }}>⚠ {formError}</div>
+                <div style={{ background:'#FFE4E6', border:'1px solid rgba(225,29,72,0.2)', borderRadius:'10px', padding:'10px 14px', fontSize:13, color:'#E11D48', fontWeight:600 }}>{formError}</div>
               )}
 
               {/* Photo */}
@@ -527,9 +527,9 @@ export default function AthletesPage() {
                   <label style={lbl}>Strong Foot</label>
                   <select className="form-inp" value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>
                     <option value="">Select…</option>
-                    <option value="right">🦶 Right Foot (RF)</option>
-                    <option value="left">🦶 Left Foot (LF)</option>
-                    <option value="both">🦶 Both Feet</option>
+                    <option value="right">Right Foot (RF)</option>
+                    <option value="left">Left Foot (LF)</option>
+                    <option value="both">Both Feet</option>
                   </select>
                 </div>
               </div>

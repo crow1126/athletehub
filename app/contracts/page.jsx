@@ -132,10 +132,10 @@ export default function ContractsPage() {
         {/* Stats */}
         <div className="fade-up stat-grid-4" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
           {[
-            { label: 'Total Contracts',      value: contracts.length,          icon: '📄', color: '#0D9488'    },
-            { label: 'Active',               value: activeContracts.length,    icon: '✅', color: 'var(--success)'  },
-            { label: 'Weekly Wage Bill',      value: `GHS ${totalWage.toLocaleString('en-GH', { minimumFractionDigits: 0 })}`, icon: '💰', color: '#1B7A3E' },
-            { label: 'Expiring (90 days)',    value: contracts.filter(c => { const d = daysLeft(c.contract_end); return d !== null && d >= 0 && d <= 90 }).length, icon: '⚠️', color: 'var(--warning)' },
+            { label: 'Total Contracts',      value: contracts.length,          icon: '', color: '#0D9488'    },
+            { label: 'Active',               value: activeContracts.length,    icon: '', color: 'var(--success)'  },
+            { label: 'Weekly Wage Bill',      value: `GHS ${totalWage.toLocaleString('en-GH', { minimumFractionDigits: 0 })}`, icon: '', color: '#1B7A3E' },
+            { label: 'Expiring (90 days)',    value: contracts.filter(c => { const d = daysLeft(c.contract_end); return d !== null && d >= 0 && d <= 90 }).length, icon: '', color: 'var(--warning)' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 42, height: 42, borderRadius: 12, background: s.color + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
@@ -222,7 +222,7 @@ export default function ContractsPage() {
         {/* Wage summary */}
         {activeContracts.length > 0 && (
           <div className="card fade-up" style={{ padding: '20px 24px', marginTop: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>💰 Wage Bill Summary (Active Contracts)</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14 }}>Wage Bill Summary (Active Contracts)</h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }} className="stat-grid-3">
               {[
                 ['Weekly',  `GHS ${totalWage.toLocaleString('en-GH', { minimumFractionDigits: 2 })}`],
@@ -252,7 +252,7 @@ export default function ContractsPage() {
             </div>
             <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {formError && (
-                <div style={{ background: 'var(--danger-light)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: 13, color: 'var(--danger)', fontWeight: 600 }}>⚠ {formError}</div>
+                <div style={{ background: 'var(--danger-light)', border: '1px solid rgba(231,76,60,0.25)', borderRadius: 'var(--r-md)', padding: '10px 14px', fontSize: 13, color: 'var(--danger)', fontWeight: 600 }}>{formError}</div>
               )}
               <div>
                 <label style={lbl}>Athlete *</label>

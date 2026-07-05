@@ -34,7 +34,7 @@ export async function POST(req) {
     }, { status: 400 })
   }
 
-  const result = await sendSMS(phone, `ApexTrack test SMS ✅ — SMS notifications are working! Sender: ${senderid}`)
+  const result = await sendSMS(phone, `ApexTrack test SMS — SMS notifications are working! Sender: ${senderid}`)
 
   return NextResponse.json({
     ok: result.sent > 0,

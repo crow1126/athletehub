@@ -7,14 +7,14 @@ import { useRouter } from 'next/navigation'
 const NAV_LINKS = ['Features', 'Pricing', 'FAQ', 'Support']
 
 const FEATURES = [
-  { emoji: '📊', title: 'Performance Analytics', desc: 'xG, xA, match ratings, and squad-level trend views with beautiful premium charts.' },
-  { emoji: '🏥', title: 'Injury Hub', desc: 'Full injury lifecycle — onset, treatment, recovery timeline, and return-to-play clearance.' },
-  { emoji: '👥', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, and coach assignments.' },
-  { emoji: '📅', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, and duration tracking.' },
-  { emoji: '🔍', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools for transfers.' },
-  { emoji: '📄', title: 'Reports', desc: 'Automated performance and medical reports for board and technical staff.' },
+  { emoji: '', title: 'Performance Analytics', desc: 'xG, xA, match ratings, and squad-level trend views with beautiful premium charts.' },
+  { emoji: '', title: 'Injury Hub', desc: 'Full injury lifecycle — onset, treatment, recovery timeline, and return-to-play clearance.' },
+  { emoji: '', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, and coach assignments.' },
+  { emoji: '', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, and duration tracking.' },
+  { emoji: '', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools for transfers.' },
+  { emoji: '', title: 'Reports', desc: 'Automated performance and medical reports for board and technical staff.' },
   { 
-    emoji: '💬', 
+    emoji: '', 
     title: 'Dedicated Support', 
     desc: (
       <span>
@@ -625,7 +625,7 @@ export default function LandingPage() {
             {/* Starting XI Tier Card */}
             <div className="price-card">
               <div>
-                <div className="price-tier">⚽ Starting XI</div>
+                <div className="price-tier">Starting XI</div>
                 <p className="price-desc">For grassroots clubs, academies, and smaller setups looking to digitize their operations.</p>
                 <div className="price-amount">GHS 199 <span>/ month</span></div>
                 
@@ -655,7 +655,7 @@ export default function LandingPage() {
             <div className="price-card featured">
               <div className="price-badge">Most Popular</div>
               <div>
-                <div className="price-tier">🏆 Captain</div>
+                <div className="price-tier">Captain</div>
                 <p className="price-desc">For semi-pro and professional clubs serious about performance and data analytics.</p>
                 <div className="price-amount">GHS 499 <span>/ month</span></div>
                 
@@ -735,7 +735,7 @@ export default function LandingPage() {
           <div className="support-details">
             <p style={{ fontSize: 13, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Need help setting up your team roster?</p>
             <a href="mailto:admin@apextrackgh.com" className="support-mail-btn">
-              ✉ Email: admin@apextrackgh.com
+              Email: admin@apextrackgh.com
             </a>
             <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>Technical onboarding and roster imports are provided completely free of charge.</p>
           </div>

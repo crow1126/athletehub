@@ -85,7 +85,7 @@ export default function ScoutingPage(){
             const sc=STATUS_COLORS[s]
             return(<div key={s} className="card" style={{padding:'16px 18px',display:'flex',alignItems:'center',gap:12}}>
               <div style={{width:40,height:40,borderRadius:10,background:sc.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>
-                {s==='Watching'?'👁':s==='Recommended'?'⭐':s==='Signed'?'✅':'❌'}
+                {s==='Watching'?'Show':s==='Recommended'?'⭐':s==='Signed'?'':''}
               </div>
               <div><div style={{fontSize:24,fontWeight:800,color:'var(--text)',lineHeight:1}}>{count}</div><div style={{fontSize:12,color:'var(--text3)',fontWeight:500,marginTop:2}}>{s}</div></div>
             </div>)
@@ -94,7 +94,7 @@ export default function ScoutingPage(){
 
         {/* Filters */}
         <div className="fade-up" style={{display:'flex',gap:10,marginBottom:20,flexWrap:'wrap'}}>
-          <input placeholder="🔍 Search player, club, nationality…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,maxWidth:300}}/>
+          <input placeholder="Search player, club, nationality…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,maxWidth:300}}/>
           <div className="tabs-scroll" style={{display:'flex',gap:4,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,maxWidth:'100%'}}>
             {['All',...STATUS_OPTS].map(f=>(
               <button key={f} onClick={()=>setFilter(f)} style={{padding:'7px 14px',background:filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:12,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)'}}>{f}</button>

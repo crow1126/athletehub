@@ -7,25 +7,25 @@ import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 const STAFF_TYPES = [
-  { value:'head_coach',       label:'Head Coach',          icon:'🎯', color:'#4A90E2', dept:'Coaching'   },
-  { value:'assistant_coach',  label:'Assistant Coach',     icon:'📋', color:'#2E6FC4', dept:'Coaching'   },
-  { value:'fitness_coach',    label:'Fitness Coach',       icon:'💪', color:'#27AE60', dept:'Coaching'   },
-  { value:'physio',           label:'Physiotherapist',     icon:'🩺', color:'#E67E22', dept:'Medical'    },
-  { value:'sports_scientist', label:'Sports Scientist',    icon:'🔬', color:'#E74C3C', dept:'Medical'    },
-  { value:'medical',          label:'Medical Officer',     icon:'⚕️', color:'#C0392B', dept:'Medical'    },
-  { value:'analyst',          label:'Performance Analyst', icon:'📊', color:'#9B59B6', dept:'Analytics'  },
-  { value:'scout',            label:'Scout',               icon:'🔍', color:'#1ABC9C', dept:'Scouting'   },
-  { value:'kit_manager',      label:'Kit Manager',         icon:'👕', color:'#F39C12', dept:'Other'      },
-  { value:'accountant',       label:'Accountant',          icon:'💰', color:'#F59E0B', dept:'Other'      },
+  { value:'head_coach',       label:'Head Coach',          icon:'', color:'#4A90E2', dept:'Coaching'   },
+  { value:'assistant_coach',  label:'Assistant Coach',     icon:'', color:'#2E6FC4', dept:'Coaching'   },
+  { value:'fitness_coach',    label:'Fitness Coach',       icon:'', color:'#27AE60', dept:'Coaching'   },
+  { value:'physio',           label:'Physiotherapist',     icon:'', color:'#E67E22', dept:'Medical'    },
+  { value:'sports_scientist', label:'Sports Scientist',    icon:'', color:'#E74C3C', dept:'Medical'    },
+  { value:'medical',          label:'Medical Officer',     icon:'', color:'#C0392B', dept:'Medical'    },
+  { value:'analyst',          label:'Performance Analyst', icon:'', color:'#9B59B6', dept:'Analytics'  },
+  { value:'scout',            label:'Scout',               icon:'', color:'#1ABC9C', dept:'Scouting'   },
+  { value:'kit_manager',      label:'Kit Manager',         icon:'', color:'#F39C12', dept:'Other'      },
+  { value:'accountant',       label:'Accountant',          icon:'', color:'#F59E0B', dept:'Other'      },
   { value:'other',            label:'Other',               icon:'👤', color:'#7F8C8D', dept:'Other'      },
 ]
 
 const DEPT_TABS = [
-  { key:'All',       label:'All Staff',  icon:'👥', color:'#4A90E2' },
-  { key:'Coaching',  label:'Coaching',   icon:'🎯', color:'#2E6FC4' },
-  { key:'Medical',   label:'Medical',    icon:'🩺', color:'#E67E22' },
-  { key:'Analytics', label:'Analytics',  icon:'📊', color:'#9B59B6' },
-  { key:'Scouting',  label:'Scouting',   icon:'🔍', color:'#1ABC9C' },
+  { key:'All',       label:'All Staff',  icon:'', color:'#4A90E2' },
+  { key:'Coaching',  label:'Coaching',   icon:'', color:'#2E6FC4' },
+  { key:'Medical',   label:'Medical',    icon:'', color:'#E67E22' },
+  { key:'Analytics', label:'Analytics',  icon:'', color:'#9B59B6' },
+  { key:'Scouting',  label:'Scouting',   icon:'', color:'#1ABC9C' },
   { key:'Other',     label:'Other',      icon:'👤', color:'#7F8C8D' },
 ]
 
@@ -53,14 +53,14 @@ function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
     <div style={{ marginTop:10,display:'flex',flexWrap:'wrap',gap:6 }}>
       {loggedBy && (
         <div style={{ display:'inline-flex',alignItems:'center',gap:5,background:'rgba(74,144,226,0.09)',border:'1px solid rgba(74,144,226,0.18)',borderRadius:99,padding:'3px 10px' }}>
-          <span style={{ fontSize:11 }}>🖊</span>
+          <span style={{ fontSize:11 }}></span>
           <span style={{ fontSize:10,fontWeight:700,color:'#2E6FC4' }}>{loggedBy}</span>
           {loggedAt&&<span style={{ fontSize:10,color:'#7A9CC4' }}>· {fmt(loggedAt)}</span>}
         </div>
       )}
       {updatedBy && (
         <div style={{ display:'inline-flex',alignItems:'center',gap:5,background:'rgba(155,89,182,0.09)',border:'1px solid rgba(155,89,182,0.18)',borderRadius:99,padding:'3px 10px' }}>
-          <span style={{ fontSize:11 }}>✏️</span>
+          <span style={{ fontSize:11 }}></span>
           <span style={{ fontSize:10,fontWeight:700,color:'#7D3C98' }}>{updatedBy}</span>
           {updatedAt&&<span style={{ fontSize:10,color:'#9B59B6' }}>· {fmt(updatedAt)}</span>}
         </div>
@@ -231,7 +231,7 @@ export default function CoachesPage() {
           </div>
         ):filtered.length===0?(
           <div className="card" style={{ padding:'52px',textAlign:'center' }}>
-            <div style={{ fontSize:44,marginBottom:14 }}>👥</div>
+            <div style={{ fontSize:44,marginBottom:14 }}></div>
             <div style={{ fontSize:17,fontWeight:700,color:'var(--text)',marginBottom:8 }}>No staff in this department</div>
             <div style={{ fontSize:13,color:'var(--text3)',marginBottom:20 }}>Add your first staff member to get started.</div>
             <button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>
@@ -258,16 +258,16 @@ export default function CoachesPage() {
                           {coach.experience_years?`${coach.experience_years} yrs exp`:''}
                           {coach.phone?(coach.experience_years?` · ${coach.phone}`:coach.phone):''}
                         </div>
-                        {coach.email&&<div style={{ fontSize:11,color:'var(--text3)',marginTop:2 }}>✉ {coach.email}</div>}
+                        {coach.email&&<div style={{ fontSize:11,color:'var(--text3)',marginTop:2 }}>{coach.email}</div>}
                       </div>
                       <span style={{ fontSize:9,fontWeight:700,background:coach.is_active!==false?'var(--success-light,rgba(39,174,96,0.12))':'var(--danger-light)',color:coach.is_active!==false?'var(--success,#16a34a)':'var(--danger)',padding:'3px 9px',borderRadius:99,flexShrink:0,letterSpacing:'0.06em',textTransform:'uppercase',border:`1px solid ${coach.is_active!==false?'rgba(39,174,96,0.25)':'rgba(231,76,60,0.25)'}` }}>
                         {coach.is_active!==false?'● Active':'○ Inactive'}
                       </span>
                     </div>
                     <div style={{ display:'flex',gap:6,marginTop:12,flexWrap:'wrap' }}>
-                      <button onClick={()=>openEdit(coach)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>✏ Edit</button>
+                      <button onClick={()=>openEdit(coach)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Edit</button>
                       <button onClick={()=>toggleActive(coach.id,coach.is_active!==false)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>{coach.is_active!==false?'⏸ Deactivate':'▶ Activate'}</button>
-                      <button onClick={()=>handleDelete(coach.id,coach.name)} disabled={deleting===coach.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'1px solid rgba(231,76,60,0.25)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',opacity:deleting===coach.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===coach.id?'…':'🗑 Remove'}</button>
+                      <button onClick={()=>handleDelete(coach.id,coach.name)} disabled={deleting===coach.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'1px solid rgba(231,76,60,0.25)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',opacity:deleting===coach.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===coach.id?'…':'Remove'}</button>
                     </div>
                   </div>
 
@@ -276,12 +276,12 @@ export default function CoachesPage() {
 
                     {['physio','medical','sports_scientist','analyst','scout','accountant'].includes(coach.staff_type)&&(
                       <div style={{ background:'var(--surface2)',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:'var(--text2)',marginBottom:10,border:'1px solid var(--border)' }}>
-                        {coach.staff_type==='physio'&&'🩺 Medical access — injury records & rehab'}
-                        {coach.staff_type==='medical'&&'⚕️ Medical officer — clinical oversight'}
-                        {coach.staff_type==='sports_scientist'&&'🔬 Sports science — GPS & load monitoring'}
-                        {coach.staff_type==='analyst'&&'📊 Performance analyst — xG, xA & metrics'}
-                        {coach.staff_type==='scout'&&'🔍 Scout — recruitment & talent ID'}
-                        {coach.staff_type==='accountant'&&'💰 Accountant — ApexPay portal access'}
+                        {coach.staff_type==='physio'&&'Medical access — injury records & rehab'}
+                        {coach.staff_type==='medical'&&'Medical officer — clinical oversight'}
+                        {coach.staff_type==='sports_scientist'&&'Sports science — GPS & load monitoring'}
+                        {coach.staff_type==='analyst'&&'Performance analyst — xG, xA & metrics'}
+                        {coach.staff_type==='scout'&&'Scout — recruitment & talent ID'}
+                        {coach.staff_type==='accountant'&&'Accountant — ApexPay portal access'}
                       </div>
                     )}
 
@@ -298,7 +298,7 @@ export default function CoachesPage() {
                           </div>
                         ))}
                         {squad.length>4&&<div style={{ fontSize:11,color:'var(--text3)',marginTop:6,fontStyle:'italic' }}>+{squad.length-4} more</div>}
-                        {injured>0&&<div style={{ marginTop:10,fontSize:12,color:'var(--danger)',fontWeight:600,background:'var(--danger-light)',padding:'6px 10px',borderRadius:'var(--r-sm)' }}>⚠ {injured} athlete{injured>1?'s':''} injured</div>}
+                        {injured>0&&<div style={{ marginTop:10,fontSize:12,color:'var(--danger)',fontWeight:600,background:'var(--danger-light)',padding:'6px 10px',borderRadius:'var(--r-sm)' }}>{injured} athlete{injured>1?'s':''} injured</div>}
                       </>
                     )}
 
@@ -323,7 +323,7 @@ export default function CoachesPage() {
             </div>
 
             <div style={{ padding:24,display:'flex',flexDirection:'column',gap:16 }}>
-              {formError&&<div style={{ background:'var(--danger-light)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:'var(--r-md)',padding:'10px 14px',fontSize:13,color:'var(--danger)',fontWeight:600 }}>⚠ {formError}</div>}
+              {formError&&<div style={{ background:'var(--danger-light)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:'var(--r-md)',padding:'10px 14px',fontSize:13,color:'var(--danger)',fontWeight:600 }}>{formError}</div>}
 
               {/* Photo upload */}
               <div>
@@ -334,7 +334,7 @@ export default function CoachesPage() {
                   </div>
                   <div>
                     <label htmlFor="staff-photo-upload" style={{ display:'inline-block',background:'#F0FDFA',color:'#0F766E',border:'1px solid #CCFBF1',padding:'8px 18px',borderRadius:'8px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}>
-                      {photoPreview?'🔄 Change Photo':'📷 Upload Photo'}
+                      {photoPreview?'Change Photo':'📷 Upload Photo'}
                     </label>
                     <input id="staff-photo-upload" type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(!f)return;setPhotoFile(f);setPhotoPreview(URL.createObjectURL(f))}} style={{ display:'none' }}/>
                     {photoPreview&&<button onClick={()=>{setPhotoFile(null);setPhotoPreview(null)}} style={{ marginLeft:8,background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'7px 14px',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>✕ Remove</button>}
@@ -348,10 +348,10 @@ export default function CoachesPage() {
               <div>
                 <label style={lbl}>Staff Type / Department *</label>
                 <select value={form.staff_type} onChange={e=>set('staff_type')(e.target.value)} style={inp}>
-                  <optgroup label="🎯 Coaching"><option value="head_coach">Head Coach</option><option value="assistant_coach">Assistant Coach</option><option value="fitness_coach">Fitness Coach</option></optgroup>
-                  <optgroup label="🩺 Medical"><option value="physio">Physiotherapist</option><option value="sports_scientist">Sports Scientist</option><option value="medical">Medical Officer</option></optgroup>
-                  <optgroup label="📊 Analytics & Scouting"><option value="analyst">Performance Analyst</option><option value="scout">Scout</option></optgroup>
-                  <optgroup label="⚙ Other"><option value="kit_manager">Kit Manager</option><option value="accountant">Accountant</option><option value="other">Other</option></optgroup>
+                  <optgroup label="Coaching"><option value="head_coach">Head Coach</option><option value="assistant_coach">Assistant Coach</option><option value="fitness_coach">Fitness Coach</option></optgroup>
+                  <optgroup label="Medical"><option value="physio">Physiotherapist</option><option value="sports_scientist">Sports Scientist</option><option value="medical">Medical Officer</option></optgroup>
+                  <optgroup label="Analytics & Scouting"><option value="analyst">Performance Analyst</option><option value="scout">Scout</option></optgroup>
+                  <optgroup label="Other"><option value="kit_manager">Kit Manager</option><option value="accountant">Accountant</option><option value="other">Other</option></optgroup>
                 </select>
               </div>
 
@@ -373,9 +373,9 @@ export default function CoachesPage() {
               {currentUser&&(
                 <div style={{ background:'linear-gradient(135deg,rgba(74,144,226,0.08),rgba(74,144,226,0.03))',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid rgba(74,144,226,0.2)',position:'relative',overflow:'hidden' }}>
                   <div style={{ position:'absolute',top:0,left:0,width:3,height:'100%',background:'linear-gradient(180deg,#4A90E2,#9B59B6)',borderRadius:'3px 0 0 3px' }}/>
-                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:5 }}>📋 Record will be stamped:</div>
+                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:5 }}>Record will be stamped:</div>
                   <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'rgba(74,144,226,0.12)',borderRadius:99,padding:'4px 12px' }}>
-                    <span style={{ fontSize:13 }}>🖊</span>
+                    <span style={{ fontSize:13 }}></span>
                     <span style={{ fontSize:12,fontWeight:700,color:'#2E6FC4' }}>{currentUser.full_name}</span>
                     <span style={{ fontSize:11,color:'#7A9CC4' }}>· {nowStr}</span>
                   </div>

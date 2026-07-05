@@ -149,7 +149,7 @@ export default function ForgotPasswordPage() {
 
               {error && (
                 <div style={{ background:'#F9E8E8', border:'1px solid rgba(180,50,50,0.18)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#8B2020', fontWeight:600 }}>
-                  ⚠️ {error}
+                  {error}
                 </div>
               )}
 

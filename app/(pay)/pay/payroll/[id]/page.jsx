@@ -116,7 +116,7 @@ export default function PayrollRunDetailPage({ params }) {
     })
     setAction(null)
     if (!res.ok) return setError(data.error)
-    setResult(`✅ Approved! Fee: ${fmt(data.fee)}`)
+    setResult(`Approved! Fee: ${fmt(data.fee)}`)
     load(teamId)
   }
 
@@ -133,7 +133,7 @@ export default function PayrollRunDetailPage({ params }) {
       // Provide actionable guidance for the most common failure
       if (msg.toLowerCase().includes('authentication') || msg.toLowerCase().includes('ain01')) {
         setError(
-          '❌ Moolre API Authentication Error\n\n' +
+          'Moolre API Authentication Error\n\n' +
           'Your Moolre account does not have API payouts enabled.\n\n' +
           'To fix this:\n' +
           '1. Go to app.moolre.com → Wallets\n' +
@@ -152,7 +152,7 @@ export default function PayrollRunDetailPage({ params }) {
       const isAuthErr = firstErr.toLowerCase().includes('authentication') || firstErr.toLowerCase().includes('ain01')
       if (isAuthErr) {
         setError(
-          '❌ Moolre API Authentication Error — all transfers failed.\n\n' +
+          'Moolre API Authentication Error — all transfers failed.\n\n' +
           'Your Moolre account does not have API payouts enabled.\n\n' +
           'To fix:\n' +
           '1. Go to app.moolre.com → Wallets\n' +
@@ -161,10 +161,10 @@ export default function PayrollRunDetailPage({ params }) {
           '⬇ Workaround: Click "Export CSV" to download this payroll and upload it manually to app.moolre.com → Bulk Payouts.'
         )
       } else {
-        setError(`❌ All disbursements failed. ${firstErr}`)
+        setError(`All disbursements failed. ${firstErr}`)
       }
     } else {
-      setResult(`✅ Disbursed ${data.successCount} recipient(s)${simNote}. ⚠ ${data.failCount} failed.`)
+      setResult(`Disbursed ${data.successCount} recipient(s)${simNote}. ${data.failCount} failed.`)
     }
     load(teamId)
   }
@@ -257,7 +257,7 @@ export default function PayrollRunDetailPage({ params }) {
           )}
           {isAdmin && run.status === 'approved' && (
             <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #0A5C54, #0B7A70)' }}>
-              {action === 'disbursing' ? '⏳ Disbursing…' : '💸 Disburse Now'}
+              {action === 'disbursing' ? 'Disbursing…' : 'Disburse Now'}
             </button>
           )}
           {!isAdmin && (

@@ -154,12 +154,10 @@ export default function PayOverviewPage() {
       async function verify() {
         setVerifyStatus({ type: 'loading', text: 'Verifying your payment with Moolre... Please do not close this page.' })
         try {
-          const response = await fetch('/api/pay/topup/verify', {
+          const { res: response, data } = await payFetch('/api/pay/topup/verify', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ reference: ref }),
           })
-          const data = await response.json()
           if (response.ok && data.ok) {
             setVerifyStatus({ type: 'success', text: data.message || 'Payment successfully verified and wallet credited!' })
             load(teamId)

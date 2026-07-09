@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
+import { payFetch } from '@/lib/payFetch'
 
 const C = {
   text:      '#0B1E14',
@@ -62,9 +63,21 @@ function TxCard({ t }) {
         {t.type === 'top_up' ? '⬆' : t.type === 'fee' ? '' : ''}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3, flexWrap: 'wrap' }}>
           <TxTypeBadge type={t.type} />
           <StatusDot status={t.status} />
+          {t.type === 'top_up' && t.status === 'pending' && (
+            <button
+              onClick={() => onVerify(t.reference)}
+              disabled={verifying}
+              style={{
+                background: 'none', border: 'none', color: C.teal, fontSize: 11, fontWeight: 'bold',
+                cursor: 'pointer', padding: '0 4px', textDecoration: 'underline', fontFamily: 'inherit'
+              }}
+            >
+              {verifying ? '...' : 'Verify'}
+            </button>
+          )}
         </div>
         <div style={{ fontSize: 11, color: C.text3 }}>
           {new Date(t.created_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -92,6 +105,7 @@ export default function TransactionsPage() {
   const [loading, setLoading] = useState(true)
   const [search,  setSearch]  = useState('')
   const [isMobile, setIsMobile] = useState(false)
+  const [verifying, setVerifying] = useState({}) // { [ref]: boolean }
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -121,6 +135,27 @@ export default function TransactionsPage() {
     }
     init()
   }, [load])
+
+  const handleVerify = async (ref) => {
+    if (verifying[ref]) return
+    setVerifying(prev => ({ ...prev, [ref]: true }))
+    try {
+      const { res, data } = await payFetch('/api/pay/topup/verify', {
+        method: 'POST',
+        body: JSON.stringify({ reference: ref }),
+      })
+      if (res.ok && data.ok) {
+        alert(data.message || 'Payment successfully verified and wallet credited!')
+        load(teamId)
+      } else {
+        alert(data.message || data.error || 'Payment status check returned pending. Please try again in a moment.')
+      }
+    } catch (e) {
+      alert('Network error verifying payment: ' + e.message)
+    } finally {
+      setVerifying(prev => ({ ...prev, [ref]: false }))
+    }
+  }
 
   const filtered = txns.filter(t => {
     if (filter !== 'all' && t.type !== filter) return false
@@ -226,7 +261,7 @@ export default function TransactionsPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {filtered.map((t, i) => (
             <div key={t.id} style={{ animation: `fadeUp 0.2s ease ${Math.min(i, 12) * 0.03}s both` }}>
-              <TxCard t={t} />
+              <TxCard t={t} onVerify={handleVerify} verifying={verifying[t.reference]} />
             </div>
           ))}
         </div>
@@ -249,7 +284,23 @@ export default function TransactionsPage() {
                   <td style={{ padding: '11px 18px', fontWeight: 800, color: t.type === 'top_up' ? C.success : t.type === 'fee' ? C.warning : C.teal }}>
                     {t.type === 'top_up' ? '+' : '-'}{fmt(t.amount)}
                   </td>
-                  <td style={{ padding: '11px 18px' }}><StatusDot status={t.status} /></td>
+                  <td style={{ padding: '11px 18px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <StatusDot status={t.status} />
+                      {t.type === 'top_up' && t.status === 'pending' && (
+                        <button
+                          onClick={() => handleVerify(t.reference)}
+                          disabled={verifying[t.reference]}
+                          style={{
+                            background: 'none', border: 'none', color: C.teal, fontSize: 11, fontWeight: 'bold',
+                            cursor: 'pointer', padding: 0, textDecoration: 'underline', fontFamily: 'inherit'
+                          }}
+                        >
+                          {verifying[t.reference] ? '...' : 'Verify'}
+                        </button>
+                      )}
+                    </div>
+                  </td>
                   <td style={{ padding: '11px 18px' }}>
                     <code style={{ fontSize: 10, color: C.text, background: C.muted, border: `1px solid ${C.border}`, borderRadius: 5, padding: '3px 7px' }}>
                       {t.reference?.slice(0, 24)}…

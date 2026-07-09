@@ -77,7 +77,7 @@ function TopUpModal({ onClose, teamId, isSimulation }) {
       return setError(data.error || 'Failed')
     }
     if (data.checkout_url) {
-      window.open(data.checkout_url, '_blank')
+      window.location.href = data.checkout_url
     } else if (isSimulation) {
       await payFetch('/api/pay/dev-topup-confirm', {
         method: 'POST',

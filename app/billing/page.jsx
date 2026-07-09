@@ -164,6 +164,7 @@ function BillingContent(){
   const [payMethod, setPayMethod] = useState(null)
   const [msg,       setMsg]       = useState({text:'',type:''})
   const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' | 'annual'
+  const [verifyStatus, setVerifyStatus] = useState(null) // { type: 'loading'|'success'|'error', text: string }
 
   // Usage Stats
   const [athleteCount, setAthleteCount] = useState(0)
@@ -198,7 +199,39 @@ function BillingContent(){
     setLoading(false)
   },[])
 
-  useEffect(()=>{load()},[load])
+  useEffect(()=>{
+    load()
+    // Auto-verify payment after Moolre POS redirect
+    if(typeof window==='undefined') return
+    const params=new URLSearchParams(window.location.search)
+    const ref=params.get('ref')
+    if(ref&&ref.startsWith('APEX-M-')){
+      const plan=params.get('plan')
+      const team_id=params.get('team_id')
+      // Clean URL immediately
+      const url=new URL(window.location.href)
+      url.searchParams.delete('ref'); url.searchParams.delete('plan')
+      url.searchParams.delete('team_id'); url.searchParams.delete('redirect')
+      window.history.replaceState({},'',(url.pathname+url.search).replace(/\?$/,''))
+      if(ref&&plan&&team_id){
+        setVerifyStatus({type:'loading',text:'Verifying your payment… Please do not close this page.'})
+        fetchWithAuth('/api/billing/verify-moolre',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({reference:ref,plan,team_id}),
+        })
+        .then(r=>r.json())
+        .then(data=>{
+          if(data.ok){
+            setVerifyStatus({type:'success',text:data.message||'Payment verified — your plan is now active!'})
+            load()
+          } else {
+            setVerifyStatus({type:'error',text:data.error||'Payment verification failed. Please contact support with ref: '+ref})
+          }
+        })
+        .catch(()=>setVerifyStatus({type:'error',text:'Network error during verification. Contact support with ref: '+ref}))
+      }
+    }
+  },[load])
   useEffect(()=>{ if(upgradeReason==='upgrade_required'||upgradeReason==='expired') setTab('upgrade') },[upgradeReason])
 
   // Compute pricing safely
@@ -335,6 +368,26 @@ function BillingContent(){
             border:`1px solid ${msg.type==='error'?'rgba(225,29,72,0.2)':'rgba(5,150,105,0.2)'}`,
             animation:'fadeInScale 0.2s ease',
           }}>{msg.text}</div>
+        )}
+
+        {/* Payment verification banner (shown after Moolre POS redirect) */}
+        {verifyStatus&&(
+          <div style={{
+            padding:'13px 18px',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,lineHeight:1.6,marginBottom:20,
+            background:verifyStatus.type==='loading'?'var(--warning-light)':verifyStatus.type==='success'?'var(--success-light)':'var(--danger-light)',
+            color:verifyStatus.type==='loading'?'#92400E':verifyStatus.type==='success'?'var(--success)':'var(--danger)',
+            border:`1px solid ${verifyStatus.type==='loading'?'rgba(217,119,6,0.25)':verifyStatus.type==='success'?'rgba(5,150,105,0.2)':'rgba(225,29,72,0.2)'}`,
+            animation:'fadeInScale 0.2s ease',
+            display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,
+          }}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              {verifyStatus.type==='loading'&&<div style={{width:14,height:14,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.7s linear infinite',flexShrink:0}}/>}
+              <span>{verifyStatus.type==='success'?'✓ ':verifyStatus.type==='error'?'⚠ ':''}{verifyStatus.text}</span>
+            </div>
+            {verifyStatus.type!=='loading'&&(
+              <button onClick={()=>setVerifyStatus(null)} style={{background:'none',border:'none',color:'inherit',fontWeight:'bold',cursor:'pointer',fontSize:16,padding:'0 4px'}}>✕</button>
+            )}
+          </div>
         )}
 
         {/* ── OVERVIEW ── */}

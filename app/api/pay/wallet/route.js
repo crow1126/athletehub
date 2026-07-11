@@ -28,10 +28,24 @@ export async function GET(req) {
       .select('type, amount, status')
       .eq('team_id', team_id)
 
-    const totalTopUps   = (stats || []).filter(t => t.type === 'top_up'  && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0)
-    const totalDisbursed = (stats || []).filter(t => t.type === 'payout'  && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0)
-    const totalFees     = (stats || []).filter(t => t.type === 'fee'     && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0)
-    const pendingAmount = (stats || []).filter(t => t.type === 'payout'  && t.status === 'processing').reduce((s, t) => s + Number(t.amount), 0)
+    const rows = stats || []
+
+    const totalTopUps    = rows.filter(t => t.type === 'top_up'  && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0)
+    const totalDisbursed = rows.filter(t => t.type === 'payout'  && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0)
+    const totalFees      = rows.filter(t => t.type === 'fee'     && t.status === 'success').reduce((s, t) => s + Number(t.amount), 0)
+    const pendingAmount  = rows.filter(t => t.type === 'payout'  && t.status === 'processing').reduce((s, t) => s + Number(t.amount), 0)
+
+    // ── Per-club entitlement reconciliation ────────────────────────────────────
+    // allowedBalance = what this club is entitled to spend, based purely on
+    // their own deposits minus all outflows (confirmed + in-flight).
+    // processing payouts count as already out for safety.
+    const totalOut     = rows
+      .filter(t => ['payout', 'fee'].includes(t.type) && ['success', 'processing'].includes(t.status))
+      .reduce((s, t) => s + Number(t.amount), 0)
+    const allowedBalance   = parseFloat((totalTopUps - totalOut).toFixed(2))
+    const walletBalance    = parseFloat(wallet.balance)
+    // A small tolerance (1 cent) to absorb floating-point rounding
+    const reconciliationOk = walletBalance <= allowedBalance + 0.01
 
     // Recent payroll runs
     const { data: recentRuns } = await db.from('pay_payroll_runs')
@@ -43,6 +57,13 @@ export async function GET(req) {
     return NextResponse.json({
       wallet,
       stats: { totalTopUps, totalDisbursed, totalFees, pendingAmount },
+      reconciliation: {
+        allowedBalance,
+        totalDeposited: totalTopUps,
+        totalOut,
+        reconciliationOk,
+        driftAmount: reconciliationOk ? 0 : parseFloat((walletBalance - allowedBalance).toFixed(2)),
+      },
       recentRuns: recentRuns || [],
     })
   } catch (e) {

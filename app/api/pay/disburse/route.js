@@ -10,6 +10,50 @@ import log from '@/lib/logger'
 const db = createServiceClient()
 const PLATFORM_FEE_RATE = 0.01 // 1%
 
+/**
+ * computeEntitlement — calculates the maximum a team is allowed to disburse
+ * based purely on their own confirmed top-up deposits minus all outflows
+ * (successful payouts, fees, AND pending/processing payouts).
+ *
+ * This ensures that even if the DB wallet balance has drifted upward
+ * (e.g. double-credit bug), clubs can never disburse more than they
+ * themselves deposited — preventing cross-club fund leakage in the shared
+ * Moolre account.
+ *
+ * @returns {{ ok: boolean, allowedBalance: number, totalDeposited: number,
+ *             totalOut: number, error?: string }}
+ */
+async function computeEntitlement(team_id) {
+  const { data: txns, error } = await db
+    .from('pay_transactions')
+    .select('type, amount, status')
+    .eq('team_id', team_id)
+
+  if (error) {
+    return { ok: false, error: `Could not fetch transactions for reconciliation: ${error.message}` }
+  }
+
+  const rows = txns || []
+
+  // Sum of all successfully credited top-ups for this team
+  const totalDeposited = rows
+    .filter(t => t.type === 'top_up' && t.status === 'success')
+    .reduce((s, t) => s + Number(t.amount), 0)
+
+  // Sum of all confirmed + in-flight outflows (payouts + fees)
+  // processing payouts are counted as already out — safe default
+  const totalOut = rows
+    .filter(t =>
+      ['payout', 'fee'].includes(t.type) &&
+      ['success', 'processing'].includes(t.status)
+    )
+    .reduce((s, t) => s + Number(t.amount), 0)
+
+  const allowedBalance = parseFloat((totalDeposited - totalOut).toFixed(2))
+
+  return { ok: true, allowedBalance, totalDeposited, totalOut }
+}
+
 // Only call real Moolre API when explicitly pointed at sandbox.
 // In dev/staging without sandbox URL, simulate locally to avoid accidental real transfers.
 const SIMULATE = !IS_SANDBOX && (process.env.NODE_ENV !== 'production' || process.env.NEXT_PUBLIC_ENABLE_SIMULATION === 'true')
@@ -69,6 +113,67 @@ export async function POST(req) {
         error: `Insufficient balance. Need GHS ${totalRequired.toFixed(2)}, have GHS ${(wallet?.balance || 0).toFixed(2)}`,
       }, { status: 400 })
     }
+
+    // ── Per-club entitlement reconciliation ───────────────────────────────────
+    // Each club can only disburse funds THEY deposited via top-up.
+    // Since all clubs share one physical Moolre account, we compute
+    // allowedBalance = SUM(their successful top-ups) - SUM(their outflows).
+    // If wallet.balance > allowedBalance, the DB has drifted (double-credit
+    // bug, manual edit, etc.) and we block to protect other clubs' funds.
+    const entitlement = await computeEntitlement(run.team_id)
+    if (!entitlement.ok) {
+      log.error('disburse: reconciliation query failed', { team_id: run.team_id, error: entitlement.error })
+      return NextResponse.json({
+        error: `Internal error during balance reconciliation. Please contact support.`,
+      }, { status: 500 })
+    }
+
+    const { allowedBalance, totalDeposited, totalOut } = entitlement
+
+    if (wallet.balance > allowedBalance + 0.01) {
+      // DB balance is higher than what deposits justify — drift detected.
+      // Block completely and log for admin investigation.
+      log.error('disburse: BALANCE DRIFT DETECTED — blocking disbursement to protect other clubs', {
+        team_id:        run.team_id,
+        wallet_balance: wallet.balance,
+        allowedBalance,
+        totalDeposited,
+        totalOut,
+        drift_amount:   parseFloat((wallet.balance - allowedBalance).toFixed(2)),
+      })
+      return NextResponse.json({
+        error:
+          `Wallet balance discrepancy detected. Your recorded balance (GHS ${wallet.balance.toFixed(2)}) ` +
+          `exceeds your deposit entitlement (GHS ${allowedBalance.toFixed(2)}). ` +
+          `Disbursements are blocked until this is resolved. Please contact admin@apextrackgh.com.`,
+        code: 'BALANCE_DRIFT',
+      }, { status: 400 })
+    }
+
+    if (totalRequired > allowedBalance) {
+      log.warn('disburse: entitlement insufficient', {
+        team_id:      run.team_id,
+        totalRequired,
+        allowedBalance,
+        totalDeposited,
+        totalOut,
+      })
+      return NextResponse.json({
+        error:
+          `Insufficient deposited funds. You need GHS ${totalRequired.toFixed(2)} ` +
+          `but your deposit entitlement is GHS ${allowedBalance.toFixed(2)} ` +
+          `(Total deposited: GHS ${totalDeposited.toFixed(2)}, Already disbursed/pending: GHS ${totalOut.toFixed(2)}). ` +
+          `Please top up your wallet before disbursing.`,
+        code: 'ENTITLEMENT_EXCEEDED',
+      }, { status: 400 })
+    }
+
+    log.info('disburse: entitlement check passed', {
+      team_id: run.team_id,
+      allowedBalance,
+      totalRequired,
+      headroom: parseFloat((allowedBalance - totalRequired).toFixed(2)),
+    })
 
     // ── Live Moolre pre-flight balance check (skip in simulation mode) ─────────
     if (!SIMULATE) {

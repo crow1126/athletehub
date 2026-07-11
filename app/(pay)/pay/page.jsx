@@ -195,9 +195,12 @@ export default function PayOverviewPage() {
   }, [load])
 
   const isAdmin = ['admin', 'superadmin'].includes(role)
-  const wallet = walletData?.wallet
-  const stats = walletData?.stats
-  const recentRuns = walletData?.recentRuns || []
+  const wallet      = walletData?.wallet
+  const stats       = walletData?.stats
+  const reconciliation = walletData?.reconciliation
+  const recentRuns  = walletData?.recentRuns || []
+  const driftDetected = reconciliation && !reconciliation.reconciliationOk
+
 
   return (
     <div className="pay-page" style={{ animation: 'fadeUp 0.35s ease' }}>
@@ -218,6 +221,38 @@ export default function PayOverviewPage() {
           {isAdmin && <button className="pay-btn-gold" style={{ padding: '9px 16px', fontSize: 13 }} onClick={() => setShowTopUp(true)}>+ Top Up</button>}
         </div>
       </div>
+
+      {/* Balance Drift Warning Banner */}
+      {!loading && driftDetected && (
+        <div style={{
+          background: '#FEE2E2',
+          border: '1.5px solid #F87171',
+          borderRadius: 12,
+          padding: '16px 20px',
+          marginBottom: 16,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 14,
+          animation: 'fadeUp 0.3s ease',
+        }}>
+          <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#DC2626', flexShrink: 0, marginTop: 1 }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#991B1B', marginBottom: 4 }}>
+              Balance Discrepancy Detected &mdash; Disbursements Blocked
+            </div>
+            <div style={{ fontSize: 13, color: '#B91C1C', lineHeight: 1.6 }}>
+              Your recorded balance (<strong>{fmt(wallet?.balance)}</strong>) exceeds your
+              deposit entitlement (<strong>{fmt(reconciliation.allowedBalance)}</strong>) by{' '}
+              <strong>{fmt(reconciliation.driftAmount)}</strong>.
+              All disbursements are frozen until this is resolved.{' '}
+              <a href="mailto:admin@apextrackgh.com" style={{ color: '#991B1B', fontWeight: 700 }}>
+                Contact admin@apextrackgh.com
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
 
       {/* Verification Status Banner */}
       {verifyStatus && (
@@ -251,6 +286,7 @@ export default function PayOverviewPage() {
         </div>
       )}
 
+
       {/* Wallet hero — teal gradient matching ApexTrack brand */}
       <div style={{
         background: `linear-gradient(135deg, ${C.tealDeep} 0%, ${C.teal} 60%, #0D9488 100%)`,
@@ -283,12 +319,62 @@ export default function PayOverviewPage() {
         )}
       </div>
 
+      {/* Entitlement Breakdown Panel */}
+      {!loading && reconciliation && (
+        <div className="pay-card" style={{
+          padding: isMobile ? '14px 16px' : '20px 28px',
+          marginBottom: isMobile ? 16 : 24,
+          border: driftDetected ? '1.5px solid #F87171' : `1px solid ${C.border}`,
+          background: driftDetected ? '#FFF5F5' : undefined,
+          animation: 'fadeUp 0.4s ease',
+        }}>
+          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: driftDetected ? C.danger : C.text3, marginBottom: 14 }}>
+            {driftDetected ? 'Deposit Entitlement — Discrepancy Detected' : 'Deposit Entitlement Check'}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 12 : 0, alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Deposited */}
+            <div style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
+              <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Total Deposited</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.success, letterSpacing: '-0.03em' }}>{fmt(reconciliation.totalDeposited)}</div>
+            </div>
+            {/* Minus outflows */}
+            <div style={{ fontSize: isMobile ? 18 : 22, color: C.text3, fontWeight: 300, flexShrink: 0, padding: '0 8px' }}>−</div>
+            <div style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
+              <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Disbursed + Fees</div>
+              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.teal, letterSpacing: '-0.03em' }}>{fmt(reconciliation.totalOut)}</div>
+              <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>(incl. pending payouts)</div>
+            </div>
+            {/* Equals */}
+            <div style={{ fontSize: isMobile ? 18 : 22, color: C.text3, fontWeight: 300, flexShrink: 0, padding: '0 8px' }}>=</div>
+            {/* Entitlement */}
+            <div style={{ textAlign: 'center', flex: 1, minWidth: 110 }}>
+              <div style={{ fontSize: 10, color: driftDetected ? C.danger : C.text3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                {driftDetected ? 'Allowed (Capped)' : 'Spendable Entitlement'}
+              </div>
+              <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 900, color: driftDetected ? C.danger : C.text, letterSpacing: '-0.03em' }}>
+                {fmt(reconciliation.allowedBalance)}
+              </div>
+              {driftDetected && (
+                <div style={{ fontSize: 11, color: C.danger, marginTop: 3, fontWeight: 600 }}>
+                  Balance drift: +{fmt(reconciliation.driftAmount)}
+                </div>
+              )}
+              {!driftDetected && (
+                <div style={{ fontSize: 10, color: C.success, marginTop: 3, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                  Verified
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Stat grid */}
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? 10 : 16, marginBottom: isMobile ? 16 : 24 }}>
-        <StatCard label="Total Topped Up" value={loading ? '…' : fmt(stats?.totalTopUps)} icon="⬆" sub="All-time deposits" accent={C.success} />
-        <StatCard label="Total Disbursed" value={loading ? '…' : fmt(stats?.totalDisbursed)} icon="" sub="All-time payouts" accent={C.teal} />
-        <StatCard label="Pending Payouts" value={loading ? '…' : fmt(stats?.pendingAmount)} icon="" sub="Awaiting confirmation" accent={C.warning} />
-        <StatCard label="Platform Fees" value={loading ? '…' : fmt(stats?.totalFees)} icon="" sub="1% per run" accent="#6D28D9" />
+        <StatCard label="Total Topped Up" value={loading ? '...' : fmt(stats?.totalTopUps)} sub="All-time deposits" accent={C.success} />
+        <StatCard label="Total Disbursed" value={loading ? '...' : fmt(stats?.totalDisbursed)} sub="All-time payouts" accent={C.teal} />
+        <StatCard label="Pending Payouts" value={loading ? '...' : fmt(stats?.pendingAmount)} sub="Awaiting confirmation" accent={C.warning} />
+        <StatCard label="Platform Fees" value={loading ? '...' : fmt(stats?.totalFees)} sub="1% per run" accent="#6D28D9" />
       </div>
 
       {/* Quick Actions + Recent Runs */}
@@ -300,7 +386,7 @@ export default function PayOverviewPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {isAdmin && (
               <button className="pay-btn-gold" style={{ width: '100%' }} onClick={() => setShowTopUp(true)}>
-                💳 Top Up Wallet
+                Top Up Wallet
               </button>
             )}
             {isAdmin && (
@@ -325,7 +411,6 @@ export default function PayOverviewPage() {
             <div style={{ color: C.text3, fontSize: 14, textAlign: 'center', padding: 32 }}>Loading…</div>
           ) : recentRuns.length === 0 ? (
             <div style={{ textAlign: 'center', padding: isMobile ? 24 : 40 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}></div>
               <div style={{ color: C.text3, fontSize: 13 }}>No payroll runs yet</div>
               <Link href="/pay/payroll">
                 <button className="pay-btn-gold" style={{ marginTop: 14, fontSize: 13, padding: '9px 18px' }}>Create First Payroll</button>

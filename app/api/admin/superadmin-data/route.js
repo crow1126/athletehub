@@ -57,7 +57,7 @@ export async function GET(req) {
 
     // Handle raw table query (for database console)
     if (tableName) {
-      const allowedTables = ['profiles', 'athletes', 'teams', 'training_sessions', 'injuries', 'transfers', 'subscriptions', 'coaches', 'contracts', 'scouting_reports', 'staff_logins', 'billing_events', 'performance_stats']
+      const allowedTables = ['profiles', 'athletes', 'teams', 'training_sessions', 'injuries', 'transfers', 'subscriptions', 'coaches', 'contracts', 'scouting_reports', 'staff_logins', 'billing_events', 'performance_stats', 'site_clicks']
       if (!allowedTables.includes(tableName)) {
         return NextResponse.json({ error: 'Table not allowed' }, { status: 400 })
       }
@@ -67,6 +67,17 @@ export async function GET(req) {
     }
 
     const result = {}
+
+    // Analytics
+    if (section === 'all' || section === 'analytics') {
+      const { data, error } = await db
+        .from('site_clicks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (error) console.error('Clicks fetch error:', error.message)
+      result.clicks = data || []
+    }
 
     // Profiles
     if (section === 'all' || section === 'profiles') {

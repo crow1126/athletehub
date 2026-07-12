@@ -31,7 +31,7 @@ const IconClose = () => (
   </svg>
 )
 
-const TABLES = ['profiles', 'athletes', 'teams', 'contracts', 'injuries', 'transfers', 'subscriptions']
+const TABLES = ['profiles', 'athletes', 'teams', 'contracts', 'injuries', 'transfers', 'subscriptions', 'site_clicks']
 
 const STATUS_META = {
   pending:                   { bg: '#FEF3C7', color: '#D97706', label: 'Pending' },
@@ -109,9 +109,16 @@ function Btn({ onClick, children, style={}, disabled=false, variant='default' })
   )
 }
 
+const IconAnalytics = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+)
+
 const NAV_ITEMS = [
   { id:'users',       label:'User Accounts',    icon:<IconUsers /> },
   { id:'clubs',       label:'Clubs & Teams',    icon:<IconClubs /> },
+  { id:'analytics',   label:'Analytics & Clicks', icon:<IconAnalytics /> },
   { id:'maintenance', label:'Database & Roots', icon:<IconMaintenance /> },
 ]
 
@@ -124,6 +131,8 @@ export default function SuperadminPage() {
   const [athletes, setAthletes] = useState([])
   const [mobileNav, setMobileNav] = useState(false)
   const [expandedUser, setExpandedUser] = useState(null)
+  const [clicks, setClicks] = useState([])
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
 
   const [dbRows, setDbRows] = useState([])
   const [dbCols, setDbCols] = useState([])
@@ -202,8 +211,21 @@ export default function SuperadminPage() {
     finally { setDbLoading(false) }
   }, [fetchWithAuth])
 
+  const loadClicks = useCallback(async () => {
+    setAnalyticsLoading(true)
+    try {
+      const data = await fetchWithAuth('/api/admin/superadmin-data?section=analytics')
+      setClicks(data.clicks || [])
+    } catch (err) {
+      showToast('Failed to load click analytics: ' + err.message, 'error')
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [fetchWithAuth])
+
   useEffect(() => { if (authOk) { loadProfiles(); loadTeams() } }, [authOk, loadProfiles, loadTeams])
   useEffect(() => { if (authOk && section === 'maintenance') { loadTable(dbTable) } }, [authOk, section, dbTable, loadTable])
+  useEffect(() => { if (authOk && section === 'analytics') { loadClicks() } }, [authOk, section, loadClicks])
 
   function showToast(msg, type='success') { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
@@ -244,6 +266,74 @@ export default function SuperadminPage() {
       }
     }
     return null
+  }
+
+  // ── ANALYTICS HELPER FUNCTIONS ──
+  function getTopPath(clicksList) {
+    if (!clicksList || clicksList.length === 0) return 'None'
+    const counts = {}
+    clicksList.forEach(c => {
+      let path = '/'
+      try {
+        path = new URL(c.url).pathname
+      } catch {
+        path = c.url || '/'
+      }
+      counts[path] = (counts[path] || 0) + 1
+    })
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
+  }
+
+  function getTopReferrer(clicksList) {
+    if (!clicksList || clicksList.length === 0) return 'Direct / None'
+    const counts = {}
+    clicksList.forEach(c => {
+      const ref = formatReferrer(c.referrer)
+      counts[ref] = (counts[ref] || 0) + 1
+    })
+    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
+  }
+
+  function getUniqueCountries(clicksList) {
+    if (!clicksList || clicksList.length === 0) return 0
+    const set = new Set(clicksList.map(c => c.country || 'GH'))
+    return set.size
+  }
+
+  function formatUrlPath(urlStr) {
+    try {
+      const u = new URL(urlStr)
+      return u.pathname + u.search
+    } catch {
+      return urlStr
+    }
+  }
+
+  function formatReferrer(refStr) {
+    if (!refStr) return 'Direct / Email / SMS'
+    try {
+      const u = new URL(refStr)
+      if (u.hostname.includes('whatsapp')) return 'WhatsApp'
+      if (u.hostname.includes('t.co') || u.hostname.includes('x.com') || u.hostname.includes('twitter')) return 'X / Twitter'
+      if (u.hostname.includes('facebook') || u.hostname.includes('fb.')) return 'Facebook'
+      if (u.hostname.includes('google')) return 'Google Search'
+      return u.hostname
+    } catch {
+      return refStr
+    }
+  }
+
+  function getBrowserName(ua) {
+    if (!ua) return 'Unknown'
+    const u = ua.toLowerCase()
+    if (u.includes('firefox')) return 'Firefox'
+    if (u.includes('chrome') && !u.includes('chromium')) return 'Chrome'
+    if (u.includes('safari') && !u.includes('chrome')) return 'Safari'
+    if (u.includes('edge')) return 'Edge'
+    if (u.includes('opera') || u.includes('opr')) return 'Opera'
+    if (u.includes('android')) return 'Android'
+    if (u.includes('iphone') || u.includes('ipad')) return 'iOS'
+    return 'Browser'
   }
 
   async function deleteUserDirect(userId, userName) {
@@ -1011,6 +1101,95 @@ export default function SuperadminPage() {
                           </div>
                         )
                       })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {section === 'analytics' && (
+              <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
+                {/* Metrics Grid */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:16 }}>
+                  <div className="sa-card">
+                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Total Clicks &amp; Visits</div>
+                    <div style={{ fontSize:26, fontWeight:900, color:'#0f172a' }}>
+                      {analyticsLoading ? '...' : clicks.length}
+                    </div>
+                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Last 100 events tracked</div>
+                  </div>
+                  <div className="sa-card">
+                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Top Visited Path</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#0d9488', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopPath(clicks)}>
+                      {analyticsLoading ? '...' : getTopPath(clicks)}
+                    </div>
+                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Most requested URL page</div>
+                  </div>
+                  <div className="sa-card">
+                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Top Referral Source</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#0d9488', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopReferrer(clicks)}>
+                      {analyticsLoading ? '...' : getTopReferrer(clicks)}
+                    </div>
+                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Where visitors clicked from</div>
+                  </div>
+                  <div className="sa-card">
+                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Unique Locations</div>
+                    <div style={{ fontSize:26, fontWeight:900, color:'#0f172a' }}>
+                      {analyticsLoading ? '...' : getUniqueCountries(clicks)}
+                    </div>
+                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Countries/IP locations</div>
+                  </div>
+                </div>
+
+                {/* Details Table */}
+                <div className="sa-card">
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, paddingBottom:12, borderBottom:'1px solid #f1f5f9' }}>
+                    <h3 style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>Site Click Activity Feed</h3>
+                    <Btn onClick={loadClicks} disabled={analyticsLoading} style={{ padding:'4px 12px', fontSize:11 }}>
+                      {analyticsLoading ? 'Refreshing...' : '↻ Refresh'}
+                    </Btn>
+                  </div>
+
+                  {analyticsLoading ? (
+                    <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>Loading analytics logs...</div>
+                  ) : clicks.length === 0 ? (
+                    <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>No clicks logged yet. Share your site URL to start tracking!</div>
+                  ) : (
+                    <div className="sa-table-wrap">
+                      <table className="sa-table">
+                        <thead>
+                          <tr>
+                            <th className="sa-th">Time</th>
+                            <th className="sa-th">Target URL</th>
+                            <th className="sa-th">Referrer</th>
+                            <th className="sa-th">Location</th>
+                            <th className="sa-th">Device / Browser</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {clicks.map(c => (
+                            <tr key={c.id}>
+                              <td className="sa-td" style={{ fontSize:11, color:'#64748b', whiteSpace:'nowrap' }}>
+                                {new Date(c.created_at).toLocaleString('en-GB')}
+                              </td>
+                              <td className="sa-td" style={{ fontFamily:'monospace', fontSize:11, color:'#0d9488' }}>
+                                {formatUrlPath(c.url)}
+                              </td>
+                              <td className="sa-td" style={{ fontSize:12, fontWeight:600 }}>
+                                {formatReferrer(c.referrer)}
+                              </td>
+                              <td className="sa-td">
+                                <span style={{ fontSize:10, padding:'2px 6px', background:'#f0fdfa', border:'1px solid #99f6e4', color:'#0d9488', borderRadius:4, fontWeight:700 }}>
+                                  {c.country || 'GH'}
+                                </span>
+                              </td>
+                              <td className="sa-td" style={{ fontSize:11, color:'#64748b', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={c.user_agent}>
+                                {getBrowserName(c.user_agent)}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   )}
                 </div>

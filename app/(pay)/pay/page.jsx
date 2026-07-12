@@ -130,6 +130,7 @@ export default function PayOverviewPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [isSimulation, setIsSimulation] = useState(false)
   const [verifyStatus, setVerifyStatus] = useState(null) // { type: 'success' | 'error' | 'loading', text: string }
+  const [showEntitlementDetails, setShowEntitlementDetails] = useState(false)
 
   const load = useCallback(async (tid) => {
     if (!tid) return
@@ -311,8 +312,25 @@ export default function PayOverviewPage() {
               Available balance · Last updated {wallet?.updated_at ? new Date(wallet.updated_at).toLocaleString() : 'never'}
             </div>
             {isSimulation && (
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.25)' }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: 12, background: 'rgba(255,255,255,0.15)', borderRadius: 8, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.25)', marginRight: 8 }}>
                 <span style={{ fontSize: 11, color: '#fff', fontWeight: 700 }}>Dev mode — instant transfer simulation ON</span>
+              </div>
+            )}
+            {!loading && reconciliation && (
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                marginTop: 12,
+                background: driftDetected ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+                borderRadius: 8,
+                padding: '5px 12px',
+                border: `1px solid ${driftDetected ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)'}`
+              }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: driftDetected ? '#FCA5A5' : '#34D399', display: 'inline-block' }} />
+                <span style={{ fontSize: 11, color: '#ffffff', fontWeight: 700 }}>
+                  {driftDetected ? 'Entitlement Discrepancy Detected' : 'Entitlement Verified'}
+                </span>
               </div>
             )}
           </>
@@ -322,50 +340,84 @@ export default function PayOverviewPage() {
       {/* Entitlement Breakdown Panel */}
       {!loading && reconciliation && (
         <div className="pay-card" style={{
-          padding: isMobile ? '14px 16px' : '20px 28px',
+          padding: isMobile ? '12px 16px' : '16px 24px',
           marginBottom: isMobile ? 16 : 24,
           border: driftDetected ? '1.5px solid #F87171' : `1px solid ${C.border}`,
           background: driftDetected ? '#FFF5F5' : undefined,
           animation: 'fadeUp 0.4s ease',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: driftDetected ? C.danger : C.text3, marginBottom: 14 }}>
-            {driftDetected ? 'Deposit Entitlement — Discrepancy Detected' : 'Deposit Entitlement Check'}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 12 : 0, alignItems: 'center', justifyContent: 'space-between' }}>
-            {/* Deposited */}
-            <div style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
-              <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Total Deposited</div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.success, letterSpacing: '-0.03em' }}>{fmt(reconciliation.totalDeposited)}</div>
-            </div>
-            {/* Minus outflows */}
-            <div style={{ fontSize: isMobile ? 18 : 22, color: C.text3, fontWeight: 300, flexShrink: 0, padding: '0 8px' }}>−</div>
-            <div style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
-              <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Disbursed + Fees</div>
-              <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: C.teal, letterSpacing: '-0.03em' }}>{fmt(reconciliation.totalOut)}</div>
-              <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>(incl. pending payouts)</div>
-            </div>
-            {/* Equals */}
-            <div style={{ fontSize: isMobile ? 18 : 22, color: C.text3, fontWeight: 300, flexShrink: 0, padding: '0 8px' }}>=</div>
-            {/* Entitlement */}
-            <div style={{ textAlign: 'center', flex: 1, minWidth: 110 }}>
-              <div style={{ fontSize: 10, color: driftDetected ? C.danger : C.text3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                {driftDetected ? 'Allowed (Capped)' : 'Spendable Entitlement'}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14 }}>🛡️</span>
+              <div style={{ fontSize: 13, fontWeight: 700, color: driftDetected ? C.danger : C.text2 }}>
+                {driftDetected ? 'Deposit Entitlement Discrepancy' : 'Deposit Entitlement Check'}
               </div>
-              <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 900, color: driftDetected ? C.danger : C.text, letterSpacing: '-0.03em' }}>
-                {fmt(reconciliation.allowedBalance)}
-              </div>
-              {driftDetected && (
-                <div style={{ fontSize: 11, color: C.danger, marginTop: 3, fontWeight: 600 }}>
-                  Balance drift: +{fmt(reconciliation.driftAmount)}
-                </div>
-              )}
-              {!driftDetected && (
-                <div style={{ fontSize: 10, color: C.success, marginTop: 3, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
-                  Verified
-                </div>
-              )}
+              <span style={{
+                fontSize: 10,
+                padding: '2px 8px',
+                borderRadius: 6,
+                background: driftDetected ? C.dangerBg : C.successBg,
+                color: driftDetected ? C.danger : C.success,
+                fontWeight: 700
+              }}>
+                {driftDetected ? 'Disbursements Frozen' : 'Verified'}
+              </span>
             </div>
+            <button 
+              onClick={() => setShowEntitlementDetails(!showEntitlementDetails)}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: C.teal,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: 6,
+                transition: 'background 0.2s'
+              }}
+            >
+              {showEntitlementDetails ? 'Hide Details ▲' : 'Show Details ▼'}
+            </button>
           </div>
+
+          {showEntitlementDetails && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? 12 : 0, alignItems: 'center', justifyContent: 'space-between', marginTop: 16, borderTop: `1px solid ${C.border}`, paddingTop: 16, animation: 'fadeUp 0.2s ease' }}>
+              {/* Deposited */}
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
+                <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Total Deposited</div>
+                <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 900, color: C.success, letterSpacing: '-0.03em' }}>{fmt(reconciliation.totalDeposited)}</div>
+              </div>
+              {/* Minus outflows */}
+              <div style={{ fontSize: isMobile ? 16 : 20, color: C.text3, fontWeight: 300, flexShrink: 0, padding: '0 8px' }}>−</div>
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 100 }}>
+                <div style={{ fontSize: 10, color: C.text3, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Disbursed + Fees</div>
+                <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 900, color: C.teal, letterSpacing: '-0.03em' }}>{fmt(reconciliation.totalOut)}</div>
+                <div style={{ fontSize: 10, color: C.text3, marginTop: 2 }}>(incl. pending payouts)</div>
+              </div>
+              {/* Equals */}
+              <div style={{ fontSize: isMobile ? 16 : 20, color: C.text3, fontWeight: 300, flexShrink: 0, padding: '0 8px' }}>=</div>
+              {/* Entitlement */}
+              <div style={{ textAlign: 'center', flex: 1, minWidth: 110 }}>
+                <div style={{ fontSize: 10, color: driftDetected ? C.danger : C.text3, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                  {driftDetected ? 'Allowed (Capped)' : 'Spendable Entitlement'}
+                </div>
+                <div style={{ fontSize: isMobile ? 18 : 24, fontWeight: 900, color: driftDetected ? C.danger : C.text, letterSpacing: '-0.03em' }}>
+                  {fmt(reconciliation.allowedBalance)}
+                </div>
+                {driftDetected && (
+                  <div style={{ fontSize: 11, color: C.danger, marginTop: 3, fontWeight: 600 }}>
+                    Balance drift: +{fmt(reconciliation.driftAmount)}
+                  </div>
+                )}
+                {!driftDetected && (
+                  <div style={{ fontSize: 10, color: C.success, marginTop: 3, display: 'flex', alignItems: 'center', gap: 4, justifyContent: 'center' }}>
+                    Verified
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

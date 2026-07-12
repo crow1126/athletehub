@@ -2,6 +2,7 @@ import { Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import AuthGuard from '@/components/AuthGuard'
 import { Analytics } from "@vercel/analytics/next"
+import ClickTracker from '@/components/ClickTracker'
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -32,6 +33,8 @@ export default function RootLayout({ children }) {
         <AuthGuard>
           {children}
         </AuthGuard>
+        <ClickTracker />
+        <Analytics />
       </body>
     </html>
   )

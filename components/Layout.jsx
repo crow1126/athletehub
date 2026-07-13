@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 
 import {
-  LayoutDashboard, Users, Shield, Calendar, Activity, Zap, 
-  Search, FileText, BarChart3, Settings, ArrowRightLeft, CreditCard,
+  LayoutDashboard, Users, ShieldCheck, CalendarDays, HeartPulse, TrendingUp, 
+  Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
   Wallet, Menu, X, Bell
 } from 'lucide-react'
 
@@ -41,20 +41,21 @@ const iconProps = { size: 20, strokeWidth: 2 }
 const ICONS = {
   dashboard:   <LayoutDashboard {...iconProps} />,
   athletes:    <Users {...iconProps} />,
-  coaches:     <Shield {...iconProps} />,
-  schedule:    <Calendar {...iconProps} />,
-  injuries:    <Activity {...iconProps} />,
-  performance: <Zap {...iconProps} />,
+  coaches:     <ShieldCheck {...iconProps} />,
+  schedule:    <CalendarDays {...iconProps} />,
+  injuries:    <HeartPulse {...iconProps} />,
+  performance: <TrendingUp {...iconProps} />,
   scouting:    <Search {...iconProps} />,
-  contracts:   <FileText {...iconProps} />,
+  contracts:   <ClipboardList {...iconProps} />,
   reports:     <BarChart3 {...iconProps} />,
   settings:    <Settings {...iconProps} />,
   billing:     <CreditCard {...iconProps} />,
-  transfers:   <ArrowRightLeft {...iconProps} />,
+  transfers:   <ArrowLeftRight {...iconProps} />,
   pay:         <Wallet {...iconProps} />,
   menu:        <Menu size={24} strokeWidth={2} />,
   close:       <X size={24} strokeWidth={2} />,
 }
+
 
 const C = {
   floral:     'var(--floral)',

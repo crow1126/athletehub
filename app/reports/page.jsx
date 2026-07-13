@@ -5,17 +5,21 @@ import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
+import { Users, HeartPulse, Trophy, CalendarDays, ShieldCheck, ClipboardList, FileSpreadsheet, Activity } from 'lucide-react'
+
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
 
+const iconProps = { size: 24, strokeWidth: 1.8 }
 const REPORT_CARDS = [
-  { id:'athletes',    icon:'', title:'Athletes Report',         desc:'Full squad roster — positions, clubs, regions, coaches, and status',                   color:'#4A90E2', sheets:'1 sheet'  },
-  { id:'injuries',    icon:'', title:'Injury Report',           desc:'Complete injury records with severity, dates, recovery notes and status',               color:'#E74C3C', sheets:'1 sheet'  },
-  { id:'performance', icon:'', title:'Performance Report',      desc:'Match stats per athlete — goals, assists, xG, xA, pass accuracy, distance, ratings',   color:'#9B59B6', sheets:'1 sheet'  },
-  { id:'sessions',    icon:'', title:'Training Sessions',       desc:'All scheduled training sessions with venue, coach, type and duration',                  color:'#27AE60', sheets:'1 sheet'  },
-  { id:'coaches',     icon:'', title:'Staff Report',            desc:'Technical, medical, analytics and scouting staff roster with roles',                    color:'#E67E22', sheets:'1 sheet'  },
-  { id:'contracts',   icon:'', title:'Contracts & Finance',     desc:'Player contracts, wages, bonuses and automatic wage bill summary sheet',                color:'#1B7A3E', sheets:'2 sheets' },
-  { id:'summary',     icon:'', title:'Full Summary Report',     desc:'Everything in one workbook — all 6 modules combined with an overview cover sheet',      color:'#E67E22', sheets:'7 sheets', featured: true },
+  { id:'athletes',    icon:<Users {...iconProps} color="#4A90E2"/>, title:'Athletes Report',         desc:'Full squad roster — positions, clubs, regions, coaches, and status',                   color:'#4A90E2', sheets:'1 sheet'  },
+  { id:'injuries',    icon:<HeartPulse {...iconProps} color="#E74C3C"/>, title:'Injury Report',           desc:'Complete injury records with severity, dates, recovery notes and status',               color:'#E74C3C', sheets:'1 sheet'  },
+  { id:'performance', icon:<Trophy {...iconProps} color="#9B59B6"/>, title:'Performance Report',      desc:'Match stats per athlete — goals, assists, xG, xA, pass accuracy, distance, ratings',   color:'#9B59B6', sheets:'1 sheet'  },
+  { id:'sessions',    icon:<CalendarDays {...iconProps} color="#27AE60"/>, title:'Training Sessions',       desc:'All scheduled training sessions with venue, coach, type and duration',                  color:'#27AE60', sheets:'1 sheet'  },
+  { id:'coaches',     icon:<ShieldCheck {...iconProps} color="#E67E22"/>, title:'Staff Report',            desc:'Technical, medical, analytics and scouting staff roster with roles',                    color:'#E67E22', sheets:'1 sheet'  },
+  { id:'contracts',   icon:<ClipboardList {...iconProps} color="#1B7A3E"/>, title:'Contracts & Finance',     desc:'Player contracts, wages, bonuses and automatic wage bill summary sheet',                color:'#1B7A3E', sheets:'2 sheets' },
+  { id:'summary',     icon:<FileSpreadsheet {...iconProps} color="#0D9488"/>, title:'Full Summary Report',     desc:'Everything in one workbook — all 6 modules combined with an overview cover sheet',      color:'#0D9488', sheets:'7 sheets', featured: true },
 ]
+
 
 export default function ReportsPage() {
   const [athletes,     setAthletes]     = useState([])
@@ -128,16 +132,16 @@ export default function ReportsPage() {
         {/* Stats row */}
         <div className="fade-up stat-grid-5" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 28 }}>
           {[
-            { label:'Total Athletes',    value: loading ? '…' : athletes.length,         icon:'', color:'#4A90E2' },
-            { label:'Active Athletes',   value: loading ? '…' : activeAthletes,          icon:'', color:'#27AE60' },
-            { label:'Injury Records',    value: loading ? '…' : injuries.length,         icon:'', color:'#E74C3C' },
-            { label:'Performance Logs',  value: loading ? '…' : performance.length,      icon:'', color:'#9B59B6' },
-            { label:'Active Contracts',  value: loading ? '…' : activeContracts.length,  icon:'', color:'#1B7A3E' },
+            { label:'Total Athletes',    value: loading ? '…' : athletes.length,         icon:<Users size={18} color="#4A90E2"/>, color:'#4A90E2' },
+            { label:'Active Athletes',   value: loading ? '…' : activeAthletes,          icon:<Users size={18} color="#27AE60"/>, color:'#27AE60' },
+            { label:'Injury Records',    value: loading ? '…' : injuries.length,         icon:<HeartPulse size={18} color="#E74C3C"/>, color:'#E74C3C' },
+            { label:'Performance Logs',  value: loading ? '…' : performance.length,      icon:<Trophy size={18} color="#9B59B6"/>, color:'#9B59B6' },
+            { label:'Active Contracts',  value: loading ? '…' : activeContracts.length,  icon:<ClipboardList size={18} color="#1B7A3E"/>, color:'#1B7A3E' },
           ].map(s => (
             <div key={s.label} className="card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, transition: 'var(--transition)' }}
               onMouseEnter={e => { e.currentTarget.style.transform='translateY(-2px)'; e.currentTarget.style.boxShadow='var(--shadow-md)' }}
               onMouseLeave={e => { e.currentTarget.style.transform='translateY(0)';    e.currentTarget.style.boxShadow='var(--shadow-sm)' }}>
-              <div style={{ width: 40, height: 40, borderRadius: 11, background: s.color+'18', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{s.icon}</div>
+              <div style={{ width: 40, height: 40, borderRadius: 11, background: s.color+'18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.icon}</div>
               <div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
                 <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 500, marginTop: 4 }}>{s.label}</div>
@@ -145,6 +149,7 @@ export default function ReportsPage() {
             </div>
           ))}
         </div>
+
 
         {/* Period selector */}
         <div className="card fade-up fade-up-1" style={{ padding: '22px 26px', marginBottom: 24 }}>

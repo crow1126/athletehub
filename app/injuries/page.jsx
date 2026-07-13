@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { Heart, HeartOff, FileHeart } from 'lucide-react'
 
 const EMPTY = {
   athlete_id:'', injury_type:'', severity:'Mild',
@@ -178,12 +179,12 @@ export default function InjuriesPage() {
         {/* Stats */}
         <div className="fade-up stat-grid-3" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:24 }}>
           {[
-            {label:'Total Records',  value:injuries.length, icon:'', color:'#4A90E2', bg:'#E8F4FF'},
-            {label:'Active Injuries',value:activeCnt,       icon:'', color:'#E74C3C', bg:'#FDEDEC'},
-            {label:'Recovered',      value:recovCnt,        icon:'', color:'#27AE60', bg:'#E8F8EE'},
+            {label:'Total Records',  value:injuries.length, icon:<FileHeart size={22} color="#4A90E2"/>, color:'#4A90E2', bg:'#E8F4FF'},
+            {label:'Active Injuries',value:activeCnt,       icon:<HeartOff size={22} color="#E74C3C"/>,  color:'#E74C3C', bg:'#FDEDEC'},
+            {label:'Recovered',      value:recovCnt,        icon:<Heart size={22} color="#27AE60"/>,     color:'#27AE60', bg:'#E8F8EE'},
           ].map(s=>(
             <div key={s.label} className="card" style={{ padding:'18px 22px',display:'flex',alignItems:'center',gap:16,borderLeft:`4px solid ${s.color}` }}>
-              <div style={{ width:48,height:48,borderRadius:14,background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,flexShrink:0 }}>{s.icon}</div>
+              <div style={{ width:48,height:48,borderRadius:14,background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{s.icon}</div>
               <div>
                 <div style={{ fontSize:30,fontWeight:900,color:s.color,lineHeight:1,letterSpacing:'-0.02em' }}>{s.value}</div>
                 <div style={{ fontSize:12,color:'var(--text3)',fontWeight:600,marginTop:3 }}>{s.label}</div>
@@ -191,6 +192,7 @@ export default function InjuriesPage() {
             </div>
           ))}
         </div>
+
 
         {/* Filter */}
         <div className="fade-up tabs-scroll" style={{ display:'flex',gap:4,marginBottom:20,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content',maxWidth:'100%' }}>

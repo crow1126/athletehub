@@ -6,17 +6,19 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
+import { ArrowUpRight, ArrowDownLeft, Handshake, CornerUpRight, CornerDownLeft, RefreshCw, Landmark, Wallet, Plus, Trash2 } from 'lucide-react'
 
 const TRANSFER_TYPES = ['All','sold','bought','free_agent','loan_out','loan_in','return_from_loan']
 
 const TYPE_META = {
-  sold:              { label:'Sold',              icon:'', color:'#C0392B', bg:'#FDEDEC' },
-  bought:            { label:'Bought',            icon:'', color:'#1B7A3E', bg:'#E8F8EE' },
-  free_agent:        { label:'Free Agent',        icon:'', color:'#B7770D', bg:'#FEF9E7' },
-  loan_out:          { label:'Loan Out',          icon:'', color:'#065A82', bg:'#E6F0F8' },
-  loan_in:           { label:'Loan In',           icon:'⬅️', color:'#6A1B9A', bg:'#F3E5F5' },
-  return_from_loan:  { label:'Return from Loan',  icon:'', color:'#2D6B6B', bg:'#E0F0F0' },
+  sold:              { label:'Sold',              icon:<ArrowUpRight size={13} style={{verticalAlign:'middle', marginRight:4}} />, color:'#C0392B', bg:'#FDEDEC' },
+  bought:            { label:'Bought',            icon:<ArrowDownLeft size={13} style={{verticalAlign:'middle', marginRight:4}} />, color:'#1B7A3E', bg:'#E8F8EE' },
+  free_agent:        { label:'Free Agent',        icon:<Handshake size={13} style={{verticalAlign:'middle', marginRight:4}} />, color:'#B7770D', bg:'#FEF9E7' },
+  loan_out:          { label:'Loan Out',          icon:<CornerUpRight size={13} style={{verticalAlign:'middle', marginRight:4}} />, color:'#065A82', bg:'#E6F0F8' },
+  loan_in:           { label:'Loan In',           icon:<CornerDownLeft size={13} style={{verticalAlign:'middle', marginRight:4}} />, color:'#6A1B9A', bg:'#F3E5F5' },
+  return_from_loan:  { label:'Return from Loan',  icon:<RefreshCw size={13} style={{verticalAlign:'middle', marginRight:4}} />, color:'#2D6B6B', bg:'#E0F0F0' },
 }
+
 
 const AV_COLORS = ['#006A6A','#008080','#2D6B6B','#004F4F','#5A9494','#003D3D']
 function initials(n){ return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -234,18 +236,21 @@ export default function TransfersPage() {
         {/* Stats row */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(160px,1fr))',gap:12,marginBottom:24}}>
           {[
-            {icon:'',label:'Players Sold',    value:totalSold,   color:'#C0392B'},
-            {icon:'',label:'Players Bought',  value:totalBought, color:'#1B7A3E'},
-            {icon:'',label:'Fees Received',   value:totalFee>0?`GHS ${totalFee.toLocaleString()}`:'—', color:'#006A6A'},
-            {icon:'',label:'Fees Spent',      value:totalSpent>0?`GHS ${totalSpent.toLocaleString()}`:'—', color:'#B7770D'},
+            {icon:<ArrowUpRight size={20} color="#C0392B"/>,label:'Players Sold',    value:totalSold,   color:'#C0392B'},
+            {icon:<ArrowDownLeft size={20} color="#1B7A3E"/>,label:'Players Bought',  value:totalBought, color:'#1B7A3E'},
+            {icon:<Landmark size={20} color="#006A6A"/>,label:'Fees Received',   value:totalFee>0?`GHS ${totalFee.toLocaleString()}`:'—', color:'#006A6A'},
+            {icon:<Wallet size={20} color="#B7770D"/>,label:'Fees Spent',      value:totalSpent>0?`GHS ${totalSpent.toLocaleString()}`:'—', color:'#B7770D'},
           ].map(s=>(
-            <div key={s.label} className="card" style={{padding:'16px 18px'}}>
-              <div style={{fontSize:20,marginBottom:6}}>{s.icon}</div>
-              <div style={{fontSize:22,fontWeight:800,color:s.color,lineHeight:1,marginBottom:3}}>{s.value}</div>
-              <div style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>{s.label}</div>
+            <div key={s.label} className="card" style={{padding:16, display:'flex', gap:12, alignItems:'center'}}>
+              <div style={{width:38,height:38,borderRadius:10,background:s.color+'15',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>{s.icon}</div>
+              <div>
+                <div style={{fontSize:20,fontWeight:800,color:s.color,lineHeight:1,marginBottom:3}}>{s.value}</div>
+                <div style={{fontSize:11,color:'var(--text3)',fontWeight:600}}>{s.label}</div>
+              </div>
             </div>
           ))}
         </div>
+
 
         {/* Record Transfer Form */}
         {showForm && (

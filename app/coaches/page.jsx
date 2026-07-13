@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { IconStar, IconCamera, IconCheck } from '@/lib/icons'
+
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
@@ -17,7 +19,7 @@ const STAFF_TYPES = [
   { value:'scout',            label:'Scout',               icon:'', color:'#1ABC9C', dept:'Scouting'   },
   { value:'kit_manager',      label:'Kit Manager',         icon:'', color:'#F39C12', dept:'Other'      },
   { value:'accountant',       label:'Accountant',          icon:'', color:'#F59E0B', dept:'Other'      },
-  { value:'other',            label:'Other',               icon:'👤', color:'#7F8C8D', dept:'Other'      },
+  { value:'other',            label:'Other',               icon:'', color:'#7F8C8D', dept:'Other'      },
 ]
 
 const DEPT_TABS = [
@@ -26,13 +28,13 @@ const DEPT_TABS = [
   { key:'Medical',   label:'Medical',    icon:'', color:'#E67E22' },
   { key:'Analytics', label:'Analytics',  icon:'', color:'#9B59B6' },
   { key:'Scouting',  label:'Scouting',   icon:'', color:'#1ABC9C' },
-  { key:'Other',     label:'Other',      icon:'👤', color:'#7F8C8D' },
+  { key:'Other',     label:'Other',      icon:'', color:'#7F8C8D' },
 ]
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
 
 function initials(n) { return (n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
-function getStaffType(val) { return STAFF_TYPES.find(t=>t.value===val)||{label:val||'Staff',icon:'👤',color:'#7F8C8D',dept:'Other'} }
+function getStaffType(val) { return STAFF_TYPES.find(t=>t.value===val)||{label:val||'Staff',icon:'',color:'#7F8C8D',dept:'Other'} }
 
 function StaffAvatar({ staff, size=54 }) {
   const [err, setErr] = useState(false)
@@ -266,13 +268,13 @@ export default function CoachesPage() {
                     </div>
                     <div style={{ display:'flex',gap:6,marginTop:12,flexWrap:'wrap' }}>
                       <button onClick={()=>openEdit(coach)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Edit</button>
-                      <button onClick={()=>toggleActive(coach.id,coach.is_active!==false)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>{coach.is_active!==false?'⏸ Deactivate':'▶ Activate'}</button>
+                      <button onClick={()=>toggleActive(coach.id,coach.is_active!==false)} style={{ background:'var(--surface)',color:'var(--text2)',border:'1px solid var(--border)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>{coach.is_active!==false?'Deactivate':'Activate'}</button>
                       <button onClick={()=>handleDelete(coach.id,coach.name)} disabled={deleting===coach.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'1px solid rgba(231,76,60,0.25)',padding:'5px 12px',borderRadius:'var(--r-sm)',fontSize:11,fontWeight:600,cursor:'pointer',opacity:deleting===coach.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===coach.id?'…':'Remove'}</button>
                     </div>
                   </div>
 
                   <div style={{ padding:'14px 18px' }}>
-                    {coach.speciality&&<div style={{ fontSize:12,color:'var(--text2)',marginBottom:12,background:'var(--surface2)',padding:'7px 12px',borderRadius:'var(--r-sm)',display:'flex',gap:6,alignItems:'center',border:'1px solid var(--border)' }}><span>⭐</span><span><strong>Speciality:</strong> {coach.speciality}</span></div>}
+                    {coach.speciality&&<div style={{ fontSize:12,color:'var(--text2)',marginBottom:12,background:'var(--surface2)',padding:'7px 12px',borderRadius:'var(--r-sm)',display:'flex',gap:6,alignItems:'center',border:'1px solid var(--border)' }}><IconStar size={13} color="#F39C12" style={{flexShrink:0}} /><span><strong>Speciality:</strong> {coach.speciality}</span></div>}
 
                     {['physio','medical','sports_scientist','analyst','scout','accountant'].includes(coach.staff_type)&&(
                       <div style={{ background:'var(--surface2)',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:'var(--text2)',marginBottom:10,border:'1px solid var(--border)' }}>
@@ -330,14 +332,14 @@ export default function CoachesPage() {
                 <label style={lbl}>Passport / Staff Photo</label>
                 <div style={{ display:'flex',alignItems:'center',gap:16 }}>
                   <div style={{ width:84,height:84,borderRadius:'50%',background:'#F0FDFA',border:'3px dashed #99F6E4',overflow:'hidden',flexShrink:0,display:'flex',alignItems:'center',justifyContent:'center' }}>
-                    {photoPreview?<img src={photoPreview} alt="Preview" style={{ width:'100%',height:'100%',objectFit:'cover' }}/>:<span style={{ fontSize:34 }}>👤</span>}
+                    {photoPreview?<img src={photoPreview} alt="Preview" style={{ width:'100%',height:'100%',objectFit:'cover' }}/>:<div style={{ width:34,height:34,borderRadius:'50%',background:'rgba(13,148,136,0.1)',display:'flex',alignItems:'center',justifyContent:'center' }}><IconCamera size={18} color="#0D9488" /></div>}
                   </div>
                   <div>
                     <label htmlFor="staff-photo-upload" style={{ display:'inline-block',background:'#F0FDFA',color:'#0F766E',border:'1px solid #CCFBF1',padding:'8px 18px',borderRadius:'8px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}>
-                      {photoPreview?'Change Photo':'📷 Upload Photo'}
+                      {photoPreview?'Change Photo':'Upload Photo'}
                     </label>
                     <input id="staff-photo-upload" type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(!f)return;setPhotoFile(f);setPhotoPreview(URL.createObjectURL(f))}} style={{ display:'none' }}/>
-                    {photoPreview&&<button onClick={()=>{setPhotoFile(null);setPhotoPreview(null)}} style={{ marginLeft:8,background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'7px 14px',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>✕ Remove</button>}
+                    {photoPreview&&<button onClick={()=>{setPhotoFile(null);setPhotoPreview(null)}} style={{ marginLeft:8,background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'7px 14px',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Remove</button>}
                     <p style={{ fontSize:11,color:'var(--text3)',marginTop:6 }}>Passport-style. JPG or PNG.</p>
                   </div>
                 </div>

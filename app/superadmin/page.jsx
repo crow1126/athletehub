@@ -238,7 +238,7 @@ export default function SuperadminPage() {
     }
     if (colName === 'profile_id' || colName === 'user_id' || colName === 'admin_id' || (colName === 'id' && dbTable === 'profiles')) {
       const p = profiles.find(x => x.id === val)
-      return p ? { name: p.full_name || p.email, icon: '👤', type: 'profile', club: p.club_name } : null
+      return p ? { name: p.full_name || p.email, icon: '', type: 'profile', club: p.club_name } : null
     }
     if (colName === 'athlete_id' || (colName === 'id' && dbTable === 'athletes')) {
       const a = athletes.find(x => x.id === val)
@@ -1204,7 +1204,7 @@ export default function SuperadminPage() {
                   {/* Delete User by ID */}
                   <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
                     <h2 style={{ fontSize:13, fontWeight:700, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                      👤 Delete User Roots &amp; Auth
+                      Delete User Roots &amp; Auth
                     </h2>
                     <p style={{ fontSize:12, color:'#64748b', marginBottom:14, lineHeight:1.6 }}>
                       Purge an administrator and delete their Auth account using their User ID.
@@ -1282,7 +1282,7 @@ export default function SuperadminPage() {
                           <tr>
                             {dbCols.map(c => (
                               <th key={c} className="sa-th" style={{ whiteSpace:'nowrap', background: c==='full_name'||c==='name'?'#f0fdfa':undefined, color: c==='full_name'||c==='name'?'#0d9488':undefined }}>
-                                {c}{(c==='full_name'||c==='name') ? ' 👤' : ''}
+                                {c}
                               </th>
                             ))}
                             <th className="sa-th" style={{ whiteSpace:'nowrap' }}>Root Status</th>

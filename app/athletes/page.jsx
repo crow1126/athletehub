@@ -389,7 +389,7 @@ export default function AthletesPage() {
                 <label style={lbl}>Profile Photo</label>
                 <div style={{ display:'flex', alignItems:'center', gap:14 }}>
                   <div style={{ width:72, height:72, borderRadius:'50%', background:'#F0FDFA', border:'3px dashed #99F6E4', overflow:'hidden', flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    {photoPreview ? <img src={photoPreview} alt="Preview" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <span style={{ fontSize:28 }}>👤</span>}
+                    {photoPreview ? <img src={photoPreview} alt="Preview" style={{ width:'100%', height:'100%', objectFit:'cover' }}/> : <svg width="24" height="24" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#0D9488" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/></svg>}
                   </div>
                   <div>
                     <label htmlFor="photo-upload" style={{ display:'inline-block', background:'#F0FDFA', color:'#0F766E', border:'1px solid #CCFBF1', padding:'7px 16px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer' }}>

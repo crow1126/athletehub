@@ -348,7 +348,7 @@ export default function PayOverviewPage() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14 }}>🛡️</span>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M8 1.5l6 2.5v4c0 3.5-3 6-6 6.5-3-.5-6-3-6-6.5v-4l6-2.5z" stroke={driftDetected ? C.danger : '#0B7A70'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
               <div style={{ fontSize: 13, fontWeight: 700, color: driftDetected ? C.danger : C.text2 }}>
                 {driftDetected ? 'Deposit Entitlement Discrepancy' : 'Deposit Entitlement Check'}
               </div>

@@ -274,7 +274,7 @@ export default function PlayerSchedule() {
                         {s.type}
                       </span>
                     </div>
-                    <div className="list-hide" style={{ fontSize: 12, color: 'var(--text2)' }}>📍 {s.venue}</div>
+                    <div className="list-hide" style={{ fontSize: 12, color: 'var(--text2)', display: 'flex', alignItems: 'center', gap: 4 }}><svg width="11" height="11" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}><path d="M8 1.5C5.518 1.5 3.5 3.518 3.5 6c0 3.5 4.5 9 4.5 9s4.5-5.5 4.5-9c0-2.482-2.018-4.5-4.5-4.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/></svg> {s.venue}</div>
                     <div style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>{s.duration} mins</div>
                   </div>
                 ))}

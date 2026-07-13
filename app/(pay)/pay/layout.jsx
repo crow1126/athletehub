@@ -3,13 +3,13 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Bell } from 'lucide-react'
+import { Bell, LayoutDashboard, CreditCard, History, Settings, MessageSquare } from 'lucide-react'
 
 const NAV = [
-  { href: '/pay',              label: 'Overview',     icon: '◈' },
-  { href: '/pay/payroll',      label: 'Payroll',      icon: '💳' },
-  { href: '/pay/transactions', label: 'Transactions', icon: '' },
-  { href: '/pay/settings',     label: 'Settings',     icon: '' },
+  { href: '/pay',              label: 'Overview',     icon: <LayoutDashboard size={16} /> },
+  { href: '/pay/payroll',      label: 'Payroll',      icon: <CreditCard size={16} /> },
+  { href: '/pay/transactions', label: 'Transactions', icon: <History size={16} /> },
+  { href: '/pay/settings',     label: 'Settings',     icon: <Settings size={16} /> },
 ]
 
 // ── ApexTrack colour tokens (mirrors globals.css :root) ──────────────────────
@@ -182,8 +182,8 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 10, color: C.text3 }}>{timeAgo}</span>
                         {n.sent_count > 0 && (
-                          <span style={{ fontSize: 10, color: C.teal, fontWeight: 700 }}>
-                            📱 {n.sent_count} SMS sent
+                          <span style={{ fontSize: 10, color: C.teal, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <MessageSquare size={11} strokeWidth={2.5} /> {n.sent_count} SMS sent
                           </span>
                         )}
                       </div>
@@ -548,7 +548,7 @@ export default function PayLayout({ children }) {
               <nav style={{ flex: 1, padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 2, overflowY: 'auto' }}>
                 {NAV.map(n => (
                   <Link key={n.href} href={n.href} className={`pay-nav-link${path === n.href ? ' active' : ''}`}>
-                    <span style={{ fontSize: 17, width: 24, textAlign: 'center' }}>{n.icon}</span>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>{n.icon}</span>
                     {n.label}
                   </Link>
                 ))}
@@ -630,7 +630,7 @@ export default function PayLayout({ children }) {
             const active = path === n.href || (n.href !== '/pay' && path.startsWith(n.href + '/'))
             return (
               <Link key={n.href} href={n.href} className={`pay-nav-link${active ? ' active' : ''}`}>
-                <span style={{ fontSize: 15, width: 22, textAlign: 'center' }}>{n.icon}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 22, height: 22 }}>{n.icon}</span>
                 {n.label}
               </Link>
             )

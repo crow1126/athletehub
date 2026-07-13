@@ -252,7 +252,7 @@ export default function Dashboard() {
                       <span style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{s.title}</span>
                       <span style={{ fontSize:10,fontWeight:700,background:(SESSION_COLORS[s.type]||'#006A6A')+'20',color:SESSION_COLORS[s.type]||'#006A6A',padding:'2px 7px',borderRadius:6,whiteSpace:'nowrap' }}>{s.type}</span>
                     </div>
-                    <div style={{ fontSize:11,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap' }}>📍 {s.venue} · {s.duration}min</div>
+                    <div style={{ fontSize:11,color:'var(--text3)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:4 }}><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5.518 1.5 3.5 3.518 3.5 6c0 3.5 4.5 9 4.5 9s4.5-5.5 4.5-9c0-2.482-2.018-4.5-4.5-4.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/></svg> {s.venue} · {s.duration}min</div>
                   </div>
                 </div>
               )
@@ -287,7 +287,7 @@ export default function Dashboard() {
             </div>
             <div style={{ padding:'6px 0' }}>
               {activeInj.length===0?(
-                <p style={{ padding:'16px',color:'var(--text3)',fontSize:13,textAlign:'center' }}>No active injuries 🎉</p>
+                <p style={{ padding:'16px',color:'var(--text3)',fontSize:13,textAlign:'center' }}>No active injuries</p>
               ):activeInj.slice(0,4).map((inj,i)=>(
                 <div key={inj.id} style={{ padding:'10px 14px',borderBottom:'1px solid var(--border)',display:'flex',alignItems:'center',gap:10 }}>
                   <AthleteAvatar ath={inj.athletes} size={32} index={i}/>

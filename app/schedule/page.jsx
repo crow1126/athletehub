@@ -1,5 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { IconPin, IconMobile, IconMailOff } from '@/lib/icons'
+
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
@@ -221,7 +223,7 @@ export default function SchedulePage() {
                       </div>
                       <div style={{ fontWeight:700, fontSize:13, color:'var(--text)' }}>{s.title}</div>
                       <div className="list-hide"><span style={{ fontSize:11, fontWeight:700, background:(COLORS[s.type]||'#4A90E2')+'20', color:COLORS[s.type]||'#4A90E2', padding:'3px 8px', borderRadius:6 }}>{s.type}</span></div>
-                      <div className="list-hide" style={{ fontSize:12, color:'var(--text2)' }}>📍 {s.venue}</div>
+                      <div className="list-hide" style={{ fontSize:12, color:'var(--text2)', display:'flex', alignItems:'center', gap:4 }}><IconPin size={11} color="var(--text3)" /> {s.venue}</div>
                       <div className="list-hide" style={{ fontSize:12, color:'var(--text2)' }}>{coach?.name?.replace('Coach ','') || '—'}</div>
                       <div style={{ fontSize:12, color:'var(--text2)', fontWeight:600 }}>{s.duration}m</div>
                       <div style={{ display:'flex', gap:5 }}>
@@ -298,7 +300,7 @@ export default function SchedulePage() {
               <div><label style={lbl}>Notes</label><textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={3} placeholder="Session details…" style={{ ...inp, resize:'vertical' }}/></div>
               {!editId && (
                 <div style={{ background:'#F0FDFA', border:'1px solid #CCFBF1', borderRadius:10, padding:'10px 14px', fontSize:12, color:'#0F766E', display:'flex', alignItems:'center', gap:8 }}>
-                  <span style={{ fontSize:16 }}>📱</span>
+                  <IconMobile size={15} color="#0F766E" />
                   <span>Athletes with registered phone numbers will receive an SMS notification automatically.</span>
                 </div>
               )}
@@ -316,7 +318,9 @@ export default function SchedulePage() {
       {/* SMS status toast */}
       {smsStatus && (
         <div style={{ position:'fixed', bottom:28, right:28, zIndex:300, background: smsStatus.error ? '#7F1D1D' : smsStatus.sent === 0 ? '#1E293B' : '#0F172A', color:'#fff', borderRadius:14, padding:'14px 20px', fontSize:13, boxShadow:'0 8px 32px rgba(0,0,0,0.3)', display:'flex', alignItems:'center', gap:12, maxWidth:360, animation:'fadeInUp 0.3s ease' }}>
-          <span style={{ fontSize:20 }}>{smsStatus.error ? '' : smsStatus.sent > 0 ? '📱' : '📭'}</span>
+          <div style={{ width:32, height:32, borderRadius:'50%', background:'rgba(255,255,255,0.12)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+            {smsStatus.error ? <IconMailOff size={16} color="#fff" /> : smsStatus.sent > 0 ? <IconMobile size={16} color="#fff" /> : <IconMailOff size={16} color="rgba(255,255,255,0.5)" />}
+          </div>
           <div style={{ flex:1 }}>
             <div style={{ fontWeight:700, marginBottom:2 }}>
               {smsStatus.error ? 'SMS Failed' : smsStatus.sent > 0 ? 'SMS Notifications Sent' : 'No SMS Sent'}

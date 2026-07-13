@@ -3,22 +3,86 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { IconMenu, IconCheck } from '@/lib/icons'
 
 const NAV_LINKS = ['Features', 'Pricing', 'FAQ', 'Support']
 
 const FEATURES = [
-  { emoji: '', title: 'Performance Analytics', desc: 'xG, xA, match ratings, and squad-level trend views with beautiful premium charts.' },
-  { emoji: '', title: 'Injury Hub', desc: 'Full injury lifecycle — onset, treatment, recovery timeline, and return-to-play clearance.' },
-  { emoji: '', title: 'Squad Management', desc: 'Complete athlete registry with positions, physical data, and coach assignments.' },
-  { emoji: '', title: 'Training Scheduler', desc: 'Session planner with type categorisation, venue booking, and duration tracking.' },
-  { emoji: '', title: 'Scouting Module', desc: 'Prospect tracking, trial management, and comparison tools for transfers.' },
-  { emoji: '', title: 'Reports', desc: 'Automated performance and medical reports for board and technical staff.' },
   { 
-    emoji: '', 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M3 16.5l5.5-5.5 4.5 4.5 8-8" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M17 7h4v4" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <circle cx="8.5" cy="11" r="2.5" fill="#CCFBF1" stroke="#0D9488" strokeWidth="1.5"/>
+      </svg>
+    ), 
+    title: 'Squad Performance Analytics', 
+    desc: 'Record and track match statistics for players including goals, assists, playing minutes, and match ratings. View historical form trends to identify key players and optimize matchday strategy.' 
+  },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="18" rx="5" stroke="#0D9488" strokeWidth="2"/>
+        <path d="M12 7v10M7 12h10" stroke="#0D9488" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    ), 
+    title: 'Comprehensive Injury Hub', 
+    desc: 'Maintain detailed medical logs for player injuries, recovery progress, and rehabilitation steps. Set expected return-to-play timelines and clear players for action safely.' 
+  },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="7" r="4" stroke="#0D9488" strokeWidth="2"/>
+        <path d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#0D9488" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    ), 
+    title: 'Club & Squad Management', 
+    desc: 'Manage your entire club roster, staff members, and athlete registry. Track key metrics such as positions, contact numbers, age categories, and active contract statuses.' 
+  },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="4" width="18" height="16" rx="3" stroke="#0D9488" strokeWidth="2"/>
+        <path d="M3 10h18M8 2v4M16 2v4" stroke="#0D9488" strokeWidth="2" strokeLinecap="round"/>
+        <circle cx="7" cy="14" r="1" fill="#0D9488"/>
+        <circle cx="12" cy="14" r="1" fill="#0D9488"/>
+        <circle cx="17" cy="14" r="1" fill="#0D9488"/>
+      </svg>
+    ), 
+    title: 'Training & Session Planner', 
+    desc: 'Schedule and organize training sessions. Categorize workouts by focus area, manage training locations or venues, and assign coaches to lead specific training squads.' 
+  },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="6" stroke="#0D9488" strokeWidth="2"/>
+        <path d="M20 20l-4.5-4.5" stroke="#0D9488" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M9 11h4M11 9v4" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ), 
+    title: 'Scouting & Trial Registry', 
+    desc: 'Register and evaluate trialists, track promising scouting targets, and keep historical transfer records to ensure your club never misses out on emerging local talent.' 
+  },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M4 4h16v16H4V4z" stroke="#0D9488" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M8 8h8M8 12h8M8 16h5" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ), 
+    title: 'Automated Reports', 
+    desc: 'Generate complete performance reviews, attendance summaries, and medical logs. Prepare professional print-ready files and clean reports for management review.' 
+  },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M3 8l9 6 9-6M21 5v14H3V5" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ), 
     title: 'Dedicated Support', 
     desc: (
       <span>
-        Direct technical assistance and custom onboarding support via active email{' '}
+        Receive hands-on onboarding assistance and active technical help from our support team. Connect directly via email at{' '}
         <a href="mailto:admin@apextrackgh.com" className="feat-link">
           admin@apextrackgh.com
         </a>.
@@ -528,7 +592,9 @@ export default function LandingPage() {
         <div className="nav-right">
           <button className="nav-pricing-btn" onClick={() => scrollTo('Pricing')}>Pricing</button>
           <Link href="/login" className="nav-cta">Get Started</Link>
-          <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>☰</button>
+          <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
+            <IconMenu size={20} color="currentColor" />
+          </button>
         </div>
       </nav>
 
@@ -588,7 +654,7 @@ export default function LandingPage() {
           <div className="features-grid">
             {FEATURES.map(f => (
               <div key={f.title} className="feat-card">
-                <div className="feat-icon">{f.emoji}</div>
+                <div className="feat-icon">{f.icon}</div>
                 <div className="feat-title">{f.title}</div>
                 <div className="feat-desc">{f.desc}</div>
               </div>
@@ -640,7 +706,7 @@ export default function LandingPage() {
                     'Standard Email Support',
                   ].map(feat => (
                     <li key={feat} className="price-feat-item">
-                      <div className="price-feat-check">✓</div>
+                      <div className="price-feat-check"><IconCheck size={11} color="currentColor" /></div>
                       {feat}
                     </li>
                   ))}
@@ -671,7 +737,7 @@ export default function LandingPage() {
                     'Priority support + guided onboarding',
                   ].map(feat => (
                     <li key={feat} className="price-feat-item">
-                      <div className="price-feat-check">✓</div>
+                      <div className="price-feat-check"><IconCheck size={11} color="currentColor" /></div>
                       {feat}
                     </li>
                   ))}

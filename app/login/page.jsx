@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Check, Upload, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 /* ── Animated canvas orbs ── */
@@ -471,7 +471,7 @@ export default function LoginPage() {
                 'Club-scoped access & role permissions',
               ].map(pt => (
                 <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(13, 148, 136, 0.1)', border: '1px solid rgba(13, 148, 136, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: '#0D9488', flexShrink: 0 }}>✓</div>
+                  <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(13, 148, 136, 0.1)', border: '1px solid rgba(13, 148, 136, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><IconCheck size={11} color="#0D9488" /></div>
                   <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{pt}</span>
                 </div>
               ))}
@@ -506,7 +506,7 @@ export default function LoginPage() {
 
                   {disabled && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.2)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>Account disabled. Contact your administrator.</div>}
                   {subExpired && <div style={{ background: '#FEF9E7', border: '1px solid rgba(183,119,13,0.3)', borderRadius: 10, padding: '12px 14px', fontSize: 13, color: '#7A5A0A' }}>Subscription cancelled. Contact your club admin.</div>}
-                  {success && <div style={{ background: '#E8F8EE', border: '1px solid rgba(39,174,96,0.3)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#1B6B3A', fontWeight: 600 }}>✓ {success}</div>}
+                  {success && <div style={{ background: '#E8F8EE', border: '1px solid rgba(39,174,96,0.3)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#1B6B3A', fontWeight: 600 }}>{success}</div>}
                   {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>{error}</div>}
                   {needsVerification && (
                     <button
@@ -564,12 +564,12 @@ export default function LoginPage() {
                       <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#F0FDFA', border: '2px dashed #CCFBF1', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {logoPreview
                           ? <img src={logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <span style={{ fontSize: 20, color: '#94A3B8' }}></span>
+                          : <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#94A3B8" strokeWidth="1.5"/><path d="M3 18c0-3.866 3.134-6 7-6s7 2.134 7 6" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round"/></svg>
                         }
                       </div>
                       <div style={{ flex: 1 }}>
                         <label htmlFor="signup-logo" style={{ display: 'inline-block', background: '#F0FDFA', color: '#0D9488', border: '1px solid rgba(13,148,136,0.2)', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
-                          {logoPreview ? '✓ Change Logo' : '📁 Upload Logo'}
+                          {logoPreview ? 'Change Logo' : 'Upload Logo'}
                         </label>
                         <input id="signup-logo" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                           const f = e.target.files[0]
@@ -578,7 +578,7 @@ export default function LoginPage() {
                           setClubLogo(f)
                           setLogoPreview(URL.createObjectURL(f))
                         }} />
-                        {logoPreview && <button type="button" onClick={() => { setClubLogo(null); setLogoPreview('') }} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#8B2020', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>✕ Remove</button>}
+                        {logoPreview && <button type="button" onClick={() => { setClubLogo(null); setLogoPreview('') }} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#8B2020', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Remove</button>}
                       </div>
                     </div>
                   </div>

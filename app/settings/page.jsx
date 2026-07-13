@@ -165,7 +165,7 @@ export default function SettingsPage() {
       })
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
-      flashIssue(`Login created for ${fullName}!\n👤 Username: ${username}\nPassword: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
+      flashIssue(`Login created for ${fullName}!\nUsername: ${username}\nPassword: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
       setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'' })
       setShowIssueForm(false); await loadAll()
     } catch(err) { flashIssue('Error: '+err.message,'error') }
@@ -197,7 +197,7 @@ export default function SettingsPage() {
         setPlayerSaving(false)
         return
       }
-      flashPlayer(`Login created for ${athlete?.name}!\n👤 Username: ${username}\nPassword: ${playerForm.password}\n\nShare these credentials securely.`, 'success')
+      flashPlayer(`Login created for ${athlete?.name}!\nUsername: ${username}\nPassword: ${playerForm.password}\n\nShare these credentials securely.`, 'success')
       setPlayerForm({ athlete_id: '', username: '', password: '' })
       setShowPlayerForm(false)
       await loadAll()
@@ -264,7 +264,7 @@ export default function SettingsPage() {
       const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
       if (!res.ok) { flashRecover(data.error||'Reset failed.','error'); setRecoverSaving(false); return }
-      flashRecover(`Password reset for ${login.coaches?.name||login.email}!\n📧 ${login.email}\n${recoverForm.new_password}`, 'success')
+      flashRecover(`Password reset for ${login.coaches?.name||login.email}!\nEmail: ${login.email}\n${recoverForm.new_password}`, 'success')
       setRecoverForm({ login_id:'', new_password:'', confirm_password:'' }); await loadAll()
     } catch(err) { flashRecover('Error: '+err.message,'error') }
     setRecoverSaving(false)
@@ -320,7 +320,7 @@ export default function SettingsPage() {
   }
 
   const TABS = [
-    { id:'profile',  label:'👤 My Profile',     show: true    },
+    { id:'profile',  label:'My Profile',     show: true    },
     { id:'security', label:'Security',        show: true    },
     { id:'logins',   label:'Issue Logins',    show: isAdmin },
     { id:'players',  label:'Player Accounts',  show: isAdmin },
@@ -425,7 +425,7 @@ export default function SettingsPage() {
                       <div style={{ fontSize:13,color:'var(--text2)',lineHeight:2 }}>
                         <div>Reset your password via <strong>Settings → Recover Logins</strong></div>
                         <div>Revoke or restore your account access</div>
-                        <div>👤 Update your role and permissions</div>
+                        <div>Update your role and permissions</div>
                       </div>
                     </div>
                   </div>
@@ -715,8 +715,8 @@ export default function SettingsPage() {
                         return (
                           <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(0,106,106,0.15)' }}>
                             <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
-                              <span style={{ fontSize:12,color:'#0D9488' }}>👤 <strong>{login.coaches?.name||'—'}</strong></span>
-                              <span style={{ fontSize:12,color:'#0D9488' }}>👤 {login.username || login.email}</span>
+                              <span style={{ fontSize:12,color:'#0D9488',display:'inline-flex',alignItems:'center',gap:4 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> <strong>{login.coaches?.name||'—'}</strong></span>
+                              <span style={{ fontSize:12,color:'#0D9488',display:'inline-flex',alignItems:'center',gap:4 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> {login.username || login.email}</span>
                               <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>{login.role}</span>
                             </div>
                             {login.plain_password && (

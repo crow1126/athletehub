@@ -426,7 +426,7 @@ export default function AthleteReport() {
         <div style={{ display:'flex',alignItems:'center',gap:10 }}>
           <span style={{ color:'rgba(255,255,255,0.5)',fontSize:11,fontFamily:'monospace' }}>{reportNum}</span>
           <button onClick={()=>window.print()} style={{ background:'#fff',color:'#1A365D',border:'none',padding:'9px 24px',borderRadius:5,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'sans-serif',boxShadow:'0 2px 10px rgba(0,0,0,0.2)' }}>
-            🖨 Print / Save PDF
+            <span style={{ display:'inline-flex',alignItems:'center',gap:6 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 5V2h8v3M4 11H2.5A1.5 1.5 0 011 9.5v-4A1.5 1.5 0 012.5 4h11A1.5 1.5 0 0115 5.5v4a1.5 1.5 0 01-1.5 1.5H12M4 9h8v5H4V9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Print / Save PDF</span>
           </button>
         </div>
       </div>

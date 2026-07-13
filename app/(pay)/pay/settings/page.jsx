@@ -190,7 +190,9 @@ export default function PaySettingsPage() {
             <div style={{ textAlign: 'center', padding: 48, color: C.text3, fontSize: 14 }}>Loading…</div>
           ) : accountants.length === 0 ? (
             <div className="pay-card" style={{ padding: '32px 24px', textAlign: 'center', background: '#ffffff', border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>👤</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                <svg width="32" height="32" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="#82C29A" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="#82C29A" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </div>
               <div style={{ fontSize: 15, fontWeight: 600, color: C.text2 }}>No accountants yet</div>
               <div style={{ fontSize: 13, color: C.text3, marginTop: 4 }}>Add an accountant above to grant read-only portal access.</div>
             </div>

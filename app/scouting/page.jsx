@@ -90,6 +90,44 @@ export default function ScoutingPage(){
   const [search,  setSearch]  = useState('')
   const [teamId,  setTeamId]  = useState(null)
 
+  const [isAiSearching, setIsAiSearching] = useState(false)
+  const [aiSearchResult, setAiSearchResult] = useState(null)
+  const [aiSearchError, setAiSearchError] = useState(null)
+  const [aiSearchWarning, setAiSearchWarning] = useState(null)
+
+  async function handleAiLookup() {
+    if (!search || search.trim().length < 2) {
+      alert('Please enter at least 2 characters to search.')
+      return
+    }
+    
+    setIsAiSearching(true)
+    setAiSearchError(null)
+    setAiSearchWarning(null)
+    setAiSearchResult(null)
+    
+    try {
+      const res = await fetch(`/api/scouting/ai-lookup?query=${encodeURIComponent(search.trim())}`)
+      const json = await res.json()
+      
+      if (!res.ok) {
+        setAiSearchError(json.error || 'Failed to search player with AI.')
+      } else {
+        if (json.source === 'fallback') {
+          setAiSearchWarning(json.warning)
+          setAiSearchResult(json.data)
+        } else {
+          setAiSearchResult(json.data)
+        }
+      }
+    } catch (err) {
+      console.error(err)
+      setAiSearchError('A network error occurred while querying the AI scouting network.')
+    } finally {
+      setIsAiSearching(false)
+    }
+  }
+
   const fetchData=useCallback(async()=>{
     setLoading(true)
     const { teamId: currentTeamId } = await getTenantProfile()
@@ -146,20 +184,11 @@ export default function ScoutingPage(){
     return(filter==='All'||r.status===filter)&&(!search||r.player_name?.toLowerCase().includes(q)||r.current_club?.toLowerCase().includes(q)||r.nationality?.toLowerCase().includes(q))
   })
 
-  // Global Registry lookup logic
+  // Global Registry lookup logic for static players
   const searchResultsGlobal = (() => {
     if (!search || search.trim().length < 2) return []
     const q = search.trim().toLowerCase()
-    // First find in pre-defined database
-    const exactMatches = GLOBAL_DATABASE.filter(p => p.player_name.toLowerCase().includes(q))
-    if (exactMatches.length > 0) return exactMatches
-    
-    // If no exact match and query length is substantial, dynamically generate profile
-    if (q.length >= 3) {
-      const generated = generatePlayerProfile(search)
-      return generated ? [generated] : []
-    }
-    return []
+    return GLOBAL_DATABASE.filter(p => p.player_name.toLowerCase().includes(q))
   })()
 
   return(
@@ -194,14 +223,209 @@ export default function ScoutingPage(){
         </div>
 
         {/* Filters */}
-        <div className="fade-up" style={{display:'flex',gap:10,marginBottom:20,flexWrap:'wrap'}}>
-          <input placeholder="Search player, club, nationality…" value={search} onChange={e=>setSearch(e.target.value)} style={{...inp,maxWidth:300}}/>
+        <div className="fade-up" style={{display:'flex',gap:10,marginBottom:20,alignItems:'center',flexWrap:'wrap'}}>
+          <div style={{display:'flex',gap:8,alignItems:'center',width:'100%',maxWidth:460}}>
+            <input 
+              placeholder="Search player, club, nationality…" 
+              value={search} 
+              onChange={e=>{
+                setSearch(e.target.value)
+                if (aiSearchResult && aiSearchResult.player_name.toLowerCase() !== e.target.value.toLowerCase()) {
+                  setAiSearchResult(null)
+                  setAiSearchWarning(null)
+                  setAiSearchError(null)
+                }
+              }} 
+              onKeyDown={e=>{if(e.key==='Enter')handleAiLookup()}}
+              style={{...inp,flex:1}}
+            />
+            <button 
+              onClick={handleAiLookup}
+              disabled={isAiSearching || !search.trim()}
+              style={{
+                background: 'linear-gradient(135deg, #0F766E, #0D9488)',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'opacity 0.2s',
+                opacity: (isAiSearching || !search.trim()) ? 0.6 : 1,
+                whiteSpace: 'nowrap'
+              }}
+            >
+              {isAiSearching ? (
+                <>
+                  <div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin 0.6s linear infinite'}}/>
+                  Searching...
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                  AI Lookup ✨
+                </>
+              )}
+            </button>
+          </div>
           <div className="tabs-scroll" style={{display:'flex',gap:4,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,maxWidth:'100%'}}>
             {['All',...STATUS_OPTS].map(f=>(
               <button key={f} onClick={()=>setFilter(f)} style={{padding:'7px 14px',background:filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:12,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)'}}>{f}</button>
             ))}
           </div>
         </div>
+
+        {/* AI Search Loading State */}
+        {isAiSearching && (
+          <div className="card fade-up" style={{ padding: '24px', textAlign: 'center', marginBottom: 24, border: '1.5px dashed #0D9488', background: '#F0FDF4' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+              <div style={{ width: 24, height: 24, border: '3px solid #E0F2FE', borderTopColor: '#0D9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#0F766E' }}>Connecting to AI Scouting Registry...</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>Retrieving market values, statistics, and scouting profile for "{search}"</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* AI Search Error */}
+        {aiSearchError && (
+          <div className="card fade-up" style={{ padding: '16px 18px', marginBottom: 24, border: '1px solid var(--danger)', background: 'var(--danger-light)', borderRadius: '12px' }}>
+            <div style={{ fontSize: 13, color: 'var(--danger)', fontWeight: 600 }}>{aiSearchError}</div>
+          </div>
+        )}
+
+        {/* AI Search Result Card */}
+        {aiSearchResult && (
+          <div style={{ marginBottom: 30, animation: 'fadeInScale 0.25s ease' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#0F766E', display: 'flex', alignItems: 'center', gap: 6, margin: 0 }}>
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M8 1.5v13M1.5 8h13" stroke="currentColor" strokeWidth="1.5"/></svg>
+                AI Scouting Registry Result
+              </h3>
+              <button 
+                onClick={() => { setAiSearchResult(null); setAiSearchWarning(null); }} 
+                style={{ background: 'transparent', border: 'none', color: 'var(--text3)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Clear AI Result
+              </button>
+            </div>
+
+            {/* API Key Instructions */}
+            {aiSearchWarning && (
+              <div style={{ 
+                background: 'linear-gradient(135deg, #FFFDF5, #FFFBEB)', 
+                border: '1.5px solid #F59E0B', 
+                borderRadius: '16px', 
+                padding: '18px 20px', 
+                marginBottom: 16, 
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.05)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                  <div style={{ background: '#FEF3C7', color: '#D97706', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 16, flexShrink: 0 }}>
+                    💡
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={{ margin: '0 0 6px 0', fontSize: 13, fontWeight: 800, color: '#92400E' }}>
+                      Offline Fallback Mode Active (Mock Data)
+                    </h4>
+                    <p style={{ margin: '0 0 10px 0', fontSize: 12, lineHeight: 1.5, color: '#B45309' }}>
+                      To search the entire global market dynamically and retrieve actual Transfermarkt data, configure a free Gemini API key:
+                    </p>
+                    <ol style={{ margin: 0, paddingLeft: 16, fontSize: 12, color: '#B45309', lineHeight: 1.6 }}>
+                      <li>Go to Google AI Studio: <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" style={{ fontWeight: 700, color: '#D97706', textDecoration: 'underline' }}>aistudio.google.com ↗</a></li>
+                      <li>Sign in and click <strong>"Create API Key"</strong>. Copy the key.</li>
+                      <li>Open your local project file: <code>.env.local</code></li>
+                      <li>Add the line: <code>GEMINI_API_KEY=your_copied_api_key</code></li>
+                      <li>Restart your Next.js server (run <code>npm run dev</code>).</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+              <div className="card" style={{ padding: 0, overflow: 'hidden', border: aiSearchWarning ? '1.5px solid #F59E0B' : '1.5px solid #0F766E', background: aiSearchWarning ? '#FFFDF5' : '#F0FDF4', boxShadow: '0 10px 30px -10px rgba(15,118,110,0.15)' }}>
+                <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {aiSearchResult.player_name}
+                      <span style={{ fontSize: 9, fontWeight: 900, background: aiSearchWarning ? '#F59E0B' : '#0F766E', color: '#fff', padding: '2px 8px', borderRadius: 99, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {aiSearchWarning ? 'Fallback Profile' : 'AI Verified'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>{aiSearchResult.position} · {aiSearchResult.current_club} · {aiSearchResult.nationality}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>Age: {aiSearchResult.age} · {aiSearchResult.preferred_foot} foot · {aiSearchResult.height}cm / {aiSearchResult.weight}kg</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>Value</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: aiSearchWarning ? '#D97706' : '#0F766E' }}>{aiSearchResult.market_value}</div>
+                  </div>
+                </div>
+                
+                <div style={{ padding: '16px 18px' }}>
+                  {/* Quick Lookups */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16, padding: '8px 12px', borderRadius: 8, background: '#FFF', border: '1px solid rgba(15, 118, 110, 0.15)' }}>
+                    <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Quick Lookup:</span>
+                    <a href={`https://www.transfermarkt.com/schnellsuche/ergebnisse/schnellsuche?query=${encodeURIComponent(aiSearchResult.player_name)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0D9488', textDecoration: 'none', fontWeight: 700 }}>Transfermarkt ↗</a>
+                    <span style={{ color: 'var(--border)' }}>|</span>
+                    <a href={`https://www.sofascore.com/search?q=${encodeURIComponent(aiSearchResult.player_name)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0D9488', textDecoration: 'none', fontWeight: 700 }}>Sofascore ↗</a>
+                    <span style={{ color: 'var(--border)' }}>|</span>
+                    <a href={`https://www.google.com/search?q=${encodeURIComponent(aiSearchResult.player_name + ' football player statistics')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0D9488', textDecoration: 'none', fontWeight: 700 }}>Google Search ↗</a>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14 }}>
+                    <div>
+                      {[['Technical', aiSearchResult.technical_rating, '#4A90E2'], ['Physical', aiSearchResult.physical_rating, '#27AE60'], ['Tactical', aiSearchResult.tactical_rating, '#9B59B6']].map(([label, val, color]) => (
+                        <div key={label} style={{ marginBottom: 10 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text2)', fontWeight: 600, marginBottom: 2 }}>
+                            <span>{label}</span><span style={{ color, marginLeft: 'auto' }}>{val}/10</span>
+                          </div>
+                          <RatingBar value={val} color={color} />
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: 'rgba(255,255,255,0.4)', padding: 12, borderRadius: 10, border: '1px solid var(--border)' }}>
+                      <div>
+                        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Scouting Notes</div>
+                        <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.4, fontStyle: 'italic' }}>"{aiSearchResult.notes}"</div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10, paddingTop: 8, borderTop: '1px solid rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>Overall Rating: <strong style={{ color: '#0F766E', fontSize: 12 }}>{aiSearchResult.overall_rating}/10</strong></div>
+                        <button 
+                          onClick={() => importGlobalPlayer(aiSearchResult)} 
+                          disabled={saving}
+                          style={{ 
+                            background: aiSearchWarning ? '#D97706' : '#0F766E', 
+                            color: '#fff', 
+                            border: 'none', 
+                            padding: '6px 12px', 
+                            borderRadius: 6, 
+                            fontSize: 11, 
+                            fontWeight: 800, 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 4, 
+                            transition: 'all 0.15s' 
+                          }}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                          Track Player
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Global scouting network results section */}
         {search && searchResultsGlobal.length > 0 && (

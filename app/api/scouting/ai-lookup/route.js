@@ -1,30 +1,30 @@
 import { NextResponse } from 'next/server'
 
-// Deterministic generator fallback if GEMINI_API_KEY is not defined
+// Deterministic generator fallback if GROQ_API_KEY is not defined
 function generatePlayerProfile(name) {
   const query = name.trim()
   if (query.length < 2) return null
-  
+
   const hash = query.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
-  
+
   const positions = ['Forward', 'Midfielder', 'Defender', 'Goalkeeper']
   const nationalities = ['Ghana', 'Nigeria', 'Spain', 'England', 'France', 'Brazil', 'Argentina', 'Germany', 'Ivory Coast']
   const clubs = ['Free Agent', 'Hearts of Oak', 'Asante Kotoko', 'Real Tamale United', 'FC Barcelona', 'Real Madrid', 'Manchester United', 'Arsenal FC', 'Al Hilal']
-  
+
   const pos = positions[hash % positions.length]
   const nat = nationalities[(hash * 3) % nationalities.length]
   const club = clubs[(hash * 7) % clubs.length]
   const age = 17 + (hash % 18)
   const preferred = (hash % 3 === 0) ? 'Left' : (hash % 6 === 0) ? 'Both' : 'Right'
-  
+
   const technical = 4 + (hash % 6)
   const physical = 4 + ((hash * 2) % 6)
   const tactical = 4 + ((hash * 3) % 6)
   const overall = Math.round((technical + physical + tactical) / 3)
-  
+
   const valMil = 1 + (hash % 70)
   const market_value = `€${valMil},000,000`
-  
+
   return {
     player_name: query,
     age,
@@ -53,105 +53,81 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Search query must be at least 2 characters long.' }, { status: 400 })
     }
 
-    const apiKey = process.env.GEMINI_API_KEY
+    const apiKey = process.env.GROQ_API_KEY
     if (!apiKey) {
-      // Return fallback data with indicator
       const fallbackData = generatePlayerProfile(query)
       return NextResponse.json({
         source: 'fallback',
-        warning: 'GEMINI_API_KEY not configured. Using deterministic offline generator.',
+        warning: 'GROQ_API_KEY not configured. Using deterministic offline generator.',
         data: fallbackData
       })
     }
 
-    // Call Gemini API with gemini-3.5-flash
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`
-    
-    const prompt = `You are an expert football scout. Retrieve details for the professional football player named "${query}" as of 2026.
-If the player is well-known, return their real details. If the player does not exist or is fictional, generate realistic professional football stats, height, weight, preferred foot, and market value for them based on the name. Do not return empty fields.
-You must return a JSON object containing the fields specified in the schema. Make sure the 'position' is exactly one of the allowed options: "Forward", "Midfielder", "Defender", "Goalkeeper". Make sure 'preferred_foot' is exactly one of "Right", "Left", "Both".`
+    const systemPrompt = `You are an expert football scout database. When given a player name, return ONLY a valid JSON object with these exact fields:
+- player_name (string): full name
+- age (integer): current age in 2026
+- nationality (string): country
+- current_club (string): current club or "Free Agent"
+- position (string): MUST be exactly one of: Forward, Midfielder, Defender, Goalkeeper
+- height (integer): height in cm
+- weight (integer): weight in kg
+- preferred_foot (string): MUST be exactly one of: Right, Left, Both
+- market_value (string): e.g. "€45,000,000"
+- contract_until (string): date in YYYY-MM-DD format
+- overall_rating (integer): 1-10
+- technical_rating (integer): 1-10
+- physical_rating (integer): 1-10
+- tactical_rating (integer): 1-10
+- notes (string): 2-3 sentences of scouting report
 
-    const responseSchema = {
-      type: 'OBJECT',
-      properties: {
-        player_name: { type: 'STRING', description: 'Full professional name of the player' },
-        age: { type: 'INTEGER', description: 'Current age as of year 2026' },
-        nationality: { type: 'STRING', description: 'Nationality or country representing' },
-        current_club: { type: 'STRING', description: 'Current club or Free Agent' },
-        position: { type: 'STRING', description: 'Allowed values: Forward, Midfielder, Defender, Goalkeeper' },
-        height: { type: 'INTEGER', description: 'Height in cm' },
-        weight: { type: 'INTEGER', description: 'Weight in kg' },
-        preferred_foot: { type: 'STRING', description: 'Allowed values: Right, Left, Both' },
-        market_value: { type: 'STRING', description: 'Current market value, formatted e.g. €45,000,000' },
-        contract_until: { type: 'STRING', description: 'YYYY-MM-DD or empty string' },
-        overall_rating: { type: 'INTEGER', description: 'Overall ability rating out of 10 (1-10)' },
-        technical_rating: { type: 'INTEGER', description: 'Technical rating out of 10 (1-10)' },
-        physical_rating: { type: 'INTEGER', description: 'Physical rating out of 10 (1-10)' },
-        tactical_rating: { type: 'INTEGER', description: 'Tactical rating out of 10 (1-10)' },
-        notes: { type: 'STRING', description: '2-3 sentences of scouting report detailing player strengths and style.' }
-      },
-      required: [
-        'player_name', 'age', 'nationality', 'current_club', 'position',
-        'height', 'weight', 'preferred_foot', 'market_value', 'contract_until',
-        'overall_rating', 'technical_rating', 'physical_rating', 'tactical_rating', 'notes'
-      ]
-    }
+If the player is a known professional footballer, use their real stats. If unknown, generate plausible realistic stats. Return ONLY the JSON object, no markdown, no extra text.`
 
-    const res = await fetch(url, {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: prompt }
-            ]
-          }
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `Retrieve the scouting profile for football player: "${query.trim()}"` }
         ],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseSchema: responseSchema
-        }
+        response_format: { type: 'json_object' },
+        temperature: 0.3,
+        max_tokens: 500
       })
     })
 
     if (!res.ok) {
       const errBody = await res.json().catch(() => ({}))
-      console.error('Gemini API Error:', res.status, errBody)
-      
-      // Detect billing/quota issues specifically
-      const isBillingError = res.status === 429 || res.status === 403
-      const warning = isBillingError
-        ? 'Gemini API quota exhausted or billing not enabled. Using offline fallback. Enable billing at https://aistudio.google.com/ to unlock live search.'
-        : `Gemini API error (${res.status}). Using deterministic offline generator.`
-      
+      console.error('Groq API Error:', res.status, errBody)
+
       const fallbackData = generatePlayerProfile(query)
       return NextResponse.json({
         source: 'fallback',
-        warning,
+        warning: `Groq API error (${res.status}). Using offline fallback.`,
         data: fallbackData
       })
     }
 
-    const rawData = await res.json()
-    const textResult = rawData.candidates?.[0]?.content?.parts?.[0]?.text
-    
-    if (!textResult) {
-      throw new Error('Invalid response from Gemini API: candidate/part missing.')
+    const raw = await res.json()
+    const text = raw.choices?.[0]?.message?.content
+
+    if (!text) {
+      throw new Error('Empty response from Groq API.')
     }
 
-    // Gemini may return pure JSON or markdown-wrapped JSON — handle both
     let playerData
     try {
-      playerData = JSON.parse(textResult)
+      playerData = JSON.parse(text)
     } catch {
-      const match = textResult.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
       if (match) {
         playerData = JSON.parse(match[1])
       } else {
-        throw new Error('Could not parse JSON from Gemini response.')
+        throw new Error('Could not parse JSON from Groq response.')
       }
     }
 
@@ -162,9 +138,13 @@ You must return a JSON object containing the fields specified in the schema. Mak
 
   } catch (error) {
     console.error('AI Lookup Route Error:', error)
+    // Always fall back gracefully
+    const query = new URL(req.url).searchParams.get('query') || ''
+    const fallbackData = generatePlayerProfile(query)
     return NextResponse.json({
-      error: 'Failed to retrieve AI player data.',
-      details: error.message
-    }, { status: 500 })
+      source: 'fallback',
+      warning: 'Unexpected error. Using offline fallback.',
+      data: fallbackData
+    })
   }
 }

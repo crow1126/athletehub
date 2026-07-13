@@ -6,7 +6,7 @@ import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import Link from 'next/link'
-import { Users, Shield, Calendar, Activity, Zap, UserPlus, Eye, BarChart3, FileText, Settings } from 'lucide-react'
+import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock } from 'lucide-react'
 
 const AV_COLORS = ['#006A6A','#008080','#2D6B6B','#5A9494','#004F4F','#5C3058']
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -110,10 +110,10 @@ export default function Dashboard() {
   const iconProps = { size: 18, strokeWidth: 2 }
   const stats = [
     { label:'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:<Users {...iconProps}/>, accent:'var(--lagoon)' },
-    { label:'Staff',     value:coaches.length,  note:'on team',       icon:<Shield {...iconProps}/>, accent:'#4A90E2' },
-    { label:'Events',    value:upcoming.length, note:'next 7 days',   icon:<Calendar {...iconProps}/>, accent:'var(--success)' },
-    { label:'Injuries',  value:activeInj.length,note:'active',        icon:<Activity {...iconProps}/>, accent:'var(--danger)' },
-    { label:'Today',     value:todaySess.length,note:'sessions',      icon:<Zap {...iconProps}/>, accent:'var(--warning)' },
+    { label:'Staff',     value:coaches.length,  note:'members',         icon:<ShieldCheck {...iconProps}/>, accent:'#4A90E2' },
+    { label:'Sessions',  value:upcoming.length, note:'next 7 days',     icon:<CalendarDays {...iconProps}/>, accent:'var(--success)' },
+    { label:'Injuries',  value:activeInj.length,note:'active',          icon:<HeartPulse {...iconProps}/>, accent:'var(--danger)' },
+    { label:'Today',     value:todaySess.length,note:'sessions',        icon:<Flame {...iconProps}/>, accent:'var(--warning)' },
   ]
 
   return (
@@ -172,7 +172,7 @@ export default function Dashboard() {
 
           {todaySess.length>0 && (
             <div style={{ display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:99,padding:'6px 14px',backdropFilter:'blur(8px)', boxShadow:'0 4px 12px rgba(0,0,0,0.1)' }}>
-              <Calendar size={14} color="#FFF"/>
+              <Flame size={14} color="#FFD700"/>
               <span style={{ fontSize:12,color:'#FFF',fontWeight:600 }}>{todaySess.length} session{todaySess.length>1?'s':''} today</span>
             </div>
           )}
@@ -301,24 +301,26 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick actions — admin only */}
           {isAdmin && (
-            <div className="card fade-up fade-up-2" style={{ padding:'14px 16px' }}>
-              <h3 style={{ fontSize:14,fontWeight:700,marginBottom:12 }}>Quick Actions</h3>
+            <div className="card fade-up fade-up-2" style={{ padding:'16px' }}>
+              <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:14 }}>
+                <h3 style={{ fontSize:14,fontWeight:700 }}>Quick Actions</h3>
+                <TrendingUp size={14} color="var(--text3)" />
+              </div>
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8 }}>
                 {[
-                  { icon:<UserPlus size={20} strokeWidth={2}/>, label:'Add Athlete',  href:'/athletes',  bg:'var(--milk-muted)', color:'var(--plum)' },
-                  { icon:<Calendar size={20} strokeWidth={2}/>, label:'Schedule',     href:'/schedule',  bg:'#E8F8EE',           color:'#1B7A3E'    },
-                  { icon:<Eye size={20} strokeWidth={2}/>,      label:'Scout',        href:'/scouting',  bg:'#F3E5F5',           color:'#6A1B9A'    },
-                  { icon:<BarChart3 size={20} strokeWidth={2}/>, label:'Reports',      href:'/reports',   bg:'#FEF9E7',           color:'#B36200'    },
-                  { icon:<FileText size={20} strokeWidth={2}/>, label:'Contracts',    href:'/contracts', bg:'#E0F7F5',           color:'#0E8A7E'    },
-                  { icon:<Settings size={20} strokeWidth={2}/>, label:'Settings',    href:'/settings',  bg:'var(--surface2)',   color:'var(--plum)'},
+                  { icon:<UserPlus size={17} strokeWidth={2}/>,   label:'Add Athlete', href:'/athletes',  bg:'#EFF8F5', color:'#0D6E5E' },
+                  { icon:<CalendarDays size={17} strokeWidth={2}/>,label:'Schedule',    href:'/schedule',  bg:'#EBF8EE', color:'#1B7A3E' },
+                  { icon:<Search size={17} strokeWidth={2}/>,     label:'Scouting',    href:'/scouting',  bg:'#F3E8FD', color:'#7C3AED' },
+                  { icon:<BarChart3 size={17} strokeWidth={2}/>,  label:'Performance', href:'/performance',bg:'#FEF6E0', color:'#B36200' },
+                  { icon:<ClipboardList size={17} strokeWidth={2}/>,label:'Contracts', href:'/contracts', bg:'#E0F7F5', color:'#0E8A7E' },
+                  { icon:<Settings size={17} strokeWidth={2}/>,   label:'Settings',    href:'/settings',  bg:'var(--surface2)', color:'var(--plum)'},
                 ].map(({ icon,label,href,bg,color })=>(
-                  <Link key={label} href={href} style={{ display:'flex',flexDirection:'column',alignItems:'center',gap:4,padding:'11px 8px',borderRadius:10,background:bg,border:'1px solid var(--border)',textAlign:'center',textDecoration:'none',transition:'var(--transition)' }}
-                    onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow='var(--shadow-md)'}}
-                    onMouseLeave={e=>{e.currentTarget.style.transform='translateY(0)';e.currentTarget.style.boxShadow='none'}}>
-                    <span style={{ display:'flex',alignItems:'center',justifyContent:'center',height:24,color }}>{icon}</span>
-                    <span style={{ fontSize:11,fontWeight:700,color,lineHeight:1.2 }}>{label}</span>
+                  <Link key={label} href={href} style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 12px',borderRadius:10,background:bg,border:'1px solid var(--border)',textDecoration:'none',transition:'var(--transition)' }}
+                    onMouseEnter={e=>{e.currentTarget.style.transform='translateX(2px)';e.currentTarget.style.boxShadow='var(--shadow-md)'}}
+                    onMouseLeave={e=>{e.currentTarget.style.transform='translateX(0)';e.currentTarget.style.boxShadow='none'}}>
+                    <span style={{ display:'flex',alignItems:'center',justifyContent:'center',width:30,height:30,borderRadius:8,background:'rgba(255,255,255,0.7)',boxShadow:'0 1px 3px rgba(0,0,0,0.06)',color,flexShrink:0 }}>{icon}</span>
+                    <span style={{ fontSize:12,fontWeight:700,color,lineHeight:1.2 }}>{label}</span>
                   </Link>
                 ))}
               </div>

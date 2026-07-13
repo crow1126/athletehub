@@ -84,8 +84,19 @@ export default function ScoutingPage(){
             const count=reports.filter(r=>r.status===s).length
             const sc=STATUS_COLORS[s]
             return(<div key={s} className="card" style={{padding:'16px 18px',display:'flex',alignItems:'center',gap:12}}>
-              <div style={{width:40,height:40,borderRadius:10,background:sc.bg,display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>
-                {s==='Watching'?'Show':s==='Recommended'?'⭐':s==='Signed'?'':''}
+              <div style={{width:40,height:40,borderRadius:10,background:sc.bg,color:sc.color,display:'flex',alignItems:'center',justifyContent:'center'}}>
+                {s==='Watching' && (
+                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M1 8s3-5.5 7-5.5 7 5.5 7 5.5-3 5.5-7 5.5S1 8 1 8z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.5"/></svg>
+                )}
+                {s==='Recommended' && (
+                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.8 3.6 4 .58-2.9 2.82.69 3.98L8 10.5l-3.59 1.98.69-3.98L2.2 5.68l4-.58L8 1.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                )}
+                {s==='Rejected' && (
+                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                )}
+                {s==='Signed' && (
+                  <svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 8l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                )}
               </div>
               <div><div style={{fontSize:24,fontWeight:800,color:'var(--text)',lineHeight:1}}>{count}</div><div style={{fontSize:12,color:'var(--text3)',fontWeight:500,marginTop:2}}>{s}</div></div>
             </div>)
@@ -122,6 +133,16 @@ export default function ScoutingPage(){
                     <span style={{fontSize:10,fontWeight:700,background:sc.bg,color:sc.color,padding:'3px 10px',borderRadius:99,letterSpacing:'0.07em',textTransform:'uppercase',flexShrink:0}}>{r.status}</span>
                   </div>
                   <div style={{padding:'14px 18px'}}>
+                    {/* Quick Research Panel */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12, padding: '6px 10px', borderRadius: 8, background: 'var(--surface2)', border: '1px solid var(--border)' }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Lookup:</span>
+                      <a href={`https://www.transfermarkt.com/schnellsuche/ergebnisse/schnellsuche?query=${encodeURIComponent(r.player_name)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0D9488', textDecoration: 'none', fontWeight: 700 }}>Transfermarkt ↗</a>
+                      <span style={{ color: 'var(--border)' }}>|</span>
+                      <a href={`https://www.sofascore.com/search?q=${encodeURIComponent(r.player_name)}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0D9488', textDecoration: 'none', fontWeight: 700 }}>Sofascore ↗</a>
+                      <span style={{ color: 'var(--border)' }}>|</span>
+                      <a href={`https://www.google.com/search?q=${encodeURIComponent(r.player_name + ' football player statistics')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: '#0D9488', textDecoration: 'none', fontWeight: 700 }}>Google ↗</a>
+                    </div>
+
                     {[['Technical',r.technical_rating,'#4A90E2'],['Physical',r.physical_rating,'#27AE60'],['Tactical',r.tactical_rating,'#9B59B6']].map(([label,val,color])=>(
                       <div key={label} style={{marginBottom:8}}>
                         <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:'var(--text2)',fontWeight:600,marginBottom:2}}>
@@ -147,6 +168,7 @@ export default function ScoutingPage(){
             })}
           </div>
         )}
+
       </div>
 
       {showForm&&(

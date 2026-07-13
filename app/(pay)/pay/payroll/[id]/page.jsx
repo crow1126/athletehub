@@ -62,7 +62,12 @@ function TimelineStep({ done, active, label, sub }) {
         background: done ? C.successBg : active ? C.warningBg : 'transparent',
         color: done ? C.success : active ? C.warning : C.text3
       }}>
-        {done ? '✓' : active ? '⬤' : '○'}
+        {done
+          ? <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          : active
+          ? <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="currentColor"/></svg>
+          : <svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3.5" stroke="currentColor" strokeWidth="1" fill="none"/></svg>
+        }
       </div>
       <div>
         <div style={{ fontSize: 13, fontWeight: 700, color: done || active ? C.text : C.text3 }}>{label}</div>
@@ -243,7 +248,7 @@ export default function PayrollRunDetailPage({ params }) {
           )}
           {isAdmin && (run.status === 'draft' || run.status === 'pending_approval') && (
             <button className="pay-btn-gold" onClick={approve} disabled={!!action}>
-              {action === 'approving' ? 'Approving…' : '✓ Approve Run'}
+              {action === 'approving' ? 'Approving…' : <span style={{ display:'inline-flex',alignItems:'center',gap:6 }}><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> Approve Run</span>}
             </button>
           )}
           {isAdmin && run.status === 'approved' && (
@@ -252,7 +257,7 @@ export default function PayrollRunDetailPage({ params }) {
               style={{ background: C.muted, border: `1px solid ${C.border}`, color: C.teal, borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}
               title="Download CSV for Moolre Bulk Payouts"
             >
-              ⬇ Export CSV
+              <span style={{ display:'inline-flex',alignItems:'center',gap:6 }}><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v8M2 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Export CSV</span>
             </button>
           )}
           {isAdmin && run.status === 'approved' && (
@@ -332,8 +337,11 @@ export default function PayrollRunDetailPage({ params }) {
               </div>
             ))}
             <div style={{ padding: '12px 14px', borderRadius: 10, background: sufficient ? C.successBg : C.dangerBg, border: `1px solid ${sufficient ? C.success : C.danger}`, marginTop: 8 }}>
-              <div style={{ fontSize: 11, color: sufficient ? C.success : C.danger, fontWeight: 700 }}>
-                {sufficient ? '✓ Wallet has sufficient funds' : '✗ Insufficient wallet balance'}
+              <div style={{ fontSize: 11, color: sufficient ? C.success : C.danger, fontWeight: 700, display:'flex', alignItems:'center', gap:6 }}>
+                {sufficient
+                  ? <><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg> Wallet has sufficient funds</>
+                  : <><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg> Insufficient wallet balance</>
+                }
               </div>
               <div style={{ fontSize: 11, color: C.text2, marginTop: 2 }}>Available: {fmt(balance)}</div>
             </div>

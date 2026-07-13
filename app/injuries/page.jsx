@@ -267,7 +267,7 @@ export default function InjuriesPage() {
                     {/* Actions */}
                     <div style={{ padding:'14px 12px',display:'flex',flexDirection:'column',gap:6,justifyContent:'center' }}>
                       <button onClick={()=>openEdit(inj)} style={{ background:'#F0FDFA',color:'#0D9488',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%' }}>Edit</button>
-                      {isAct&&<button onClick={()=>markRecovered(inj.id,inj.athlete_id)} style={{ background:'#E8F8EE',color:'#1B7A3E',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%' }}>✓ Done</button>}
+                      {isAct&&<button onClick={()=>markRecovered(inj.id,inj.athlete_id)} style={{ background:'#E8F8EE',color:'#1B7A3E',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:4 }}><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Done</button>}
                       <button onClick={()=>handleDelete(inj.id)} disabled={deleting===inj.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',opacity:deleting===inj.id?0.5:1,fontFamily:'var(--font)',width:'100%' }}>{deleting===inj.id?'…':'Delete'}</button>
                     </div>
                   </div>

@@ -382,10 +382,12 @@ function BillingContent(){
           }}>
             <div style={{display:'flex',alignItems:'center',gap:8}}>
               {verifyStatus.type==='loading'&&<div style={{width:14,height:14,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',animation:'spin 0.7s linear infinite',flexShrink:0}}/>}
-              <span>{verifyStatus.type==='success'?'✓ ':verifyStatus.type==='error'?'⚠ ':''}{verifyStatus.text}</span>
+              {verifyStatus.type==='success'&&<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 8l2.5 2.5 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              {verifyStatus.type==='error'&&<svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{flexShrink:0}}><path d="M8 2L14 13H2L8 2z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/><path d="M8 7v3M8 11.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+              <span>{verifyStatus.text}</span>
             </div>
             {verifyStatus.type!=='loading'&&(
-              <button onClick={()=>setVerifyStatus(null)} style={{background:'none',border:'none',color:'inherit',fontWeight:'bold',cursor:'pointer',fontSize:16,padding:'0 4px'}}>✕</button>
+              <button onClick={()=>setVerifyStatus(null)} style={{background:'none',border:'none',color:'inherit',fontWeight:'bold',cursor:'pointer',fontSize:16,padding:'0 4px'}}>×</button>
             )}
           </div>
         )}

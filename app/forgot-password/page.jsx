@@ -154,8 +154,9 @@ export default function ForgotPasswordPage() {
               )}
 
               {success && (
-                <div style={{ background:'#E8F8EE', border:'1px solid rgba(39,174,96,0.3)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#1B6B3A', fontWeight:600 }}>
-                  ✓ {success}
+                <div style={{ background:'#E8F8EE', border:'1px solid rgba(39,174,96,0.3)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#1B6B3A', fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 8l2.5 2.5 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {success}
                 </div>
               )}
 

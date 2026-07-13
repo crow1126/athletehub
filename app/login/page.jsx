@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Eye, EyeOff, Check, Upload, X } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 /* ── Animated canvas orbs ── */
@@ -471,7 +471,7 @@ export default function LoginPage() {
                 'Club-scoped access & role permissions',
               ].map(pt => (
                 <div key={pt} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(13, 148, 136, 0.1)', border: '1px solid rgba(13, 148, 136, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><IconCheck size={11} color="#0D9488" /></div>
+                  <div style={{ width: 20, height: 20, borderRadius: 6, background: 'rgba(13, 148, 136, 0.1)', border: '1px solid rgba(13, 148, 136, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#0D9488" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
                   <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>{pt}</span>
                 </div>
               ))}

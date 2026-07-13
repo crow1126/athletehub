@@ -64,8 +64,8 @@ export async function GET(req) {
       })
     }
 
-    // Call Gemini API
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`
+    // Call Gemini API with gemini-3.5-flash
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${apiKey}`
     
     const prompt = `You are an expert football scout. Retrieve details for the professional football player named "${query}" as of 2026.
 If the player is well-known, return their real details. If the player does not exist or is fictional, generate realistic professional football stats, height, weight, preferred foot, and market value for them based on the name. Do not return empty fields.
@@ -118,9 +118,21 @@ You must return a JSON object containing the fields specified in the schema. Mak
     })
 
     if (!res.ok) {
-      const errText = await res.text()
-      console.error('Gemini API Error:', errText)
-      throw new Error(`Gemini API returned status ${res.status}`)
+      const errBody = await res.json().catch(() => ({}))
+      console.error('Gemini API Error:', res.status, errBody)
+      
+      // Detect billing/quota issues specifically
+      const isBillingError = res.status === 429 || res.status === 403
+      const warning = isBillingError
+        ? 'Gemini API quota exhausted or billing not enabled. Using offline fallback. Enable billing at https://aistudio.google.com/ to unlock live search.'
+        : `Gemini API error (${res.status}). Using deterministic offline generator.`
+      
+      const fallbackData = generatePlayerProfile(query)
+      return NextResponse.json({
+        source: 'fallback',
+        warning,
+        data: fallbackData
+      })
     }
 
     const rawData = await res.json()
@@ -130,7 +142,18 @@ You must return a JSON object containing the fields specified in the schema. Mak
       throw new Error('Invalid response from Gemini API: candidate/part missing.')
     }
 
-    const playerData = JSON.parse(textResult)
+    // Gemini may return pure JSON or markdown-wrapped JSON — handle both
+    let playerData
+    try {
+      playerData = JSON.parse(textResult)
+    } catch {
+      const match = textResult.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+      if (match) {
+        playerData = JSON.parse(match[1])
+      } else {
+        throw new Error('Could not parse JSON from Gemini response.')
+      }
+    }
 
     return NextResponse.json({
       source: 'ai',

@@ -1,99 +1,67 @@
 import LegalPage from '@/components/LegalPage'
 
 export const metadata = {
-  title: 'Terms of Service | Apex Track',
-  description: 'Terms governing use of the Apex Track football management platform.',
+  title: 'Terms of Service | ApexTrack',
+  description: 'Terms and conditions governing the use of ApexTrack, including squad management and ApexPay features.',
 }
 
 export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      subtitle="Please read these terms before creating an account or using Apex Track on behalf of a club."
-      lastUpdated="27 May 2026"
+      subtitle="Please read these terms carefully before registering your club or using ApexTrack."
+      lastUpdated="21 July 2026"
     >
       <p>
-        By registering for or using Apex Track, you agree to these Terms of Service (&quot;Terms&quot;) on behalf of yourself
-        and, where applicable, the club or organisation you represent.
+        By creating an account, initiating a trial, or using ApexTrack, you agree to be bound by these Terms of Service (&quot;Terms&quot;) on behalf of yourself and the sports club or organization you represent.
       </p>
 
-      <h2>1. The service</h2>
+      <h2>1. Services Offered</h2>
       <p>
-        Apex Track provides tools for squad management, performance analytics, injury tracking, scheduling, scouting, and related reporting.
-        Features may change as we develop the product. We do not guarantee uninterrupted access (see Section 8).
+        ApexTrack provides an integrated sports management platform covering squad analytics, injury logs, training schedules, scouting registries, contract tracking, performance reporting, and the <strong>ApexPay</strong> payroll disbursement system.
       </p>
 
-      <h2>2. Accounts &amp; responsibilities</h2>
+      <h2>2. Account Registration &amp; Responsibilities</h2>
       <ul>
-        <li>You must provide accurate registration information and keep credentials confidential.</li>
-        <li>Club administrators are responsible for inviting staff, assigning roles, and deactivating users who leave the organisation.</li>
-        <li>You must not share accounts or use the platform for unlawful, abusive, or unauthorised purposes.</li>
-        <li>You are responsible for data you enter, including ensuring you have permission to store athlete personal and health information.</li>
+        <li>You must provide accurate, complete registration details and maintain updated contact information.</li>
+        <li>Club administrators are responsible for managing user invitations, role assignments (Admin, Coach, Physio, Analyst), and promptly removing access for departing staff.</li>
+        <li>You are responsible for ensuring that all data entered into the system—including athlete personal details and medical notes—has been collected legally with proper consent.</li>
+        <li>You must keep account credentials strictly confidential and notify us immediately of any suspected unauthorized access.</li>
       </ul>
 
-      <h2>3. Medical &amp; professional disclaimer</h2>
+      <h2>3. Subscription, ApexPay &amp; Billing Terms</h2>
+      <ul>
+        <li><strong>Plans:</strong> ApexTrack offers tier-based plans including <em>Starting XI</em> (GHS 199/month) and <em>Captain</em> (GHS 499/month).</li>
+        <li><strong>ApexPay Payroll:</strong> ApexPay features (wallet top-ups and Mobile Money payouts) are exclusively available on the Captain plan. Clubs are solely responsible for ensuring sufficient wallet funds and verifying correct MoMo recipient numbers prior to executing payroll disbursements.</li>
+        <li><strong>Renewals &amp; Cancellations:</strong> Subscriptions renew automatically unless cancelled before the renewal date. Payments processed via Paystack or Moolre are non-refundable except where required by law.</li>
+      </ul>
+
+      <h2>4. Medical Disclaimer</h2>
       <p>
-        Apex Track is <strong>not</strong> a medical device and does not provide clinical diagnosis or treatment advice.
-        Injury and health fields are for club operational records only. Clinical decisions remain the responsibility of qualified medical professionals.
-        Clubs must comply with applicable medical confidentiality, safeguarding, and sports-medicine regulations in their jurisdiction.
+        ApexTrack is an operational management tool and does <strong>not</strong> provide medical diagnoses, treatment plans, or clinical decision making. Injury tracking records are for organizational coordination only. Medical decisions remain the sole responsibility of qualified medical professionals.
       </p>
 
-      <h2>4. Data protection</h2>
-      <p>
-        Use of personal data is described in our <a href="/privacy">Privacy Policy</a>. Clubs using the service for EU/UK players or staff
-        should ensure appropriate data processing agreements and lawful bases are in place. Our <a href="/security">Security &amp; Data Protection</a> page
-        describes technical safeguards.
-      </p>
-
-      <h2>5. Subscription &amp; billing</h2>
-      <p>
-        Some features may require a paid plan or trial. Fees, renewal, and cancellation terms are shown at checkout or in your club billing area.
-        Failure to pay may result in restricted access after notice.
-      </p>
-
-      <h2>6. Intellectual property</h2>
-      <p>
-        Apex Track software, branding, and documentation remain our property. You retain ownership of data you upload. You grant us a limited licence
-        to host and process that data solely to operate the service.
-      </p>
-
-      <h2>7. Acceptable use</h2>
+      <h2>5. Acceptable Use Policy</h2>
       <p>You agree not to:</p>
       <ul>
-        <li>Attempt to access another club&apos;s data or bypass security controls.</li>
-        <li>Reverse engineer, scrape, or overload the platform.</li>
-        <li>Upload malware or unlawful content.</li>
-        <li>Misrepresent affiliation with Apex Track or other clubs.</li>
+        <li>Attempt to access data belonging to other clubs or breach system security controls.</li>
+        <li>Use the service for fraudulent financial transfers or unauthorized payment operations.</li>
+        <li>Scrape, reverse engineer, or introduce malicious code into the platform.</li>
       </ul>
 
-      <h2>8. Availability &amp; support</h2>
+      <h2>6. Limitation of Liability</h2>
       <p>
-        We aim for reliable operation but do not publish a formal uptime SLA on standard plans. Scheduled maintenance and third-party outages may occur.
-        Support is provided on a reasonable-efforts basis via <a href="mailto:privacy@apextrack.app">privacy@apextrack.app</a> (general enquiries).
+        To the maximum extent permitted by law, ApexTrack is provided &quot;as is&quot; without warranties of any kind. We are not liable for indirect, incidental, or consequential damages resulting from platform downtime or incorrect data entries. Our total liability for any claim shall not exceed the fees paid by your club in the preceding 12 months.
       </p>
 
-      <h2>9. Limitation of liability</h2>
+      <h2>7. Governing Law</h2>
       <p>
-        To the fullest extent permitted by law, Apex Track is provided &quot;as is&quot;. We are not liable for indirect, consequential, or lost-profit damages
-        arising from use of the platform, including decisions made from injury or performance data. Our total liability for any claim is limited to fees
-        paid by your organisation in the twelve months preceding the claim, or £100 if no fees were paid, whichever is greater where law allows.
+        These Terms shall be governed by and construed in accordance with the laws of the Republic of Ghana. Any disputes arising out of these Terms shall be subject to the jurisdiction of the courts of Ghana.
       </p>
 
-      <h2>10. Termination</h2>
+      <h2>8. Contact &amp; Enquiries</h2>
       <p>
-        You may stop using the service at any time. We may suspend or terminate accounts that violate these Terms or pose a security risk.
-        Upon termination, access ends and data is handled per our Privacy Policy.
-      </p>
-
-      <h2>11. Governing law</h2>
-      <p>
-        These Terms are governed by the laws of England and Wales, without regard to conflict-of-law principles. Courts in England shall have exclusive jurisdiction,
-        subject to mandatory consumer protections in your country of residence where applicable.
-      </p>
-
-      <h2>12. Changes</h2>
-      <p>
-        We may update these Terms. The &quot;Last updated&quot; date will change when we do. Material changes may be communicated by email or in-app notice.
+        For legal or support inquiries, contact us at <a href="mailto:admin@apextrackgh.com">admin@apextrackgh.com</a>.
       </p>
     </LegalPage>
   )

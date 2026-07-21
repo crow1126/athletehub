@@ -1,107 +1,71 @@
 import LegalPage from '@/components/LegalPage'
 
 export const metadata = {
-  title: 'Privacy Policy | Apex Track',
-  description: 'How Apex Track collects, uses, and protects athlete and club data.',
+  title: 'Privacy Policy | ApexTrack',
+  description: 'How ApexTrack collects, uses, and protects athlete, club, and payroll data in compliance with relevant privacy regulations.',
 }
 
 export default function PrivacyPage() {
   return (
     <LegalPage
       title="Privacy Policy"
-      subtitle="How we handle personal data, including sensitive athlete health and performance information."
-      lastUpdated="27 May 2026"
+      subtitle="How we handle personal data, sensitive athlete performance metrics, injury records, and ApexPay payroll details."
+      lastUpdated="21 July 2026"
     >
       <p>
-        Apex Track (&quot;we&quot;, &quot;us&quot;, &quot;Apex Track&quot;) provides a football performance and squad management platform.
-        This policy explains what data we process, why, and your rights — especially where UK GDPR and EU GDPR apply to your club or players.
+        ApexTrack (&quot;we&quot;, &quot;us&quot;, &quot;ApexTrack&quot;) provides a comprehensive football performance, squad management, and payroll platform built for clubs across Ghana and Africa.
+        This policy outlines what information we collect, why, and how we protect your club&apos;s data, in alignment with the Data Protection Act, 2012 (Act 843) of Ghana as well as applicable international standards (including UK/EU GDPR where applicable).
       </p>
 
-      <h2>1. Who we are</h2>
+      <h2>1. Who We Are</h2>
       <p>
-        Apex Track is operated as a software service for football clubs and organisations. For data protection enquiries,
-        contact <a href="mailto:privacy@apextrack.app">privacy@apextrack.app</a>.
+        ApexTrack is operated as a cloud-based software service for sports clubs, academies, and professional sports organisations. For privacy and data protection inquiries, contact our Data Protection Officer at <a href="mailto:admin@apextrackgh.com">admin@apextrackgh.com</a>.
       </p>
 
-      <h2>2. Data we collect</h2>
-      <p>Depending on how your club uses the platform, we may process:</p>
+      <h2>2. Data We Process</h2>
+      <p>Depending on your club&apos;s active modules, we process:</p>
       <ul>
-        <li><strong>Account data:</strong> name, email, username, role, club affiliation, authentication logs.</li>
-        <li><strong>Athlete records:</strong> identity, position, physical metrics, contract notes, scouting data.</li>
-        <li><strong>Health &amp; injury data:</strong> injury reports, treatment notes, recovery timelines, return-to-play status (special category data where applicable).</li>
-        <li><strong>Performance data:</strong> match stats, training sessions, analytics (e.g. xG/xA), reports.</li>
-        <li><strong>Club assets:</strong> logos and documents you upload.</li>
-        <li><strong>Technical data:</strong> IP address, browser type, session identifiers, and usage necessary to operate and secure the service.</li>
+        <li><strong>Account &amp; User Data:</strong> Name, work email, phone number, user role (Superadmin, Admin, Coach, Physio, Analyst), login credentials, and session logs.</li>
+        <li><strong>Athlete &amp; Squad Profiles:</strong> Player identity, age, position, match performance statistics (goals, assists, xG, xA, ratings), contract details, and transfer histories.</li>
+        <li><strong>Medical &amp; Injury Logs:</strong> Injury type, recovery progress, treatment notes, return-to-play clearance dates, and rehab logs.</li>
+        <li><strong>ApexPay Payroll &amp; Wallet Data:</strong> Staff salary amounts, Mobile Money (MoMo) account details, transaction reference numbers, wallet balances, and disbursement logs.</li>
+        <li><strong>Club Assets &amp; Documents:</strong> Official logos, contract PDFs, and generated executive reports.</li>
+        <li><strong>Technical Data:</strong> IP addresses, browser types, device identifiers, and system diagnostic logs.</li>
       </ul>
 
-      <h2>3. Why we use your data</h2>
+      <h2>3. Purpose and Legal Basis for Processing</h2>
       <ul>
-        <li>To provide and maintain the platform (contract / legitimate interests).</li>
-        <li>To authenticate users and enforce club-scoped access controls.</li>
-        <li>To support injury tracking, performance analysis, and reporting requested by your club.</li>
-        <li>To send service emails (e.g. account verification, security notices).</li>
-        <li>To improve reliability, prevent abuse, and meet legal obligations.</li>
+        <li><strong>Service Delivery:</strong> Managing club rosters, generating performance reports, executing squad management workflows, and processing Mobile Money disbursements via ApexPay.</li>
+        <li><strong>Security &amp; Access Control:</strong> Enforcing strict tenant isolation (PostgreSQL Row Level Security) to prevent unauthorized access across clubs.</li>
+        <li><strong>Administrative Communications:</strong> Sending service notifications, email verification links, and billing alerts.</li>
+        <li><strong>Compliance:</strong> Fulfilling financial record-keeping requirements for payroll transactions and meeting legal obligations under local laws.</li>
       </ul>
       <p>
-        Where we process health-related data, your club is typically the <strong>data controller</strong> for athlete information;
-        Apex Track acts as a <strong>data processor</strong> on the club&apos;s instructions. Clubs must ensure they have a lawful basis
-        (e.g. consent, employment/contract, or legitimate interests with appropriate safeguards) before entering sensitive data.
+        For athlete and injury data, your club acts as the <strong>Data Controller</strong>, while ApexTrack serves as the <strong>Data Processor</strong> acting on the club&apos;s instructions.
       </p>
 
-      <h2>4. Sub-processors</h2>
-      <p>We use trusted infrastructure providers, including:</p>
+      <h2>4. Sub-Processors &amp; Service Providers</h2>
+      <p>We work with trusted third-party providers to deliver high availability and secure transactions:</p>
       <ul>
-        <li><strong>Supabase</strong> — database, authentication, and file storage (EU West region, London).</li>
-        <li><strong>Vercel</strong> — application hosting and analytics.</li>
-        <li><strong>Resend</strong> — transactional email delivery.</li>
+        <li><strong>Supabase</strong> — Cloud database, user authentication, and encrypted file storage.</li>
+        <li><strong>Vercel</strong> — Web application hosting, serverless execution, and edge routing.</li>
+        <li><strong>Paystack &amp; Moolre</strong> — Mobile Money (MTN MoMo, Telecel Cash, AT Money) and card payment processing for club subscriptions and wallet top-ups.</li>
+        <li><strong>Resend</strong> — Transactional email delivery for notifications and verification emails.</li>
       </ul>
+
+      <h2>5. Data Security</h2>
       <p>
-        These providers process data only to deliver the service and under contractual terms consistent with GDPR requirements.
-        See our <a href="/security">Security &amp; Data Protection</a> page for more detail.
+        We employ multi-layer security measures, including HTTPS/TLS 1.3 encryption in transit, AES-256 encryption at rest, role-based access controls (RBAC), and Row Level Security (RLS) policies at the database layer to guarantee complete isolation of club databases.
       </p>
 
-      <h2>5. International transfers</h2>
+      <h2>6. Data Retention &amp; Deletion</h2>
       <p>
-        Primary hosting is in the United Kingdom / EU where configured. If data is transferred outside the UK/EEA,
-        we rely on appropriate safeguards (e.g. Standard Contractual Clauses or UK International Data Transfer Agreement mechanisms)
-        offered by our sub-processors.
+        Club data is maintained for the duration of your active subscription or trial. Upon account termination or written deletion request, records are securely deleted or anonymized within 30 days, except where financial or legal obligations mandate longer retention.
       </p>
 
-      <h2>6. Retention</h2>
+      <h2>7. Your Rights</h2>
       <p>
-        We retain data while your club&apos;s account is active and as needed to provide the service. After account closure,
-        we delete or anonymise data within a reasonable period unless law requires longer retention. Clubs may export reports
-        before closure. Backup copies may persist for a limited period per our provider&apos;s backup schedule (see Security page).
-      </p>
-
-      <h2>7. Security</h2>
-      <p>
-        We apply encryption in transit (TLS), role-based access, and database row-level security so each club&apos;s users only access
-        their organisation&apos;s records. No system is perfectly secure; we continuously improve controls and respond to incidents.
-      </p>
-
-      <h2>8. Your rights (UK / EU GDPR)</h2>
-      <p>Where GDPR applies, individuals may have the right to:</p>
-      <ul>
-        <li>Access, rectify, or erase personal data.</li>
-        <li>Restrict or object to certain processing.</li>
-        <li>Data portability (where processing is automated and based on consent or contract).</li>
-        <li>Withdraw consent where processing is consent-based.</li>
-        <li>Lodge a complaint with the ICO (UK) or your local supervisory authority.</li>
-      </ul>
-      <p>
-        Athletes and staff should contact their <strong>club administrator</strong> first for data held on behalf of the club.
-        You may also email <a href="mailto:privacy@apextrack.app">privacy@apextrack.app</a> and we will assist or redirect to the controller as appropriate.
-      </p>
-
-      <h2>9. Children</h2>
-      <p>
-        The platform may hold data on youth players managed by clubs. Clubs are responsible for parental/guardian consent and safeguarding policies.
-      </p>
-
-      <h2>10. Changes</h2>
-      <p>
-        We may update this policy. Material changes will be reflected on this page with an updated date. Continued use after changes constitutes notice.
+        Individuals have the right to request access to, correction of, or deletion of their personal information. Athletes and staff should contact their club administrator directly for records managed by the club, or email <a href="mailto:admin@apextrackgh.com">admin@apextrackgh.com</a> for platform assistance.
       </p>
     </LegalPage>
   )

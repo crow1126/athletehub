@@ -562,16 +562,17 @@ export default function SuperadminPage() {
         
         .sa-main-layout{display:flex;min-height:100vh;background:#f8fafc}
         
-        /* SIDEBAR — hidden on mobile */
+        /* SIDEBAR — dark theme */
         .sa-sidebar{
-          width:230px;flex-shrink:0;background:#ffffff;border-right:1px solid #e2e8f0;
+          width:240px;flex-shrink:0;background:#0F172A;border-right:1px solid #1E293B;
           display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:80;
         }
         
-        .sa-content{margin-left:230px;flex:1;min-width:0;display:flex;flex-direction:column;}
+        .sa-content{margin-left:240px;flex:1;min-width:0;display:flex;flex-direction:column;}
         
         .sa-header{
-          height:68px;background:#ffffff;border-bottom:1px solid #e2e8f0;
+          height:68px;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);
+          border-bottom:1px solid #E2E8F0;
           display:flex;align-items:center;justify-content:space-between;
           padding:0 28px;position:sticky;top:0;z-index:70;
         }
@@ -579,29 +580,33 @@ export default function SuperadminPage() {
         .sa-main{flex:1;padding:28px 32px;overflow-y:auto;animation:fadeIn 0.3s ease;}
         
         .sa-nav-btn{
-          width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;
+          width:100%;display:flex;align-items:center;gap:12px;padding:11px 16px;
           border-radius:10px;border:none;background:transparent;
           font-weight:600;font-size:13.5px;cursor:pointer;text-align:left;
-          transition:all 0.15s;fontFamily:'Plus Jakarta Sans',sans-serif;
+          transition:all 0.2s ease;font-family:'Plus Jakarta Sans',sans-serif;
+          color:#94A3B8;
         }
-        .sa-nav-btn:hover{background:#f1f5f9}
+        .sa-nav-btn:hover{background:rgba(255,255,255,0.06);color:#F8FAFC}
+        .sa-nav-btn.active{background:#0D9488;color:#FFFFFF;font-weight:700;box-shadow:0 4px 12px rgba(13,148,136,0.3)}
         
         .sa-card{
-          background:#ffffff;border:1px solid #e2e8f0;border-radius:14px;
-          padding:22px;box-shadow:0 1px 4px rgba(0,0,0,0.04);
+          background:#FFFFFF;border:1px solid #E2E8F0;border-radius:16px;
+          padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.02);
+          transition:all 0.2s ease;
         }
+        .sa-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06)}
         
         .sa-custom-input{
-          width:100%;padding:10px 14px;background:#f8fafc;border:1px solid #e2e8f0;
-          border-radius:10px;font-size:13px;color:#0f172a;outline:none;
-          transition:all 0.15s;fontFamily:'Plus Jakarta Sans',sans-serif;
+          width:100%;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;
+          border-radius:10px;font-size:13px;color:#0F172A;outline:none;
+          transition:all 0.15s;font-family:'Plus Jakarta Sans',sans-serif;
         }
-        .sa-custom-input:focus{border-color:#0d9488;box-shadow:0 0 0 3px rgba(13,148,136,0.08)}
+        .sa-custom-input:focus{border-color:#0D9488;box-shadow:0 0 0 3px rgba(13,148,136,0.12);background:#FFFFFF}
         
         .sa-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
         .sa-table{width:100%;border-collapse:collapse;text-align:left;min-width:720px}
-        .sa-th{padding:12px 16px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;background:#f8fafc;border-bottom:1px solid #e2e8f0}
-        .sa-td{padding:12px 16px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#334155;vertical-align:middle}
+        .sa-th{padding:12px 16px;font-size:11px;font-weight:800;color:#475569;text-transform:uppercase;letter-spacing:0.06em;background:#F8FAFC;border-bottom:1px solid #E2E8F0}
+        .sa-td{padding:14px 16px;border-bottom:1px solid #F1F5F9;font-size:13px;color:#334155;vertical-align:middle}
         
         /* MOBILE OVERRIDES */
         @media(max-width:768px){
@@ -691,32 +696,34 @@ export default function SuperadminPage() {
         {/* SIDEBAR (desktop) */}
         <aside className="sa-sidebar">
           {/* Logo */}
-          <div style={{ padding:'20px 16px 16px', borderBottom:'1px solid #e2e8f0', display:'flex', alignItems:'center', gap:12 }}>
-            <img src="/logo.png" alt="AthleteHub" style={{ width:42, height:42, objectFit:'contain', borderRadius:10, background:'#f0fdfa', padding:4 }}
+          <div style={{ padding:'22px 20px 18px', borderBottom:'1px solid #1E293B', display:'flex', alignItems:'center', gap:12 }}>
+            <img src="/logo.png" alt="ApexTrack" style={{ width:38, height:38, objectFit:'contain', borderRadius:10, background:'#0F766E', padding:4 }}
               onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
-            <div style={{ display:'none', width:42, height:42, borderRadius:10, background:'linear-gradient(135deg,#0d9488,#0f766e)', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff' }}></div>
+            <div style={{ display:'none', width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,#0d9488,#0f766e)', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff' }}></div>
             <div>
-              <div style={{ fontSize:14, fontWeight:800, color:'#0f172a', lineHeight:1.2 }}>AthleteHub</div>
-              <div style={{ fontSize:10, color:'#0d9488', fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:1 }}>Superadmin</div>
+              <div style={{ fontSize:15, fontWeight:800, color:'#F8FAFC', lineHeight:1.2, letterSpacing:'-0.02em' }}>Apex<span style={{ color:'#2DD4BF' }}>Track</span></div>
+              <div style={{ fontSize:10, color:'#0D9488', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginTop:2 }}>Superadmin Console</div>
             </div>
           </div>
 
           {/* Nav */}
-          <nav style={{ flex:1, padding:'16px 12px', display:'flex', flexDirection:'column', gap:4 }}>
-            <p style={{ fontSize:9, fontWeight:800, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:8, paddingLeft:8 }}>Navigation</p>
-            {NAV_ITEMS.map(item => (
-              <button key={item.id} onClick={() => setSection(item.id)} className="sa-nav-btn"
-                style={{ color:section===item.id?'#0d9488':'#334155', background:section===item.id?'#f0fdfa':'transparent' }}>
-                <span style={{ color:section===item.id?'#0d9488':'#94a3b8', display:'flex' }}>{item.icon}</span>
-                {item.label}
-              </button>
-            ))}
+          <nav style={{ flex:1, padding:'20px 14px', display:'flex', flexDirection:'column', gap:6 }}>
+            <p style={{ fontSize:10, fontWeight:800, color:'#64748B', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:8, paddingLeft:10 }}>Main Navigation</p>
+            {NAV_ITEMS.map(item => {
+              const active = section === item.id
+              return (
+                <button key={item.id} onClick={() => setSection(item.id)} className={`sa-nav-btn${active ? ' active' : ''}`}>
+                  <span style={{ color: active ? '#FFFFFF' : '#64748B', display:'flex' }}>{item.icon}</span>
+                  {item.label}
+                </button>
+              )
+            })}
           </nav>
 
           {/* User info */}
-          <div style={{ padding:'14px 16px', borderTop:'1px solid #e2e8f0' }}>
-            <div style={{ fontSize:12, fontWeight:700, color:'#0f172a' }}>Samuel Wobil</div>
-            <div style={{ fontSize:10, color:'#64748b', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>samuelwobil11@gmail.com</div>
+          <div style={{ padding:'16px 20px', borderTop:'1px solid #1E293B', background:'rgba(15,23,42,0.6)' }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#F8FAFC' }}>Samuel Wobil</div>
+            <div style={{ fontSize:11, color:'#64748B', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>admin@apextrackgh.com</div>
           </div>
         </aside>
 
@@ -746,6 +753,11 @@ export default function SuperadminPage() {
             </div>
 
             <div className="sa-header-btns" style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <a href="/api/download-logo" download style={{ textDecoration:'none' }}>
+                <Btn style={{ fontSize:12, background:'#F0FDFA', color:'#0D9488', border:'1px solid #CCFBF1' }}>
+                  ↓ Download Logo
+                </Btn>
+              </a>
               <Btn variant="primary" onClick={() => setAddModal(true)} className="sa-provision-btn" style={{ fontSize:12 }}>
                 + Provision Admin
               </Btn>

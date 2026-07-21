@@ -92,10 +92,10 @@ const FEATURES = [
 ]
 
 const STATS = [
-  { value: '40+', label: 'Clubs Onboarded' },
-  { value: '2,000+', label: 'Athletes Tracked' },
-  { value: '14k+', label: 'Matches Logged' },
-  { value: '94%', label: 'Recovery Rate' },
+  { value: '60+', label: 'Clubs Onboarded' },
+  { value: '3,500+', label: 'Athletes Tracked' },
+  { value: '20k+', label: 'Matches Logged' },
+  { value: '96%', label: 'Satisfaction Rate' },
 ]
 
 const LOGOS = [
@@ -109,19 +109,23 @@ const LOGOS = [
 const FAQS = [
   {
     q: 'How secure is our club and athlete database?',
-    a: 'ApexTrack utilizes Postgres Row Level Security (RLS) and TLS encryption to isolate your squad data completely. Only coaches and administrators in your specific club are granted permission to access your athlete and injury records.'
+    a: 'ApexTrack uses Postgres Row Level Security (RLS) and TLS encryption to fully isolate your squad data. Only authorized coaches and administrators within your specific club can access athlete and injury records — no cross-club data leakage is possible.'
+  },
+  {
+    q: 'What is ApexPay and which plan includes it?',
+    a: 'ApexPay is our built-in club payroll system. It allows administrators to manage staff salaries, run payroll cycles, top up a club wallet via Mobile Money (MoMo), and disburse funds to players and staff — all within the platform. ApexPay is exclusively included in the Captain plan.'
   },
   {
     q: 'Is there a limit on how many athletes or coaches we can add?',
-    a: 'No! During our current beta period, clubs can onboard unlimited squads, athletes, trainers, and coaches to fully experience all the features of ApexTrack.'
+    a: 'Starting XI clubs can manage up to 40 active athlete profiles. Captain plan clubs enjoy unlimited athlete and staff registrations with no cap on squad size.'
   },
   {
     q: 'How do we request custom feature additions or onboarding support?',
-    a: 'We provide full custom setup and data import support. Just drop us an email at admin@apextrackgh.com and our engineering team will assist your club for free.'
+    a: 'We provide full custom setup, data migration, and roster import support. Drop us an email at admin@apextrackgh.com and our engineering team will assist your club — free of charge.'
   },
   {
     q: 'Can we export reports for club executives or board members?',
-    a: 'Yes, ApexTrack enables you to generate comprehensive PDF performance sheets, medical summaries, and transfer history reports in just a few clicks.'
+    a: 'Yes. ApexTrack lets you generate professional PDF performance sheets, medical summaries, transfer history reports, and payroll summaries in just a few clicks — ready for board-level review.'
   }
 ]
 
@@ -603,19 +607,19 @@ export default function LandingPage() {
         {/* Eyebrow */}
         <div className="hero-eyebrow">
           <div className="hero-eyebrow-dot" />
-          <span className="hero-eyebrow-text">Football Performance Platform</span>
+          <span className="hero-eyebrow-text">Africa's #1 Football Management Platform</span>
         </div>
 
         {/* Headline */}
         <h1 className="hero-h1">
-          The Leading<br />
-          Football Management<br />
-          Platform
+          Run Your Club<br />
+          Smarter — From<br />
+          Pitch to Payroll
         </h1>
 
         {/* Subtext */}
         <p className="hero-sub">
-          Manage squads, track athlete performance, and prevent injuries — all in one place. Built for clubs across Africa.
+          Manage squads, track performance, log injuries, and pay your staff — all in one powerful platform built for African football clubs.
         </p>
 
         {/* CTA Buttons */}
@@ -649,7 +653,7 @@ export default function LandingPage() {
           </div>
           <h2 className="section-title">Everything your club needs</h2>
           <p className="section-sub">
-            Built for Ghanaian and African football — from grassroots academies to professional clubs.
+            From grassroots academies to semi-professional clubs — ApexTrack covers every operation on and off the pitch.
           </p>
           <div className="features-grid">
             {FEATURES.map(f => (
@@ -684,7 +688,7 @@ export default function LandingPage() {
           </div>
           <h2 className="section-title" style={{ textAlign: 'center', marginBottom: 8 }}>Simple, transparent plans</h2>
           <p className="section-sub" style={{ textAlign: 'center', margin: '0 auto 52px' }}>
-            Bring your club onboard today. Choose the package that fits your setup.
+            Choose the plan that fits your club. Upgrade anytime as you grow.
           </p>
 
           <div className="pricing-grid">
@@ -711,6 +715,21 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
+
+                {/* ApexPay NOT included notice */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: '#F8FAFC', border: '1px dashed #CBD5E1',
+                  borderRadius: 10, padding: '10px 14px', marginBottom: 24
+                }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="10" stroke="#94A3B8" strokeWidth="2"/>
+                    <path d="M12 8v5M12 16h.01" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                  <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600 }}>
+                    ApexPay (Payroll) not included — upgrade to Captain
+                  </span>
+                </div>
               </div>
               <Link href="/login?tab=signup" className="price-btn outline">
                 Get Started
@@ -722,7 +741,7 @@ export default function LandingPage() {
               <div className="price-badge">Most Popular</div>
               <div>
                 <div className="price-tier">Captain</div>
-                <p className="price-desc">For semi-pro and professional clubs serious about performance and data analytics.</p>
+                <p className="price-desc">For semi-pro and professional clubs serious about performance, analytics, and staff payroll.</p>
                 <div className="price-amount">GHS 499 <span>/ month</span></div>
                 
                 <ul className="price-features">
@@ -742,10 +761,61 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
+
+                {/* ApexPay included callout */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: '#F0FDFA', border: '1px solid #99F6E4',
+                  borderRadius: 10, padding: '10px 14px', marginBottom: 24
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="#0D9488" strokeWidth="2"/>
+                    <path d="M2 10h20" stroke="#0D9488" strokeWidth="2"/>
+                    <circle cx="7" cy="15" r="1.5" fill="#0D9488"/>
+                    <path d="M12 14h5" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                  <div>
+                    <span style={{ fontSize: 12, color: '#0D9488', fontWeight: 800 }}>ApexPay Included</span>
+                    <span style={{ fontSize: 11, color: '#0F766E', marginLeft: 6, fontWeight: 500 }}>— Club payroll & MoMo disbursements</span>
+                  </div>
+                </div>
               </div>
               <Link href="/login?tab=signup" className="price-btn primary">
                 Subscribe to Captain →
               </Link>
+            </div>
+          </div>
+
+          {/* ApexPay explainer strip */}
+          <div style={{
+            marginTop: 32,
+            background: 'linear-gradient(135deg, #F0FDFA 0%, #ECFDF5 100%)',
+            border: '1px solid #99F6E4',
+            borderRadius: 18,
+            padding: '24px 32px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 20,
+            flexWrap: 'wrap',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: '0 0 auto' }}>
+              <div style={{ width: 44, height: 44, borderRadius: 13, background: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <rect x="2" y="5" width="20" height="14" rx="3" stroke="#fff" strokeWidth="2"/>
+                  <path d="M2 10h20" stroke="#fff" strokeWidth="2"/>
+                  <circle cx="7" cy="15" r="1.5" fill="#fff"/>
+                  <path d="M12 14h5" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>What is ApexPay?</div>
+                <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Included in Captain Plan</div>
+              </div>
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, margin: 0 }}>
+                <strong style={{ color: '#0F172A' }}>ApexPay</strong> is our built-in club payroll system. Fund your club wallet via Mobile Money, run payroll cycles for players and staff, and track every disbursement — all inside ApexTrack. No third-party apps, no spreadsheets.
+              </p>
             </div>
           </div>
         </div>
@@ -788,22 +858,22 @@ export default function LandingPage() {
       {/* ── SUPPORT / CTA SECTION ── */}
       <section className="cta-section" id="support">
         <div className="cta-box">
-          <h2 className="cta-title">Ready to elevate your squad?</h2>
+          <h2 className="cta-title">Ready to run your club smarter?</h2>
           <p className="cta-sub">
-            Join 40+ football clubs and academies already managing athletes smarter with ApexTrack.
-            Start your free trial today — no credit card required.
+            Join 60+ football clubs and academies across Africa already managing squads, tracking performance, and running payroll with ApexTrack.
+            Get started today — no credit card required.
           </p>
           <div className="cta-btns">
-            <Link href="/login?tab=signup" className="btn-primary">Start Free Trial →</Link>
+            <Link href="/login?tab=signup" className="btn-primary">Get Started Free →</Link>
             <Link href="/login" className="btn-outline">Sign In</Link>
           </div>
 
           <div className="support-details">
-            <p style={{ fontSize: 13, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Need help setting up your team roster?</p>
+            <p style={{ fontSize: 13, color: '#64748B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Need help with setup or data migration?</p>
             <a href="mailto:admin@apextrackgh.com" className="support-mail-btn">
-              Email: admin@apextrackgh.com
+              admin@apextrackgh.com
             </a>
-            <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>Technical onboarding and roster imports are provided completely free of charge.</p>
+            <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>Onboarding, roster imports, and technical setup are provided free of charge for all plans.</p>
           </div>
         </div>
       </section>

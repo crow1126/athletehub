@@ -270,26 +270,92 @@ export default function SuperadminPage() {
     return null
   }
 
-  // ── ANALYTICS HELPER FUNCTIONS ──
-  function formatPageTitle(urlStr) {
+  // ── VERCEL-STYLE ANALYTICS HELPER FUNCTIONS ──
+  function getCleanPath(urlStr) {
+    if (!urlStr) return '/'
     try {
       const u = new URL(urlStr)
-      const p = u.pathname
-      if (p === '/' || p === '') return 'Landing Page'
-      if (p.startsWith('/billing')) return 'Pricing & Billing'
-      if (p.startsWith('/login')) return 'Login Page'
-      if (p.startsWith('/superadmin')) return 'Superadmin Console'
-      if (p.startsWith('/dashboard')) return 'Club Dashboard'
-      if (p.startsWith('/athletes')) return 'Athletes Directory'
-      if (p.startsWith('/coaches')) return 'Coaches Directory'
-      if (p.startsWith('/pay')) return 'ApexPay Payroll'
-      if (p.startsWith('/privacy')) return 'Privacy Policy'
-      if (p.startsWith('/terms')) return 'Terms of Service'
-      if (p.startsWith('/security')) return 'Security'
-      return p
+      return u.pathname || '/'
     } catch {
-      return urlStr || 'Landing Page'
+      return urlStr.startsWith('/') ? urlStr : '/'
     }
+  }
+
+  function formatReferrerHost(refStr) {
+    if (!refStr) return 'direct'
+    try {
+      const u = new URL(refStr)
+      return u.hostname.replace('www.', '')
+    } catch {
+      return refStr
+    }
+  }
+
+  function getOSName(ua) {
+    if (!ua) return 'Windows'
+    const u = ua.toLowerCase()
+    if (u.includes('iphone') || u.includes('ipad') || u.includes('ios')) return 'iOS'
+    if (u.includes('android')) return 'Android'
+    if (u.includes('macintosh') || u.includes('mac os')) return 'Mac'
+    if (u.includes('windows')) return 'Windows'
+    if (u.includes('linux')) return 'Linux'
+    return 'Other'
+  }
+
+  function getDetailedBrowserName(ua) {
+    if (!ua) return 'Chrome'
+    const u = ua.toLowerCase()
+    if (u.includes('iphone') && u.includes('safari')) return 'Mobile Safari'
+    if (u.includes('android') && u.includes('chrome')) return 'Chrome Mobile'
+    if (u.includes('edg')) return 'Microsoft Edge'
+    if (u.includes('firefox')) return 'Firefox'
+    if (u.includes('chrome')) return 'Chrome'
+    if (u.includes('safari')) return 'Safari'
+    return 'Browser'
+  }
+
+  function getDeviceCategory(ua) {
+    if (!ua) return 'Desktop'
+    const u = ua.toLowerCase()
+    if (u.includes('android') || u.includes('iphone') || u.includes('mobile')) return 'Mobile'
+    if (u.includes('ipad') || u.includes('tablet')) return 'Tablet'
+    return 'Desktop'
+  }
+
+  function getCountryFullName(code) {
+    const map = {
+      GH: 'Ghana',
+      US: 'United States',
+      NG: 'Nigeria',
+      GB: 'United Kingdom',
+      CA: 'Canada',
+      BR: 'Brazil',
+      IN: 'India',
+      DE: 'Germany',
+      FR: 'France',
+      ZA: 'South Africa',
+      KE: 'Kenya',
+      CI: 'Ivory Coast',
+    }
+    const c = (code || 'GH').toUpperCase()
+    return map[c] || c
+  }
+
+  function getAggregatedStats(clicksList, keyExtractor) {
+    if (!clicksList || clicksList.length === 0) return []
+    const total = clicksList.length
+    const counts = {}
+    clicksList.forEach(c => {
+      const val = keyExtractor(c) || 'Unknown'
+      counts[val] = (counts[val] || 0) + 1
+    })
+    return Object.entries(counts)
+      .map(([name, count]) => ({
+        name,
+        count,
+        pct: Math.round((count / total) * 100) || 1,
+      }))
+      .sort((a, b) => b.count - a.count)
   }
 
   function timeAgo(dateStr) {
@@ -299,64 +365,6 @@ export default function SuperadminPage() {
     if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
     if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
     return `${Math.floor(diffSec / 86400)}d ago`
-  }
-
-  function getDeviceType(ua) {
-    if (!ua) return 'Desktop'
-    const u = ua.toLowerCase()
-    if (u.includes('android') || u.includes('iphone') || u.includes('mobile')) return 'Mobile'
-    if (u.includes('ipad') || u.includes('tablet')) return 'Tablet'
-    return 'Desktop'
-  }
-
-  function getTopPath(clicksList) {
-    if (!clicksList || clicksList.length === 0) return 'None'
-    const counts = {}
-    clicksList.forEach(c => {
-      const title = formatPageTitle(c.url)
-      counts[title] = (counts[title] || 0) + 1
-    })
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
-  }
-
-  function getTopReferrer(clicksList) {
-    if (!clicksList || clicksList.length === 0) return 'Direct Traffic'
-    const counts = {}
-    clicksList.forEach(c => {
-      const ref = formatReferrer(c.referrer)
-      counts[ref] = (counts[ref] || 0) + 1
-    })
-    return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
-  }
-
-  function getMobilePercentage(clicksList) {
-    if (!clicksList || clicksList.length === 0) return '0%'
-    const mobileCount = clicksList.filter(c => getDeviceType(c.user_agent) === 'Mobile').length
-    return `${Math.round((mobileCount / clicksList.length) * 100)}%`
-  }
-
-  function formatUrlPath(urlStr) {
-    try {
-      const u = new URL(urlStr)
-      return u.pathname + u.search
-    } catch {
-      return urlStr
-    }
-  }
-
-  function formatReferrer(refStr) {
-    if (!refStr) return 'Direct / Link'
-    try {
-      const u = new URL(refStr)
-      if (u.hostname.includes('whatsapp')) return 'WhatsApp'
-      if (u.hostname.includes('t.co') || u.hostname.includes('x.com') || u.hostname.includes('twitter')) return 'Twitter / X'
-      if (u.hostname.includes('facebook') || u.hostname.includes('fb.')) return 'Facebook'
-      if (u.hostname.includes('google')) return 'Google'
-      if (u.hostname.includes('instagram')) return 'Instagram'
-      return u.hostname.replace('www.', '')
-    } catch {
-      return refStr
-    }
   }
 
   function getBrowserName(ua) {
@@ -1156,161 +1164,196 @@ export default function SuperadminPage() {
             )}
 
             {section === 'analytics' && (() => {
-              const filteredClicks = clicks.filter(c => {
-                if (clickFilter === 'direct' && c.referrer) return false
-                if (clickFilter === 'referrals' && !c.referrer) return false
-                if (clickFilter === 'mobile' && getDeviceType(c.user_agent) !== 'Mobile') return false
-                if (clickFilter === 'desktop' && getDeviceType(c.user_agent) !== 'Desktop') return false
-                if (clickSearch) {
-                  const q = clickSearch.toLowerCase()
-                  const matchUrl = (c.url || '').toLowerCase().includes(q)
-                  const matchRef = (c.referrer || '').toLowerCase().includes(q)
-                  const matchLoc = (c.country || '').toLowerCase().includes(q)
-                  const matchPage = formatPageTitle(c.url).toLowerCase().includes(q)
-                  if (!matchUrl && !matchRef && !matchLoc && !matchPage) return false
-                }
-                return true
-              })
+              const pathsList     = getAggregatedStats(clicks, c => getCleanPath(c.url))
+              const referrersList = getAggregatedStats(clicks, c => formatReferrerHost(c.referrer))
+              const countriesList = getAggregatedStats(clicks, c => getCountryFullName(c.country))
+              const browsersList  = getAggregatedStats(clicks, c => getDetailedBrowserName(c.user_agent))
+              const osList        = getAggregatedStats(clicks, c => getOSName(c.user_agent))
 
               return (
-                <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-                  {/* Metric Cards Header */}
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:16 }}>
-                    <div className="sa-card" style={{ background:'linear-gradient(135deg, #0F172A, #1E293B)', color:'#fff' }}>
-                      <div style={{ fontSize:10, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Total Site Visits</div>
-                      <div style={{ fontSize:28, fontWeight:900, color:'#F8FAFC' }}>
-                        {analyticsLoading ? '...' : clicks.length}
-                      </div>
-                      <div style={{ fontSize:11, color:'#94A3B8', marginTop:4 }}>Tracked click events</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:16, background:'#000000', margin:'-28px -32px', padding:'24px 32px 40px', minHeight:'100vh', fontFamily:'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color:'#FAFAFA' }}>
+                  
+                  {/* Top Bar / Header */}
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:12, borderBottom:'1px solid #18181B' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                      <span style={{ fontSize:15, fontWeight:700, color:'#FAFAFA', letterSpacing:'-0.02em' }}>Analytics</span>
+                      <span style={{ fontSize:11, color:'#A1A1AA', background:'#18181B', padding:'2px 8px', borderRadius:12, fontWeight:600 }}>{clicks.length} total events</span>
                     </div>
-
-                    <div className="sa-card">
-                      <div style={{ fontSize:10, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Top Visited Page</div>
-                      <div style={{ fontSize:16, fontWeight:800, color:'#0D9488', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopPath(clicks)}>
-                        {analyticsLoading ? '...' : getTopPath(clicks)}
-                      </div>
-                      <div style={{ fontSize:11, color:'#64748B', marginTop:4 }}>Most popular destination</div>
-                    </div>
-
-                    <div className="sa-card">
-                      <div style={{ fontSize:10, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Top Traffic Source</div>
-                      <div style={{ fontSize:16, fontWeight:800, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopReferrer(clicks)}>
-                        {analyticsLoading ? '...' : getTopReferrer(clicks)}
-                      </div>
-                      <div style={{ fontSize:11, color:'#64748B', marginTop:4 }}>Main visitor origin</div>
-                    </div>
-
-                    <div className="sa-card">
-                      <div style={{ fontSize:10, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Mobile Device Share</div>
-                      <div style={{ fontSize:28, fontWeight:900, color:'#0F172A' }}>
-                        {analyticsLoading ? '...' : getMobilePercentage(clicks)}
-                      </div>
-                      <div style={{ fontSize:11, color:'#64748B', marginTop:4 }}>Visitors on phones</div>
-                    </div>
+                    <button onClick={loadClicks} disabled={analyticsLoading}
+                      style={{ background:'#18181B', border:'1px solid #27272A', color:'#FAFAFA', borderRadius:6, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
+                      {analyticsLoading ? 'Refreshing...' : 'Refresh'}
+                    </button>
                   </div>
 
-                  {/* Clean Activity Feed Card */}
-                  <div className="sa-card">
-                    {/* Header + Filters */}
-                    <div style={{ display:'flex', flexDirection:'column', gap:14, marginBottom:16, paddingBottom:16, borderBottom:'1px solid #F1F5F9' }}>
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
-                        <div>
-                          <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', margin:0 }}>Traffic Activity Feed</h3>
-                          <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>Real-time logs of visitor clicks across ApexTrack</div>
-                        </div>
-                        <Btn onClick={loadClicks} disabled={analyticsLoading} style={{ padding:'6px 14px', fontSize:12 }}>
-                          {analyticsLoading ? 'Refreshing...' : '↻ Refresh Data'}
-                        </Btn>
+                  {/* ── TOP ROW: PATHS & REFERRERS ── */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))', gap:16 }}>
+                    
+                    {/* Top Paths Card */}
+                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
+                        <span>Top Paths</span>
+                        <span>VISITORS</span>
                       </div>
-
-                      {/* Filter Chips & Search Bar */}
-                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
-                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-                          {[
-                            { id:'all', label:`All (${clicks.length})` },
-                            { id:'direct', label:'Direct Traffic' },
-                            { id:'referrals', label:'Referrals' },
-                            { id:'mobile', label:'Mobile' },
-                            { id:'desktop', label:'Desktop' }
-                          ].map(f => {
-                            const active = clickFilter === f.id
-                            return (
-                              <button key={f.id} onClick={() => setClickFilter(f.id)}
-                                style={{
-                                  padding:'5px 12px', borderRadius:20, border:'none', fontSize:11, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
-                                  background: active ? '#0D9488' : '#F1F5F9',
-                                  color: active ? '#FFFFFF' : '#475569',
-                                }}>
-                                {f.label}
-                              </button>
-                            )
-                          })}
-                        </div>
-
-                        <input className="sa-custom-input" placeholder="Search URL, source or location..." value={clickSearch} onChange={e => setClickSearch(e.target.value)} style={{ width:220, padding:'6px 12px', fontSize:11 }} />
+                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                        {pathsList.length === 0 ? (
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No path data yet</div>
+                        ) : (
+                          pathsList.slice(0, 6).map(item => (
+                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#121215', padding:'8px 12px', borderRadius:8, border:'1px solid #1C1C1F' }}>
+                              <span style={{ fontSize:12, fontFamily:'monospace', color:'#FAFAFA', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
+                                {item.name}
+                              </span>
+                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace' }}>
+                                {item.count}
+                              </span>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
 
+                    {/* Top Referrers Card */}
+                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
+                        <span>Referrers</span>
+                        <span>VISITORS</span>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                        {referrersList.length === 0 ? (
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No referrer data yet</div>
+                        ) : (
+                          referrersList.slice(0, 6).map(item => (
+                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#121215', padding:'8px 12px', borderRadius:8, border:'1px solid #1C1C1F' }}>
+                              <span style={{ fontSize:12, color:'#FAFAFA', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
+                                {item.name}
+                              </span>
+                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace' }}>
+                                {item.count}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* ── MIDDLE ROW: COUNTRIES, BROWSERS, OPERATING SYSTEMS ── */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16 }}>
+                    
+                    {/* Countries List */}
+                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                        <span>Countries</span>
+                        <span>VISITORS</span>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {countriesList.length === 0 ? (
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No country data</div>
+                        ) : (
+                          countriesList.slice(0, 6).map(item => (
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#121215', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #1C1C1F' }}>
+                              {/* Background percentage fill bar */}
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(255,255,255,0.06)', borderRadius:8, pointerEvents:'none' }} />
+                              <span style={{ fontSize:13, fontWeight:500, color:'#FAFAFA', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Browsers List */}
+                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                        <span>Browsers</span>
+                        <span>VISITORS</span>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {browsersList.length === 0 ? (
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No browser data</div>
+                        ) : (
+                          browsersList.slice(0, 6).map(item => (
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#121215', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #1C1C1F' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(255,255,255,0.06)', borderRadius:8, pointerEvents:'none' }} />
+                              <span style={{ fontSize:13, fontWeight:500, color:'#FAFAFA', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Operating Systems List */}
+                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
+                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                        <span>Operating Systems</span>
+                        <span>VISITORS</span>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        {osList.length === 0 ? (
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No OS data</div>
+                        ) : (
+                          osList.slice(0, 6).map(item => (
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#121215', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #1C1C1F' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(255,255,255,0.06)', borderRadius:8, pointerEvents:'none' }} />
+                              <span style={{ fontSize:13, fontWeight:500, color:'#FAFAFA', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* ── BOTTOM ROW: RECENT TRAFFIC EVENTS TABLE ── */}
+                  <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
+                    <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14 }}>
+                      Recent Events
+                    </div>
                     {analyticsLoading ? (
-                      <div style={{ padding:40, textAlign:'center', color:'#94A3B8', fontSize:13 }}>Loading click logs...</div>
-                    ) : filteredClicks.length === 0 ? (
-                      <div style={{ padding:40, textAlign:'center', color:'#94A3B8', fontSize:13 }}>No traffic events match your filter.</div>
+                      <div style={{ padding:30, textAlign:'center', color:'#71717A', fontSize:12 }}>Loading recent events...</div>
+                    ) : clicks.length === 0 ? (
+                      <div style={{ padding:30, textAlign:'center', color:'#71717A', fontSize:12 }}>No click events recorded yet.</div>
                     ) : (
-                      <div className="sa-table-wrap">
-                        <table className="sa-table">
+                      <div style={{ overflowX:'auto' }}>
+                        <table style={{ width:'100%', borderCollapse:'collapse', textAlign:'left' }}>
                           <thead>
-                            <tr>
-                              <th className="sa-th">Time</th>
-                              <th className="sa-th">Page Visited</th>
-                              <th className="sa-th">Traffic Source</th>
-                              <th className="sa-th">Device</th>
-                              <th className="sa-th">Location</th>
+                            <tr style={{ borderBottom:'1px solid #18181B' }}>
+                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Path</th>
+                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Referrer</th>
+                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Browser / OS</th>
+                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Country</th>
+                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase', textAlign:'right' }}>Time</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredClicks.map(c => {
-                              const devType = getDeviceType(c.user_agent)
-                              const pageTitle = formatPageTitle(c.url)
-                              const pathName = formatUrlPath(c.url)
-                              const refName = formatReferrer(c.referrer)
-                              return (
-                                <tr key={c.id}>
-                                  <td className="sa-td" style={{ whiteSpace:'nowrap' }}>
-                                    <div style={{ fontSize:12, fontWeight:700, color:'#0F172A' }}>{timeAgo(c.created_at)}</div>
-                                    <div style={{ fontSize:10, color:'#94A3B8', marginTop:1 }}>{new Date(c.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</div>
-                                  </td>
-                                  <td className="sa-td">
-                                    <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>{pageTitle}</div>
-                                    <div style={{ fontSize:10, color:'#0D9488', fontFamily:'monospace', marginTop:2 }}>{pathName}</div>
-                                  </td>
-                                  <td className="sa-td">
-                                    <span style={{
-                                      display:'inline-block', padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700,
-                                      background: !c.referrer ? '#F1F5F9' : '#F0FDFA',
-                                      color: !c.referrer ? '#475569' : '#0D9488',
-                                      border: !c.referrer ? '1px solid #E2E8F0' : '1px solid #CCFBF1'
-                                    }}>
-                                      {refName}
-                                    </span>
-                                  </td>
-                                  <td className="sa-td">
-                                    <span style={{ fontSize:11, fontWeight:600, color:'#334155', display:'inline-flex', alignItems:'center', gap:4 }}>
-                                      {devType === 'Mobile' ? '📱 Mobile' : '💻 Desktop'}
-                                    </span>
-                                  </td>
-                                  <td className="sa-td">
-                                    <span style={{ fontSize:10, padding:'2px 8px', background:'#F8FAFC', border:'1px solid #E2E8F0', color:'#334155', borderRadius:6, fontWeight:800 }}>
-                                      🇬🇭 {c.country || 'GH'}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )
-                            })}
+                            {clicks.slice(0, 15).map(c => (
+                              <tr key={c.id} style={{ borderBottom:'1px solid #141417' }}>
+                                <td style={{ padding:'10px 12px', fontSize:12, fontFamily:'monospace', color:'#FAFAFA' }}>
+                                  {getCleanPath(c.url)}
+                                </td>
+                                <td style={{ padding:'10px 12px', fontSize:12, color:'#A1A1AA' }}>
+                                  {formatReferrerHost(c.referrer)}
+                                </td>
+                                <td style={{ padding:'10px 12px', fontSize:12, color:'#A1A1AA' }}>
+                                  {getDetailedBrowserName(c.user_agent)} ({getOSName(c.user_agent)})
+                                </td>
+                                <td style={{ padding:'10px 12px', fontSize:12, color:'#A1A1AA' }}>
+                                  {getCountryFullName(c.country)}
+                                </td>
+                                <td style={{ padding:'10px 12px', fontSize:12, color:'#71717A', textAlign:'right', fontFamily:'monospace' }}>
+                                  {timeAgo(c.created_at)}
+                                </td>
+                              </tr>
+                            ))}
                           </tbody>
                         </table>
                       </div>
                     )}
                   </div>
+
                 </div>
               )
             })()}

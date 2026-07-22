@@ -133,6 +133,8 @@ export default function SuperadminPage() {
   const [expandedUser, setExpandedUser] = useState(null)
   const [clicks, setClicks] = useState([])
   const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [clickFilter, setClickFilter] = useState('all')
+  const [clickSearch, setClickSearch] = useState('')
 
   const [dbRows, setDbRows] = useState([])
   const [dbCols, setDbCols] = useState([])
@@ -269,23 +271,56 @@ export default function SuperadminPage() {
   }
 
   // ── ANALYTICS HELPER FUNCTIONS ──
+  function formatPageTitle(urlStr) {
+    try {
+      const u = new URL(urlStr)
+      const p = u.pathname
+      if (p === '/' || p === '') return 'Landing Page'
+      if (p.startsWith('/billing')) return 'Pricing & Billing'
+      if (p.startsWith('/login')) return 'Login Page'
+      if (p.startsWith('/superadmin')) return 'Superadmin Console'
+      if (p.startsWith('/dashboard')) return 'Club Dashboard'
+      if (p.startsWith('/athletes')) return 'Athletes Directory'
+      if (p.startsWith('/coaches')) return 'Coaches Directory'
+      if (p.startsWith('/pay')) return 'ApexPay Payroll'
+      if (p.startsWith('/privacy')) return 'Privacy Policy'
+      if (p.startsWith('/terms')) return 'Terms of Service'
+      if (p.startsWith('/security')) return 'Security'
+      return p
+    } catch {
+      return urlStr || 'Landing Page'
+    }
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return ''
+    const diffSec = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000)
+    if (diffSec < 60) return 'Just now'
+    if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+    if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+    return `${Math.floor(diffSec / 86400)}d ago`
+  }
+
+  function getDeviceType(ua) {
+    if (!ua) return 'Desktop'
+    const u = ua.toLowerCase()
+    if (u.includes('android') || u.includes('iphone') || u.includes('mobile')) return 'Mobile'
+    if (u.includes('ipad') || u.includes('tablet')) return 'Tablet'
+    return 'Desktop'
+  }
+
   function getTopPath(clicksList) {
     if (!clicksList || clicksList.length === 0) return 'None'
     const counts = {}
     clicksList.forEach(c => {
-      let path = '/'
-      try {
-        path = new URL(c.url).pathname
-      } catch {
-        path = c.url || '/'
-      }
-      counts[path] = (counts[path] || 0) + 1
+      const title = formatPageTitle(c.url)
+      counts[title] = (counts[title] || 0) + 1
     })
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
   }
 
   function getTopReferrer(clicksList) {
-    if (!clicksList || clicksList.length === 0) return 'Direct / None'
+    if (!clicksList || clicksList.length === 0) return 'Direct Traffic'
     const counts = {}
     clicksList.forEach(c => {
       const ref = formatReferrer(c.referrer)
@@ -294,10 +329,10 @@ export default function SuperadminPage() {
     return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0]
   }
 
-  function getUniqueCountries(clicksList) {
-    if (!clicksList || clicksList.length === 0) return 0
-    const set = new Set(clicksList.map(c => c.country || 'GH'))
-    return set.size
+  function getMobilePercentage(clicksList) {
+    if (!clicksList || clicksList.length === 0) return '0%'
+    const mobileCount = clicksList.filter(c => getDeviceType(c.user_agent) === 'Mobile').length
+    return `${Math.round((mobileCount / clicksList.length) * 100)}%`
   }
 
   function formatUrlPath(urlStr) {
@@ -310,14 +345,15 @@ export default function SuperadminPage() {
   }
 
   function formatReferrer(refStr) {
-    if (!refStr) return 'Direct / Email / SMS'
+    if (!refStr) return 'Direct / Link'
     try {
       const u = new URL(refStr)
       if (u.hostname.includes('whatsapp')) return 'WhatsApp'
-      if (u.hostname.includes('t.co') || u.hostname.includes('x.com') || u.hostname.includes('twitter')) return 'X / Twitter'
+      if (u.hostname.includes('t.co') || u.hostname.includes('x.com') || u.hostname.includes('twitter')) return 'Twitter / X'
       if (u.hostname.includes('facebook') || u.hostname.includes('fb.')) return 'Facebook'
-      if (u.hostname.includes('google')) return 'Google Search'
-      return u.hostname
+      if (u.hostname.includes('google')) return 'Google'
+      if (u.hostname.includes('instagram')) return 'Instagram'
+      return u.hostname.replace('www.', '')
     } catch {
       return refStr
     }
@@ -1119,94 +1155,165 @@ export default function SuperadminPage() {
               </div>
             )}
 
-            {section === 'analytics' && (
-              <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
-                {/* Metrics Grid */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:16 }}>
-                  <div className="sa-card">
-                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Total Clicks &amp; Visits</div>
-                    <div style={{ fontSize:26, fontWeight:900, color:'#0f172a' }}>
-                      {analyticsLoading ? '...' : clicks.length}
-                    </div>
-                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Last 100 events tracked</div>
-                  </div>
-                  <div className="sa-card">
-                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Top Visited Path</div>
-                    <div style={{ fontSize:15, fontWeight:700, color:'#0d9488', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopPath(clicks)}>
-                      {analyticsLoading ? '...' : getTopPath(clicks)}
-                    </div>
-                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Most requested URL page</div>
-                  </div>
-                  <div className="sa-card">
-                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Top Referral Source</div>
-                    <div style={{ fontSize:15, fontWeight:700, color:'#0d9488', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopReferrer(clicks)}>
-                      {analyticsLoading ? '...' : getTopReferrer(clicks)}
-                    </div>
-                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Where visitors clicked from</div>
-                  </div>
-                  <div className="sa-card">
-                    <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Unique Locations</div>
-                    <div style={{ fontSize:26, fontWeight:900, color:'#0f172a' }}>
-                      {analyticsLoading ? '...' : getUniqueCountries(clicks)}
-                    </div>
-                    <div style={{ fontSize:11, color:'#64748b', marginTop:4 }}>Countries/IP locations</div>
-                  </div>
-                </div>
+            {section === 'analytics' && (() => {
+              const filteredClicks = clicks.filter(c => {
+                if (clickFilter === 'direct' && c.referrer) return false
+                if (clickFilter === 'referrals' && !c.referrer) return false
+                if (clickFilter === 'mobile' && getDeviceType(c.user_agent) !== 'Mobile') return false
+                if (clickFilter === 'desktop' && getDeviceType(c.user_agent) !== 'Desktop') return false
+                if (clickSearch) {
+                  const q = clickSearch.toLowerCase()
+                  const matchUrl = (c.url || '').toLowerCase().includes(q)
+                  const matchRef = (c.referrer || '').toLowerCase().includes(q)
+                  const matchLoc = (c.country || '').toLowerCase().includes(q)
+                  const matchPage = formatPageTitle(c.url).toLowerCase().includes(q)
+                  if (!matchUrl && !matchRef && !matchLoc && !matchPage) return false
+                }
+                return true
+              })
 
-                {/* Details Table */}
-                <div className="sa-card">
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, paddingBottom:12, borderBottom:'1px solid #f1f5f9' }}>
-                    <h3 style={{ fontSize:13, fontWeight:700, color:'#0f172a' }}>Site Click Activity Feed</h3>
-                    <Btn onClick={loadClicks} disabled={analyticsLoading} style={{ padding:'4px 12px', fontSize:11 }}>
-                      {analyticsLoading ? 'Refreshing...' : '↻ Refresh'}
-                    </Btn>
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+                  {/* Metric Cards Header */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(210px, 1fr))', gap:16 }}>
+                    <div className="sa-card" style={{ background:'linear-gradient(135deg, #0F172A, #1E293B)', color:'#fff' }}>
+                      <div style={{ fontSize:10, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Total Site Visits</div>
+                      <div style={{ fontSize:28, fontWeight:900, color:'#F8FAFC' }}>
+                        {analyticsLoading ? '...' : clicks.length}
+                      </div>
+                      <div style={{ fontSize:11, color:'#94A3B8', marginTop:4 }}>Tracked click events</div>
+                    </div>
+
+                    <div className="sa-card">
+                      <div style={{ fontSize:10, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Top Visited Page</div>
+                      <div style={{ fontSize:16, fontWeight:800, color:'#0D9488', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopPath(clicks)}>
+                        {analyticsLoading ? '...' : getTopPath(clicks)}
+                      </div>
+                      <div style={{ fontSize:11, color:'#64748B', marginTop:4 }}>Most popular destination</div>
+                    </div>
+
+                    <div className="sa-card">
+                      <div style={{ fontSize:10, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Top Traffic Source</div>
+                      <div style={{ fontSize:16, fontWeight:800, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={analyticsLoading ? 'Loading...' : getTopReferrer(clicks)}>
+                        {analyticsLoading ? '...' : getTopReferrer(clicks)}
+                      </div>
+                      <div style={{ fontSize:11, color:'#64748B', marginTop:4 }}>Main visitor origin</div>
+                    </div>
+
+                    <div className="sa-card">
+                      <div style={{ fontSize:10, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>Mobile Device Share</div>
+                      <div style={{ fontSize:28, fontWeight:900, color:'#0F172A' }}>
+                        {analyticsLoading ? '...' : getMobilePercentage(clicks)}
+                      </div>
+                      <div style={{ fontSize:11, color:'#64748B', marginTop:4 }}>Visitors on phones</div>
+                    </div>
                   </div>
 
-                  {analyticsLoading ? (
-                    <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>Loading analytics logs...</div>
-                  ) : clicks.length === 0 ? (
-                    <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>No clicks logged yet. Share your site URL to start tracking!</div>
-                  ) : (
-                    <div className="sa-table-wrap">
-                      <table className="sa-table">
-                        <thead>
-                          <tr>
-                            <th className="sa-th">Time</th>
-                            <th className="sa-th">Target URL</th>
-                            <th className="sa-th">Referrer</th>
-                            <th className="sa-th">Location</th>
-                            <th className="sa-th">Device / Browser</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {clicks.map(c => (
-                            <tr key={c.id}>
-                              <td className="sa-td" style={{ fontSize:11, color:'#64748b', whiteSpace:'nowrap' }}>
-                                {new Date(c.created_at).toLocaleString('en-GB')}
-                              </td>
-                              <td className="sa-td" style={{ fontFamily:'monospace', fontSize:11, color:'#0d9488' }}>
-                                {formatUrlPath(c.url)}
-                              </td>
-                              <td className="sa-td" style={{ fontSize:12, fontWeight:600 }}>
-                                {formatReferrer(c.referrer)}
-                              </td>
-                              <td className="sa-td">
-                                <span style={{ fontSize:10, padding:'2px 6px', background:'#f0fdfa', border:'1px solid #99f6e4', color:'#0d9488', borderRadius:4, fontWeight:700 }}>
-                                  {c.country || 'GH'}
-                                </span>
-                              </td>
-                              <td className="sa-td" style={{ fontSize:11, color:'#64748b', maxWidth:160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={c.user_agent}>
-                                {getBrowserName(c.user_agent)}
-                              </td>
+                  {/* Clean Activity Feed Card */}
+                  <div className="sa-card">
+                    {/* Header + Filters */}
+                    <div style={{ display:'flex', flexDirection:'column', gap:14, marginBottom:16, paddingBottom:16, borderBottom:'1px solid #F1F5F9' }}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+                        <div>
+                          <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', margin:0 }}>Traffic Activity Feed</h3>
+                          <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>Real-time logs of visitor clicks across ApexTrack</div>
+                        </div>
+                        <Btn onClick={loadClicks} disabled={analyticsLoading} style={{ padding:'6px 14px', fontSize:12 }}>
+                          {analyticsLoading ? 'Refreshing...' : '↻ Refresh Data'}
+                        </Btn>
+                      </div>
+
+                      {/* Filter Chips & Search Bar */}
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+                        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                          {[
+                            { id:'all', label:`All (${clicks.length})` },
+                            { id:'direct', label:'Direct Traffic' },
+                            { id:'referrals', label:'Referrals' },
+                            { id:'mobile', label:'Mobile' },
+                            { id:'desktop', label:'Desktop' }
+                          ].map(f => {
+                            const active = clickFilter === f.id
+                            return (
+                              <button key={f.id} onClick={() => setClickFilter(f.id)}
+                                style={{
+                                  padding:'5px 12px', borderRadius:20, border:'none', fontSize:11, fontWeight:700, cursor:'pointer', transition:'all 0.15s',
+                                  background: active ? '#0D9488' : '#F1F5F9',
+                                  color: active ? '#FFFFFF' : '#475569',
+                                }}>
+                                {f.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        <input className="sa-custom-input" placeholder="Search URL, source or location..." value={clickSearch} onChange={e => setClickSearch(e.target.value)} style={{ width:220, padding:'6px 12px', fontSize:11 }} />
+                      </div>
+                    </div>
+
+                    {analyticsLoading ? (
+                      <div style={{ padding:40, textAlign:'center', color:'#94A3B8', fontSize:13 }}>Loading click logs...</div>
+                    ) : filteredClicks.length === 0 ? (
+                      <div style={{ padding:40, textAlign:'center', color:'#94A3B8', fontSize:13 }}>No traffic events match your filter.</div>
+                    ) : (
+                      <div className="sa-table-wrap">
+                        <table className="sa-table">
+                          <thead>
+                            <tr>
+                              <th className="sa-th">Time</th>
+                              <th className="sa-th">Page Visited</th>
+                              <th className="sa-th">Traffic Source</th>
+                              <th className="sa-th">Device</th>
+                              <th className="sa-th">Location</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                          </thead>
+                          <tbody>
+                            {filteredClicks.map(c => {
+                              const devType = getDeviceType(c.user_agent)
+                              const pageTitle = formatPageTitle(c.url)
+                              const pathName = formatUrlPath(c.url)
+                              const refName = formatReferrer(c.referrer)
+                              return (
+                                <tr key={c.id}>
+                                  <td className="sa-td" style={{ whiteSpace:'nowrap' }}>
+                                    <div style={{ fontSize:12, fontWeight:700, color:'#0F172A' }}>{timeAgo(c.created_at)}</div>
+                                    <div style={{ fontSize:10, color:'#94A3B8', marginTop:1 }}>{new Date(c.created_at).toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })}</div>
+                                  </td>
+                                  <td className="sa-td">
+                                    <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>{pageTitle}</div>
+                                    <div style={{ fontSize:10, color:'#0D9488', fontFamily:'monospace', marginTop:2 }}>{pathName}</div>
+                                  </td>
+                                  <td className="sa-td">
+                                    <span style={{
+                                      display:'inline-block', padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700,
+                                      background: !c.referrer ? '#F1F5F9' : '#F0FDFA',
+                                      color: !c.referrer ? '#475569' : '#0D9488',
+                                      border: !c.referrer ? '1px solid #E2E8F0' : '1px solid #CCFBF1'
+                                    }}>
+                                      {refName}
+                                    </span>
+                                  </td>
+                                  <td className="sa-td">
+                                    <span style={{ fontSize:11, fontWeight:600, color:'#334155', display:'inline-flex', alignItems:'center', gap:4 }}>
+                                      {devType === 'Mobile' ? '📱 Mobile' : '💻 Desktop'}
+                                    </span>
+                                  </td>
+                                  <td className="sa-td">
+                                    <span style={{ fontSize:10, padding:'2px 8px', background:'#F8FAFC', border:'1px solid #E2E8F0', color:'#334155', borderRadius:6, fontWeight:800 }}>
+                                      🇬🇭 {c.country || 'GH'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {/* ── DATABASE & ROOTS MAINTENANCE ── */}
             {section === 'maintenance' && (

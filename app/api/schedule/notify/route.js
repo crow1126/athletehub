@@ -3,10 +3,15 @@
 import { NextResponse }                           from 'next/server'
 import { createServiceClient, getRequester }      from '@/lib/serverAuth'
 import { sendBulkSMS, buildScheduleSMS }          from '@/lib/moolre'
+import { payLimiter }                             from '@/lib/rateLimit'
 
 const supabase = createServiceClient()
 
 export async function POST(req) {
+  // Rate limit by IP (10 requests / minute)
+  const limited = payLimiter(req)
+  if (!limited.ok) return limited.response
+
   try {
     const { session_id, team_id } = await req.json()
 

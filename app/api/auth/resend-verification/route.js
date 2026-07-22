@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createEmailVerificationLink } from '@/lib/verificationLink'
 import { getSiteUrl } from '@/lib/siteUrl'
+import { authLimiter } from '@/lib/rateLimit'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -17,6 +18,10 @@ function getDb() {
  * Body: { email }
  */
 export async function POST(req) {
+  // Rate limit by IP (5 requests / minute per IP)
+  const limited = authLimiter(req)
+  if (!limited.ok) return limited.response
+
   try {
     const { email } = await req.json()
     const normalizedEmail = email?.trim()?.toLowerCase()

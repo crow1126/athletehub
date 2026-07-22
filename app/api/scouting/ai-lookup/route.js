@@ -1,4 +1,8 @@
 import { NextResponse } from 'next/server'
+import { createServiceClient, getRequester } from '@/lib/serverAuth'
+import { generalLimiter } from '@/lib/rateLimit'
+
+const supabase = createServiceClient()
 
 // Deterministic generator fallback if GROQ_API_KEY is not defined
 function generatePlayerProfile(name) {
@@ -45,7 +49,15 @@ function generatePlayerProfile(name) {
 }
 
 export async function GET(req) {
+  // Rate limit by IP (30 requests / minute)
+  const limited = generalLimiter(req)
+  if (!limited.ok) return limited.response
+
   try {
+    // Auth check — only authenticated users can trigger AI lookups
+    const requester = await getRequester(req, supabase)
+    if (requester.error) return NextResponse.json({ error: requester.error }, { status: requester.status })
+
     const { searchParams } = new URL(req.url)
     const query = searchParams.get('query')
 

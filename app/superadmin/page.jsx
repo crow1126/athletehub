@@ -322,6 +322,25 @@ export default function SuperadminPage() {
     return 'Desktop'
   }
 
+  function getCountryFlag(code) {
+    const map = {
+      GH: '🇬🇭',
+      US: '🇺🇸',
+      NG: '🇳🇬',
+      GB: '🇬🇧',
+      CA: '🇨🇦',
+      BR: '🇧🇷',
+      IN: '🇮🇳',
+      DE: '🇩🇪',
+      FR: '🇫🇷',
+      ZA: '🇿🇦',
+      KE: '🇰🇪',
+      CI: '🇨🇮',
+    }
+    const c = (code || 'GH').toUpperCase()
+    return map[c] || '🏳️'
+  }
+
   function getCountryFullName(code) {
     const map = {
       GH: 'Ghana',
@@ -1166,44 +1185,45 @@ export default function SuperadminPage() {
             {section === 'analytics' && (() => {
               const pathsList     = getAggregatedStats(clicks, c => getCleanPath(c.url))
               const referrersList = getAggregatedStats(clicks, c => formatReferrerHost(c.referrer))
-              const countriesList = getAggregatedStats(clicks, c => getCountryFullName(c.country))
+              const countriesList = getAggregatedStats(clicks, c => c.country || 'GH')
               const browsersList  = getAggregatedStats(clicks, c => getDetailedBrowserName(c.user_agent))
               const osList        = getAggregatedStats(clicks, c => getOSName(c.user_agent))
 
               return (
-                <div style={{ display:'flex', flexDirection:'column', gap:16, background:'#000000', margin:'-28px -32px', padding:'24px 32px 40px', minHeight:'100vh', fontFamily:'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color:'#FAFAFA' }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
                   
                   {/* Top Bar / Header */}
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:12, borderBottom:'1px solid #18181B' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:12, borderBottom:'1px solid #e2e8f0' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                      <span style={{ fontSize:15, fontWeight:700, color:'#FAFAFA', letterSpacing:'-0.02em' }}>Analytics</span>
-                      <span style={{ fontSize:11, color:'#A1A1AA', background:'#18181B', padding:'2px 8px', borderRadius:12, fontWeight:600 }}>{clicks.length} total events</span>
+                      <h2 style={{ fontSize:16, fontWeight:800, color:'#0f172a', margin:0, letterSpacing:'-0.02em' }}>Analytics Overview</h2>
+                      <span style={{ fontSize:11, color:'#0d9488', background:'#f0fdfa', border:'1px solid #ccfbf1', padding:'2px 10px', borderRadius:12, fontWeight:700 }}>
+                        {clicks.length} total events tracked
+                      </span>
                     </div>
-                    <button onClick={loadClicks} disabled={analyticsLoading}
-                      style={{ background:'#18181B', border:'1px solid #27272A', color:'#FAFAFA', borderRadius:6, padding:'6px 14px', fontSize:12, fontWeight:600, cursor:'pointer', transition:'all 0.15s' }}>
-                      {analyticsLoading ? 'Refreshing...' : 'Refresh'}
-                    </button>
+                    <Btn onClick={loadClicks} disabled={analyticsLoading} style={{ fontSize:12, padding:'6px 14px' }}>
+                      {analyticsLoading ? 'Refreshing...' : '↻ Refresh Data'}
+                    </Btn>
                   </div>
 
                   {/* ── TOP ROW: PATHS & REFERRERS ── */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))', gap:16 }}>
                     
                     {/* Top Paths Card */}
-                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
+                    <div className="sa-card">
+                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
                         <span>Top Paths</span>
                         <span>VISITORS</span>
                       </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {pathsList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No path data yet</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No path data yet</div>
                         ) : (
                           pathsList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#121215', padding:'8px 12px', borderRadius:8, border:'1px solid #1C1C1F' }}>
-                              <span style={{ fontSize:12, fontFamily:'monospace', color:'#FAFAFA', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
+                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc', padding:'8px 12px', borderRadius:8, border:'1px solid #e2e8f0' }}>
+                              <span style={{ fontSize:12, fontFamily:'monospace', fontWeight:600, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
                                 {item.name}
                               </span>
-                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace' }}>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace' }}>
                                 {item.count}
                               </span>
                             </div>
@@ -1213,21 +1233,21 @@ export default function SuperadminPage() {
                     </div>
 
                     {/* Top Referrers Card */}
-                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
+                    <div className="sa-card">
+                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
                         <span>Referrers</span>
                         <span>VISITORS</span>
                       </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {referrersList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No referrer data yet</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No referrer data yet</div>
                         ) : (
                           referrersList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#121215', padding:'8px 12px', borderRadius:8, border:'1px solid #1C1C1F' }}>
-                              <span style={{ fontSize:12, color:'#FAFAFA', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
+                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc', padding:'8px 12px', borderRadius:8, border:'1px solid #e2e8f0' }}>
+                              <span style={{ fontSize:12, fontWeight:600, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
                                 {item.name}
                               </span>
-                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace' }}>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace' }}>
                                 {item.count}
                               </span>
                             </div>
@@ -1241,22 +1261,25 @@ export default function SuperadminPage() {
                   {/* ── MIDDLE ROW: COUNTRIES, BROWSERS, OPERATING SYSTEMS ── */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16 }}>
                     
-                    {/* Countries List */}
-                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                    {/* Countries List with Country Flags */}
+                    <div className="sa-card">
+                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
                         <span>Countries</span>
                         <span>VISITORS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {countriesList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No country data</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No country data</div>
                         ) : (
                           countriesList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#121215', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #1C1C1F' }}>
-                              {/* Background percentage fill bar */}
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(255,255,255,0.06)', borderRadius:8, pointerEvents:'none' }} />
-                              <span style={{ fontSize:13, fontWeight:500, color:'#FAFAFA', zIndex:1 }}>{item.name}</span>
-                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#f8fafc', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #e2e8f0' }}>
+                              {/* Background progress fill bar */}
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.1)', borderRadius:8, pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0f172a', zIndex:1, display:'flex', alignItems:'center', gap:8 }}>
+                                <span style={{ fontSize:15 }}>{getCountryFlag(item.name)}</span>
+                                <span>{getCountryFullName(item.name)}</span>
+                              </span>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
                           ))
                         )}
@@ -1264,20 +1287,20 @@ export default function SuperadminPage() {
                     </div>
 
                     {/* Browsers List */}
-                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                    <div className="sa-card">
+                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
                         <span>Browsers</span>
                         <span>VISITORS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {browsersList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No browser data</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No browser data</div>
                         ) : (
                           browsersList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#121215', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #1C1C1F' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(255,255,255,0.06)', borderRadius:8, pointerEvents:'none' }} />
-                              <span style={{ fontSize:13, fontWeight:500, color:'#FAFAFA', zIndex:1 }}>{item.name}</span>
-                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#f8fafc', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #e2e8f0' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.1)', borderRadius:8, pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0f172a', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
                           ))
                         )}
@@ -1285,20 +1308,20 @@ export default function SuperadminPage() {
                     </div>
 
                     {/* Operating Systems List */}
-                    <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
-                      <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                    <div className="sa-card">
+                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
                         <span>Operating Systems</span>
                         <span>VISITORS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {osList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#71717A', fontSize:12 }}>No OS data</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No OS data</div>
                         ) : (
                           osList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#121215', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #1C1C1F' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(255,255,255,0.06)', borderRadius:8, pointerEvents:'none' }} />
-                              <span style={{ fontSize:13, fontWeight:500, color:'#FAFAFA', zIndex:1 }}>{item.name}</span>
-                              <span style={{ fontSize:12, fontWeight:700, color:'#FAFAFA', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#f8fafc', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #e2e8f0' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.1)', borderRadius:8, pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0f172a', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
                           ))
                         )}
@@ -1308,42 +1331,45 @@ export default function SuperadminPage() {
                   </div>
 
                   {/* ── BOTTOM ROW: RECENT TRAFFIC EVENTS TABLE ── */}
-                  <div style={{ background:'#09090B', border:'1px solid #18181B', borderRadius:12, padding:16 }}>
-                    <div style={{ fontSize:12, fontWeight:600, color:'#A1A1AA', marginBottom:14 }}>
-                      Recent Events
+                  <div className="sa-card">
+                    <div style={{ fontSize:13, fontWeight:800, color:'#0f172a', marginBottom:14 }}>
+                      Recent Click Activity Feed
                     </div>
                     {analyticsLoading ? (
-                      <div style={{ padding:30, textAlign:'center', color:'#71717A', fontSize:12 }}>Loading recent events...</div>
+                      <div style={{ padding:30, textAlign:'center', color:'#94a3b8', fontSize:12 }}>Loading recent events...</div>
                     ) : clicks.length === 0 ? (
-                      <div style={{ padding:30, textAlign:'center', color:'#71717A', fontSize:12 }}>No click events recorded yet.</div>
+                      <div style={{ padding:30, textAlign:'center', color:'#94a3b8', fontSize:12 }}>No click events recorded yet.</div>
                     ) : (
-                      <div style={{ overflowX:'auto' }}>
-                        <table style={{ width:'100%', borderCollapse:'collapse', textAlign:'left' }}>
+                      <div className="sa-table-wrap">
+                        <table className="sa-table">
                           <thead>
-                            <tr style={{ borderBottom:'1px solid #18181B' }}>
-                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Path</th>
-                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Referrer</th>
-                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Browser / OS</th>
-                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase' }}>Country</th>
-                              <th style={{ padding:'8px 12px', fontSize:11, fontWeight:600, color:'#71717A', textTransform:'uppercase', textAlign:'right' }}>Time</th>
+                            <tr>
+                              <th className="sa-th">Path</th>
+                              <th className="sa-th">Referrer</th>
+                              <th className="sa-th">Browser / OS</th>
+                              <th className="sa-th">Country</th>
+                              <th className="sa-th" style={{ textAlign:'right' }}>Time</th>
                             </tr>
                           </thead>
                           <tbody>
                             {clicks.slice(0, 15).map(c => (
-                              <tr key={c.id} style={{ borderBottom:'1px solid #141417' }}>
-                                <td style={{ padding:'10px 12px', fontSize:12, fontFamily:'monospace', color:'#FAFAFA' }}>
+                              <tr key={c.id}>
+                                <td className="sa-td" style={{ fontFamily:'monospace', fontSize:12, color:'#0d9488', fontWeight:700 }}>
                                   {getCleanPath(c.url)}
                                 </td>
-                                <td style={{ padding:'10px 12px', fontSize:12, color:'#A1A1AA' }}>
+                                <td className="sa-td" style={{ fontSize:12, fontWeight:600, color:'#334155' }}>
                                   {formatReferrerHost(c.referrer)}
                                 </td>
-                                <td style={{ padding:'10px 12px', fontSize:12, color:'#A1A1AA' }}>
+                                <td className="sa-td" style={{ fontSize:12, color:'#64748b' }}>
                                   {getDetailedBrowserName(c.user_agent)} ({getOSName(c.user_agent)})
                                 </td>
-                                <td style={{ padding:'10px 12px', fontSize:12, color:'#A1A1AA' }}>
-                                  {getCountryFullName(c.country)}
+                                <td className="sa-td" style={{ fontSize:12, fontWeight:700, color:'#0f172a' }}>
+                                  <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                                    <span>{getCountryFlag(c.country)}</span>
+                                    <span>{getCountryFullName(c.country)}</span>
+                                  </span>
                                 </td>
-                                <td style={{ padding:'10px 12px', fontSize:12, color:'#71717A', textAlign:'right', fontFamily:'monospace' }}>
+                                <td className="sa-td" style={{ fontSize:11, color:'#64748b', textAlign:'right', fontFamily:'monospace' }}>
                                   {timeAgo(c.created_at)}
                                 </td>
                               </tr>

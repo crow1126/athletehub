@@ -4,7 +4,7 @@ import { NextResponse }                              from 'next/server'
 import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
 import { createCharge }                              from '@/lib/moolre'
 import { payLimiter }                                from '@/lib/rateLimit'
-import { sanitizeUUID, sanitizeEmail, sanitizeEnum, sanitizeAmount } from '@/lib/sanitize'
+import { sanitizeUUID, sanitizeEmail, sanitizeEnum } from '@/lib/sanitize'
 import log                                           from '@/lib/logger'
 
 const supabase = createServiceClient()
@@ -45,11 +45,9 @@ export async function POST(req) {
     if (plan === 'academy' || plan === 'elite') targetPlan = 'captain'
     if (!PLANS[targetPlan]) return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
 
-    // Validate custom amount if provided
-    const rawAmount = body.amount_ghs
-    const amount_ghs = rawAmount
-      ? sanitizeAmount(rawAmount, { min: 1, max: 10000 }) ?? PLANS[targetPlan].price_ghs
-      : PLANS[targetPlan].price_ghs
+    // SECURITY: price is ALWAYS determined server-side from the canonical PLANS table.
+    // We never trust amount_ghs from the browser — a user could tamper it to 1 GHS.
+    const amount_ghs = PLANS[targetPlan].price_ghs
 
     const reference = `APEX-M-${team_id.slice(0, 8)}-${Date.now()}`
 

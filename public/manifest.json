@@ -5,7 +5,7 @@
   "start_url": "/dashboard",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#F0FBF4",
+  "background_color": "#FFFFFF",
   "theme_color": "#0D9488",
   "icons": [
     {
@@ -19,12 +19,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/apex-track-logo.svg",
-      "sizes": "128x128",
-      "type": "image/svg+xml",
-      "purpose": "any"
     }
   ]
 }

@@ -4,6 +4,7 @@ import AuthGuard from '@/components/AuthGuard'
 import { Analytics } from "@vercel/analytics/next"
 import ClickTracker from '@/components/ClickTracker'
 import PWAProvider from '@/components/PWAProvider'
+import InstallPWAButton from '@/components/InstallPWAButton'
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -21,9 +22,9 @@ export const metadata = {
     title: 'ApexTrack',
   },
   icons: {
-    icon: '/apex-track-logo.svg',
-    shortcut: '/apex-track-logo.svg',
-    apple: '/apex-track-logo.svg',
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 }
 
@@ -42,6 +43,7 @@ export default function RootLayout({ children }) {
         <AuthGuard>
           {children}
         </AuthGuard>
+        <InstallPWAButton />
         <ClickTracker />
         <Analytics />
       </body>

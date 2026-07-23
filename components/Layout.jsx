@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
+import InstallPWAButton from '@/components/InstallPWAButton'
 
 import {
   LayoutDashboard, Users, ShieldCheck, CalendarDays, HeartPulse, TrendingUp, 
@@ -452,6 +453,7 @@ export default function Layout({ children }) {
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            <InstallPWAButton compact />
             {/* Bell — mobile */}
             <BellButton
               notifications={notifications}
@@ -674,6 +676,7 @@ export default function Layout({ children }) {
               panelRef={notifPanelRef}
               onMarkRead={handleMarkAllRead}
             />
+            <InstallPWAButton />
           </div>
         </header>
         <main style={{ flex:1 }}>{children}</main>

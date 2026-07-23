@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Bell, LayoutDashboard, CreditCard, History, Settings, MessageSquare } from 'lucide-react'
+import InstallPWAButton from '@/components/InstallPWAButton'
 
 const NAV = [
   { href: '/pay',              label: 'Overview',     icon: <LayoutDashboard size={16} /> },
@@ -517,8 +518,8 @@ export default function PayLayout({ children }) {
           </button>
           <Brand size={28} />
           
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Bell — mobile */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <InstallPWAButton compact />
             <BellButton
               notifications={notifications}
               unreadCount={unreadCount}
@@ -527,6 +528,7 @@ export default function PayLayout({ children }) {
               panelRef={notifPanelRef}
               onMarkRead={handleMarkAllRead}
             />
+            <ClubBadge compact />
             <div style={{ display: 'flex', alignItems: 'center', gap: 5, background: C.successBg, borderRadius: 99, padding: '4px 10px', border: `1px solid rgba(5,150,105,0.25)` }}>
               <div style={{ width: 5, height: 5, borderRadius: '50%', background: C.success, boxShadow: `0 0 6px ${C.success}` }} />
               <span style={{ fontSize: 10, fontWeight: 700, color: C.success }}>Live</span>
@@ -679,10 +681,12 @@ export default function PayLayout({ children }) {
           <div style={{ fontSize: 18, fontWeight: 700, color: C.text, letterSpacing: '-0.01em' }}>
             {NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'ApexPay'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <span style={{ fontSize: 12, color: C.text3, fontWeight: 500 }}>
-              {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <InstallPWAButton />
+            <div style={{ fontSize: 13, color: C.text3, fontWeight: 500 }}>
+              {new Date().toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+            </div>
+            <ClubBadge />
             
             {/* Bell — desktop */}
             <BellButton

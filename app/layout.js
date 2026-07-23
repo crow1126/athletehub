@@ -3,6 +3,7 @@ import './globals.css'
 import AuthGuard from '@/components/AuthGuard'
 import { Analytics } from "@vercel/analytics/next"
 import ClickTracker from '@/components/ClickTracker'
+import PWAProvider from '@/components/PWAProvider'
 
 const jakarta = Plus_Jakarta_Sans({ 
   subsets: ['latin'],
@@ -11,8 +12,14 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata = {
-  title: 'Apex Track',
-  description: 'Complete football management platform',
+  title: 'ApexTrack GH',
+  description: 'Complete football club management platform',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'ApexTrack',
+  },
   icons: {
     icon: '/logo.png',
     shortcut: '/logo.png',
@@ -21,6 +28,7 @@ export const metadata = {
 }
 
 export const viewport = {
+  themeColor: '#0D9488',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
@@ -30,6 +38,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" className={jakarta.variable}>
       <body className="antialiased">
+        <PWAProvider />
         <AuthGuard>
           {children}
         </AuthGuard>

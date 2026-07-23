@@ -57,18 +57,22 @@ function RecipientRow({ rec, index, onChange, onRemove, players, contracts, perf
   function handleSelectPlayer(playerId) {
     const p = players.find(x => x.id === playerId)
     if (!p) return
-    // Auto-fill from contract
-    const contract = contracts.find(c => c.athlete_id === p.id || c.staff_id === p.id)
     let autoBase = ''
     let autoBonus = ''
-    if (contract) {
-      autoBase  = contract.weekly_wage   ? String(parseFloat(contract.weekly_wage)   * 4) : ''
-      // goal bonus: goals scored × per-goal bonus rate
-      const goals   = perfStats[p.id]?.goals   || 0
-      const assists = perfStats[p.id]?.assists  || 0
-      const goalBonus   = parseFloat(contract.bonus_goals   || 0) * goals
-      const assistBonus = parseFloat(contract.bonus_assists || 0) * assists
-      autoBonus = String(goalBonus + assistBonus)
+
+    if (p.type === 'coach') {
+      autoBase  = p.monthly_salary ? String(p.monthly_salary) : ''
+      autoBonus = p.win_bonus      ? String(p.win_bonus)      : ''
+    } else {
+      const contract = contracts.find(c => c.athlete_id === p.id)
+      if (contract) {
+        autoBase  = contract.weekly_wage ? String(parseFloat(contract.weekly_wage) * 4) : ''
+        const goals   = perfStats[p.id]?.goals   || 0
+        const assists = perfStats[p.id]?.assists  || 0
+        const goalBonus   = parseFloat(contract.bonus_goals   || 0) * goals
+        const assistBonus = parseFloat(contract.bonus_assists || 0) * assists
+        autoBonus = String(goalBonus + assistBonus)
+      }
     }
     setName(p.full_name)
     setPhone(p.phone || '')
@@ -226,21 +230,33 @@ function CreateRunModal({ teamId, players, contracts, perfStats, onClose, onCrea
     setError(null)
     try {
       const contractedPlayers = players.filter(p => {
-        return contracts.find(c => c.athlete_id === p.id || c.staff_id === p.id)
+        if (p.type === 'coach') {
+          return !!p.monthly_salary || p.contract_status === 'Active'
+        }
+        return contracts.some(c => c.athlete_id === p.id)
       })
       if (contractedPlayers.length === 0) {
-        setError('No active contracts found. Add contracts in the Contracts module first.')
+        setError('No active athlete or staff contracts found. Add contracts in Contracts or Team & Staff first.')
         setPrefilling(false)
         return
       }
       const rows = contractedPlayers.map(p => {
-        const contract = contracts.find(c => c.athlete_id === p.id || c.staff_id === p.id)
-        const monthlyBase = contract?.weekly_wage ? String(parseFloat(contract.weekly_wage) * 4) : '0'
-        const goals   = perfStats[p.id]?.goals   || 0
-        const assists = perfStats[p.id]?.assists  || 0
-        const goalBonus   = parseFloat(contract?.bonus_goals   || 0) * goals
-        const assistBonus = parseFloat(contract?.bonus_assists || 0) * assists
-        const bonusTotal  = String(goalBonus + assistBonus)
+        let monthlyBase = '0'
+        let bonusTotal  = '0'
+
+        if (p.type === 'coach') {
+          monthlyBase = p.monthly_salary ? String(p.monthly_salary) : '0'
+          bonusTotal  = p.win_bonus      ? String(p.win_bonus)      : '0'
+        } else {
+          const contract = contracts.find(c => c.athlete_id === p.id)
+          monthlyBase = contract?.weekly_wage ? String(parseFloat(contract.weekly_wage) * 4) : '0'
+          const goals   = perfStats[p.id]?.goals   || 0
+          const assists = perfStats[p.id]?.assists  || 0
+          const goalBonus   = parseFloat(contract?.bonus_goals   || 0) * goals
+          const assistBonus = parseFloat(contract?.bonus_assists || 0) * assists
+          bonusTotal  = String(goalBonus + assistBonus)
+        }
+
         return {
           recipient_type: p.type,
           recipient_id:   p.id,
@@ -402,7 +418,7 @@ export default function PayrollPage() {
       // Fetch squad, staff, contracts, and performance in parallel
       const [rosterRes, staffRes, contractsRes, perfRes] = await Promise.all([
         supabase.from('athletes').select('id, name, phone').eq('team_id', tid).order('name'),
-        supabase.from('coaches').select('id, name, phone').eq('team_id', tid).order('name'),
+        supabase.from('coaches').select('id, name, phone, monthly_salary, win_bonus, contract_status').eq('team_id', tid).order('name'),
         supabase.from('contracts').select('*').eq('team_id', tid).eq('status', 'Active'),
         supabase.from('performance_stats').select('athlete_id, goals, assists').eq('team_id', tid),
       ])

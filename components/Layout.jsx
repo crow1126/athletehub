@@ -434,7 +434,7 @@ export default function Layout({ children }) {
     }
     return (
       <div style={{ width:size, height:size, borderRadius:12, background: C.floral, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(0,106,106,0.12)`, border:`1px solid ${C.border}` }}>
-        <img src="/logo.png" alt="Apex Track" style={{ width:'85%', height:'85%', objectFit:'contain', borderRadius:'4px' }} />
+        <img src="/apex-track-logo.svg" alt="ApexTrack" style={{ width:'85%', height:'85%', objectFit:'contain', borderRadius:'4px' }} />
       </div>
     )
   }

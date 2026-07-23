@@ -471,7 +471,7 @@ export default function PayLayout({ children }) {
           boxShadow: C.shadowMd, flexShrink: 0,
           animation: 'tealPulse 3s ease-in-out infinite',
         }}>
-          <img src="/logo.png" alt="Apex Track" style={{ width: '82%', height: '82%', objectFit: 'contain', borderRadius: 6 }} />
+          <img src="/apex-track-logo.svg" alt="ApexTrack" style={{ width: '82%', height: '82%', objectFit: 'contain', borderRadius: 6 }} />
         </div>
         <div>
           <div style={{ fontSize: size === 36 ? 15 : 13, fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>

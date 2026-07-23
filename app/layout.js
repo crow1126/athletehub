@@ -12,7 +12,7 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata = {
-  title: 'ApexTrack GH',
+  title: 'ApexTrack',
   description: 'Complete football club management platform',
   manifest: '/manifest.json',
   appleWebApp: {
@@ -21,9 +21,9 @@ export const metadata = {
     title: 'ApexTrack',
   },
   icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
+    icon: '/apex-track-logo.svg',
+    shortcut: '/apex-track-logo.svg',
+    apple: '/apex-track-logo.svg',
   },
 }
 

@@ -1,5 +1,5 @@
 // public/sw.js
-// Minimal PWA service worker for ApexTrack GH
+// Service worker for ApexTrack PWA
 
 self.addEventListener('install', (event) => {
   self.skipWaiting()
@@ -10,6 +10,10 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('fetch', (event) => {
-  // Simple pass-through fetch handler — no offline caching yet
-  return
+  if (event.request.method !== 'GET') return
+  event.respondWith(
+    fetch(event.request).catch(() => {
+      return caches.match(event.request)
+    })
+  )
 })

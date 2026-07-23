@@ -9,6 +9,7 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -17,44 +18,49 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Electron dependencies
-        run: npm install -D electron electron-builder
+      - name: Install Electron build dependencies
+        run: npm install electron electron-builder --save-dev
         env:
-          ELECTRON_CACHE: ${{ runner.temp }}/electron-cache
+          ELECTRON_CACHE: ${{ runner.temp }}\electron-cache
 
-      - name: Build Windows installer
-        run: npm run dist
+      - name: Build Windows installer (.exe)
+        run: npx electron-builder --win nsis --x64
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload ApexTrack-Setup.exe
+      - name: Upload ApexTrack-Setup.exe as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ApexTrack-Windows-Installer
           path: dist/ApexTrack-Setup.exe
-          retention-days: 30
+          if-no-files-found: error
+          retention-days: 90
 
-      - name: Create GitHub Release
+      - name: Create GitHub Release with installer download
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: dist/ApexTrack-Setup.exe
-          name: ApexTrack ${{ github.ref_name }}
+          name: "ApexTrack ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
           body: |
-            ## ApexTrack Desktop App for Windows
+            # ApexTrack Desktop App for Windows
 
-            ### Install Instructions
-            1. Download **ApexTrack-Setup.exe** below
-            2. Double-click to run the installer
-            3. ApexTrack will be installed to your PC with a Desktop shortcut and Start Menu entry
+            Download the installer below and run it to install **ApexTrack** as a native Windows application.
 
-            ### System Requirements
-            - Windows 10 or later (64-bit)
-            - Internet connection required
+            ## How to Install
+            1. Click **ApexTrack-Setup.exe** below to download
+            2. Double-click the downloaded file to run the installer
+            3. Follow the setup wizard
+            4. ApexTrack will be installed with:
+               - Desktop shortcut
+               - Start Menu entry
+               - Taskbar pin option
+
+            ## System Requirements
+            - Windows 10 / 11 (64-bit)
+            - Internet connection required (app connects to your club's ApexTrack account)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -20,7 +20,7 @@ function createWindow() {
   })
 
   // Target production Vercel deployment URL or local server
-  const startUrl = process.env.ELECTRON_START_URL || 'https://crow1126.vercel.app/dashboard'
+  const startUrl = process.env.ELECTRON_START_URL || 'https://athletehub-seven.vercel.app/dashboard'
 
   mainWindow.loadURL(startUrl)
 

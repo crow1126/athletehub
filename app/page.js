@@ -594,6 +594,12 @@ export default function LandingPage() {
         </div>
 
         <div className="nav-right">
+          <a href="/download" className="nav-pricing-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#0D9488' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            App (.exe)
+          </a>
           <button className="nav-pricing-btn" onClick={() => scrollTo('Pricing')}>Pricing</button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
@@ -624,12 +630,41 @@ export default function LandingPage() {
 
         {/* CTA Buttons */}
         <div className="hero-btns">
+          <a 
+            href="/download" 
+            className="btn-primary" 
+            style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            Download Windows App (.exe)
+          </a>
           <Link href="/login?tab=signup" className="btn-primary">
             Get Started — It&apos;s Free
           </Link>
           <Link href="/login" className="btn-outline">
             Sign In — Dashboard
           </Link>
+        </div>
+
+        {/* Desktop App Callout Banner */}
+        <div style={{ maxWidth: 860, margin: '32px auto 0', padding: '16px 24px', background: 'rgba(240, 253, 250, 0.95)', border: '1px solid #86D4A8', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 4px 20px rgba(13, 148, 136, 0.08)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, #0F766E, #0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
+                <path d="M8 21h8M12 17v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0F2218' }}>ApexTrack Native Desktop Application</div>
+              <div style={{ fontSize: 12, color: '#5A7A68', marginTop: 1 }}>Install on Windows 10/11 — 1-click desktop shortcut & taskbar app (145 MB)</div>
+            </div>
+          </div>
+          <a href="/download" style={{ background: '#0F766E', color: '#fff', padding: '9px 18px', borderRadius: 99, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
+            Download ApexTrack-Setup.exe
+          </a>
         </div>
 
         {/* Hero visual */}

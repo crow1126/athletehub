@@ -17,6 +17,7 @@
   "build": {
     "appId": "com.apextrack.app",
     "productName": "ApexTrack",
+    "publish": null,
     "directories": {
       "output": "dist"
     },

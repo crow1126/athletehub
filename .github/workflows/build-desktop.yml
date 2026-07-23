@@ -25,7 +25,7 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build Windows installer (.exe)
-        run: npx electron-builder --win nsis --x64 -c.publish=never
+        run: npx electron-builder --win nsis --x64
 
       - name: Upload ApexTrack-Setup.exe as artifact
         uses: actions/upload-artifact@v4

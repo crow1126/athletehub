@@ -1,6 +1,8 @@
 {
   "name": "apextrack",
   "version": "1.0.0",
+  "description": "ApexTrack Desktop Football Club Management App",
+  "author": "ApexTrack",
   "private": true,
   "main": "electron/main.js",
   "scripts": {

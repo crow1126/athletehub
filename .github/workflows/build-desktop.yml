@@ -9,6 +9,8 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -19,15 +21,11 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Electron build dependencies
-        run: npm install electron electron-builder --save-dev
-        env:
-          ELECTRON_CACHE: ${{ runner.temp }}\electron-cache
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Build Windows installer (.exe)
-        run: npx electron-builder --win nsis --x64
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx electron-builder --win nsis --x64 -c.publish=never
 
       - name: Upload ApexTrack-Setup.exe as artifact
         uses: actions/upload-artifact@v4

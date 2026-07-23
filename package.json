@@ -1,13 +1,48 @@
 {
-  "name": "ghana-football-app",
-  "version": "0.1.0",
+  "name": "apextrack",
+  "version": "1.0.0",
   "private": true,
+  "main": "electron/main.js",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "electron": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "build": {
+    "appId": "com.apextrack.app",
+    "productName": "ApexTrack",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "public/icon.ico"
+    ],
+    "win": {
+      "icon": "electron/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ApexTrack",
+      "installerIcon": "electron/icon.ico",
+      "uninstallerIcon": "electron/icon.ico",
+      "artifactName": "ApexTrack-Setup.${ext}"
+    }
   },
   "jest": {
     "testEnvironment": "node",
@@ -35,6 +70,8 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "electron": "^34.3.0",
+    "electron-builder": "^25.1.8",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "jest": "^29.7.0",

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { payFetch } from '@/lib/payFetch'
+import { generatePayrollReceiptPDF, generateSingleReceiptPDF } from '@/lib/pdfReceipt'
 
 const C = {
   text: '#0B1E14',
@@ -89,6 +90,9 @@ export default function PayrollRunDetailPage({ params }) {
   const [error, setError] = useState(null)
   const [teamId, setTeamId] = useState(null)
   const [role, setRole] = useState(null)
+  const [team, setTeam] = useState(null)
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [singlePdfLoading, setSinglePdfLoading] = useState(null)
 
   const load = useCallback(async (tid) => {
     setLoading(true)
@@ -109,6 +113,10 @@ export default function PayrollRunDetailPage({ params }) {
       setTeamId(profile?.team_id)
       setRole(profile?.role)
       load(profile?.team_id)
+      if (profile?.team_id) {
+        const { data: teamData } = await supabase.from('teams').select('id, name, logo_url').eq('id', profile.team_id).single()
+        setTeam(teamData || null)
+      }
     }
     init()
   }, [load])
@@ -203,6 +211,26 @@ export default function PayrollRunDetailPage({ params }) {
     URL.revokeObjectURL(url)
   }
 
+  async function downloadPDF() {
+    setPdfLoading(true)
+    try {
+      await generatePayrollReceiptPDF({ run, items, team })
+    } catch (e) {
+      alert('PDF generation failed: ' + e.message)
+    }
+    setPdfLoading(false)
+  }
+
+  async function downloadSingleReceipt(item) {
+    setSinglePdfLoading(item.id)
+    try {
+      await generateSingleReceiptPDF({ item, run, team })
+    } catch (e) {
+      alert('Receipt generation failed: ' + e.message)
+    }
+    setSinglePdfLoading(null)
+  }
+
 
   const isAdmin = ['admin', 'superadmin'].includes(role)
 
@@ -260,6 +288,19 @@ export default function PayrollRunDetailPage({ params }) {
               <span style={{ display:'inline-flex',alignItems:'center',gap:6 }}><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v8M2 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Export CSV</span>
             </button>
           )}
+          {(run.status === 'approved' || run.status === 'completed' || run.status === 'processing') && (
+            <button
+              onClick={downloadPDF}
+              disabled={pdfLoading}
+              style={{ background: C.muted, border: `1px solid ${C.border}`, color: '#6D28D9', borderRadius: 8, padding: '9px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', opacity: pdfLoading ? 0.7 : 1 }}
+              title="Download Official PDF Receipt"
+            >
+              <span style={{ display:'inline-flex',alignItems:'center',gap:6 }}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 5h4M5 8h4M5 11h2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                {pdfLoading ? 'Generating…' : 'Download PDF'}
+              </span>
+            </button>
+          )}
           {isAdmin && run.status === 'approved' && (
             <button className="pay-btn-gold" onClick={disburse} disabled={!!action} style={{ background: 'linear-gradient(135deg, #0A5C54, #0B7A70)' }}>
               {action === 'disbursing' ? 'Disbursing…' : 'Disburse Now'}
@@ -291,7 +332,7 @@ export default function PayrollRunDetailPage({ params }) {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead style={{ background: C.muted }}>
                 <tr>
-                  {['Name', 'Phone', 'Base', 'Bonus', 'Allowance', 'Total', 'Status'].map(h => (
+                  {['Name', 'Phone', 'Base', 'Bonus', 'Allowance', 'Total', 'Status', 'Receipt'].map(h => (
                     <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: C.text3, borderBottom: `1px solid ${C.border}` }}>{h}</th>
                   ))}
                 </tr>
@@ -313,6 +354,17 @@ export default function PayrollRunDetailPage({ params }) {
                     <td style={{ padding: '12px 16px' }}>
                       <StatusBadge status={item.status} />
                       {item.moolre_status_msg && <div style={{ fontSize: 10, color: C.text3, marginTop: 3 }}>{item.moolre_status_msg}</div>}
+                    </td>
+                    <td style={{ padding: '12px 16px' }}>
+                      <button
+                        onClick={() => downloadSingleReceipt(item)}
+                        disabled={singlePdfLoading === item.id}
+                        title="Download individual receipt"
+                        style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(109,40,217,0.2)', color: '#6D28D9', borderRadius: 6, padding: '5px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4, opacity: singlePdfLoading === item.id ? 0.6 : 1 }}
+                      >
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><rect x="2" y="1" width="10" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 5h4M5 8h4M5 11h2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                        {singlePdfLoading === item.id ? '…' : 'Receipt'}
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -8,6 +8,9 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
+const currency = v => v ? `GHS ${parseFloat(v).toLocaleString('en-GH', { minimumFractionDigits: 2 })}` : '—'
+const daysLeft = d => { if (!d) return null; const diff = Math.floor((new Date(d) - new Date()) / 86400000); return diff }
+
 const STAFF_TYPES = [
   { value:'head_coach',       label:'Head Coach',          icon:'', color:'#4A90E2', dept:'Coaching'   },
   { value:'assistant_coach',  label:'Assistant Coach',     icon:'', color:'#2E6FC4', dept:'Coaching'   },
@@ -71,7 +74,8 @@ function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
   )
 }
 
-const EMPTY_FORM = { name:'',staff_type:'assistant_coach',speciality:'',experience_years:'',phone:'',email:'',is_active:true }
+const EMPTY_FORM = { name:'',staff_type:'assistant_coach',speciality:'',experience_years:'',phone:'',email:'',is_active:true,
+  monthly_salary:'', win_bonus:'', contract_start:'', contract_end:'', contract_status:'Active', contract_notes:'' }
 const inp = { width:'100%',padding:'10px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',fontSize:14,outline:'none',color:'var(--text)',fontFamily:'var(--font)' }
 const lbl = { display:'block',fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6 }
 
@@ -86,6 +90,7 @@ export default function CoachesPage() {
   const [photoFile,    setPhotoFile]    = useState(null)
   const [photoPreview, setPhotoPreview] = useState(null)
   const [activeTab,    setActiveTab]    = useState('All')
+  const [mainView,     setMainView]     = useState('staff') // 'staff' | 'contracts'
   const [formError,    setFormError]    = useState('')
   const [currentUser,  setCurrentUser]  = useState(null)
   const [hasStampCols, setHasStampCols] = useState(false)
@@ -124,7 +129,9 @@ export default function CoachesPage() {
   function openAdd() { setEditId(null);setForm(EMPTY_FORM);setPhotoFile(null);setPhotoPreview(null);setFormError('');setShowForm(true) }
   function openEdit(c) {
     setEditId(c.id)
-    setForm({name:c.name||'',staff_type:c.staff_type||'assistant_coach',speciality:c.speciality||'',experience_years:c.experience_years||'',phone:c.phone||'',email:c.email||'',is_active:c.is_active!==false})
+    setForm({name:c.name||'',staff_type:c.staff_type||'assistant_coach',speciality:c.speciality||'',experience_years:c.experience_years||'',phone:c.phone||'',email:c.email||'',is_active:c.is_active!==false,
+      monthly_salary:c.monthly_salary||'',win_bonus:c.win_bonus||'',contract_start:c.contract_start||'',contract_end:c.contract_end||'',contract_status:c.contract_status||'Active',contract_notes:c.contract_notes||''
+    })
     setPhotoFile(null);setPhotoPreview(c.photo_url||null);setFormError('');setShowForm(true)
   }
 
@@ -152,6 +159,12 @@ export default function CoachesPage() {
       speciality:form.speciality||null,experience_years:parseInt(form.experience_years)||null,
       phone:form.phone||null,email:form.email||null,is_active:form.is_active,
       team_id:teamId,
+      monthly_salary: form.monthly_salary ? parseFloat(form.monthly_salary) : null,
+      win_bonus:       form.win_bonus      ? parseFloat(form.win_bonus)      : null,
+      contract_start:  form.contract_start  || null,
+      contract_end:    form.contract_end    || null,
+      contract_status: form.contract_status || 'Active',
+      contract_notes:  form.contract_notes  || null,
     }
     if (hasStampCols) {
       if (editId){payload.updated_by=userId;payload.updated_at=now}
@@ -191,12 +204,105 @@ export default function CoachesPage() {
   const deptCounts={}
   DEPT_TABS.forEach(d=>{deptCounts[d.key]=d.key==='All'?coaches.length:coaches.filter(c=>getStaffType(c.staff_type).dept===d.key).length})
   const nowStr=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  const activeContracts=coaches.filter(c=>c.contract_status==='Active'&&c.monthly_salary)
+  const totalWageBill=activeContracts.reduce((s,c)=>s+(parseFloat(c.monthly_salary)||0),0)
+  const expiringContracts=coaches.filter(c=>{ const d=daysLeft(c.contract_end); return d!==null&&d>=0&&d<=90 })
 
   return (
     <Layout>
       <div className="page-outer">
         <PageHeader label="Organisation" title="Team & Staff" subtitle={`${coaches.length} staff member${coaches.length!==1?'s':''} across departments`} action={<button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>}/>
 
+        {/* Main View Toggle */}
+        <div style={{ display:'flex', gap:4, marginBottom:24, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:4, width:'fit-content' }}>
+          {[{key:'staff',label:'Staff Directory'},{key:'contracts',label:'Staff Contracts'}].map(v=>(
+            <button key={v.key} onClick={()=>setMainView(v.key)} style={{ padding:'8px 20px', background:mainView===v.key?'#0D9488':'transparent', border:'none', borderRadius:'var(--r-md)', fontSize:13, fontWeight:700, color:mainView===v.key?'#fff':'var(--text2)', cursor:'pointer', transition:'var(--transition)', fontFamily:'var(--font)' }}>
+              {v.label}
+              {v.key==='contracts'&&activeContracts.length>0&&<span style={{ marginLeft:6,fontSize:11,background:mainView==='contracts'?'rgba(255,255,255,0.25)':'var(--surface3)',padding:'1px 7px',borderRadius:99 }}>{activeContracts.length}</span>}
+            </button>
+          ))}
+        </div>
+
+        {mainView === 'contracts' ? (
+          /* ─────────────────── STAFF CONTRACTS VIEW ─────────────────── */
+          <div className="fade-up">
+            {/* Contract Summary Stats */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(180px,1fr))', gap:14, marginBottom:24 }}>
+              {[
+                { label:'Active Staff Contracts', value:activeContracts.length, color:'#0D9488' },
+                { label:'Monthly Wage Bill', value:currency(totalWageBill), color:'#276749' },
+                { label:'Expiring (90 days)', value:expiringContracts.length, color:'#B45309' },
+                { label:'Total Staff', value:coaches.length, color:'#4A90E2' },
+              ].map(s=>(
+                <div key={s.label} className="card" style={{ padding:'18px 20px', borderTop:`3px solid ${s.color}` }}>
+                  <div style={{ fontSize:11, fontWeight:700, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:8 }}>{s.label}</div>
+                  <div style={{ fontSize:24, fontWeight:900, color:s.color, letterSpacing:'-0.03em' }}>{s.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Contracts Table */}
+            <div className="card" style={{ overflow:'hidden' }}>
+              <div style={{ padding:'16px 22px', borderBottom:'1px solid var(--border)', background:'var(--surface2)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <h3 style={{ fontSize:14, fontWeight:800, color:'var(--text)', margin:0 }}>Staff Contract Terms</h3>
+                <span style={{ fontSize:12, color:'var(--text3)' }}>Click any row to edit contract terms</span>
+              </div>
+              <div style={{ overflowX:'auto' }}>
+                <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                  <thead style={{ background:'var(--surface2)' }}>
+                    <tr>
+                      {['Staff Member','Role','Monthly Salary','Win Bonus','Contract Period','Status','Days Left','Actions'].map(h=>(
+                        <th key={h} style={{ padding:'10px 16px', fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'var(--text3)', textAlign:'left', borderBottom:'1px solid var(--border)' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {coaches.length===0?(
+                      <tr><td colSpan={8} style={{ padding:'40px', textAlign:'center', color:'var(--text3)' }}>No staff yet. Add your first staff member.</td></tr>
+                    ):coaches.map((coach,ci)=>{
+                      const st=getStaffType(coach.staff_type)
+                      const dl=daysLeft(coach.contract_end)
+                      const contractColor=coach.contract_status==='Active'?'#1B7A3E':coach.contract_status==='Expired'?'#B91C1C':'#B45309'
+                      const contractBg=coach.contract_status==='Active'?'#E8F8EE':coach.contract_status==='Expired'?'#FDEDEC':'#FEF9E7'
+                      return(
+                        <tr key={coach.id} style={{ borderBottom:'1px solid var(--border)', cursor:'pointer' }} onClick={()=>openEdit(coach)}
+                          onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
+                          onMouseLeave={e=>e.currentTarget.style.background=''}>
+                          <td style={{ padding:'12px 16px' }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                              <StaffAvatar staff={coach} size={32}/>
+                              <div>
+                                <div style={{ fontWeight:700, color:'var(--text)', fontSize:13 }}>{coach.name}</div>
+                                <div style={{ fontSize:10, color:'var(--text3)' }}>{coach.email||coach.phone||'—'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td style={{ padding:'12px 16px' }}><span style={{ fontSize:11, fontWeight:600, background:st.color+'18', color:st.color, padding:'3px 9px', borderRadius:99 }}>{st.label}</span></td>
+                          <td style={{ padding:'12px 16px', fontWeight:800, color:'#276749' }}>{coach.monthly_salary?currency(coach.monthly_salary):<span style={{color:'var(--text3)',fontStyle:'italic',fontWeight:400}}>Not set</span>}</td>
+                          <td style={{ padding:'12px 16px', color:'var(--text2)' }}>{coach.win_bonus?currency(coach.win_bonus):'—'}</td>
+                          <td style={{ padding:'12px 16px', fontSize:12, color:'var(--text3)' }}>{coach.contract_start||'—'} → {coach.contract_end||'—'}</td>
+                          <td style={{ padding:'12px 16px' }}>
+                            {coach.contract_status?<span style={{ fontSize:11, fontWeight:700, background:contractBg, color:contractColor, padding:'3px 9px', borderRadius:99 }}>{coach.contract_status}</span>:<span style={{color:'var(--text3)',fontSize:11}}>—</span>}
+                          </td>
+                          <td style={{ padding:'12px 16px', fontSize:12 }}>
+                            {dl!==null?(
+                              <span style={{ fontWeight:700, color:dl<30?'#B91C1C':dl<90?'#B45309':'#276749' }}>{dl<0?'Expired':`${dl}d`}</span>
+                            ):'—'}
+                          </td>
+                          <td style={{ padding:'12px 16px' }}>
+                            <button onClick={e=>{e.stopPropagation();openEdit(coach)}} style={{ background:'var(--surface3)', border:'1px solid var(--border)', color:'var(--text2)', padding:'5px 12px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}>Edit Contract</button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+        /* ─────────────────── STAFF DIRECTORY VIEW ─────────────────── */
+        <>
         {/* Dept stats */}
         <div className="fade-up stat-grid-5" style={{ display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:14,marginBottom:24 }}>
           {DEPT_TABS.filter(d=>d.key!=='All').map(dept=>{
@@ -276,6 +382,18 @@ export default function CoachesPage() {
                   <div style={{ padding:'14px 18px' }}>
                     {coach.speciality&&<div style={{ fontSize:12,color:'var(--text2)',marginBottom:12,background:'var(--surface2)',padding:'7px 12px',borderRadius:'var(--r-sm)',display:'flex',gap:6,alignItems:'center',border:'1px solid var(--border)' }}><IconStar size={13} color="#F39C12" style={{flexShrink:0}} /><span><strong>Speciality:</strong> {coach.speciality}</span></div>}
 
+                    {/* Contract summary chip */}
+                    {coach.monthly_salary&&(
+                      <div style={{ display:'flex',gap:8,marginBottom:12,flexWrap:'wrap' }}>
+                        <div style={{ fontSize:11,fontWeight:700,background:'rgba(4,120,87,0.1)',color:'#047857',padding:'4px 10px',borderRadius:99,border:'1px solid rgba(4,120,87,0.2)',display:'flex',alignItems:'center',gap:5 }}>
+                          <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14 4v4c0 3.5-2.5 6.5-6 7.5C2.5 14.5 0 11.5 0 8V4l6-2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                          {currency(coach.monthly_salary)}/mo
+                        </div>
+                        {coach.win_bonus&&<div style={{ fontSize:11,fontWeight:700,background:'rgba(180,83,9,0.1)',color:'#B45309',padding:'4px 10px',borderRadius:99,border:'1px solid rgba(180,83,9,0.2)' }}>Bonus: {currency(coach.win_bonus)}</div>}
+                        {coach.contract_status&&<div style={{ fontSize:10,fontWeight:700,background:coach.contract_status==='Active'?'#E8F8EE':'#FDEDEC',color:coach.contract_status==='Active'?'#1B7A3E':'#B91C1C',padding:'4px 9px',borderRadius:99 }}>{coach.contract_status}</div>}
+                      </div>
+                    )}
+
                     {['physio','medical','sports_scientist','analyst','scout','accountant'].includes(coach.staff_type)&&(
                       <div style={{ background:'var(--surface2)',borderRadius:'var(--r-md)',padding:'7px 12px',fontSize:12,color:'var(--text2)',marginBottom:10,border:'1px solid var(--border)' }}>
                         {coach.staff_type==='physio'&&'Medical access — injury records & rehab'}
@@ -310,6 +428,8 @@ export default function CoachesPage() {
               )
             })}
           </div>
+        )}
+        </>
         )}
       </div>
 
@@ -365,6 +485,27 @@ export default function CoachesPage() {
               </div>
 
               <div><label style={lbl}>Email Address</label><input type="email" value={form.email} onChange={e=>set('email')(e.target.value)} style={inp} placeholder="staff@club.gh" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+
+              {/* Contract Terms Section */}
+              <div style={{ borderTop:'2px solid var(--border)', paddingTop:16, marginTop:4 }}>
+                <div style={{ fontSize:12, fontWeight:800, color:'#0D9488', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14 4v4c0 3.5-2.5 6.5-6 7.5C2.5 14.5 0 11.5 0 8V4l6-2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                  Contract Terms
+                </div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+                  <div><label style={lbl}>Monthly Salary (GHS)</label><input type="number" min="0" value={form.monthly_salary} onChange={e=>set('monthly_salary')(e.target.value)} style={inp} placeholder="0.00" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+                  <div><label style={lbl}>Win Bonus (GHS)</label><input type="number" min="0" value={form.win_bonus} onChange={e=>set('win_bonus')(e.target.value)} style={inp} placeholder="0.00" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
+                  <div><label style={lbl}>Contract Start</label><input type="date" value={form.contract_start} onChange={e=>set('contract_start')(e.target.value)} style={inp}/></div>
+                  <div><label style={lbl}>Contract End</label><input type="date" value={form.contract_end} onChange={e=>set('contract_end')(e.target.value)} style={inp}/></div>
+                </div>
+                <div style={{ marginTop:14 }}>
+                  <label style={lbl}>Contract Status</label>
+                  <select value={form.contract_status} onChange={e=>set('contract_status')(e.target.value)} style={inp}>
+                    {['Active','Expired','Terminated','Negotiating'].map(s=><option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
+                <div style={{ marginTop:14 }}><label style={lbl}>Contract Notes</label><textarea value={form.contract_notes} onChange={e=>set('contract_notes')(e.target.value)} rows={2} style={{ ...inp, resize:'vertical' }} placeholder="Additional terms, clauses or notes…"/></div>
+              </div>
 
               <div style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 14px',background:'var(--surface2)',borderRadius:'var(--r-md)',border:'1px solid var(--border)' }}>
                 <input type="checkbox" id="isactive" checked={form.is_active} onChange={e=>set('is_active')(e.target.checked)} style={{ width:16,height:16,cursor:'pointer',accentColor:'#0D9488' }}/>

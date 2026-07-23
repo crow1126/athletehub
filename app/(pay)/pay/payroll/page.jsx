@@ -42,7 +42,7 @@ function StatusBadge({ status }) {
 }
 
 // ── Recipient row — mobile-friendly stacked card on mobile ────────────────
-function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
+function RecipientRow({ rec, index, onChange, onRemove, players, contracts, perfStats, isMobile }) {
   const [name,  setName]  = useState(rec.name || '')
   const [phone, setPhone] = useState(rec.phone || '')
   const [base,  setBase]  = useState(rec.base_salary || '')
@@ -54,7 +54,43 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
     onChange(index, upd)
   }
 
+  function handleSelectPlayer(playerId) {
+    const p = players.find(x => x.id === playerId)
+    if (!p) return
+    // Auto-fill from contract
+    const contract = contracts.find(c => c.athlete_id === p.id || c.staff_id === p.id)
+    let autoBase = ''
+    let autoBonus = ''
+    if (contract) {
+      autoBase  = contract.weekly_wage   ? String(parseFloat(contract.weekly_wage)   * 4) : ''
+      // goal bonus: goals scored × per-goal bonus rate
+      const goals   = perfStats[p.id]?.goals   || 0
+      const assists = perfStats[p.id]?.assists  || 0
+      const goalBonus   = parseFloat(contract.bonus_goals   || 0) * goals
+      const assistBonus = parseFloat(contract.bonus_assists || 0) * assists
+      autoBonus = String(goalBonus + assistBonus)
+    }
+    setName(p.full_name)
+    setPhone(p.phone || '')
+    setBase(autoBase)
+    setBonus(autoBonus)
+    onChange(index, {
+      ...rec,
+      recipient_id:   p.id,
+      recipient_type: p.type,
+      name:           p.full_name,
+      phone:          p.phone || '',
+      base_salary:    autoBase,
+      bonus:          autoBonus,
+      allowance:      allow,
+    })
+  }
+
   const total = (Number(base || 0) + Number(bonus || 0) + Number(allow || 0)).toFixed(2)
+
+  const contractHint = rec.recipient_id
+    ? contracts.find(c => c.athlete_id === rec.recipient_id || c.staff_id === rec.recipient_id)
+    : null
 
   if (isMobile) {
     return (
@@ -68,16 +104,19 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
             <label className="pay-lbl">Name / Recipient</label>
             {players.length > 0 ? (
               <select className="pay-inp" style={{ padding: '9px 12px', fontSize: 13, background: '#ffffff', color: C.text, border: `1px solid ${C.border}` }} value={rec.recipient_id || ''}
-                onChange={e => {
-                  const p = players.find(x => x.id === e.target.value)
-                  if (p) { setName(p.full_name); setPhone(p.phone || ''); onChange(index, { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }) }
-                }}>
+                onChange={e => handleSelectPlayer(e.target.value)}>
                 <option value="">— Select —</option>
                 {players.map(p => <option key={p.id} value={p.id} style={{ color: C.text }}>{p.full_name} ({p.type})</option>)}
               </select>
             ) : (
               <input className="pay-inp" style={{ padding: '9px 12px', fontSize: 13 }} placeholder="Name" value={name}
                 onChange={e => { setName(e.target.value); update('name', e.target.value) }} />
+            )}
+            {contractHint && (
+              <div style={{ fontSize: 10, color: C.teal, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14 4v4c0 3.5-2.5 6.5-6 7.5C2.5 14.5 0 11.5 0 8V4l6-2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                Contract: {fmt(parseFloat(contractHint.weekly_wage || 0) * 4)}/mo · Bonus/Goal: {fmt(contractHint.bonus_goals)}
+              </div>
             )}
           </div>
           <div>
@@ -94,12 +133,12 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
             {[
-              { label: 'Base', val: base, set: setBase, field: 'base_salary' },
-              { label: 'Bonus', val: bonus, set: setBonus, field: 'bonus' },
-              { label: 'Allow.', val: allow, set: setAllow, field: 'allowance' },
-            ].map(({ label, val, set, field }) => (
+              { label: 'Base', val: base, set: setBase, field: 'base_salary', hint: contractHint ? `≈${fmt(parseFloat(contractHint.weekly_wage||0)*4)}` : '' },
+              { label: 'Bonus', val: bonus, set: setBonus, field: 'bonus', hint: '' },
+              { label: 'Allow.', val: allow, set: setAllow, field: 'allowance', hint: '' },
+            ].map(({ label, val, set, field, hint }) => (
               <div key={field}>
-                <label className="pay-lbl">{label}</label>
+                <label className="pay-lbl">{label}{hint ? <span style={{color:C.teal,fontWeight:700}}> *</span>:''}</label>
                 <input className="pay-inp" style={{ padding: '8px 10px', fontSize: 12 }} type="number" inputMode="decimal" min="0" placeholder="0.00" value={val}
                   onChange={e => { set(e.target.value); update(field, e.target.value) }} />
               </div>
@@ -119,14 +158,19 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
     <tr style={{ borderBottom: `1px solid ${C.border}` }}>
       <td style={{ padding: '8px 6px' }}>
         {players.length > 0 ? (
-          <select className="pay-inp" style={{ padding: '7px 10px', fontSize: 12, background: '#ffffff', color: C.text, border: `1px solid ${C.border}` }} value={rec.recipient_id || ''}
-            onChange={e => {
-              const p = players.find(x => x.id === e.target.value)
-              if (p) { setName(p.full_name); setPhone(p.phone || ''); onChange(index, { ...rec, recipient_id: p.id, recipient_type: p.type, name: p.full_name, phone: p.phone || '' }) }
-            }}>
-            <option value="">— Select —</option>
-            {players.map(p => <option key={p.id} value={p.id} style={{ color: C.text }}>{p.full_name} ({p.type})</option>)}
-          </select>
+          <div>
+            <select className="pay-inp" style={{ padding: '7px 10px', fontSize: 12, background: '#ffffff', color: C.text, border: `1px solid ${C.border}` }} value={rec.recipient_id || ''}
+              onChange={e => handleSelectPlayer(e.target.value)}>
+              <option value="">— Select —</option>
+              {players.map(p => <option key={p.id} value={p.id} style={{ color: C.text }}>{p.full_name} ({p.type})</option>)}
+            </select>
+            {contractHint && (
+              <div style={{ fontSize: 9, color: C.teal, marginTop: 3, display: 'flex', alignItems: 'center', gap: 3 }}>
+                <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14 4v4c0 3.5-2.5 6.5-6 7.5C2.5 14.5 0 11.5 0 8V4l6-2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                Contract auto-filled
+              </div>
+            )}
+          </div>
         ) : (
           <input className="pay-inp" style={{ padding: '7px 10px', fontSize: 12 }} placeholder="Name" value={name}
             onChange={e => { setName(e.target.value); update('name', e.target.value) }} />
@@ -163,17 +207,56 @@ function RecipientRow({ rec, index, onChange, onRemove, players, isMobile }) {
 }
 
 // ── Create payroll run modal ──────────────────────────────────────────────
-function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
+function CreateRunModal({ teamId, players, contracts, perfStats, onClose, onCreated, isMobile }) {
   const [description, setDescription] = useState('')
   const [recipients,  setRecipients]  = useState([
     { recipient_type: 'manual', recipient_id: null, name: '', phone: '', base_salary: '', bonus: '', allowance: '' }
   ])
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState(null)
+  const [prefilling, setPrefilling] = useState(false)
 
   function addRow() { setRecipients(r => [...r, { recipient_type: 'manual', recipient_id: null, name: '', phone: '', base_salary: '', bonus: '', allowance: '' }]) }
   function removeRow(i) { setRecipients(r => r.filter((_, idx) => idx !== i)) }
   function updateRow(i, upd) { setRecipients(r => r.map((x, idx) => idx === i ? upd : x)) }
+
+  // Pre-fill all recipients from active contracts
+  async function prefillFromContracts() {
+    setPrefilling(true)
+    setError(null)
+    try {
+      const contractedPlayers = players.filter(p => {
+        return contracts.find(c => c.athlete_id === p.id || c.staff_id === p.id)
+      })
+      if (contractedPlayers.length === 0) {
+        setError('No active contracts found. Add contracts in the Contracts module first.')
+        setPrefilling(false)
+        return
+      }
+      const rows = contractedPlayers.map(p => {
+        const contract = contracts.find(c => c.athlete_id === p.id || c.staff_id === p.id)
+        const monthlyBase = contract?.weekly_wage ? String(parseFloat(contract.weekly_wage) * 4) : '0'
+        const goals   = perfStats[p.id]?.goals   || 0
+        const assists = perfStats[p.id]?.assists  || 0
+        const goalBonus   = parseFloat(contract?.bonus_goals   || 0) * goals
+        const assistBonus = parseFloat(contract?.bonus_assists || 0) * assists
+        const bonusTotal  = String(goalBonus + assistBonus)
+        return {
+          recipient_type: p.type,
+          recipient_id:   p.id,
+          name:           p.full_name,
+          phone:          p.phone || '',
+          base_salary:    monthlyBase,
+          bonus:          bonusTotal,
+          allowance:      '0',
+        }
+      })
+      setRecipients(rows)
+    } catch (e) {
+      setError('Failed to pre-fill from contracts: ' + e.message)
+    }
+    setPrefilling(false)
+  }
 
   const total = recipients.reduce((s, r) => s + Number(r.base_salary || 0) + Number(r.bonus || 0) + Number(r.allowance || 0), 0)
   const fee   = parseFloat((total * 0.01).toFixed(2))
@@ -196,33 +279,54 @@ function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(11,30,20,0.5)', zIndex: 9999, display: 'flex', alignItems: isMobile ? 'flex-end' : 'center', justifyContent: 'center', backdropFilter: 'blur(4px)', animation: 'fadeUp 0.2s ease' }}
       onClick={() => onClose()}>
       <div className="pay-card"
-        style={{ width: isMobile ? '100%' : '92vw', maxWidth: isMobile ? '100%' : 860, maxHeight: isMobile ? '92vh' : '90vh', display: 'flex', flexDirection: 'column', padding: isMobile ? '20px 16px' : 32, borderRadius: isMobile ? '20px 20px 0 0' : 18, paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32, background: '#ffffff', border: `1px solid ${C.border}` }}
+        style={{ width: isMobile ? '100%' : '92vw', maxWidth: isMobile ? '100%' : 900, maxHeight: isMobile ? '92vh' : '90vh', display: 'flex', flexDirection: 'column', padding: isMobile ? '20px 16px' : 32, borderRadius: isMobile ? '20px 20px 0 0' : 18, paddingBottom: isMobile ? 'calc(20px + env(safe-area-inset-bottom))' : 32, background: '#ffffff', border: `1px solid ${C.border}` }}
         onClick={e => e.stopPropagation()}>
         {isMobile && <div style={{ width: 36, height: 4, borderRadius: 2, background: C.border, margin: '0 auto 16px' }} />}
         <h2 style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: C.text, marginBottom: 4 }}>New Payroll Run</h2>
-        <p style={{ fontSize: 13, color: C.text3, marginBottom: 16 }}>Create a payroll run for review and disbursement.</p>
+        <p style={{ fontSize: 13, color: C.text3, marginBottom: 16 }}>Salaries & bonuses auto-fill from active contracts.</p>
 
         <div style={{ marginBottom: 14 }}>
           <label className="pay-lbl">Payroll Description</label>
           <input className="pay-inp" placeholder="e.g. July 2025 Monthly Salaries" value={description} onChange={e => setDescription(e.target.value)} />
         </div>
 
+        {/* Pre-fill button */}
+        {contracts.length > 0 && (
+          <div style={{ marginBottom: 14, padding: '12px 16px', background: C.muted, borderRadius: 10, border: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.teal, marginBottom: 2, display:'flex', alignItems:'center', gap:6 }}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1.5L14 4v4c0 3.5-2.5 6.5-6 7.5C2.5 14.5 0 11.5 0 8V4l6-2.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>
+                {contracts.length} active contract{contracts.length !== 1 ? 's' : ''} found
+              </div>
+              <div style={{ fontSize: 11, color: C.text3 }}>Click to auto-populate salaries & goal bonuses from contracts</div>
+            </div>
+            <button
+              onClick={prefillFromContracts}
+              disabled={prefilling}
+              style={{ background: `linear-gradient(135deg, ${C.tealDeep}, ${C.teal})`, border: 'none', color: '#fff', borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', opacity: prefilling ? 0.7 : 1 }}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              {prefilling ? 'Filling…' : 'Pre-fill All Active Contracts'}
+            </button>
+          </div>
+        )}
+
         {/* Recipients */}
         <div style={{ flex: 1, overflowY: 'auto', marginBottom: 12 }}>
           {isMobile ? (
-            <div>{recipients.map((r, i) => <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} isMobile />)}</div>
+            <div>{recipients.map((r, i) => <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} contracts={contracts} perfStats={perfStats} isMobile />)}</div>
           ) : (
             <div className="pay-table-scroll">
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 600 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 620 }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                    {['Name / Recipient', 'MoMo Phone', 'Base Salary', 'Bonus', 'Allowance', 'Total', ''].map(h => (
+                    {['Name / Recipient', 'MoMo Phone', 'Base Salary', 'Bonus (Goals/Assists)', 'Allowance', 'Total', ''].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '6px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: C.text3 }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {recipients.map((r, i) => <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} isMobile={false} />)}
+                  {recipients.map((r, i) => <RecipientRow key={i} rec={r} index={i} onChange={updateRow} onRemove={removeRow} players={players} contracts={contracts} perfStats={perfStats} isMobile={false} />)}
                 </tbody>
               </table>
             </div>
@@ -262,12 +366,14 @@ function CreateRunModal({ teamId, players, onClose, onCreated, isMobile }) {
 // ── Page ─────────────────────────────────────────────────────────────────
 export default function PayrollPage() {
   const router  = useRouter()
-  const [teamId,  setTeamId]  = useState(null)
-  const [runs,    setRuns]    = useState([])
-  const [players, setPlayers] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
-  const [isMobile, setIsMobile] = useState(false)
+  const [teamId,    setTeamId]    = useState(null)
+  const [runs,      setRuns]      = useState([])
+  const [players,   setPlayers]   = useState([])
+  const [contracts, setContracts] = useState([])
+  const [perfStats, setPerfStats] = useState({}) // { [athlete_id]: { goals, assists } }
+  const [loading,   setLoading]   = useState(true)
+  const [showNew,   setShowNew]   = useState(false)
+  const [isMobile,  setIsMobile]  = useState(false)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -289,14 +395,33 @@ export default function PayrollPage() {
       if (!session) return
       const { data: profile } = await supabase.from('profiles').select('team_id').eq('id', session.user.id).single()
       if (!profile?.team_id) return
-      setTeamId(profile.team_id)
-      loadRuns(profile.team_id)
-      const { data: roster } = await supabase.from('athletes').select('id, name, phone').eq('team_id', profile.team_id).order('name')
-      const { data: staff  } = await supabase.from('coaches').select('id, name, phone').eq('team_id', profile.team_id).order('name')
-      setPlayers([
-        ...(roster || []).map(p => ({ ...p, full_name: p.name, type: 'athlete' })),
-        ...(staff  || []).map(s => ({ ...s, full_name: s.name, type: 'coach'   })),
+      const tid = profile.team_id
+      setTeamId(tid)
+      loadRuns(tid)
+
+      // Fetch squad, staff, contracts, and performance in parallel
+      const [rosterRes, staffRes, contractsRes, perfRes] = await Promise.all([
+        supabase.from('athletes').select('id, name, phone').eq('team_id', tid).order('name'),
+        supabase.from('coaches').select('id, name, phone').eq('team_id', tid).order('name'),
+        supabase.from('contracts').select('*').eq('team_id', tid).eq('status', 'Active'),
+        supabase.from('performance_stats').select('athlete_id, goals, assists').eq('team_id', tid),
       ])
+
+      setPlayers([
+        ...(rosterRes.data || []).map(p => ({ ...p, full_name: p.name, type: 'athlete' })),
+        ...(staffRes.data  || []).map(s => ({ ...s, full_name: s.name, type: 'coach'   })),
+      ])
+
+      setContracts(contractsRes.data || [])
+
+      // Aggregate goals/assists per athlete
+      const stats = {}
+      for (const row of (perfRes.data || [])) {
+        if (!stats[row.athlete_id]) stats[row.athlete_id] = { goals: 0, assists: 0 }
+        stats[row.athlete_id].goals   += row.goals   || 0
+        stats[row.athlete_id].assists += row.assists  || 0
+      }
+      setPerfStats(stats)
     }
     init()
   }, [loadRuns])
@@ -304,7 +429,12 @@ export default function PayrollPage() {
   return (
     <div className="pay-page" style={{ animation: 'fadeUp 0.35s ease' }}>
       {showNew && teamId && (
-        <CreateRunModal teamId={teamId} players={players} isMobile={isMobile}
+        <CreateRunModal
+          teamId={teamId}
+          players={players}
+          contracts={contracts}
+          perfStats={perfStats}
+          isMobile={isMobile}
           onClose={() => setShowNew(false)}
           onCreated={(run) => { setShowNew(false); router.push(`/pay/payroll/${run.id}`) }}
         />

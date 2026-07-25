@@ -25,8 +25,8 @@ const nextConfig = {
         // Apply security headers to every route
         source: '/(.*)',
         headers: [
-          // Prevent clickjacking
-          { key: 'X-Frame-Options',           value: 'DENY' },
+          // X-Frame-Options: use SAMEORIGIN so Electron BrowserWindow can load pages
+          { key: 'X-Frame-Options',           value: 'SAMEORIGIN' },
           // Block MIME sniffing
           { key: 'X-Content-Type-Options',    value: 'nosniff' },
           // Force HTTPS for 1 year, include subdomains
@@ -45,7 +45,7 @@ const nextConfig = {
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.moolre.com https://pos.moolre.com",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
             ].join('; '),
           },
         ],

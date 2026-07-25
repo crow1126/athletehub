@@ -23,6 +23,10 @@ function createWindow() {
     },
   })
 
+  // Custom User-Agent tag for bulletproof Electron detection
+  const defaultUA = mainWindow.webContents.getUserAgent()
+  mainWindow.webContents.setUserAgent(`${defaultUA} Electron ApexTrackDesktop`)
+
   // Start at landing page
   const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/'
 

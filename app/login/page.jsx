@@ -88,6 +88,10 @@ export default function LoginPage() {
             if (isPaySub) {
               window.location.href = '/'
             } else if (profile?.role === 'accountant') {
+              if (window.electronAPI?.isElectron || (typeof navigator !== 'undefined' && (navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop')))) {
+                window.location.href = '/pay'
+                return
+              }
               const host = window.location.host.replace(/^www\./i, '')
               const protocol = window.location.protocol
               const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
@@ -190,6 +194,10 @@ export default function LoginPage() {
       if (isPaySub) {
         window.location.href = '/'
       } else if (profile?.role === 'accountant') {
+        if (window.electronAPI?.isElectron || (typeof navigator !== 'undefined' && (navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop')))) {
+          window.location.href = '/pay'
+          return
+        }
         const host = window.location.host.replace(/^www\./i, '')
         const protocol = window.location.protocol
         const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)

@@ -392,8 +392,10 @@ export default function Layout({ children }) {
 
   function handleApexPayClick(e) {
     e.preventDefault()
-    // Cookie is scoped to the apex domain — no token passing needed.
-    // The shared session cookie is sent automatically on the pay subdomain.
+    if (typeof window !== 'undefined' && (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop'))) {
+      window.location.href = '/pay'
+      return
+    }
     const host     = window.location.host.replace(/^www\./i, '')
     const protocol = window.location.protocol
     const isIP     = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)

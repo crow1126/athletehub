@@ -76,6 +76,13 @@ export default function AuthGuard({ children }) {
       // If user is accountant but trying to access non-pay routes, redirect to pay subdomain.
       // No token passing needed — the shared .apextrackgh.com cookie is already present.
       if (profile.role === 'accountant') {
+        const isElectron = typeof window !== 'undefined' && (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop'))
+        if (isElectron) {
+          if (path !== '/pay' && !path.startsWith('/pay/')) {
+            router.replace('/pay')
+          }
+          return
+        }
         const isPaySub = typeof window !== 'undefined' && window.location.hostname.startsWith('pay.')
         if (!isPaySub) {
           const host     = window.location.host.replace(/^www\./i, '')

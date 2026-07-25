@@ -600,17 +600,16 @@ export default function LandingPage() {
           display: flex; align-items: center; justify-content: center;
           overflow: hidden;
         }
-        .dl-art-giant-letter {
+        .dl-art-giant-logo {
           position: absolute;
-          font-size: clamp(200px, 24vw, 300px);
-          font-weight: 900;
-          color: rgba(13, 148, 136, 0.06);
-          line-height: 0.8;
-          user-select: none;
-          pointer-events: none;
+          width: 280px; height: auto;
+          max-height: 280px; object-fit: contain;
           z-index: 0;
-          right: 20px; bottom: 0;
-          letter-spacing: -0.05em;
+          right: 10px; bottom: 10px;
+          opacity: 0.16;
+          filter: drop-shadow(0 12px 36px rgba(13, 148, 136, 0.3));
+          pointer-events: none;
+          user-select: none;
         }
         .dl-art-pastel-shape {
           position: absolute;
@@ -1152,7 +1151,7 @@ export default function LandingPage() {
                   {/* Decorative Elements */}
                   <div className="dl-art-green-shape" />
                   <div className="dl-art-pastel-shape" />
-                  <div className="dl-art-giant-letter">V</div>
+                  <img src="/logo.png" alt="ApexTrack Logo" className="dl-art-giant-logo" />
                   
                   {/* Vertical Rotated Text (matching Image 1) */}
                   <div className="dl-art-vertical-text">

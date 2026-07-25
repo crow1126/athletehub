@@ -95,7 +95,7 @@ export default function ReportsPage() {
 
       if (!res.ok) {
         let errMsg = `Server error ${res.status}`
-        try { const j = await res.json(); errMsg = j.error || errMsg } catch {}
+        try { const j = await res.json(); errMsg = j.error || errMsg } catch (_e) { /* ignore */ }
         throw new Error(errMsg)
       }
 

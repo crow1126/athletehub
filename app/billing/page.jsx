@@ -437,7 +437,6 @@ function BillingContent(){
                   <div style={{
                     height:'100%',
                     width:`${billingProgress}%`,
-                    background:'gradient(90deg, var(--lagoon-light), var(--lagoon))',
                     background: 'linear-gradient(90deg, var(--lagoon-light), var(--lagoon))',
                     borderRadius:99,
                     transition:'width 0.8s ease-in-out',

@@ -9,7 +9,7 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint app components lib --ext .js,.jsx,.ts,.tsx",
     "test": "jest --passWithNoTests",
     "electron": "electron .",
     "dist": "electron-builder --win nsis"

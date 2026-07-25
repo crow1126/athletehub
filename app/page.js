@@ -749,10 +749,10 @@ export default function LandingPage() {
 
       {/* ── NAVBAR ── */}
       <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`}>
-        <a className="nav-brand" href="/">
+        <Link className="nav-brand" href="/">
           <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
           <span className="nav-brand-name">Apex<span>Track</span></span>
-        </a>
+        </Link>
 
         <div className="nav-links-center">
           {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (

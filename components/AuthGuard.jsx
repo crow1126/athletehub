@@ -118,9 +118,9 @@ export default function AuthGuard({ children }) {
           }
 
           // Block modules not in the plan
-          const module = pathToModule(path)
-          if (module && !canAccessModule(sub.plan, module)) {
-            router.replace(`/billing?reason=upgrade_required&module=${module}`)
+          const mod = pathToModule(path)
+          if (mod && !canAccessModule(sub.plan, mod)) {
+            router.replace(`/billing?reason=upgrade_required&module=${mod}`)
             return
           }
         }

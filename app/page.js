@@ -552,7 +552,7 @@ export default function LandingPage() {
           margin-bottom: 16px;
         }
         .dl-headline-editorial span.highlight-dot {
-          color: #E11D48;
+          color: #0D9488;
         }
         .dl-sub-editorial {
           font-size: 15px; color: #475569;
@@ -562,20 +562,20 @@ export default function LandingPage() {
         .dl-cta-row {
           display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
         }
-        .dl-btn-pink {
-          background: #E11D48; color: #FFFFFF;
+        .dl-btn-primary {
+          background: #0D9488; color: #FFFFFF;
           border: none; border-radius: 10px;
           padding: 16px 36px; font-size: 15px; font-weight: 800;
           cursor: pointer; font-family: inherit;
           text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
           transition: all 0.22s ease;
-          box-shadow: 0 10px 28px rgba(225, 29, 72, 0.28);
+          box-shadow: 0 10px 28px rgba(13, 148, 136, 0.25);
           width: fit-content;
         }
-        .dl-btn-pink:hover {
-          background: #BE123C;
+        .dl-btn-primary:hover {
+          background: #0F766E;
           transform: translateY(-2px);
-          box-shadow: 0 14px 36px rgba(225, 29, 72, 0.38);
+          box-shadow: 0 14px 36px rgba(13, 148, 136, 0.35);
         }
 
         .dl-platforms-minimal {
@@ -616,7 +616,7 @@ export default function LandingPage() {
         .dl-art-pastel-shape {
           position: absolute;
           width: 190px; height: 260px;
-          background: #FECDD3;
+          background: #CCFBF1;
           transform: rotate(-12deg);
           border-radius: 24px;
           z-index: 0;
@@ -1111,7 +1111,7 @@ export default function LandingPage() {
                       href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="dl-btn-pink"
+                      className="dl-btn-primary"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                         <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -1153,7 +1153,7 @@ export default function LandingPage() {
 
                   {/* Desktop App Preview Image Overlaid */}
                   <div className="dl-art-preview-container">
-                    <img src="/hero-dashboard.png" alt="ApexTrack Desktop App" className="dl-art-img" />
+                    <img src="/download-player.jpg" alt="ApexTrack Footballer" className="dl-art-img" />
                     <div className="dl-art-floating-badge">
                       <div className="dl-art-badge-dot" />
                       ApexTrack v1.0.5 · Verified Installer

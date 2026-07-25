@@ -594,7 +594,7 @@ export default function LandingPage() {
         </div>
 
         <div className="nav-right">
-          <a href="/download" target="_blank" rel="noopener noreferrer" className="nav-pricing-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#0D9488' }}>
+          <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="nav-pricing-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#0D9488' }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
               <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
@@ -631,7 +631,7 @@ export default function LandingPage() {
         {/* CTA Buttons */}
         <div className="hero-btns">
           <a 
-            href="/download" 
+            href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" 
             target="_blank"
             rel="noopener noreferrer"
             className="btn-primary" 
@@ -664,7 +664,7 @@ export default function LandingPage() {
               <div style={{ fontSize: 12, color: '#5A7A68', marginTop: 1 }}>Install on Windows 10/11 — 1-click desktop shortcut & taskbar app (145 MB)</div>
             </div>
           </div>
-          <a href="/download" target="_blank" rel="noopener noreferrer" style={{ background: '#0F766E', color: '#fff', padding: '9px 18px', borderRadius: 99, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
+          <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" style={{ background: '#0F766E', color: '#fff', padding: '9px 18px', borderRadius: 99, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
             Download ApexTrack-Setup.exe
           </a>
         </div>
@@ -920,7 +920,7 @@ export default function LandingPage() {
         <div className="footer-inner">
           <div className="footer-brand">Apex<span>Track</span></div>
           <div className="footer-links">
-            <a href="/download" target="_blank" rel="noopener noreferrer" className="footer-link">Download Windows App (.exe)</a>
+            <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link">Download Windows App (.exe)</a>
             <Link href="/privacy" className="footer-link">Privacy Policy</Link>
             <Link href="/terms" className="footer-link">Terms of Service</Link>
             <Link href="/security" className="footer-link">Security</Link>

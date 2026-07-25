@@ -1,5 +1,9 @@
 const { app, BrowserWindow, shell } = require('electron')
+const { autoUpdater } = require('electron-updater')
 const path = require('path')
+
+autoUpdater.autoDownload = true
+autoUpdater.autoInstallOnAppQuit = true
 
 let mainWindow
 
@@ -66,7 +70,10 @@ if (!gotTheLock) {
     }
   })
 
-  app.on('ready', createWindow)
+  app.on('ready', () => {
+    createWindow()
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
+  })
 }
 
 app.on('window-all-closed', () => {

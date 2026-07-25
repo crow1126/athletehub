@@ -205,11 +205,11 @@ export default function LoginPage() {
         }
         window.location.href = redirectUrl
       } else if (profile?.role === 'superadmin') {
-        router.replace('/superadmin')
+        window.location.href = '/superadmin'
       } else if (profile?.role === 'player') {
-        router.replace('/player-hub')
+        window.location.href = '/player-hub'
       } else {
-        router.replace('/dashboard')
+        window.location.href = '/dashboard'
       }
     } catch(err) {
       setError(err.message?.includes('fetch') ? 'Cannot connect. Check your internet and try again.' : (err.message||'Unexpected error.'))

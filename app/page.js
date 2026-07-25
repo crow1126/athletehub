@@ -134,10 +134,14 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState(null)
+  const [isElectron, setIsElectron] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 48)
     window.addEventListener('scroll', onScroll)
+    if (typeof window !== 'undefined' && (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron'))) {
+      setIsElectron(true)
+    }
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
@@ -734,7 +738,7 @@ export default function LandingPage() {
       {menuOpen && (
         <div className="mobile-menu">
           <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>×</button>
-          {NAV_LINKS.map(l => (
+          {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
             <button key={l} className="mobile-menu-link" onClick={() => scrollTo(l)}>{l}</button>
           ))}
           <Link href="/login" className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>
@@ -751,7 +755,7 @@ export default function LandingPage() {
         </a>
 
         <div className="nav-links-center">
-          {NAV_LINKS.map(l => (
+          {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
             <button key={l} className="nav-link" onClick={() => scrollTo(l)}>
               {l} <span className="nav-link-arrow">▾</span>
             </button>
@@ -789,17 +793,19 @@ export default function LandingPage() {
 
         {/* CTA Buttons */}
         <div className="hero-btns">
-          <a 
-            href="#download"
-            onClick={e => { e.preventDefault(); document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' }) }}
-            className="btn-primary" 
-            style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            Download Windows App
-          </a>
+          {!isElectron && (
+            <a 
+              href="#download"
+              onClick={e => { e.preventDefault(); document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' }) }}
+              className="btn-primary" 
+              style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              Download Windows App
+            </a>
+          )}
           <Link href="/login?tab=signup" className="btn-primary">
             Get Started — It&apos;s Free
           </Link>
@@ -998,149 +1004,150 @@ export default function LandingPage() {
       </section>
 
       {/* ── DOWNLOAD SECTION ── */}
-      <section className="download-section" id="download">
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <div className="section-eyebrow">
-            <div className="eyebrow-line" />
-            <span className="eyebrow-text">Desktop App</span>
+      {!isElectron && (
+        <section className="download-section" id="download">
+          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+            <div className="section-eyebrow">
+              <div className="eyebrow-line" />
+              <span className="eyebrow-text">Desktop App</span>
+            </div>
+            <h2 className="section-title">Download ApexTrack</h2>
+            <p className="section-sub">The full platform, installed natively on your computer. Works offline for core features, syncs automatically when online.</p>
           </div>
-          <h2 className="section-title">Download ApexTrack</h2>
-          <p className="section-sub">The full platform, installed natively on your computer. Works offline for core features, syncs automatically when online.</p>
-        </div>
 
-        <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
-          <div className="dl-hero-card">
-            <div className="dl-inner">
+          <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
+            <div className="dl-hero-card">
+              <div className="dl-inner">
 
-              {/* LEFT — Main download CTA */}
-              <div className="dl-left">
-                <div className="dl-version-badge">
-                  <div className="dl-version-dot" />
-                  <span className="dl-version-text">v1.0.5 · Latest Release</span>
-                </div>
-
-                <h3 className="dl-headline">
-                  ApexTrack for<br /><em>Windows</em>
-                </h3>
-                <p className="dl-sub">
-                  One installer. Full access to squad management, performance tracking, payroll, and more — right from your desktop.
-                </p>
-
-                <a
-                  href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="dl-main-btn"
-                >
-                  <div className="dl-main-btn-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
+                {/* LEFT — Main download CTA */}
+                <div className="dl-left">
+                  <div className="dl-version-badge">
+                    <div className="dl-version-dot" />
+                    <span className="dl-version-text">v1.0.5 · Latest Release</span>
                   </div>
-                  <div className="dl-main-btn-text">
-                    <span className="dl-main-btn-label">Free Download</span>
-                    <span className="dl-main-btn-title">ApexTrack-Setup.exe</span>
-                  </div>
-                </a>
 
-                <div className="dl-meta">
-                  <div className="dl-meta-item">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                    ~145 MB
-                  </div>
-                  <div className="dl-meta-item">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/><rect x="7" y="13" width="10" height="4" rx="1" fill="currentColor" opacity=".4"/></svg>
-                    Windows 10 / 11
-                  </div>
-                  <div className="dl-meta-item">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Signed & verified
-                  </div>
-                </div>
+                  <h3 className="dl-headline">
+                    ApexTrack for<br /><em>Windows</em>
+                  </h3>
+                  <p className="dl-sub">
+                    One installer. Full access to squad management, performance tracking, payroll, and more — right from your desktop.
+                  </p>
 
-                <div className="dl-checkmarks" style={{ marginTop: 32 }}>
-                  {[
-                    'Offline-capable core features',
-                    'Auto-updates when connected',
-                    'No browser required to run',
-                    'Native taskbar & desktop shortcut',
-                  ].map(txt => (
-                    <div key={txt} className="dl-check-item">
-                      <div className="dl-check-icon">
-                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#14B8A6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </div>
-                      {txt}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* RIGHT — Platform cards + sys requirements */}
-              <div className="dl-right">
-
-                {/* Platform availability */}
-                <div className="dl-platform-row">
-                  <div className="dl-platform-card active">
-                    <div className="dl-platform-icon">
-                      {/* Windows icon */}
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <rect x="2" y="2" width="9" height="9" rx="1" fill="#14B8A6"/>
-                        <rect x="13" y="2" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
-                        <rect x="2" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
-                        <rect x="13" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".45"/>
+                  <a
+                    href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="dl-main-btn"
+                  >
+                    <div className="dl-main-btn-icon">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
                       </svg>
                     </div>
-                    <div className="dl-platform-name">Windows</div>
-                    <div className="dl-platform-status ready">● Available</div>
-                  </div>
-                  <div className="dl-platform-card">
-                    <div className="dl-platform-icon">
-                      {/* Apple icon */}
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M17.05 20.28c-.98.955-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 3.99M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
+                    <div className="dl-main-btn-text">
+                      <span className="dl-main-btn-label">Free Download</span>
+                      <span className="dl-main-btn-title">ApexTrack-Setup.exe</span>
                     </div>
-                    <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>macOS</div>
-                    <div className="dl-platform-status soon">Coming soon</div>
-                  </div>
-                  <div className="dl-platform-card">
-                    <div className="dl-platform-icon">
-                      {/* Linux icon */}
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26C17.81 13.47 19 11.38 19 9c0-3.87-3.13-7-7-7z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5"/>
-                        <path d="M9 21h6M10 17v4M14 17v4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>Linux</div>
-                    <div className="dl-platform-status soon">Coming soon</div>
-                  </div>
-                </div>
+                  </a>
 
-                {/* System requirements */}
-                <div className="dl-sysreq-card">
-                  <div className="dl-sysreq-title">System Requirements</div>
-                  <div className="dl-sysreq-grid">
+                  <div className="dl-meta">
+                    <div className="dl-meta-item">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                      ~145 MB
+                    </div>
+                    <div className="dl-meta-item">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/><rect x="7" y="13" width="10" height="4" rx="1" fill="currentColor" opacity=".4"/></svg>
+                      Windows 10 / 11
+                    </div>
+                    <div className="dl-meta-item">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      Signed & verified
+                    </div>
+                  </div>
+
+                  <div className="dl-checkmarks" style={{ marginTop: 32 }}>
                     {[
-                      { label: 'OS', val: 'Windows 10 / 11 (64-bit)' },
-                      { label: 'RAM', val: '4 GB minimum' },
-                      { label: 'Storage', val: '300 MB free space' },
-                      { label: 'Internet', val: 'Required for sync' },
-                      { label: 'CPU', val: 'x64 processor' },
-                    ].map(r => (
-                      <div key={r.label} className="dl-sysreq-item">
-                        <div className="dl-sysreq-label">{r.label}</div>
-                        <div className="dl-sysreq-val">{r.val}</div>
+                      'Offline-capable core features',
+                      'Auto-updates when connected',
+                      'No browser required to run',
+                      'Native taskbar & desktop shortcut',
+                    ].map(txt => (
+                      <div key={txt} className="dl-check-item">
+                        <div className="dl-check-icon">
+                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#14B8A6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </div>
+                        {txt}
                       </div>
                     ))}
                   </div>
                 </div>
 
+                {/* RIGHT — Platform cards + sys requirements */}
+                <div className="dl-right">
 
+                  {/* Platform availability */}
+                  <div className="dl-platform-row">
+                    <div className="dl-platform-card active">
+                      <div className="dl-platform-icon">
+                        {/* Windows icon */}
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <rect x="2" y="2" width="9" height="9" rx="1" fill="#14B8A6"/>
+                          <rect x="13" y="2" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
+                          <rect x="2" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
+                          <rect x="13" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".45"/>
+                        </svg>
+                      </div>
+                      <div className="dl-platform-name">Windows</div>
+                      <div className="dl-platform-status ready">● Available</div>
+                    </div>
+                    <div className="dl-platform-card">
+                      <div className="dl-platform-icon">
+                        {/* Apple icon */}
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path d="M17.05 20.28c-.98.955-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 3.99M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>macOS</div>
+                      <div className="dl-platform-status soon">Coming soon</div>
+                    </div>
+                    <div className="dl-platform-card">
+                      <div className="dl-platform-icon">
+                        {/* Linux icon */}
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                          <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26C17.81 13.47 19 11.38 19 9c0-3.87-3.13-7-7-7z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5"/>
+                          <path d="M9 21h6M10 17v4M14 17v4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
+                        </svg>
+                      </div>
+                      <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>Linux</div>
+                      <div className="dl-platform-status soon">Coming soon</div>
+                    </div>
+                  </div>
+
+                  {/* System requirements */}
+                  <div className="dl-sysreq-card">
+                    <div className="dl-sysreq-title">System Requirements</div>
+                    <div className="dl-sysreq-grid">
+                      {[
+                        { label: 'OS', val: 'Windows 10 / 11 (64-bit)' },
+                        { label: 'RAM', val: '4 GB minimum' },
+                        { label: 'Storage', val: '300 MB free space' },
+                        { label: 'Internet', val: 'Required for sync' },
+                        { label: 'CPU', val: 'x64 processor' },
+                      ].map(r => (
+                        <div key={r.label} className="dl-sysreq-item">
+                          <div className="dl-sysreq-label">{r.label}</div>
+                          <div className="dl-sysreq-val">{r.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* ── FAQ SECTION ── */}
       <section className="faq-section" id="faq">
@@ -1204,7 +1211,9 @@ export default function LandingPage() {
         <div className="footer-inner">
           <div className="footer-brand">Apex<span>Track</span></div>
           <div className="footer-links">
-            <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link">Download Windows App (.exe)</a>
+            {!isElectron && (
+              <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link">Download Windows App (.exe)</a>
+            )}
             <Link href="/privacy" className="footer-link">Privacy Policy</Link>
             <Link href="/terms" className="footer-link">Terms of Service</Link>
             <Link href="/security" className="footer-link">Security</Link>

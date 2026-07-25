@@ -596,80 +596,88 @@ export default function LandingPage() {
         /* RIGHT EDITORIAL ART PIECE */
         .dl-right-art {
           position: relative;
-          padding: 20px 40px 30px;
+          padding: 28px 40px;
           display: flex; align-items: center; justify-content: center;
           overflow: hidden;
         }
         .dl-art-giant-letter {
           position: absolute;
-          font-size: clamp(240px, 28vw, 360px);
+          font-size: clamp(200px, 24vw, 300px);
           font-weight: 900;
-          color: #0F172A;
+          color: rgba(13, 148, 136, 0.06);
           line-height: 0.8;
           user-select: none;
           pointer-events: none;
-          z-index: 1;
-          right: 15px; bottom: -20px;
-          opacity: 0.92;
+          z-index: 0;
+          right: 20px; bottom: 0;
           letter-spacing: -0.05em;
         }
         .dl-art-pastel-shape {
           position: absolute;
-          width: 190px; height: 260px;
-          background: #CCFBF1;
-          transform: rotate(-12deg);
-          border-radius: 24px;
+          width: 220px; height: 280px;
+          background: linear-gradient(135deg, rgba(153, 246, 228, 0.5), rgba(167, 243, 208, 0.3));
+          transform: rotate(-8deg);
+          border-radius: 32px;
           z-index: 0;
-          bottom: 30px; right: 70px;
-          opacity: 0.85;
+          bottom: 20px; right: 40px;
+          filter: blur(10px);
         }
         .dl-art-green-shape {
           position: absolute;
-          width: 140px; height: 140px;
-          background: #A7F3D0;
+          width: 180px; height: 180px;
+          background: #99F6E4;
           border-radius: 50%;
           z-index: 0;
-          top: 40px; left: 40px;
-          opacity: 0.6;
-          filter: blur(20px);
+          top: 20px; left: 30px;
+          opacity: 0.5;
+          filter: blur(36px);
         }
         .dl-art-vertical-text {
           position: absolute;
-          top: 50%; right: -30px;
+          top: 50%; right: 12px;
           transform: translateY(-50%) rotate(90deg);
           transform-origin: center right;
           font-size: 10px; font-weight: 800;
-          letter-spacing: 0.22em; text-transform: uppercase;
-          color: #0F172A; opacity: 0.7;
+          letter-spacing: 0.2em; text-transform: uppercase;
+          color: #0D9488; opacity: 0.45;
           white-space: nowrap; z-index: 3;
         }
         .dl-art-preview-container {
           position: relative; z-index: 2;
-          width: 100%; max-width: 440px;
-          border-radius: 20px;
-          background: #FFFFFF;
-          border: 1px solid rgba(13, 148, 136, 0.2);
-          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+          width: 100%; max-width: 400px; height: 380px;
+          border-radius: 28px;
+          background: #0F172A;
+          border: 1px solid rgba(13, 148, 136, 0.25);
+          box-shadow: 0 24px 60px rgba(13, 148, 136, 0.14), 0 4px 16px rgba(15, 23, 42, 0.08);
           overflow: hidden;
-          transition: transform 0.3s ease;
+          transition: all 0.3s ease;
         }
         .dl-art-preview-container:hover {
-          transform: translateY(-4px) scale(1.01);
+          transform: translateY(-4px);
+          box-shadow: 0 28px 70px rgba(13, 148, 136, 0.2), 0 8px 24px rgba(15, 23, 42, 0.12);
         }
         .dl-art-img {
-          width: 100%; height: auto; display: block;
-          object-fit: cover;
+          width: 100%; height: 100%; display: block;
+          object-fit: cover; object-position: center 25%;
+          filter: contrast(1.05) brightness(0.95);
+        }
+        .dl-art-img-overlay {
+          position: absolute; inset: 0;
+          background: linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 0%, rgba(15, 23, 42, 0.2) 60%, rgba(15, 23, 42, 0.8) 100%);
+          pointer-events: none;
         }
         .dl-art-floating-badge {
-          position: absolute; bottom: 16px; left: 16px; z-index: 4;
-          background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px);
-          color: #FFFFFF; font-size: 11px; font-weight: 700;
-          padding: 6px 14px; border-radius: 99px;
-          display: flex; align-items: center; gap: 8px;
+          position: absolute; bottom: 18px; left: 18px; right: 18px; z-index: 4;
+          background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(14px);
+          color: #FFFFFF; font-size: 12px; font-weight: 700;
+          padding: 10px 16px; border-radius: 14px;
+          display: flex; align-items: center; gap: 10px;
           border: 1px solid rgba(255, 255, 255, 0.15);
+          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
         }
         .dl-art-badge-dot {
-          width: 6px; height: 6px; border-radius: 50%; background: #10B981;
+          width: 7px; height: 7px; border-radius: 50%; background: #10B981;
+          box-shadow: 0 0 8px #10B981; flex-shrink: 0;
         }
 
         /* BOTTOM EDITORIAL FOOTER ROW */
@@ -1154,9 +1162,13 @@ export default function LandingPage() {
                   {/* Desktop App Preview Image Overlaid */}
                   <div className="dl-art-preview-container">
                     <img src="/download-player.jpg" alt="ApexTrack Footballer" className="dl-art-img" />
+                    <div className="dl-art-img-overlay" />
                     <div className="dl-art-floating-badge">
                       <div className="dl-art-badge-dot" />
-                      ApexTrack v1.0.5 · Verified Installer
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 800, color: '#FFFFFF' }}>ApexTrack v1.0.5</div>
+                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>Verified Installer · Windows 10/11</div>
+                      </div>
                     </div>
                   </div>
                 </div>

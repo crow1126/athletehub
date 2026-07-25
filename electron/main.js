@@ -20,17 +20,29 @@ function createWindow() {
   })
 
   // Target production Vercel deployment URL or local server
-  const startUrl = process.env.ELECTRON_START_URL || 'https://athletehub-seven.vercel.app/dashboard'
+  const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/dashboard'
 
   mainWindow.loadURL(startUrl)
 
-  // Open external links (like Paystack/Moolre checkout) in system browser
+  // Open external links (like Paystack/Moolre checkout and GitHub downloads) in system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https://checkout.moolre.com') || url.startsWith('https://paystack.com')) {
+    if (
+      url.startsWith('https://checkout.moolre.com') ||
+      url.startsWith('https://paystack.com') ||
+      url.startsWith('https://github.com')
+    ) {
       shell.openExternal(url)
       return { action: 'deny' }
     }
     return { action: 'allow' }
+  })
+
+  // Also intercept navigation to GitHub (for redirects like /download → GitHub)
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    if (url.startsWith('https://github.com')) {
+      event.preventDefault()
+      shell.openExternal(url)
+    }
   })
 
   mainWindow.on('closed', () => {

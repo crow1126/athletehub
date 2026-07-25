@@ -1,6 +1,6 @@
 {
   "name": "apextrack",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "ApexTrack Desktop Football Club Management App",
   "author": "ApexTrack",
   "private": true,
@@ -27,6 +27,7 @@
     ],
     "win": {
       "icon": "electron/icon.ico",
+      "signAndEditExecutable": false,
       "target": [
         {
           "target": "nsis",
@@ -36,6 +37,7 @@
         }
       ]
     },
+    "forceCodeSigning": false,
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

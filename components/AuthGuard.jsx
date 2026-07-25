@@ -32,7 +32,10 @@ export default function AuthGuard({ children }) {
   const interval = useRef(null)
 
   async function checkSession() {
-    if (PUBLIC_ROUTES.includes(path)) return
+    if (!path) return
+    const pathWithoutQuery = path.split('?')[0]
+    const cleanPath = pathWithoutQuery.length > 1 ? pathWithoutQuery.replace(/\/$/, '') : pathWithoutQuery
+    if (PUBLIC_ROUTES.includes(cleanPath)) return
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }
@@ -104,7 +107,8 @@ export default function AuthGuard({ children }) {
     checkSession()
     interval.current = setInterval(checkSession, 30000)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT' && !PUBLIC_ROUTES.includes(path)) router.replace('/login?reason=signed_out')
+      const clean = path ? (path.split('?')[0].length > 1 ? path.split('?')[0].replace(/\/$/, '') : path.split('?')[0]) : '/'
+      if (event === 'SIGNED_OUT' && !PUBLIC_ROUTES.includes(clean)) router.replace('/login?reason=signed_out')
     })
     return () => { clearInterval(interval.current); subscription?.unsubscribe() }
   }, [path])

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { IconMenu, IconCheck } from '@/lib/icons'
 
-const NAV_LINKS = ['Features', 'Pricing', 'FAQ', 'Support']
+const NAV_LINKS = ['Features', 'Pricing', 'Download', 'FAQ', 'Support']
 
 const FEATURES = [
   { 
@@ -483,6 +483,163 @@ export default function LandingPage() {
         .faq-content { padding: 0 24px 24px; font-size: 14px; color: #64748B; line-height: 1.65; display: none; }
         .faq-item.active .faq-content { display: block; animation: fadeIn 0.3s ease; }
 
+        /* ── DOWNLOAD SECTION ── */
+        .download-section {
+          padding: 96px 48px;
+          background: transparent;
+          position: relative;
+        }
+        .dl-hero-card {
+          max-width: 1100px; margin: 0 auto;
+          background: linear-gradient(145deg, #0A1628 0%, #0F172A 50%, #091222 100%);
+          border-radius: 32px;
+          border: 1px solid rgba(13,148,136,0.2);
+          padding: 0;
+          overflow: hidden;
+          position: relative;
+          box-shadow: 0 40px 120px rgba(0,0,0,0.4), 0 0 0 1px rgba(20,184,166,0.1);
+        }
+        .dl-hero-card::before {
+          content: '';
+          position: absolute;
+          top: -1px; left: 0; right: 0; height: 3px;
+          background: linear-gradient(90deg, #0D9488, #14B8A6, #2DD4BF, #14B8A6, #0D9488);
+          background-size: 200% 100%;
+          animation: shimmer 3s ease-in-out infinite;
+        }
+        .dl-hero-card::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(ellipse at 70% 20%, rgba(13,148,136,0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 10% 80%, rgba(20,184,166,0.05) 0%, transparent 50%);
+          pointer-events: none;
+        }
+        .dl-inner {
+          position: relative; z-index: 1;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 0;
+          min-height: 480px;
+        }
+        .dl-left {
+          padding: 64px 56px;
+          display: flex; flex-direction: column; justify-content: center;
+          border-right: 1px solid rgba(255,255,255,0.05);
+        }
+        .dl-right {
+          padding: 64px 56px;
+          display: flex; flex-direction: column; justify-content: center; gap: 20px;
+        }
+        .dl-version-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: rgba(13,148,136,0.12); border: 1px solid rgba(13,148,136,0.25);
+          border-radius: 99px; padding: 5px 14px 5px 10px; margin-bottom: 24px;
+          width: fit-content;
+        }
+        .dl-version-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: #14B8A6; box-shadow: 0 0 6px #14B8A6;
+          animation: float0 2.5s ease-in-out infinite;
+        }
+        .dl-version-text { font-size: 11px; font-weight: 700; color: #14B8A6; letter-spacing: 0.08em; text-transform: uppercase; }
+        .dl-headline {
+          font-size: clamp(30px, 3.2vw, 44px);
+          font-weight: 900; color: #FFFFFF;
+          letter-spacing: -0.03em; line-height: 1.1;
+          margin-bottom: 16px;
+        }
+        .dl-headline em { color: #14B8A6; font-style: normal; }
+        .dl-sub {
+          font-size: 15px; color: rgba(255,255,255,0.45);
+          line-height: 1.7; margin-bottom: 36px; max-width: 340px;
+        }
+        .dl-main-btn {
+          display: inline-flex; align-items: center; gap: 12px;
+          background: linear-gradient(135deg, #0D9488, #0F766E);
+          color: #fff; border: none; border-radius: 14px;
+          padding: 16px 28px; font-size: 15px; font-weight: 800;
+          cursor: pointer; font-family: inherit;
+          text-decoration: none;
+          transition: all 0.22s;
+          box-shadow: 0 8px 32px rgba(13,148,136,0.35), 0 0 0 1px rgba(13,148,136,0.2);
+          width: fit-content;
+        }
+        .dl-main-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 16px 48px rgba(13,148,136,0.4), 0 0 0 1px rgba(13,148,136,0.3);
+        }
+        .dl-main-btn-icon {
+          width: 36px; height: 36px; border-radius: 10px;
+          background: rgba(255,255,255,0.12);
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .dl-main-btn-text { text-align: left; }
+        .dl-main-btn-label { font-size: 11px; font-weight: 600; opacity: 0.7; display: block; }
+        .dl-main-btn-title { font-size: 15px; font-weight: 800; display: block; }
+        .dl-meta {
+          display: flex; align-items: center; gap: 20px; margin-top: 20px; flex-wrap: wrap;
+        }
+        .dl-meta-item {
+          display: flex; align-items: center; gap: 6px;
+          font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 500;
+        }
+        .dl-meta-item svg { opacity: 0.5; }
+        .dl-sysreq-card {
+          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 16px; padding: 24px;
+        }
+        .dl-sysreq-title {
+          font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3);
+          text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;
+        }
+        .dl-sysreq-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+        }
+        .dl-sysreq-item { display: flex; flex-direction: column; gap: 3px; }
+        .dl-sysreq-label { font-size: 10px; color: rgba(255,255,255,0.25); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+        .dl-sysreq-val { font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 600; }
+        .dl-platform-row {
+          display: flex; gap: 12px;
+        }
+        .dl-platform-card {
+          flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+          border-radius: 14px; padding: 18px 16px;
+          display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+          position: relative; overflow: hidden;
+        }
+        .dl-platform-card.active {
+          border-color: rgba(13,148,136,0.25);
+          background: rgba(13,148,136,0.06);
+        }
+        .dl-platform-icon {
+          width: 32px; height: 32px; border-radius: 8px;
+          display: flex; align-items: center; justify-content: center;
+          background: rgba(255,255,255,0.06);
+        }
+        .dl-platform-card.active .dl-platform-icon {
+          background: rgba(13,148,136,0.15);
+        }
+        .dl-platform-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); }
+        .dl-platform-card.active .dl-platform-name { color: #fff; }
+        .dl-platform-status {
+          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+        }
+        .dl-platform-status.ready { color: #14B8A6; }
+        .dl-platform-status.soon { color: rgba(255,255,255,0.2); }
+        .dl-checkmarks {
+          display: flex; flex-direction: column; gap: 10px;
+        }
+        .dl-check-item {
+          display: flex; align-items: center; gap: 10px;
+          font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 500;
+        }
+        .dl-check-icon {
+          width: 18px; height: 18px; border-radius: 50%;
+          background: rgba(13,148,136,0.15); border: 1px solid rgba(13,148,136,0.3);
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+
         /* ── SUPPORT / CTA SECTION ── */
         .cta-section {
           padding: 96px 48px;
@@ -542,6 +699,9 @@ export default function LandingPage() {
           .stats-grid { grid-template-columns: repeat(2,1fr); gap: 28px; }
           .stat-col + .stat-col { border-left: none; }
           .stat-col:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.1); }
+          .dl-inner { grid-template-columns: 1fr; }
+          .dl-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 48px 36px; }
+          .dl-right { padding: 40px 36px; }
         }
         @media (max-width: 640px) {
           .lp-nav { padding: 0 20px; }
@@ -555,6 +715,11 @@ export default function LandingPage() {
           .features-section { padding: 64px 20px; }
           .features-grid { grid-template-columns: 1fr; }
           .pricing-section { padding: 64px 20px; }
+          .download-section { padding: 64px 20px; }
+          .dl-left { padding: 36px 24px; }
+          .dl-right { padding: 32px 24px; }
+          .dl-sysreq-grid { grid-template-columns: 1fr; }
+          .dl-platform-row { flex-direction: column; }
           .faq-section { padding: 64px 20px; }
           .faq-trigger { padding: 20px; font-size: 15px; }
           .stats-band { padding: 52px 20px; }
@@ -631,16 +796,15 @@ export default function LandingPage() {
         {/* CTA Buttons */}
         <div className="hero-btns">
           <a 
-            href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" 
-            target="_blank"
-            rel="noopener noreferrer"
+            href="#download"
+            onClick={e => { e.preventDefault(); document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' }) }}
             className="btn-primary" 
             style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
               <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            Download Windows App (.exe)
+            Download Windows App
           </a>
           <Link href="/login?tab=signup" className="btn-primary">
             Get Started — It&apos;s Free
@@ -648,25 +812,6 @@ export default function LandingPage() {
           <Link href="/login" className="btn-outline">
             Sign In — Dashboard
           </Link>
-        </div>
-
-        {/* Desktop App Callout Banner */}
-        <div style={{ maxWidth: 860, margin: '32px auto 0', padding: '16px 24px', background: 'rgba(240, 253, 250, 0.95)', border: '1px solid #86D4A8', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, boxShadow: '0 4px 20px rgba(13, 148, 136, 0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg, #0F766E, #0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <rect x="2" y="3" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="2"/>
-                <path d="M8 21h8M12 17v4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#0F2218' }}>ApexTrack Native Desktop Application</div>
-              <div style={{ fontSize: 12, color: '#5A7A68', marginTop: 1 }}>Install on Windows 10/11 — 1-click desktop shortcut & taskbar app (145 MB)</div>
-            </div>
-          </div>
-          <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" style={{ background: '#0F766E', color: '#fff', padding: '9px 18px', borderRadius: 99, fontSize: 12, fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6, transition: 'all 0.15s' }}>
-            Download ApexTrack-Setup.exe
-          </a>
         </div>
 
         {/* Hero visual */}
@@ -853,6 +998,162 @@ export default function LandingPage() {
               <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, margin: 0 }}>
                 <strong style={{ color: '#0F172A' }}>ApexPay</strong> is our built-in club payroll system. Fund your club wallet via Mobile Money, run payroll cycles for players and staff, and track every disbursement — all inside ApexTrack. No third-party apps, no spreadsheets.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DOWNLOAD SECTION ── */}
+      <section className="download-section" id="download">
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div className="section-eyebrow">
+            <div className="eyebrow-line" />
+            <span className="eyebrow-text">Desktop App</span>
+          </div>
+          <h2 className="section-title">Download ApexTrack</h2>
+          <p className="section-sub">The full platform, installed natively on your computer. Works offline for core features, syncs automatically when online.</p>
+        </div>
+
+        <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
+          <div className="dl-hero-card">
+            <div className="dl-inner">
+
+              {/* LEFT — Main download CTA */}
+              <div className="dl-left">
+                <div className="dl-version-badge">
+                  <div className="dl-version-dot" />
+                  <span className="dl-version-text">v1.0.5 · Latest Release</span>
+                </div>
+
+                <h3 className="dl-headline">
+                  ApexTrack for<br /><em>Windows</em>
+                </h3>
+                <p className="dl-sub">
+                  One installer. Full access to squad management, performance tracking, payroll, and more — right from your desktop.
+                </p>
+
+                <a
+                  href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="dl-main-btn"
+                >
+                  <div className="dl-main-btn-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <div className="dl-main-btn-text">
+                    <span className="dl-main-btn-label">Free Download</span>
+                    <span className="dl-main-btn-title">ApexTrack-Setup.exe</span>
+                  </div>
+                </a>
+
+                <div className="dl-meta">
+                  <div className="dl-meta-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+                    ~145 MB
+                  </div>
+                  <div className="dl-meta-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/><rect x="7" y="13" width="10" height="4" rx="1" fill="currentColor" opacity=".4"/></svg>
+                    Windows 10 / 11
+                  </div>
+                  <div className="dl-meta-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Signed & verified
+                  </div>
+                </div>
+
+                <div className="dl-checkmarks" style={{ marginTop: 32 }}>
+                  {[
+                    'Offline-capable core features',
+                    'Auto-updates when connected',
+                    'No browser required to run',
+                    'Native taskbar & desktop shortcut',
+                  ].map(txt => (
+                    <div key={txt} className="dl-check-item">
+                      <div className="dl-check-icon">
+                        <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#14B8A6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      </div>
+                      {txt}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* RIGHT — Platform cards + sys requirements */}
+              <div className="dl-right">
+
+                {/* Platform availability */}
+                <div className="dl-platform-row">
+                  <div className="dl-platform-card active">
+                    <div className="dl-platform-icon">
+                      {/* Windows icon */}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="2" width="9" height="9" rx="1" fill="#14B8A6"/>
+                        <rect x="13" y="2" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
+                        <rect x="2" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
+                        <rect x="13" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".45"/>
+                      </svg>
+                    </div>
+                    <div className="dl-platform-name">Windows</div>
+                    <div className="dl-platform-status ready">● Available</div>
+                  </div>
+                  <div className="dl-platform-card">
+                    <div className="dl-platform-icon">
+                      {/* Apple icon */}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M17.05 20.28c-.98.955-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 3.99M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>macOS</div>
+                    <div className="dl-platform-status soon">Coming soon</div>
+                  </div>
+                  <div className="dl-platform-card">
+                    <div className="dl-platform-icon">
+                      {/* Linux icon */}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26C17.81 13.47 19 11.38 19 9c0-3.87-3.13-7-7-7z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5"/>
+                        <path d="M9 21h6M10 17v4M14 17v4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
+                    <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>Linux</div>
+                    <div className="dl-platform-status soon">Coming soon</div>
+                  </div>
+                </div>
+
+                {/* System requirements */}
+                <div className="dl-sysreq-card">
+                  <div className="dl-sysreq-title">System Requirements</div>
+                  <div className="dl-sysreq-grid">
+                    {[
+                      { label: 'OS', val: 'Windows 10 / 11 (64-bit)' },
+                      { label: 'RAM', val: '4 GB minimum' },
+                      { label: 'Storage', val: '300 MB free space' },
+                      { label: 'Internet', val: 'Required for sync' },
+                      { label: 'CPU', val: 'x64 processor' },
+                      { label: 'Runtime', val: 'Electron 28 (bundled)' },
+                    ].map(r => (
+                      <div key={r.label} className="dl-sysreq-item">
+                        <div className="dl-sysreq-label">{r.label}</div>
+                        <div className="dl-sysreq-val">{r.val}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Also available on web */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Also available as a web app</div>
+                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>No install needed — use any modern browser</div>
+                  </div>
+                  <Link href="/login" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '9px 16px', fontSize: 12, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
+                    Open Web App →
+                  </Link>
+                </div>
+
+              </div>
             </div>
           </div>
         </div>

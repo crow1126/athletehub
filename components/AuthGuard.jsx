@@ -42,20 +42,25 @@ export default function AuthGuard({ children }) {
 
       let profile = null
       let error = null
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
         const res = await supabase
           .from('profiles').select('is_active, role, team_id').eq('id', session.user.id).single()
         profile = res.data
         error = res.error
         if (profile) break
-        await new Promise(r => setTimeout(r, 500))
+        await new Promise(r => setTimeout(r, 600))
       }
 
-      if (error || !profile) { 
+      if (!profile) { 
         console.error('AuthGuard profile fetch error:', error)
-        await supabase.auth.signOut()
-        router.replace('/login?reason=profile_error')
-        return 
+        if (error?.code === 'PGRST116') {
+          // Profile row not found
+          await supabase.auth.signOut()
+          router.replace('/login?reason=profile_error')
+          return
+        }
+        // Temporary lookup failure — do not force sign out
+        return
       }
       if (profile.is_active === false) { await supabase.auth.signOut(); router.replace('/login?reason=disabled'); return }
 

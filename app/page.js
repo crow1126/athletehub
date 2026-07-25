@@ -602,34 +602,34 @@ export default function LandingPage() {
         }
         .dl-art-giant-logo {
           position: absolute;
-          width: 280px; height: auto;
-          max-height: 280px; object-fit: contain;
+          width: 320px; height: auto;
+          max-height: 320px; object-fit: contain;
           z-index: 0;
-          right: 10px; bottom: 10px;
-          opacity: 0.16;
-          filter: drop-shadow(0 12px 36px rgba(13, 148, 136, 0.3));
+          right: -20px; bottom: -20px;
+          opacity: 0.1;
+          filter: drop-shadow(0 12px 36px rgba(13, 148, 136, 0.2));
           pointer-events: none;
           user-select: none;
         }
         .dl-art-pastel-shape {
           position: absolute;
-          width: 220px; height: 280px;
+          width: 240px; height: 300px;
           background: linear-gradient(135deg, rgba(153, 246, 228, 0.5), rgba(167, 243, 208, 0.3));
           transform: rotate(-8deg);
-          border-radius: 32px;
+          border-radius: 36px;
           z-index: 0;
-          bottom: 20px; right: 40px;
-          filter: blur(10px);
+          bottom: 20px; right: 30px;
+          filter: blur(12px);
         }
         .dl-art-green-shape {
           position: absolute;
-          width: 180px; height: 180px;
+          width: 200px; height: 200px;
           background: #99F6E4;
           border-radius: 50%;
           z-index: 0;
-          top: 20px; left: 30px;
+          top: 20px; left: 20px;
           opacity: 0.5;
-          filter: blur(36px);
+          filter: blur(40px);
         }
         .dl-art-vertical-text {
           position: absolute;
@@ -641,38 +641,42 @@ export default function LandingPage() {
           color: #0D9488; opacity: 0.45;
           white-space: nowrap; z-index: 3;
         }
-        .dl-art-preview-container {
+
+        /* BRAND SHOWCASE CARD (NO PHOTO) */
+        .dl-brand-showcase-card {
           position: relative; z-index: 2;
-          width: 100%; max-width: 400px; height: 380px;
+          width: 100%; max-width: 360px;
+          background: rgba(255, 255, 255, 0.78);
+          backdrop-filter: blur(16px);
+          border: 1.5px solid rgba(13, 148, 136, 0.2);
           border-radius: 28px;
-          background: #0F172A;
-          border: 1px solid rgba(13, 148, 136, 0.25);
-          box-shadow: 0 24px 60px rgba(13, 148, 136, 0.14), 0 4px 16px rgba(15, 23, 42, 0.08);
-          overflow: hidden;
+          padding: 44px 32px;
+          display: flex; flex-direction: column; align-items: center; text-align: center;
+          box-shadow: 0 24px 60px rgba(13, 148, 136, 0.12), 0 4px 16px rgba(0, 0, 0, 0.02);
           transition: all 0.3s ease;
         }
-        .dl-art-preview-container:hover {
+        .dl-brand-showcase-card:hover {
           transform: translateY(-4px);
-          box-shadow: 0 28px 70px rgba(13, 148, 136, 0.2), 0 8px 24px rgba(15, 23, 42, 0.12);
+          box-shadow: 0 32px 70px rgba(13, 148, 136, 0.18);
         }
-        .dl-art-img {
-          width: 100%; height: 100%; display: block;
-          object-fit: cover; object-position: center 25%;
-          filter: contrast(1.05) brightness(0.95);
+        .dl-showcase-logo {
+          height: 84px; width: auto; object-fit: contain;
+          margin-bottom: 20px; border-radius: 20px;
+          filter: drop-shadow(0 12px 24px rgba(13, 148, 136, 0.22));
         }
-        .dl-art-img-overlay {
-          position: absolute; inset: 0;
-          background: linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 0%, rgba(15, 23, 42, 0.2) 60%, rgba(15, 23, 42, 0.8) 100%);
-          pointer-events: none;
+        .dl-showcase-brandname {
+          font-size: 26px; font-weight: 900; color: #0F172A; letter-spacing: -0.03em;
+          margin-bottom: 6px;
         }
-        .dl-art-floating-badge {
-          position: absolute; bottom: 18px; left: 18px; right: 18px; z-index: 4;
-          background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(14px);
-          color: #FFFFFF; font-size: 12px; font-weight: 700;
-          padding: 10px 16px; border-radius: 14px;
-          display: flex; align-items: center; gap: 10px;
-          border: 1px solid rgba(255, 255, 255, 0.15);
-          box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+        .dl-showcase-brandname span { color: #0D9488; }
+        .dl-showcase-sub {
+          font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 24px;
+        }
+        .dl-showcase-badge {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: #F0FDFA; border: 1px solid #CCFBF1;
+          color: #0D9488; font-size: 12px; font-weight: 700;
+          padding: 6px 16px; border-radius: 99px;
         }
         .dl-art-badge-dot {
           width: 7px; height: 7px; border-radius: 50%; background: #10B981;
@@ -1158,16 +1162,15 @@ export default function LandingPage() {
                     NATIVE DESKTOP • OFFLINE POWERED • ZERO LATENCY
                   </div>
 
-                  {/* Desktop App Preview Image Overlaid */}
-                  <div className="dl-art-preview-container">
-                    <img src="/download-player.jpg" alt="ApexTrack Footballer" className="dl-art-img" />
-                    <div className="dl-art-img-overlay" />
-                    <div className="dl-art-floating-badge">
+                  {/* Brand Showcase Emblem Card (No Photo) */}
+                  <div className="dl-brand-showcase-card">
+                    <img src="/logo.png" alt="ApexTrack Logo" className="dl-showcase-logo" />
+                    <div className="dl-showcase-brandname">Apex<span>Track</span></div>
+                    <div className="dl-showcase-sub">Windows Desktop Application</div>
+                    
+                    <div className="dl-showcase-badge">
                       <div className="dl-art-badge-dot" />
-                      <div>
-                        <div style={{ fontSize: 12, fontWeight: 800, color: '#FFFFFF' }}>ApexTrack v1.0.5</div>
-                        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.65)', fontWeight: 600 }}>Verified Installer · Windows 10/11</div>
-                      </div>
+                      <span>v1.0.5 · Official Release</span>
                     </div>
                   </div>
                 </div>

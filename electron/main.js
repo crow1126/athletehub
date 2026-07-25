@@ -19,8 +19,8 @@ function createWindow() {
     },
   })
 
-  // Target production Vercel deployment URL or local server
-  const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/dashboard'
+  // Start at login — AuthGuard redirects to /dashboard once session is valid
+  const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/login'
 
   mainWindow.loadURL(startUrl)
 
@@ -29,7 +29,8 @@ function createWindow() {
     if (
       url.startsWith('https://checkout.moolre.com') ||
       url.startsWith('https://paystack.com') ||
-      url.startsWith('https://github.com')
+      url.startsWith('https://github.com') ||
+      url.startsWith('https://release-assets.githubusercontent.com')
     ) {
       shell.openExternal(url)
       return { action: 'deny' }
@@ -37,9 +38,12 @@ function createWindow() {
     return { action: 'allow' }
   })
 
-  // Also intercept navigation to GitHub (for redirects like /download → GitHub)
+  // Also intercept navigation to GitHub release assets
   mainWindow.webContents.on('will-navigate', (event, url) => {
-    if (url.startsWith('https://github.com')) {
+    if (
+      url.startsWith('https://github.com') ||
+      url.startsWith('https://release-assets.githubusercontent.com')
+    ) {
       event.preventDefault()
       shell.openExternal(url)
     }

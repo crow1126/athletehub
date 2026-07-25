@@ -61,12 +61,18 @@ export default function LoginPage() {
   const [subExpired, setSubExpired]= useState(false)
   const [acceptedTerms, setAcceptedTerms] = useState(false)
   const [forgotMode, setForgotMode] = useState(false)
+  const [isElectron, setIsElectron] = useState(false)
   const router   = useRouter()
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      if (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron')) {
+        setIsElectron(true)
+      }
       const p = new URLSearchParams(window.location.search)
       if (p.get('reason') === 'disabled') setDisabled(true)
+      if (p.get('reason') === 'profile_error') setError('Account profile lookup error. Please try again or contact support.')
+      if (p.get('reason') === 'signed_out') setSuccess('You have been signed out.')
       if (p.get('reason') === 'subscription_expired') {
         setSubExpired(true); supabase.auth.signOut()
         return
@@ -439,13 +445,22 @@ export default function LoginPage() {
 
       {/* ── NAVBAR ── */}
       <nav className="lp-nav">
-        <Link className="nav-brand" href="/">
-          <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
-          <span className="nav-brand-name">Apex<span>Track</span></span>
-        </Link>
-        <Link href="/" className="nav-back-link">
-          ← Back to Home
-        </Link>
+        {isElectron ? (
+          <span className="nav-brand">
+            <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
+            <span className="nav-brand-name">Apex<span>Track</span></span>
+          </span>
+        ) : (
+          <Link className="nav-brand" href="/">
+            <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
+            <span className="nav-brand-name">Apex<span>Track</span></span>
+          </Link>
+        )}
+        {!isElectron && (
+          <Link href="/" className="nav-back-link">
+            ← Back to Home
+          </Link>
+        )}
       </nav>
 
       {/* ── MAIN CONTENT CONTAINER ── */}
@@ -483,10 +498,13 @@ export default function LoginPage() {
             {/* Progress bar */}
             <div style={{ height: 3, background: 'linear-gradient(90deg,#0D9488,#14B8A6,#99F6E4)', borderRadius: '22px 22px 0 0', backgroundSize: '200% 100%', animation: 'shimmer 2.5s ease infinite' }} />
             <div className="auth-card" style={{ borderRadius: '0 0 22px 22px', borderTop: 'none' }}>
-              <div className="auth-tabs">
-                <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>Sign In</button>
-                <button className={`auth-tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); setSuccess(''); }}>Register</button>
-              </div>
+              {/* In desktop Electron mode: no Register tab — registration is done via web */}
+              {!isElectron && (
+                <div className="auth-tabs">
+                  <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>Sign In</button>
+                  <button className={`auth-tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); setSuccess(''); }}>Register</button>
+                </div>
+              )}
 
               {/* Logo row */}
               <div style={{ padding: '24px 28px 4px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -537,7 +555,11 @@ export default function LoginPage() {
                   <p style={{ textAlign: 'center', fontSize: 12, color: '#64748B' }}>
                     <Link href="/forgot-password" style={{ color: '#94A3B8', fontWeight: 600, textDecoration: 'none' }}>Forgot password?</Link>
                     {'  ·  '}
-                    No account? <button type="button" onClick={() => { setTab('signup'); setError(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Register here</button>
+                    {isElectron ? (
+                      <>No account? <a href="https://apextrackgh.com/login?tab=signup" target="_blank" rel="noopener noreferrer" style={{ color: '#0D9488', fontWeight: 700, textDecoration: 'none' }}>Register via web</a></>
+                    ) : (
+                      <>No account? <button type="button" onClick={() => { setTab('signup'); setError(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Register here</button></>
+                    )}
                   </p>
                 </form>
               ) : (
@@ -628,7 +650,7 @@ export default function LoginPage() {
               <Link href="/privacy" className="footer-link">Privacy Policy</Link>
               <Link href="/terms" className="footer-link">Terms of Service</Link>
               <Link href="/security" className="footer-link">Security</Link>
-              <Link href="/" className="footer-link">Home</Link>
+              {!isElectron && <Link href="/" className="footer-link">Home</Link>}
             </div>
           </div>
           <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Built for African football.</div>

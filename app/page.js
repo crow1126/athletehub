@@ -487,7 +487,7 @@ export default function LandingPage() {
         .faq-content { padding: 0 24px 24px; font-size: 14px; color: #64748B; line-height: 1.65; display: none; }
         .faq-item.active .faq-content { display: block; animation: fadeIn 0.3s ease; }
 
-        /* ── DOWNLOAD SECTION ── */
+        /* ── DOWNLOAD SECTION (EDITORIAL ART STYLE) ── */
         .download-section {
           padding: 96px 48px;
           background: transparent;
@@ -495,30 +495,37 @@ export default function LandingPage() {
         }
         .dl-hero-card {
           max-width: 1100px; margin: 0 auto;
-          background: linear-gradient(145deg, #0A1628 0%, #0F172A 50%, #091222 100%);
-          border-radius: 32px;
-          border: 1px solid rgba(13,148,136,0.2);
+          background: linear-gradient(135deg, #F2FAF1 0%, #E2F4E1 35%, #ECF8EA 70%, #F8FCF8 100%);
+          border-radius: 36px;
+          border: 1px solid rgba(13, 148, 136, 0.2);
           padding: 0;
           overflow: hidden;
           position: relative;
-          box-shadow: 0 40px 120px rgba(0,0,0,0.4), 0 0 0 1px rgba(20,184,166,0.1);
+          box-shadow: 0 32px 90px rgba(13, 148, 136, 0.08), 0 4px 20px rgba(0, 0, 0, 0.02);
         }
         .dl-hero-card::before {
           content: '';
           position: absolute;
-          top: -1px; left: 0; right: 0; height: 3px;
-          background: linear-gradient(90deg, #0D9488, #14B8A6, #2DD4BF, #14B8A6, #0D9488);
+          top: 0; left: 0; right: 0; height: 4px;
+          background: linear-gradient(90deg, #0D9488, #10B981, #34D399, #10B981, #0D9488);
           background-size: 200% 100%;
           animation: shimmer 3s ease-in-out infinite;
         }
-        .dl-hero-card::after {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: radial-gradient(ellipse at 70% 20%, rgba(13,148,136,0.08) 0%, transparent 60%),
-                      radial-gradient(ellipse at 10% 80%, rgba(20,184,166,0.05) 0%, transparent 50%);
-          pointer-events: none;
+        .dl-top-bar {
+          display: flex; justify-content: space-between; align-items: center;
+          padding: 32px 48px 0;
         }
+        .dl-top-brand {
+          font-size: 13px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;
+          display: flex; align-items: center; gap: 8px;
+        }
+        .dl-top-brand span { color: #0D9488; }
+        .dl-top-badge {
+          background: #E0F2FE; border: 1px solid #BAE6FD;
+          color: #0369A1; font-size: 11px; font-weight: 700;
+          padding: 4px 12px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.06em;
+        }
+
         .dl-inner {
           position: relative; z-index: 1;
           display: grid;
@@ -527,116 +534,166 @@ export default function LandingPage() {
           min-height: 480px;
         }
         .dl-left {
-          padding: 64px 56px;
+          padding: 40px 48px 48px;
           display: flex; flex-direction: column; justify-content: center;
-          border-right: 1px solid rgba(255,255,255,0.05);
         }
-        .dl-right {
-          padding: 64px 56px;
-          display: flex; flex-direction: column; justify-content: center; gap: 20px;
+        .dl-greeting {
+          font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 8px;
+          display: flex; align-items: center; gap: 8px;
         }
-        .dl-version-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: rgba(13,148,136,0.12); border: 1px solid rgba(13,148,136,0.25);
-          border-radius: 99px; padding: 5px 14px 5px 10px; margin-bottom: 24px;
-          width: fit-content;
+        .dl-greeting-dot {
+          width: 8px; height: 8px; border-radius: 50%; background: #10B981;
+          box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
         }
-        .dl-version-dot {
-          width: 6px; height: 6px; border-radius: 50%;
-          background: #14B8A6; box-shadow: 0 0 6px #14B8A6;
-          animation: float0 2.5s ease-in-out infinite;
-        }
-        .dl-version-text { font-size: 11px; font-weight: 700; color: #14B8A6; letter-spacing: 0.08em; text-transform: uppercase; }
-        .dl-headline {
-          font-size: clamp(30px, 3.2vw, 44px);
-          font-weight: 900; color: #FFFFFF;
-          letter-spacing: -0.03em; line-height: 1.1;
+        .dl-headline-editorial {
+          font-size: clamp(34px, 3.8vw, 52px);
+          font-weight: 900; color: #0F172A;
+          letter-spacing: -0.035em; line-height: 1.05;
           margin-bottom: 16px;
         }
-        .dl-headline em { color: #14B8A6; font-style: normal; }
-        .dl-sub {
-          font-size: 15px; color: rgba(255,255,255,0.45);
-          line-height: 1.7; margin-bottom: 36px; max-width: 340px;
+        .dl-headline-editorial span.highlight-dot {
+          color: #E11D48;
         }
-        .dl-main-btn {
-          display: inline-flex; align-items: center; gap: 12px;
-          background: linear-gradient(135deg, #0D9488, #0F766E);
-          color: #fff; border: none; border-radius: 14px;
-          padding: 16px 28px; font-size: 15px; font-weight: 800;
+        .dl-sub-editorial {
+          font-size: 15px; color: #475569;
+          line-height: 1.6; margin-bottom: 32px; max-width: 440px;
+          font-weight: 500;
+        }
+        .dl-cta-row {
+          display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        }
+        .dl-btn-pink {
+          background: #E11D48; color: #FFFFFF;
+          border: none; border-radius: 10px;
+          padding: 16px 36px; font-size: 15px; font-weight: 800;
           cursor: pointer; font-family: inherit;
-          text-decoration: none;
-          transition: all 0.22s;
-          box-shadow: 0 8px 32px rgba(13,148,136,0.35), 0 0 0 1px rgba(13,148,136,0.2);
+          text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
+          transition: all 0.22s ease;
+          box-shadow: 0 10px 28px rgba(225, 29, 72, 0.28);
           width: fit-content;
         }
-        .dl-main-btn:hover {
+        .dl-btn-pink:hover {
+          background: #BE123C;
           transform: translateY(-2px);
-          box-shadow: 0 16px 48px rgba(13,148,136,0.4), 0 0 0 1px rgba(13,148,136,0.3);
+          box-shadow: 0 14px 36px rgba(225, 29, 72, 0.38);
         }
-        .dl-main-btn-icon {
-          width: 36px; height: 36px; border-radius: 10px;
-          background: rgba(255,255,255,0.12);
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+
+        .dl-platforms-minimal {
+          display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap;
         }
-        .dl-main-btn-text { text-align: left; }
-        .dl-main-btn-label { font-size: 11px; font-weight: 600; opacity: 0.7; display: block; }
-        .dl-main-btn-title { font-size: 15px; font-weight: 800; display: block; }
-        .dl-meta {
-          display: flex; align-items: center; gap: 20px; margin-top: 20px; flex-wrap: wrap;
-        }
-        .dl-meta-item {
+        .dl-platform-pill {
           display: flex; align-items: center; gap: 6px;
-          font-size: 12px; color: rgba(255,255,255,0.35); font-weight: 500;
+          font-size: 12px; font-weight: 700; color: #475569;
+          background: rgba(255, 255, 255, 0.85);
+          padding: 6px 14px; border-radius: 99px; border: 1px solid rgba(13, 148, 136, 0.15);
         }
-        .dl-meta-item svg { opacity: 0.5; }
-        .dl-sysreq-card {
-          background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 16px; padding: 24px;
+        .dl-platform-pill.active {
+          color: #0F172A; border-color: #0D9488; background: #FFFFFF;
+          box-shadow: 0 2px 8px rgba(13, 148, 136, 0.1);
         }
-        .dl-sysreq-title {
-          font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.3);
-          text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 16px;
-        }
-        .dl-sysreq-grid {
-          display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
-        }
-        .dl-sysreq-item { display: flex; flex-direction: column; gap: 3px; }
-        .dl-sysreq-label { font-size: 10px; color: rgba(255,255,255,0.25); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
-        .dl-sysreq-val { font-size: 13px; color: rgba(255,255,255,0.7); font-weight: 600; }
-        .dl-platform-row {
-          display: flex; gap: 12px;
-        }
-        .dl-platform-card {
-          flex: 1; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-          border-radius: 14px; padding: 18px 16px;
-          display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
-          position: relative; overflow: hidden;
-        }
-        .dl-platform-card.active {
-          border-color: rgba(13,148,136,0.25);
-          background: rgba(13,148,136,0.06);
-        }
-        .dl-platform-icon {
-          width: 32px; height: 32px; border-radius: 8px;
+        .dl-platform-pill.disabled { opacity: 0.55; }
+
+        /* RIGHT EDITORIAL ART PIECE */
+        .dl-right-art {
+          position: relative;
+          padding: 20px 40px 30px;
           display: flex; align-items: center; justify-content: center;
-          background: rgba(255,255,255,0.06);
+          overflow: hidden;
         }
-        .dl-platform-card.active .dl-platform-icon {
-          background: rgba(13,148,136,0.15);
+        .dl-art-giant-letter {
+          position: absolute;
+          font-size: clamp(240px, 28vw, 360px);
+          font-weight: 900;
+          color: #0F172A;
+          line-height: 0.8;
+          user-select: none;
+          pointer-events: none;
+          z-index: 1;
+          right: 15px; bottom: -20px;
+          opacity: 0.92;
+          letter-spacing: -0.05em;
         }
-        .dl-platform-name { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.7); }
-        .dl-platform-card.active .dl-platform-name { color: #fff; }
-        .dl-platform-status {
-          font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+        .dl-art-pastel-shape {
+          position: absolute;
+          width: 190px; height: 260px;
+          background: #FECDD3;
+          transform: rotate(-12deg);
+          border-radius: 24px;
+          z-index: 0;
+          bottom: 30px; right: 70px;
+          opacity: 0.85;
         }
-        .dl-platform-status.ready { color: #14B8A6; }
-        .dl-platform-status.soon { color: rgba(255,255,255,0.2); }
-        .dl-checkmarks {
-          display: flex; flex-direction: column; gap: 10px;
+        .dl-art-green-shape {
+          position: absolute;
+          width: 140px; height: 140px;
+          background: #A7F3D0;
+          border-radius: 50%;
+          z-index: 0;
+          top: 40px; left: 40px;
+          opacity: 0.6;
+          filter: blur(20px);
         }
-        .dl-check-item {
-          display: flex; align-items: center; gap: 10px;
-          font-size: 13px; color: rgba(255,255,255,0.5); font-weight: 500;
+        .dl-art-vertical-text {
+          position: absolute;
+          top: 50%; right: -30px;
+          transform: translateY(-50%) rotate(90deg);
+          transform-origin: center right;
+          font-size: 10px; font-weight: 800;
+          letter-spacing: 0.22em; text-transform: uppercase;
+          color: #0F172A; opacity: 0.7;
+          white-space: nowrap; z-index: 3;
+        }
+        .dl-art-preview-container {
+          position: relative; z-index: 2;
+          width: 100%; max-width: 440px;
+          border-radius: 20px;
+          background: #FFFFFF;
+          border: 1px solid rgba(13, 148, 136, 0.2);
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+          overflow: hidden;
+          transition: transform 0.3s ease;
+        }
+        .dl-art-preview-container:hover {
+          transform: translateY(-4px) scale(1.01);
+        }
+        .dl-art-img {
+          width: 100%; height: auto; display: block;
+          object-fit: cover;
+        }
+        .dl-art-floating-badge {
+          position: absolute; bottom: 16px; left: 16px; z-index: 4;
+          background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(12px);
+          color: #FFFFFF; font-size: 11px; font-weight: 700;
+          padding: 6px 14px; border-radius: 99px;
+          display: flex; align-items: center; gap: 8px;
+          border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .dl-art-badge-dot {
+          width: 6px; height: 6px; border-radius: 50%; background: #10B981;
+        }
+
+        /* BOTTOM EDITORIAL FOOTER ROW */
+        .dl-bottom-row {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          padding: 24px 48px;
+          border-top: 1px solid rgba(13, 148, 136, 0.15);
+          background: rgba(255, 255, 255, 0.55);
+          backdrop-filter: blur(8px);
+        }
+        .dl-bottom-col {
+          padding: 0 24px;
+        }
+        .dl-bottom-col:first-child { padding-left: 0; }
+        .dl-bottom-col:last-child { padding-right: 0; }
+        .dl-bottom-col + .dl-bottom-col {
+          border-left: 1px solid rgba(13, 148, 136, 0.15);
+        }
+        .dl-bottom-label {
+          font-size: 12px; font-weight: 800; color: #0F172A; margin-bottom: 4px;
+          letter-spacing: -0.01em;
+        }
+        .dl-bottom-val {
+          font-size: 13px; color: #64748B; font-weight: 600;
         }
         .dl-check-icon {
           width: 18px; height: 18px; border-radius: 50%;
@@ -704,8 +761,10 @@ export default function LandingPage() {
           .stat-col + .stat-col { border-left: none; }
           .stat-col:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.1); }
           .dl-inner { grid-template-columns: 1fr; }
-          .dl-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 48px 36px; }
-          .dl-right { padding: 40px 36px; }
+          .dl-left { padding: 40px 28px; }
+          .dl-right-art { padding: 32px 24px; min-height: 320px; }
+          .dl-bottom-row { grid-template-columns: 1fr; gap: 16px; padding: 24px; }
+          .dl-bottom-col + .dl-bottom-col { border-left: none; border-top: 1px solid rgba(13, 148, 136, 0.15); padding-top: 16px; padding-left: 0; }
         }
         @media (max-width: 640px) {
           .lp-nav { padding: 0 20px; }
@@ -720,7 +779,9 @@ export default function LandingPage() {
           .features-grid { grid-template-columns: 1fr; }
           .pricing-section { padding: 64px 20px; }
           .download-section { padding: 64px 20px; }
-          .dl-left { padding: 36px 24px; }
+          .dl-top-bar { padding: 24px 20px 0; }
+          .dl-left { padding: 28px 20px; }
+          .dl-right-art { padding: 24px 20px; }
           .dl-right { padding: 32px 24px; }
           .dl-sysreq-grid { grid-template-columns: 1fr; }
           .dl-platform-row { flex-direction: column; }
@@ -1003,7 +1064,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── DOWNLOAD SECTION ── */}
+      {/* ── DOWNLOAD SECTION (EDITORIAL ART STYLE) ── */}
       {!isElectron && (
         <section className="download-section" id="download">
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -1017,133 +1078,106 @@ export default function LandingPage() {
 
           <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
             <div className="dl-hero-card">
-              <div className="dl-inner">
-
-                {/* LEFT — Main download CTA */}
-                <div className="dl-left">
-                  <div className="dl-version-badge">
-                    <div className="dl-version-dot" />
-                    <span className="dl-version-text">v1.0.5 · Latest Release</span>
-                  </div>
-
-                  <h3 className="dl-headline">
-                    ApexTrack for<br /><em>Windows</em>
-                  </h3>
-                  <p className="dl-sub">
-                    One installer. Full access to squad management, performance tracking, payroll, and more — right from your desktop.
-                  </p>
-
-                  <a
-                    href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="dl-main-btn"
-                  >
-                    <div className="dl-main-btn-icon">
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </div>
-                    <div className="dl-main-btn-text">
-                      <span className="dl-main-btn-label">Free Download</span>
-                      <span className="dl-main-btn-title">ApexTrack-Setup.exe</span>
-                    </div>
-                  </a>
-
-                  <div className="dl-meta">
-                    <div className="dl-meta-item">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><polyline points="7,10 12,15 17,10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="15" x2="12" y2="3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-                      ~145 MB
-                    </div>
-                    <div className="dl-meta-item">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/><path d="M3 9h18" stroke="currentColor" strokeWidth="2"/><rect x="7" y="13" width="10" height="4" rx="1" fill="currentColor" opacity=".4"/></svg>
-                      Windows 10 / 11
-                    </div>
-                    <div className="dl-meta-item">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M12 22s8-4.5 8-11V5l-8-3-8 3v6c0 6.5 8 11 8 11z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      Signed & verified
-                    </div>
-                  </div>
-
-                  <div className="dl-checkmarks" style={{ marginTop: 32 }}>
-                    {[
-                      'Offline-capable core features',
-                      'Auto-updates when connected',
-                      'No browser required to run',
-                      'Native taskbar & desktop shortcut',
-                    ].map(txt => (
-                      <div key={txt} className="dl-check-item">
-                        <div className="dl-check-icon">
-                          <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#14B8A6" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </div>
-                        {txt}
-                      </div>
-                    ))}
-                  </div>
+              
+              {/* TOP BRAND & STATUS STRIP (Editorial Style) */}
+              <div className="dl-top-bar">
+                <div className="dl-top-brand">
+                  <img src="/logo.png" alt="ApexTrack" style={{ height: 24, width: 'auto', borderRadius: 4 }} />
+                  ApexTrack <span>Desktop</span>
                 </div>
-
-                {/* RIGHT — Platform cards + sys requirements */}
-                <div className="dl-right">
-
-                  {/* Platform availability */}
-                  <div className="dl-platform-row">
-                    <div className="dl-platform-card active">
-                      <div className="dl-platform-icon">
-                        {/* Windows icon */}
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                          <rect x="2" y="2" width="9" height="9" rx="1" fill="#14B8A6"/>
-                          <rect x="13" y="2" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
-                          <rect x="2" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".7"/>
-                          <rect x="13" y="13" width="9" height="9" rx="1" fill="#14B8A6" opacity=".45"/>
-                        </svg>
-                      </div>
-                      <div className="dl-platform-name">Windows</div>
-                      <div className="dl-platform-status ready">● Available</div>
-                    </div>
-                    <div className="dl-platform-card">
-                      <div className="dl-platform-icon">
-                        {/* Apple icon */}
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                          <path d="M17.05 20.28c-.98.955-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.39-1.32 2.76-2.53 3.99M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
-                        </svg>
-                      </div>
-                      <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>macOS</div>
-                      <div className="dl-platform-status soon">Coming soon</div>
-                    </div>
-                    <div className="dl-platform-card">
-                      <div className="dl-platform-icon">
-                        {/* Linux icon */}
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                          <path d="M12 2C8.13 2 5 5.13 5 9c0 2.38 1.19 4.47 3 5.74V17c0 .55.45 1 1 1h6c.55 0 1-.45 1-1v-2.26C17.81 13.47 19 11.38 19 9c0-3.87-3.13-7-7-7z" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5"/>
-                          <path d="M9 21h6M10 17v4M14 17v4" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round"/>
-                        </svg>
-                      </div>
-                      <div className="dl-platform-name" style={{ color: 'rgba(255,255,255,0.3)' }}>Linux</div>
-                      <div className="dl-platform-status soon">Coming soon</div>
-                    </div>
-                  </div>
-
-                  {/* System requirements */}
-                  <div className="dl-sysreq-card">
-                    <div className="dl-sysreq-title">System Requirements</div>
-                    <div className="dl-sysreq-grid">
-                      {[
-                        { label: 'OS', val: 'Windows 10 / 11 (64-bit)' },
-                        { label: 'RAM', val: '4 GB minimum' },
-                        { label: 'Storage', val: '300 MB free space' },
-                        { label: 'Internet', val: 'Required for sync' },
-                        { label: 'CPU', val: 'x64 processor' },
-                      ].map(r => (
-                        <div key={r.label} className="dl-sysreq-item">
-                          <div className="dl-sysreq-label">{r.label}</div>
-                          <div className="dl-sysreq-val">{r.val}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
+                <div className="dl-top-badge">
+                  v1.0.5 · Latest Release
                 </div>
               </div>
+
+              <div className="dl-inner">
+                {/* LEFT EDITORIAL COLUMN */}
+                <div className="dl-left">
+                  <div className="dl-greeting">
+                    <div className="dl-greeting-dot" />
+                    Hi There,
+                  </div>
+
+                  <h3 className="dl-headline-editorial">
+                    I am Apex<span className="highlight-dot">Track</span>
+                  </h3>
+                  
+                  <p className="dl-sub-editorial">
+                    I am squad manager during matchday &amp; work with football clubs 24/7 with native speed and offline power.
+                  </p>
+
+                  <div className="dl-cta-row">
+                    <a
+                      href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="dl-btn-pink"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                      Download for Windows
+                    </a>
+                  </div>
+
+                  <div className="dl-platforms-minimal">
+                    <div className="dl-platform-pill active">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="2" width="9" height="9" rx="1" fill="#0D9488"/>
+                        <rect x="13" y="2" width="9" height="9" rx="1" fill="#0D9488"/>
+                        <rect x="2" y="13" width="9" height="9" rx="1" fill="#0D9488"/>
+                        <rect x="13" y="13" width="9" height="9" rx="1" fill="#0D9488"/>
+                      </svg>
+                      Windows (Active)
+                    </div>
+                    <div className="dl-platform-pill disabled">
+                      macOS (Soon)
+                    </div>
+                    <div className="dl-platform-pill disabled">
+                      Linux (Soon)
+                    </div>
+                  </div>
+                </div>
+
+                {/* RIGHT EDITORIAL ARTWORK COLUMN (Image 1 Style) */}
+                <div className="dl-right-art">
+                  {/* Decorative Elements */}
+                  <div className="dl-art-green-shape" />
+                  <div className="dl-art-pastel-shape" />
+                  <div className="dl-art-giant-letter">V</div>
+                  
+                  {/* Vertical Rotated Text (matching Image 1) */}
+                  <div className="dl-art-vertical-text">
+                    NATIVE DESKTOP • OFFLINE POWERED • ZERO LATENCY
+                  </div>
+
+                  {/* Desktop App Preview Image Overlaid */}
+                  <div className="dl-art-preview-container">
+                    <img src="/hero-dashboard.png" alt="ApexTrack Desktop App" className="dl-art-img" />
+                    <div className="dl-art-floating-badge">
+                      <div className="dl-art-badge-dot" />
+                      ApexTrack v1.0.5 · Verified Installer
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* BOTTOM EDITORIAL INFO BAR (Matching Image 1's Email / Phone / Location bar) */}
+              <div className="dl-bottom-row">
+                <div className="dl-bottom-col">
+                  <div className="dl-bottom-label">Installer Package</div>
+                  <div className="dl-bottom-val">ApexTrack-Setup.exe (~145 MB)</div>
+                </div>
+                <div className="dl-bottom-col">
+                  <div className="dl-bottom-label">System Requirement</div>
+                  <div className="dl-bottom-val">Windows 10 / 11 (64-bit Edition)</div>
+                </div>
+                <div className="dl-bottom-col">
+                  <div className="dl-bottom-label">Security &amp; Support</div>
+                  <div className="dl-bottom-val">Signed &amp; Verified · admin@apextrackgh.com</div>
+                </div>
+              </div>
+
             </div>
           </div>
         </section>

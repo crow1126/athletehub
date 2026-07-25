@@ -33,7 +33,8 @@
     ],
     "win": {
       "icon": "electron/icon.ico",
-      "signAndEditExecutable": false,
+      "publisherName": "ApexTrack",
+      "verifyUpdateCodeSignature": true,
       "target": [
         {
           "target": "nsis",

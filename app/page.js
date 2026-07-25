@@ -759,12 +759,6 @@ export default function LandingPage() {
         </div>
 
         <div className="nav-right">
-          <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="nav-pricing-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700, color: '#0D9488' }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            App (.exe)
-          </a>
           <button className="nav-pricing-btn" onClick={() => scrollTo('Pricing')}>Pricing</button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
@@ -1132,7 +1126,6 @@ export default function LandingPage() {
                       { label: 'Storage', val: '300 MB free space' },
                       { label: 'Internet', val: 'Required for sync' },
                       { label: 'CPU', val: 'x64 processor' },
-                      { label: 'Runtime', val: 'Electron 28 (bundled)' },
                     ].map(r => (
                       <div key={r.label} className="dl-sysreq-item">
                         <div className="dl-sysreq-label">{r.label}</div>
@@ -1142,16 +1135,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Also available on web */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 14, padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 2 }}>Also available as a web app</div>
-                    <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)', fontWeight: 500 }}>No install needed — use any modern browser</div>
-                  </div>
-                  <Link href="/login" style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '9px 16px', fontSize: 12, fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap', transition: 'all 0.15s' }}>
-                    Open Web App →
-                  </Link>
-                </div>
 
               </div>
             </div>

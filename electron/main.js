@@ -19,8 +19,8 @@ function createWindow() {
     },
   })
 
-  // Start at login — AuthGuard redirects to /dashboard once session is valid
-  const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/login'
+  // Start at landing page
+  const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/'
 
   mainWindow.loadURL(startUrl)
 

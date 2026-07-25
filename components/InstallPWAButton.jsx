@@ -8,7 +8,7 @@ export default function InstallPWAButton() {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone || window.electronAPI?.isElectron || navigator.userAgent.includes('Electron')) {
       setIsStandalone(true)
       return
     }

@@ -445,22 +445,13 @@ export default function LoginPage() {
 
       {/* ── NAVBAR ── */}
       <nav className="lp-nav">
-        {isElectron ? (
-          <span className="nav-brand">
-            <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
-            <span className="nav-brand-name">Apex<span>Track</span></span>
-          </span>
-        ) : (
-          <Link className="nav-brand" href="/">
-            <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
-            <span className="nav-brand-name">Apex<span>Track</span></span>
-          </Link>
-        )}
-        {!isElectron && (
-          <Link href="/" className="nav-back-link">
-            ← Back to Home
-          </Link>
-        )}
+        <Link className="nav-brand" href="/">
+          <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
+          <span className="nav-brand-name">Apex<span>Track</span></span>
+        </Link>
+        <Link href="/" className="nav-back-link">
+          ← Back to Home
+        </Link>
       </nav>
 
       {/* ── MAIN CONTENT CONTAINER ── */}
@@ -650,7 +641,7 @@ export default function LoginPage() {
               <Link href="/privacy" className="footer-link">Privacy Policy</Link>
               <Link href="/terms" className="footer-link">Terms of Service</Link>
               <Link href="/security" className="footer-link">Security</Link>
-              {!isElectron && <Link href="/" className="footer-link">Home</Link>}
+              <Link href="/" className="footer-link">Home</Link>
             </div>
           </div>
           <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Built for African football.</div>

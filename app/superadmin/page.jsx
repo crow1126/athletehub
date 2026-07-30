@@ -623,19 +623,20 @@ export default function SuperadminPage() {
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
         
-        .sa-main-layout{display:flex;min-height:100vh;background:#f8fafc}
+        .sa-main-layout{display:flex;min-height:100vh;background:linear-gradient(135deg, #F0FBF4 0%, #FFFFFF 100%);font-family:'Plus Jakarta Sans',sans-serif}
         
-        /* SIDEBAR — dark theme */
+        /* SIDEBAR — mint theme */
         .sa-sidebar{
-          width:240px;flex-shrink:0;background:#0F172A;border-right:1px solid #1E293B;
+          width:240px;flex-shrink:0;background:#FFFFFF;border-right:1px solid #D4EDDE;
           display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:80;
+          box-shadow:0 4px 20px rgba(13, 148, 136, 0.05);
         }
         
         .sa-content{margin-left:240px;flex:1;min-width:0;display:flex;flex-direction:column;}
         
         .sa-header{
-          height:68px;background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);
-          border-bottom:1px solid #E2E8F0;
+          height:68px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);
+          border-bottom:1px solid #D4EDDE;
           display:flex;align-items:center;justify-content:space-between;
           padding:0 28px;position:sticky;top:0;z-index:70;
         }
@@ -647,17 +648,17 @@ export default function SuperadminPage() {
           border-radius:10px;border:none;background:transparent;
           font-weight:600;font-size:13.5px;cursor:pointer;text-align:left;
           transition:all 0.2s ease;font-family:'Plus Jakarta Sans',sans-serif;
-          color:#94A3B8;
+          color:#5A7A68;
         }
-        .sa-nav-btn:hover{background:rgba(255,255,255,0.06);color:#F8FAFC}
-        .sa-nav-btn.active{background:#0D9488;color:#FFFFFF;font-weight:700;box-shadow:0 4px 12px rgba(13,148,136,0.3)}
+        .sa-nav-btn:hover{background:#F0FBF4;color:#0F2218}
+        .sa-nav-btn.active{background:#0D9488;color:#FFFFFF;font-weight:700;box-shadow:0 4px 12px rgba(13,148,136,0.25)}
         
         .sa-card{
-          background:#FFFFFF;border:1px solid #E2E8F0;border-radius:16px;
-          padding:24px;box-shadow:0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.02);
+          background:#FFFFFF;border:1px solid #D4EDDE;border-radius:16px;
+          padding:24px;box-shadow:0 2px 8px rgba(13,100,60,0.04);
           transition:all 0.2s ease;
         }
-        .sa-card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+        .sa-card:hover{box-shadow:0 6px 20px rgba(13,148,136,0.08);border-color:#BBE9CE}
         
         .sa-custom-input{
           width:100%;padding:10px 14px;background:#F8FAFC;border:1px solid #E2E8F0;
@@ -759,24 +760,24 @@ export default function SuperadminPage() {
         {/* SIDEBAR (desktop) */}
         <aside className="sa-sidebar">
           {/* Logo */}
-          <div style={{ padding:'22px 20px 18px', borderBottom:'1px solid #1E293B', display:'flex', alignItems:'center', gap:12 }}>
+          <div style={{ padding:'22px 20px 18px', borderBottom:'1px solid #D4EDDE', display:'flex', alignItems:'center', gap:12 }}>
             <img src="/logo.png" alt="ApexTrack" style={{ width:38, height:38, objectFit:'contain', borderRadius:10, background:'#0F766E', padding:4 }}
               onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
             <div style={{ display:'none', width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,#0d9488,#0f766e)', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff' }}></div>
             <div>
-              <div style={{ fontSize:15, fontWeight:800, color:'#F8FAFC', lineHeight:1.2, letterSpacing:'-0.02em' }}>Apex<span style={{ color:'#2DD4BF' }}>Track</span></div>
-              <div style={{ fontSize:10, color:'#0D9488', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginTop:2 }}>Superadmin Console</div>
+              <div style={{ fontSize:15, fontWeight:800, color:'#0F2218', lineHeight:1.2, letterSpacing:'-0.02em' }}>Apex<span style={{ color:'#0D9488' }}>Track</span></div>
+              <div style={{ fontSize:10, color:'#0F766E', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginTop:2 }}>Superadmin Console</div>
             </div>
           </div>
 
           {/* Nav */}
           <nav style={{ flex:1, padding:'20px 14px', display:'flex', flexDirection:'column', gap:6 }}>
-            <p style={{ fontSize:10, fontWeight:800, color:'#64748B', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:8, paddingLeft:10 }}>Main Navigation</p>
+            <p style={{ fontSize:10, fontWeight:800, color:'#5A7A68', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:8, paddingLeft:10 }}>Main Navigation</p>
             {NAV_ITEMS.map(item => {
               const active = section === item.id
               return (
                 <button key={item.id} onClick={() => setSection(item.id)} className={`sa-nav-btn${active ? ' active' : ''}`}>
-                  <span style={{ color: active ? '#FFFFFF' : '#64748B', display:'flex' }}>{item.icon}</span>
+                  <span style={{ color: active ? '#FFFFFF' : '#5A7A68', display:'flex' }}>{item.icon}</span>
                   {item.label}
                 </button>
               )
@@ -784,9 +785,9 @@ export default function SuperadminPage() {
           </nav>
 
           {/* User info */}
-          <div style={{ padding:'16px 20px', borderTop:'1px solid #1E293B', background:'rgba(15,23,42,0.6)' }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'#F8FAFC' }}>Samuel Wobil</div>
-            <div style={{ fontSize:11, color:'#64748B', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>admin@apextrackgh.com</div>
+          <div style={{ padding:'16px 20px', borderTop:'1px solid #D4EDDE', background:'#F0FBF4' }}>
+            <div style={{ fontSize:13, fontWeight:700, color:'#0F2218' }}>Samuel Wobil</div>
+            <div style={{ fontSize:11, color:'#5A7A68', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>admin@apextrackgh.com</div>
           </div>
         </aside>
 
@@ -1193,16 +1194,35 @@ export default function SuperadminPage() {
                 <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
                   
                   {/* Top Bar / Header */}
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:12, borderBottom:'1px solid #e2e8f0' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:12, borderBottom:'1px solid #D4EDDE' }}>
                     <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                      <h2 style={{ fontSize:16, fontWeight:800, color:'#0f172a', margin:0, letterSpacing:'-0.02em' }}>Analytics Overview</h2>
-                      <span style={{ fontSize:11, color:'#0d9488', background:'#f0fdfa', border:'1px solid #ccfbf1', padding:'2px 10px', borderRadius:12, fontWeight:700 }}>
+                      <h2 style={{ fontSize:18, fontWeight:800, color:'#0F2218', margin:0, letterSpacing:'-0.02em' }}>Analytics & Traffic</h2>
+                      <span style={{ fontSize:11, color:'#0D9488', background:'#F0FDFA', border:'1px solid #CCFBF1', padding:'3px 12px', borderRadius:99, fontWeight:700 }}>
                         {clicks.length} total events tracked
                       </span>
                     </div>
-                    <Btn onClick={loadClicks} disabled={analyticsLoading} style={{ fontSize:12, padding:'6px 14px' }}>
+                    <Btn onClick={loadClicks} disabled={analyticsLoading} variant="primary" style={{ fontSize:12, padding:'6px 14px' }}>
                       {analyticsLoading ? 'Refreshing...' : '↻ Refresh Data'}
                     </Btn>
+                  </div>
+
+                  {/* ── KPI METRIC CARDS ── */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14 }}>
+                    {[
+                      { label:'Total Events', val:clicks.length, icon:'📊', note:'Recorded clicks' },
+                      { label:'Unique Paths', val:pathsList.length, icon:'🔗', note:'Active pages' },
+                      { label:'Referrers', val:referrersList.length, icon:'🌐', note:'Traffic sources' },
+                      { label:'Countries', val:countriesList.length, icon:'🌍', note:'Visitor locations' },
+                    ].map(kpi => (
+                      <div key={kpi.label} className="sa-card" style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:4 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em' }}>{kpi.label}</span>
+                          <span style={{ fontSize:16 }}>{kpi.icon}</span>
+                        </div>
+                        <div style={{ fontSize:22, fontWeight:800, color:'#0F2218', letterSpacing:'-0.03em' }}>{kpi.val}</div>
+                        <div style={{ fontSize:11, color:'#5A7A68' }}>{kpi.note}</div>
+                      </div>
+                    ))}
                   </div>
 
                   {/* ── TOP ROW: PATHS & REFERRERS ── */}
@@ -1210,20 +1230,20 @@ export default function SuperadminPage() {
                     
                     {/* Top Paths Card */}
                     <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
-                        <span>Top Paths</span>
-                        <span>VISITORS</span>
+                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
+                        <span>Top Visited Paths</span>
+                        <span>CLICKS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {pathsList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No path data yet</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No path data recorded yet</div>
                         ) : (
                           pathsList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc', padding:'8px 12px', borderRadius:8, border:'1px solid #e2e8f0' }}>
-                              <span style={{ fontSize:12, fontFamily:'monospace', fontWeight:600, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
+                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0FBF4', padding:'8px 14px', borderRadius:10, border:'1px solid #D4EDDE' }}>
+                              <span style={{ fontSize:12, fontFamily:'monospace', fontWeight:700, color:'#0F766E', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
                                 {item.name}
                               </span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace' }}>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', background:'#FFFFFF', padding:'2px 8px', borderRadius:6, border:'1px solid #D4EDDE' }}>
                                 {item.count}
                               </span>
                             </div>
@@ -1234,20 +1254,20 @@ export default function SuperadminPage() {
 
                     {/* Top Referrers Card */}
                     <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
-                        <span>Referrers</span>
+                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
+                        <span>Traffic Referrers</span>
                         <span>VISITORS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {referrersList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No referrer data yet</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No referrer data yet</div>
                         ) : (
                           referrersList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc', padding:'8px 12px', borderRadius:8, border:'1px solid #e2e8f0' }}>
-                              <span style={{ fontSize:12, fontWeight:600, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
+                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0FBF4', padding:'8px 14px', borderRadius:10, border:'1px solid #D4EDDE' }}>
+                              <span style={{ fontSize:12, fontWeight:600, color:'#0F2218', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
                                 {item.name}
                               </span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace' }}>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', background:'#FFFFFF', padding:'2px 8px', borderRadius:6, border:'1px solid #D4EDDE' }}>
                                 {item.count}
                               </span>
                             </div>
@@ -1261,25 +1281,24 @@ export default function SuperadminPage() {
                   {/* ── MIDDLE ROW: COUNTRIES, BROWSERS, OPERATING SYSTEMS ── */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16 }}>
                     
-                    {/* Countries List with Country Flags */}
+                    {/* Countries List */}
                     <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
                         <span>Countries</span>
-                        <span>VISITORS</span>
+                        <span>SHARE</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {countriesList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No country data</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No country data</div>
                         ) : (
                           countriesList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#f8fafc', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #e2e8f0' }}>
-                              {/* Background progress fill bar */}
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.1)', borderRadius:8, pointerEvents:'none' }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#0f172a', zIndex:1, display:'flex', alignItems:'center', gap:8 }}>
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1, display:'flex', alignItems:'center', gap:8 }}>
                                 <span style={{ fontSize:15 }}>{getCountryFlag(item.name)}</span>
                                 <span>{getCountryFullName(item.name)}</span>
                               </span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
                           ))
                         )}
@@ -1288,19 +1307,19 @@ export default function SuperadminPage() {
 
                     {/* Browsers List */}
                     <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
                         <span>Browsers</span>
-                        <span>VISITORS</span>
+                        <span>SHARE</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {browsersList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No browser data</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No browser data</div>
                         ) : (
                           browsersList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#f8fafc', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #e2e8f0' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.1)', borderRadius:8, pointerEvents:'none' }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#0f172a', zIndex:1 }}>{item.name}</span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
                           ))
                         )}
@@ -1309,19 +1328,19 @@ export default function SuperadminPage() {
 
                     {/* Operating Systems List */}
                     <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
                         <span>Operating Systems</span>
-                        <span>VISITORS</span>
+                        <span>SHARE</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {osList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#94a3b8', fontSize:12 }}>No OS data</div>
+                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No OS data</div>
                         ) : (
                           osList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#f8fafc', borderRadius:8, padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #e2e8f0' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.1)', borderRadius:8, pointerEvents:'none' }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#0f172a', zIndex:1 }}>{item.name}</span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0d9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
+                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1 }}>{item.name}</span>
+                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
                           ))
                         )}
@@ -1332,44 +1351,45 @@ export default function SuperadminPage() {
 
                   {/* ── BOTTOM ROW: RECENT TRAFFIC EVENTS TABLE ── */}
                   <div className="sa-card">
-                    <div style={{ fontSize:13, fontWeight:800, color:'#0f172a', marginBottom:14 }}>
-                      Recent Click Activity Feed
+                    <div style={{ fontSize:14, fontWeight:800, color:'#0F2218', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                      <span>Recent Traffic Activity Log</span>
+                      <span style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', padding:'2px 8px', borderRadius:6, fontWeight:700, border:'1px solid #CCFBF1' }}>LIVE</span>
                     </div>
                     {analyticsLoading ? (
-                      <div style={{ padding:30, textAlign:'center', color:'#94a3b8', fontSize:12 }}>Loading recent events...</div>
+                      <div style={{ padding:30, textAlign:'center', color:'#5A7A68', fontSize:12 }}>Loading recent events...</div>
                     ) : clicks.length === 0 ? (
-                      <div style={{ padding:30, textAlign:'center', color:'#94a3b8', fontSize:12 }}>No click events recorded yet.</div>
+                      <div style={{ padding:30, textAlign:'center', color:'#5A7A68', fontSize:12 }}>No click events recorded yet.</div>
                     ) : (
                       <div className="sa-table-wrap">
                         <table className="sa-table">
                           <thead>
                             <tr>
-                              <th className="sa-th">Path</th>
+                              <th className="sa-th">Target Path</th>
                               <th className="sa-th">Referrer</th>
                               <th className="sa-th">Browser / OS</th>
-                              <th className="sa-th">Country</th>
+                              <th className="sa-th">Location</th>
                               <th className="sa-th" style={{ textAlign:'right' }}>Time</th>
                             </tr>
                           </thead>
                           <tbody>
                             {clicks.slice(0, 15).map(c => (
-                              <tr key={c.id}>
-                                <td className="sa-td" style={{ fontFamily:'monospace', fontSize:12, color:'#0d9488', fontWeight:700 }}>
+                              <tr key={c.id} style={{ transition:'background 0.15s' }}>
+                                <td className="sa-td" style={{ fontFamily:'monospace', fontSize:12, color:'#0D9488', fontWeight:700 }}>
                                   {getCleanPath(c.url)}
                                 </td>
-                                <td className="sa-td" style={{ fontSize:12, fontWeight:600, color:'#334155' }}>
+                                <td className="sa-td" style={{ fontSize:12, fontWeight:600, color:'#1E4433' }}>
                                   {formatReferrerHost(c.referrer)}
                                 </td>
-                                <td className="sa-td" style={{ fontSize:12, color:'#64748b' }}>
+                                <td className="sa-td" style={{ fontSize:12, color:'#5A7A68' }}>
                                   {getDetailedBrowserName(c.user_agent)} ({getOSName(c.user_agent)})
                                 </td>
-                                <td className="sa-td" style={{ fontSize:12, fontWeight:700, color:'#0f172a' }}>
+                                <td className="sa-td" style={{ fontSize:12, fontWeight:700, color:'#0F2218' }}>
                                   <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
                                     <span>{getCountryFlag(c.country)}</span>
                                     <span>{getCountryFullName(c.country)}</span>
                                   </span>
                                 </td>
-                                <td className="sa-td" style={{ fontSize:11, color:'#64748b', textAlign:'right', fontFamily:'monospace' }}>
+                                <td className="sa-td" style={{ fontSize:11, color:'#5A7A68', textAlign:'right', fontFamily:'monospace' }}>
                                   {timeAgo(c.created_at)}
                                 </td>
                               </tr>

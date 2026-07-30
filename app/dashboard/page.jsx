@@ -141,9 +141,9 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Hero banner ── */}
-      <div className="dash-hero" style={{ background:'linear-gradient(135deg, #0F172A 0%, #0F766E 100%)', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute',top:-100,right:-50,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle, rgba(20, 184, 166, 0.15) 0%, transparent 70%)' }}/>
-        <div style={{ position:'absolute',bottom:-50,left:100,width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle, rgba(13, 148, 136, 0.1) 0%, transparent 70%)' }}/>
+      <div className="dash-hero" style={{ background:'linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #14B8A6 100%)', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute',top:-100,right:-50,width:400,height:400,borderRadius:'50%',background:'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)' }}/>
+        <div style={{ position:'absolute',bottom:-50,left:100,width:300,height:300,borderRadius:'50%',background:'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)' }}/>
 
         <div style={{ position:'relative', maxWidth:1280, margin:'0 auto' }}>
           <div style={{ fontSize:13,color:'rgba(248, 250, 252, 0.7)',fontWeight:500,marginBottom:12 }}>
@@ -281,7 +281,7 @@ export default function Dashboard() {
 
           {/* Medical alerts */}
           <div className="card fade-up fade-up-1" style={{ padding:0,overflow:'hidden' }}>
-            <div style={{ background:'linear-gradient(90deg,#004F4F,#006A6A)',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+            <div style={{ background:'linear-gradient(90deg,#0F766E,#0D9488)',padding:'12px 16px',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
               <h3 style={{ fontSize:14,fontWeight:700,color:'#FFFCF6' }}>Medical Alerts</h3>
               <Link href="/injuries" style={{ fontSize:11,color:'rgba(255,252,246,0.85)',fontWeight:600,background:'rgba(255,252,246,0.15)',padding:'3px 10px',borderRadius:99,textDecoration:'none' }}>View all</Link>
             </div>

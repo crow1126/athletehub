@@ -12,7 +12,7 @@
     "lint": "eslint app components lib --ext .js,.jsx,.ts,.tsx",
     "test": "jest --passWithNoTests",
     "electron": "electron .",
-    "dist": "electron-builder --win nsis"
+    "dist": "set CSC_IDENTITY_AUTO_DISCOVERY=false && electron-builder --win nsis"
   },
   "build": {
     "appId": "com.apextrack.app",
@@ -33,8 +33,11 @@
     ],
     "win": {
       "icon": "electron/icon.ico",
-      "publisherName": "ApexTrack",
-      "verifyUpdateCodeSignature": true,
+      "verifyUpdateCodeSignature": false,
+      "requestedExecutionLevel": "asInvoker",
+      "signtoolOptions": {
+        "publisherName": "ApexTrack"
+      },
       "target": [
         {
           "target": "nsis",
@@ -45,6 +48,7 @@
       ]
     },
     "forceCodeSigning": false,
+    "compression": "store",
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,

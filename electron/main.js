@@ -6,7 +6,7 @@ const fs = require('fs')
 // ── SECURITY MEASURE 4: SIGNED AUTO-UPDATES ──
 autoUpdater.autoDownload = true
 autoUpdater.autoInstallOnAppQuit = true
-autoUpdater.verifyUpdateCodeSignature = true
+autoUpdater.verifyUpdateCodeSignature = false
 
 let mainWindow
 

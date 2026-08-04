@@ -49,7 +49,7 @@ export async function GET(req) {
  */
 export async function POST(req) {
   try {
-    const { user_id, full_name, club_name, email, logo_url, sport_type } = await req.json()
+    const { user_id, full_name, club_name, email, logo_url } = await req.json()
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
@@ -58,38 +58,6 @@ export async function POST(req) {
     const db = getDb()
     let teamId = null
     let assignedRole = 'admin'
-
-    function normalizeSport(s) {
-      if (!s) return 'football'
-      const low = String(s).toLowerCase().trim()
-      if (low === 'soccer') return 'football'
-      return low
-    }
-
-    const requestedSport = normalizeSport(sport_type)
-
-    // Check if email is already bound to a different sport type
-    if (email && email.trim()) {
-      const { data: existingProfiles } = await db
-        .from('profiles')
-        .select('id, team_id, teams(sport_type)')
-        .eq('email', email.trim().toLowerCase())
-
-      if (existingProfiles && existingProfiles.length > 0) {
-        for (const p of existingProfiles) {
-          if (p.id !== user_id && p.teams?.sport_type) {
-            const existingSport = normalizeSport(p.teams.sport_type)
-            if (existingSport !== requestedSport) {
-              const existingName = existingSport === 'basketball' ? 'Basketball' : 'Football'
-              const requestedName = requestedSport === 'basketball' ? 'Basketball' : 'Football'
-              return NextResponse.json({
-                error: `This email is already registered under the ${existingName} platform. Emails used for ${existingName} cannot be used on the ${requestedName} platform.`
-              }, { status: 409 })
-            }
-          }
-        }
-      }
-    }
 
     // ── Step 1: Find or create team ──────────────────────────────────────
     if (club_name && club_name.trim()) {
@@ -119,7 +87,7 @@ export async function POST(req) {
             name: trimmedClub,
             short_name: shortName,
             logo_url: logo_url || null,
-            sport_type: requestedSport,
+            sport_type: 'football',
           }])
           .select()
           .single()

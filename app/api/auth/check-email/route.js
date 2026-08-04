@@ -10,16 +10,9 @@ function getDb() {
   })
 }
 
-function normalizeSport(s) {
-  if (!s) return 'football'
-  const low = String(s).toLowerCase().trim()
-  if (low === 'soccer') return 'football'
-  return low
-}
-
 export async function POST(req) {
   try {
-    const { email, sport_type } = await req.json()
+    const { email } = await req.json()
 
     if (!email || !email.trim()) {
       return NextResponse.json({ error: 'Email address is required' }, { status: 400 })
@@ -30,7 +23,7 @@ export async function POST(req) {
 
     const { data: profiles, error } = await db
       .from('profiles')
-      .select('id, team_id, teams(sport_type)')
+      .select('id')
       .eq('email', cleanEmail)
 
     if (error) {
@@ -38,35 +31,8 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Database lookup error' }, { status: 500 })
     }
 
-    if (!profiles || profiles.length === 0) {
-      return NextResponse.json({ exists: false, conflict: false })
-    }
-
-    // Find the sport associated with existing profile/team
-    let existingSport = 'football'
-    for (const p of profiles) {
-      if (p.teams?.sport_type) {
-        existingSport = normalizeSport(p.teams.sport_type)
-        break
-      }
-    }
-
-    if (sport_type) {
-      const requestedSport = normalizeSport(sport_type)
-      if (existingSport !== requestedSport) {
-        const existingName = existingSport === 'basketball' ? 'Basketball' : 'Football'
-        const requestedName = requestedSport === 'basketball' ? 'Basketball' : 'Football'
-        return NextResponse.json({
-          exists: true,
-          conflict: true,
-          existingSport,
-          requestedSport,
-          error: `This email is already registered under the ${existingName} platform. Emails used for ${existingName} cannot be used on the ${requestedName} platform.`,
-        })
-      }
-    }
-
-    return NextResponse.json({ exists: true, conflict: false, existingSport })
+    const exists = profiles && profiles.length > 0
+    return NextResponse.json({ exists })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

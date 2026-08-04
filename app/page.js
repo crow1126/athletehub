@@ -16,8 +16,8 @@ const FEATURES = [
         <circle cx="8.5" cy="11" r="2.5" fill="#CCFBF1" stroke="#0D9488" strokeWidth="1.5"/>
       </svg>
     ), 
-    title: 'Multi-Sport Performance Analytics', 
-    desc: 'Track match and game statistics for your players — goals & assists for Football; points, rebounds, steals & blocks for Basketball. View form trends to optimize strategy.' 
+    title: 'Football Performance Analytics', 
+    desc: 'Track match statistics for your squad — goals, assists, yellow/red cards, and minutes played. View form trends to optimize matchday strategy.' 
   },
   { 
     icon: (
@@ -27,7 +27,7 @@ const FEATURES = [
       </svg>
     ), 
     title: 'Comprehensive Injury Hub', 
-    desc: 'Maintain detailed medical logs for player injuries, recovery progress, and rehabilitation steps across all sports. Set expected return-to-play timelines safely.' 
+    desc: 'Maintain detailed medical logs for player injuries, recovery progress, and rehabilitation steps. Set expected return-to-play timelines safely.' 
   },
   { 
     icon: (
@@ -37,7 +37,7 @@ const FEATURES = [
       </svg>
     ), 
     title: 'Club & Roster Management', 
-    desc: 'Manage your entire club roster, coaching staff, and athlete registry. Customized position maps for Football (GK/DF/MF/FW) and Basketball (Guards/Forwards/Centers).' 
+    desc: 'Manage your entire club roster, technical staff, and player registry. Position breakdown tailored for football (GK / DF / MF / FW).' 
   },
   { 
     icon: (
@@ -50,7 +50,7 @@ const FEATURES = [
       </svg>
     ), 
     title: 'Training & Session Planner', 
-    desc: 'Schedule and organize training sessions. Categorize workouts by focus area, manage training locations or courts, and assign coaches to lead specific squads.' 
+    desc: 'Schedule and organize training sessions. Categorize workouts by focus area, manage pitch locations, and assign coaches to lead specific squads.' 
   },
   { 
     icon: (
@@ -60,8 +60,8 @@ const FEATURES = [
         <path d="M9 11h4M11 9v4" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ), 
-    title: 'Scouting & Trade Board', 
-    desc: 'Register trialists, track promising scouting targets, and keep historical transfer & trade records to ensure your team never misses out on emerging talent.' 
+    title: 'Scouting & Transfer Board', 
+    desc: 'Register trialists, track promising scouting targets, and keep historical transfer records to ensure your team never misses out on emerging talent.' 
   },
   { 
     icon: (
@@ -94,26 +94,22 @@ const FEATURES = [
 const STATS = [
   { value: '60+', label: 'Clubs Onboarded' },
   { value: '3,500+', label: 'Athletes Tracked' },
-  { value: '20k+', label: 'Games & Matches Logged' },
+  { value: '20k+', label: 'Matches Logged' },
   { value: '96%', label: 'Satisfaction Rate' },
 ]
 
 const LOGOS = [
   { name: 'GFA', style: { fontWeight: 900, fontSize: 22, letterSpacing: '-0.03em' } },
   { name: 'CAF', style: { fontWeight: 800, fontSize: 20, letterSpacing: '0.08em' } },
-  { name: 'GBBA', style: { fontWeight: 900, fontSize: 20, letterSpacing: '0.05em' } },
   { name: 'Premier League', style: { fontWeight: 700, fontSize: 15 } },
   { name: 'Accra Lions', style: { fontWeight: 800, fontSize: 17 } },
+  { name: 'Asante Kotoko SC', style: { fontWeight: 800, fontSize: 16 } },
 ]
 
 const FAQS = [
   {
-    q: 'Can I use the same email for both Football and Basketball teams?',
-    a: 'No. ApexTrack maintains separate, isolated platforms for Football and Basketball. Emails registered on the Football side cannot be used on the Basketball side, and vice versa. You must register with a separate email address for each sport platform.'
-  },
-  {
-    q: 'Does ApexTrack support both Football and Basketball clubs?',
-    a: 'Yes! ApexTrack is a full Sports Management Platform offering specialized workflows, metric sets, position maps, and game management for both Football and Basketball organisations.'
+    q: 'What is Apex Track?',
+    a: 'Apex Track is an all-in-one football management software built for football clubs, academies, and technical teams in Ghana and across Africa to streamline squad tracking, medical logs, match performance, and payroll.'
   },
   {
     q: 'How secure is our club and athlete database?',
@@ -124,8 +120,8 @@ const FAQS = [
     a: 'ApexPay is our built-in club payroll system. It allows administrators to manage staff salaries, run payroll cycles, top up a club wallet via Mobile Money (MoMo), and disburse funds to players and staff — all within the platform. ApexPay is exclusively included in the Captain plan.'
   },
   {
-    q: 'Is there a limit on how many athletes or coaches we can add?',
-    a: 'Starting XI clubs can manage up to 40 active athlete profiles. Captain plan clubs enjoy unlimited athlete and staff registrations with no cap on squad size.'
+    q: 'Is there a limit on how many players or coaches we can add?',
+    a: 'Starting XI clubs can manage up to 40 active player profiles. Captain plan clubs enjoy unlimited player and staff registrations with no cap on squad size.'
   },
   {
     q: 'How do we request custom feature additions or onboarding support?',
@@ -856,56 +852,20 @@ export default function LandingPage() {
         {/* Eyebrow */}
         <div className="hero-eyebrow">
           <div className="hero-eyebrow-dot" />
-          <span className="hero-eyebrow-text">Africa's #1 Sports Management Platform</span>
+          <span className="hero-eyebrow-text">Ghana's #1 Football Management Software</span>
         </div>
 
         {/* Headline */}
         <h1 className="hero-h1">
-          Run Your Club<br />
-          Smarter — From<br />
-          Court &amp; Pitch to Payroll
+          Run Your Football<br />
+          Club Smarter — From<br />
+          Pitch to Payroll
         </h1>
 
         {/* Subtext */}
         <p className="hero-sub">
-          Manage rosters, track game &amp; match performance, log injuries, and run payroll — with dedicated platforms for Football &amp; Basketball clubs.
+          Manage squad rosters, track match performance, log player injuries, and run club payroll in one unified platform built for football.
         </p>
-
-        {/* Sport Platform Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28 }}>
-          {/* Football badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.22)', borderRadius: 12, padding: '7px 16px' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#0F766E,#0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {/* Football / pitch icon */}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.8"/>
-                <path d="M12 2C12 2 9 6 9 12s3 10 3 10M12 2c0 0 3 4 3 10s-3 10-3 10M2 9h20M2 15h20" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#0D9488', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>Football</div>
-              <div style={{ fontSize: 10, color: '#64748B', fontWeight: 500, marginTop: 1 }}>Platform</div>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div style={{ width: 1, height: 28, background: '#E2E8F0' }} />
-
-          {/* Basketball badge */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(180,83,9,0.05)', border: '1px solid rgba(180,83,9,0.18)', borderRadius: 12, padding: '7px 16px' }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#B45309,#D97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              {/* Basketball hoop / ball icon */}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.8"/>
-                <path d="M2 12h20M12 2c-3.3 2.8-5 6.2-5 10s1.7 7.2 5 10M12 2c3.3 2.8 5 6.2 5 10s-1.7 7.2-5 10" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: '#B45309', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>Basketball</div>
-              <div style={{ fontSize: 10, color: '#64748B', fontWeight: 500, marginTop: 1 }}>Platform</div>
-            </div>
-          </div>
-        </div>
 
         {/* CTA Buttons */}
         <div className="hero-btns">

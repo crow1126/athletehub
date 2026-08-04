@@ -1,44 +1,24 @@
 'use client'
-import { createContext, useContext, useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createContext, useContext } from 'react'
 import { getSportConfig } from '@/lib/sportsConfig'
-import { getTenantProfile } from '@/lib/tenant'
+
+const footballConfig = getSportConfig('football')
 
 const SportContext = createContext({
   sportId: 'football',
-  sportConfig: getSportConfig('football'),
+  sportConfig: footballConfig,
   isFootball: true,
   isBasketball: false,
-  loading: true,
+  loading: false,
 })
 
 export function SportProvider({ children }) {
-  const [sportId, setSportId] = useState('football')
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    async function loadSport() {
-      try {
-        const { profile } = await getTenantProfile('team_id, teams(sport_type)')
-        const rawSport = profile?.teams?.sport_type || 'football'
-        setSportId(rawSport)
-      } catch (e) {
-        console.error('Error loading sport context:', e)
-      } finally {
-        setLoading(false)
-      }
-    }
-    loadSport()
-  }, [])
-
-  const config = getSportConfig(sportId)
-
   const value = {
-    sportId: config.id,
-    sportConfig: config,
-    isFootball: config.id === 'football',
-    isBasketball: config.id === 'basketball',
-    loading,
+    sportId: 'football',
+    sportConfig: footballConfig,
+    isFootball: true,
+    isBasketball: false,
+    loading: false,
   }
 
   return (

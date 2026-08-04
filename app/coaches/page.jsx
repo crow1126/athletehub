@@ -105,10 +105,9 @@ export default function CoachesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id,teams(sport_type)')
+      const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
       setCurrentUser(p)
       setTeamId(currentTeamId)
-      if (p?.teams?.sport_type) setSportType(p.teams.sport_type)
 
       // Try with stamp cols first
       const r1 = await scopeTeam(supabase.from('coaches')

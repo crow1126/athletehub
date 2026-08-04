@@ -237,15 +237,15 @@ export default function LoginPage() {
     if (!acceptedTerms) { setError('Please accept the Terms of Service and Privacy Policy to register.'); return }
     setLoading(true)
     try {
-      // 1. Check if email is already registered on a different sport platform
+      // 1. Check if email is already registered
       const emailCheckRes = await fetch('/api/auth/check-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), sport_type: sportType || 'football' }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       })
       const emailCheckData = await emailCheckRes.json()
-      if (emailCheckData.conflict) {
-        setError(emailCheckData.error || 'This email is already registered on another sport platform.')
+      if (emailCheckData.exists) {
+        setError('This email is already registered. Please sign in instead.')
         setLoading(false)
         return
       }
@@ -292,7 +292,6 @@ export default function LoginPage() {
               club_name: clubName.trim(),
               email: email.trim().toLowerCase(),
               logo_url: logoUrl,
-              sport_type: sportType || 'football',
             }),
           })
           const provData = await provRes.json()

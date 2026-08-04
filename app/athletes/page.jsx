@@ -104,9 +104,8 @@ export default function AthletesPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { teamId: currentTeamId, profile: p } = await getTenantProfile('*, teams(sport_type)')
+    const { teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
     setTeamId(currentTeamId)
-    if (p?.teams?.sport_type) setSportType(p.teams.sport_type)
     const [{ data:a }, { data:c }] = await Promise.all([
       scopeTeam(supabase.from('athletes').select('*, coaches(name)'), currentTeamId).order('created_at', { ascending:false }),
       scopeTeam(supabase.from('coaches').select('id, name'), currentTeamId).order('name'),

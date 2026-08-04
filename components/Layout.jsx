@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
+import { getSportConfig } from '@/lib/sportsConfig'
 
 import {
   LayoutDashboard, Users, ShieldCheck, CalendarDays, HeartPulse, TrendingUp, 
@@ -306,8 +307,7 @@ export default function Layout({ children }) {
         setCurrentUserId(session.user.id)
         const { data } = await supabase
           .from('profiles')
-          // ── KEY FIX: added club_name and club_logo_url to the select ──
-          .select('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)')
+          .select('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url, sport_type)')
           .eq('id', session.user.id)
           .single()
         setProfile(data
@@ -405,9 +405,19 @@ export default function Layout({ children }) {
     window.location.href = payUrl
   }
 
-  const role      = profile?.role || 'admin'
-  const allowed   = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS['admin']
-  const navLinks  = ALL_NAV.filter(n => allowed.includes(n.page))
+  const role        = profile?.role || 'admin'
+  const allowed     = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS['admin']
+  const sportConfig = getSportConfig(profile?.teams?.sport_type || 'football')
+  const labels      = sportConfig.labels || {}
+
+  const navLinks = ALL_NAV.filter(n => allowed.includes(n.page)).map(n => {
+    let customLabel = n.label
+    if (n.page === 'athletes') customLabel = labels.athletes || n.label
+    if (n.page === 'coaches')  customLabel = labels.coaches || n.label
+    if (n.page === 'transfers') customLabel = labels.transfers || n.label
+    if (n.page === 'performance') customLabel = labels.performance || n.label
+    return { ...n, label: customLabel }
+  })
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 

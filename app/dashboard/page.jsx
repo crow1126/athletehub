@@ -5,6 +5,7 @@ import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getSportConfig } from '@/lib/sportsConfig'
 import Link from 'next/link'
 import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock } from 'lucide-react'
 
@@ -69,7 +70,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
-      const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+      const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url,sport_type)')
       setProfile(p)
       setIsAdmin(p?.role==='admin'||p?.role==='superadmin')
       const [{ data:a },{ data:i },{ data:c },{ data:s }] = await Promise.all([
@@ -107,10 +108,13 @@ export default function Dashboard() {
     </Layout>
   )
 
+  const sportConfig = getSportConfig(profile?.teams?.sport_type || 'football')
+  const labels      = sportConfig.labels || {}
+
   const iconProps = { size: 18, strokeWidth: 2 }
   const stats = [
-    { label:'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:<Users {...iconProps}/>, accent:'var(--lagoon)' },
-    { label:'Staff',     value:coaches.length,  note:'members',         icon:<ShieldCheck {...iconProps}/>, accent:'#4A90E2' },
+    { label: labels.athletes || 'Athletes',  value:athletes.length, note:`${athletes.filter(a=>a.status==='Active').length} active`, icon:<Users {...iconProps}/>, accent:'var(--lagoon)' },
+    { label: labels.coaches || 'Staff',     value:coaches.length,  note:'members',         icon:<ShieldCheck {...iconProps}/>, accent:'#4A90E2' },
     { label:'Sessions',  value:upcoming.length, note:'next 7 days',     icon:<CalendarDays {...iconProps}/>, accent:'var(--success)' },
     { label:'Injuries',  value:activeInj.length,note:'active',          icon:<HeartPulse {...iconProps}/>, accent:'var(--danger)' },
     { label:'Today',     value:todaySess.length,note:'sessions',        icon:<Flame {...iconProps}/>, accent:'var(--warning)' },

@@ -49,7 +49,7 @@ export async function GET(req) {
  */
 export async function POST(req) {
   try {
-    const { user_id, full_name, club_name, email, logo_url } = await req.json()
+    const { user_id, full_name, club_name, email, logo_url, sport_type } = await req.json()
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
@@ -87,6 +87,7 @@ export async function POST(req) {
             name: trimmedClub,
             short_name: shortName,
             logo_url: logo_url || null,
+            sport_type: sport_type || 'soccer',
           }])
           .select()
           .single()

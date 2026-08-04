@@ -1,10 +1,11 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getSportConfig } from '@/lib/sportsConfig'
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
 
@@ -94,11 +95,18 @@ export default function AthletesPage() {
   const [statFilter,   setStatFilter]   = useState('')
   const [formError,    setFormError]    = useState('')
   const [teamId,       setTeamId]       = useState(null)
+  const [sportType,    setSportType]    = useState('football')
+  const [draftSavedAt, setDraftSavedAt] = useState(null)
+  const [hasDraft,     setHasDraft]     = useState(false)
+  const draftTimer = useRef(null)
+
+  const DRAFT_KEY = 'athlete_entry_draft'
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { teamId: currentTeamId } = await getTenantProfile()
+    const { teamId: currentTeamId, profile: p } = await getTenantProfile('*, teams(sport_type)')
     setTeamId(currentTeamId)
+    if (p?.teams?.sport_type) setSportType(p.teams.sport_type)
     const [{ data:a }, { data:c }] = await Promise.all([
       scopeTeam(supabase.from('athletes').select('*, coaches(name)'), currentTeamId).order('created_at', { ascending:false }),
       scopeTeam(supabase.from('coaches').select('id, name'), currentTeamId).order('name'),
@@ -108,9 +116,52 @@ export default function AthletesPage() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
+  // Auto-save draft to localStorage while adding a new athlete (not editing)
+  useEffect(() => {
+    if (!showForm || editId) return
+    clearTimeout(draftTimer.current)
+    draftTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+        setDraftSavedAt(new Date())
+      } catch (_) {}
+    }, 600)
+    return () => clearTimeout(draftTimer.current)
+  }, [form, showForm, editId])
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      setHasDraft(!!raw && raw !== JSON.stringify(EMPTY))
+    } catch (_) {}
+  }, [])
+
   const set = k => v => setForm(f => ({ ...f, [k]:v }))
 
-  function openAdd() { setEditId(null); setForm(EMPTY); setPhotoFile(null); setPhotoPreview(null); setFormError(''); setShowForm(true) }
+  function openAdd() {
+    setEditId(null)
+    setPhotoFile(null); setPhotoPreview(null); setFormError('')
+    // Restore draft if one exists
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        setForm({ ...EMPTY, ...parsed })
+        setDraftSavedAt(null) // will be re-stamped on next edit
+      } else {
+        setForm(EMPTY)
+      }
+    } catch (_) {
+      setForm(EMPTY)
+    }
+    setShowForm(true)
+  }
+
+  function clearDraft() {
+    try { localStorage.removeItem(DRAFT_KEY) } catch (_) {}
+    setDraftSavedAt(null); setHasDraft(false); setForm(EMPTY)
+  }
 
   function openEdit(ath) {
     setEditId(ath.id)
@@ -247,6 +298,9 @@ export default function AthletesPage() {
       if (error) { setFormError('Save failed: '+error.message); setSaving(false); return }
       const url = await uploadPhoto(data.id)
       if (url) await scopeTeam(supabase.from('athletes').update({ photo_url:url }).eq('id', data.id), teamId)
+      // Clear draft on successful save
+      try { localStorage.removeItem(DRAFT_KEY) } catch (_) {}
+      setHasDraft(false); setDraftSavedAt(null)
       setShowForm(false); setForm(EMPTY); fetchData()
     }
     setSaving(false)
@@ -271,6 +325,11 @@ export default function AthletesPage() {
     )
   })
 
+  const sportConfig = getSportConfig(sportType)
+  const positionGroups = sportConfig.positions || POSITION_GROUPS
+  const pageTitle = sportConfig.labels?.athletes || 'Athletes'
+  const jerseyLabel = sportConfig.jerseyLabel || 'Jersey No.'
+
   return (
     <Layout>
       <style>{`
@@ -293,9 +352,9 @@ export default function AthletesPage() {
 
       <div className="ath-outer">
         <PageHeader
-          label="Squad Registry" title="Athletes"
-          subtitle={`${filtered.length} of ${athletes.length} athlete${athletes.length!==1?'s':''} registered`}
-          action={<button className="btn-blue" onClick={openAdd}>+ Register Athlete</button>}
+          label={`${sportConfig.name} Registry`} title={pageTitle}
+          subtitle={`${filtered.length} of ${athletes.length} ${pageTitle.toLowerCase()} registered`}
+          action={<button className="btn-blue" onClick={openAdd}>+ Register {sportType === 'basketball' ? 'Player' : 'Athlete'}</button>}
         />
 
         <div className="ath-filters fade-up">
@@ -304,7 +363,7 @@ export default function AthletesPage() {
             style={{ ...inp, maxWidth:300 }} />
           <select value={posFilter} onChange={e=>setPosFilter(e.target.value)} className="form-inp" style={{ ...inp, maxWidth:180 }}>
             <option value="">All Positions</option>
-            {Object.entries(POSITION_GROUPS).map(([group, positions]) => (
+            {Object.entries(positionGroups).map(([group, positions]) => (
               <optgroup key={group} label={group}>
                 {positions.map(p=><option key={p} value={p}>{p}</option>)}
               </optgroup>
@@ -382,6 +441,27 @@ export default function AthletesPage() {
             <div className="modal-inner" style={{ padding:24, display:'flex', flexDirection:'column', gap:16 }}>
               {formError && (
                 <div style={{ background:'#FFE4E6', border:'1px solid rgba(225,29,72,0.2)', borderRadius:'10px', padding:'10px 14px', fontSize:13, color:'#E11D48', fontWeight:600 }}>{formError}</div>
+              )}
+
+              {/* Auto-save / Draft status banner */}
+              {!editId && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8,
+                  background: hasDraft && !draftSavedAt ? 'rgba(234,179,8,0.08)' : 'rgba(13,148,136,0.07)',
+                  border: `1px solid ${hasDraft && !draftSavedAt ? 'rgba(234,179,8,0.35)' : 'rgba(13,148,136,0.2)'}`,
+                  borderRadius:10, padding:'9px 14px' }}>
+                  <span style={{ fontSize:12, fontWeight:600, color: hasDraft && !draftSavedAt ? '#92400E' : '#0F766E', display:'flex', alignItems:'center', gap:6 }}>
+                    {draftSavedAt
+                      ? <>✓ Draft auto-saved at {draftSavedAt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</>
+                      : hasDraft
+                        ? <>⚠ Restored unsaved draft — continue where you left off</>
+                        : <>📝 Auto-save enabled — changes saved automatically</>}
+                  </span>
+                  {(draftSavedAt || hasDraft) && (
+                    <button onClick={clearDraft} style={{ fontSize:11, fontWeight:700, color:'#64748B', background:'none', border:'1px solid #E2E8F0', borderRadius:6, padding:'3px 10px', cursor:'pointer', fontFamily:'var(--font)' }}>
+                      Clear Draft
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* Photo */}
@@ -516,7 +596,7 @@ export default function AthletesPage() {
                   <label style={lbl}>Playing Position *</label>
                   <select className="form-inp" value={form.position} onChange={e=>set('position')(e.target.value)} style={inp}>
                     <option value="">Select position…</option>
-                    {Object.entries(POSITION_GROUPS).map(([group, positions]) => (
+                    {Object.entries(positionGroups).map(([group, positions]) => (
                       <optgroup key={group} label={`── ${group} ──`}>
                         {positions.map(p=><option key={p} value={p}>{p}</option>)}
                       </optgroup>
@@ -524,24 +604,34 @@ export default function AthletesPage() {
                   </select>
                 </div>
                 <div>
-                  <label style={lbl}>Strong Foot</label>
+                  <label style={lbl}>{sportType === 'basketball' ? 'Dominant Hand' : 'Strong Foot'}</label>
                   <select className="form-inp" value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>
                     <option value="">Select…</option>
-                    <option value="right">Right Foot (RF)</option>
-                    <option value="left">Left Foot (LF)</option>
-                    <option value="both">Both Feet</option>
+                    {sportType === 'basketball' ? (
+                      <>
+                        <option value="right">Right Hand</option>
+                        <option value="left">Left Hand</option>
+                        <option value="both">Ambidextrous</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="right">Right Foot (RF)</option>
+                        <option value="left">Left Foot (LF)</option>
+                        <option value="both">Both Feet</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>
 
-              {/* Team Section + Back Number */}
+              {/* Team Section + Jersey Number */}
               <div className="modal-g2">
                 <div>
-                  <label style={lbl}>Team Section</label>
-                  <input className="form-inp" value={form.team_section} onChange={e=>set('team_section')(e.target.value)} style={inp} placeholder="e.g. Defense inside"/>
+                  <label style={lbl}>{sportType === 'basketball' ? 'Court Role / Unit' : 'Team Section'}</label>
+                  <input className="form-inp" value={form.team_section} onChange={e=>set('team_section')(e.target.value)} style={inp} placeholder={sportType === 'basketball' ? 'e.g. Starting 5 / Rotation' : 'e.g. Defense inside'}/>
                 </div>
                 <div>
-                  <label style={lbl}>Back Number</label>
+                  <label style={lbl}>{jerseyLabel}</label>
                   <input className="form-inp" value={form.back_number} onChange={e=>set('back_number')(e.target.value)} style={inp} placeholder="e.g. 21"/>
                 </div>
               </div>

@@ -49,6 +49,7 @@ export default function LoginPage() {
   const [password,   setPassword]  = useState('')
   const [fullName,   setFullName]  = useState('')
   const [clubName,   setClubName]  = useState('')
+  const [sportType,  setSportType] = useState('soccer')
   const [clubLogo,   setClubLogo]  = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
   const [showPass,   setShowPass]  = useState(false)
@@ -277,6 +278,7 @@ export default function LoginPage() {
               club_name: clubName.trim(),
               email: email.trim().toLowerCase(),
               logo_url: logoUrl,
+              sport_type: sportType || 'soccer',
             }),
           })
           const provData = await provRes.json()
@@ -285,7 +287,7 @@ export default function LoginPage() {
           console.warn('Auto-provision failed (non-blocking):', provErr.message)
         }
         setSuccess('Account created! Check your email for "Confirm your email - Apex Track" and click the button to activate. Then sign in here.')
-        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setClubLogo(null); setLogoPreview('')
+        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setSportType('soccer'); setClubLogo(null); setLogoPreview('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }
     setLoading(false)
@@ -581,6 +583,37 @@ export default function LoginPage() {
                     <label className="auth-field-label">Club / Organisation</label>
                     <input type="text" value={clubName} onChange={e => setClubName(e.target.value)} placeholder="e.g. Asante Kotoko SC" style={inp} onFocus={focusInp} onBlur={blurInp} />
                   </div>
+
+                  {/* Sport Type Selector */}
+                  <div>
+                    <label className="auth-field-label">Sport Type</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                      {[
+                        { id: 'football',    label: 'Football' },
+                        { id: 'basketball',  label: 'Basketball' },
+                      ].map(sp => (
+                        <button
+                          key={sp.id}
+                          type="button"
+                          onClick={() => setSportType(sp.id)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            padding: '12px 14px',
+                            background: (sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) ? 'rgba(13,148,136,0.08)' : '#fff',
+                            border: (sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) ? '2px solid #0D9488' : '1.5px solid #C8E0E0',
+                            borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+                            transition: 'all 0.15s',
+                          }}
+                        >
+                          <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: (sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) ? '#0D9488' : '#0F172A' }}>{sp.label}</div>
+                            {(sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) && <div style={{ fontSize: 10, color: '#0D9488', fontWeight: 600 }}>✓ Selected</div>}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div>
                     <label className="auth-field-label">Club Logo <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 10, color: '#94A3B8' }}>(optional)</span></label>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

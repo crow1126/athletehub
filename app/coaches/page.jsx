@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { IconStar, IconCamera, IconCheck } from '@/lib/icons'
 
 import Layout from '@/components/Layout'
@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getSportConfig } from '@/lib/sportsConfig'
 
 const currency = v => v ? `GHS ${parseFloat(v).toLocaleString('en-GH', { minimumFractionDigits: 2 })}` : '—'
 const daysLeft = d => { if (!d) return null; const diff = Math.floor((new Date(d) - new Date()) / 86400000); return diff }
@@ -95,13 +96,19 @@ export default function CoachesPage() {
   const [currentUser,  setCurrentUser]  = useState(null)
   const [hasStampCols, setHasStampCols] = useState(false)
   const [teamId,       setTeamId]       = useState(null)
+  const [sportType,    setSportType]    = useState('football')
+  const [draftSavedAt, setDraftSavedAt] = useState(null)
+  const [hasDraft,     setHasDraft]     = useState(false)
+  const draftTimer = useRef(null)
+  const DRAFT_KEY = 'staff_entry_draft'
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+      const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id,teams(sport_type)')
       setCurrentUser(p)
       setTeamId(currentTeamId)
+      if (p?.teams?.sport_type) setSportType(p.teams.sport_type)
 
       // Try with stamp cols first
       const r1 = await scopeTeam(supabase.from('coaches')
@@ -124,9 +131,50 @@ export default function CoachesPage() {
 
   useEffect(()=>{ fetchData() },[fetchData])
 
+  // Auto-save draft when adding new staff (not editing)
+  useEffect(() => {
+    if (!showForm || editId) return
+    clearTimeout(draftTimer.current)
+    draftTimer.current = setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(form))
+        setDraftSavedAt(new Date())
+      } catch (_) {}
+    }, 600)
+    return () => clearTimeout(draftTimer.current)
+  }, [form, showForm, editId])
+
+  // Check for saved draft on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      setHasDraft(!!raw && raw !== JSON.stringify(EMPTY_FORM))
+    } catch (_) {}
+  }, [])
+
   const set = k => v => setForm(f=>({...f,[k]:v}))
 
-  function openAdd() { setEditId(null);setForm(EMPTY_FORM);setPhotoFile(null);setPhotoPreview(null);setFormError('');setShowForm(true) }
+  function openAdd() {
+    setEditId(null); setPhotoFile(null); setPhotoPreview(null); setFormError('')
+    // Restore draft if one exists
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY)
+      if (raw) {
+        setForm({ ...EMPTY_FORM, ...JSON.parse(raw) })
+        setDraftSavedAt(null)
+      } else {
+        setForm(EMPTY_FORM)
+      }
+    } catch (_) {
+      setForm(EMPTY_FORM)
+    }
+    setShowForm(true)
+  }
+
+  function clearStaffDraft() {
+    try { localStorage.removeItem(DRAFT_KEY) } catch (_) {}
+    setDraftSavedAt(null); setHasDraft(false); setForm(EMPTY_FORM)
+  }
   function openEdit(c) {
     setEditId(c.id)
     setForm({name:c.name||'',staff_type:c.staff_type||'assistant_coach',speciality:c.speciality||'',experience_years:c.experience_years||'',phone:c.phone||'',email:c.email||'',is_active:c.is_active!==false,
@@ -181,6 +229,9 @@ export default function CoachesPage() {
       const url=await uploadPhoto(nc.id)
       if (url) await scopeTeam(supabase.from('coaches').update({photo_url:url}).eq('id',nc.id), teamId)
     }
+    // Clear draft on successful save
+    try { localStorage.removeItem(DRAFT_KEY) } catch (_) {}
+    setHasDraft(false); setDraftSavedAt(null)
     setShowForm(false);setForm(EMPTY_FORM);setPhotoFile(null);setPhotoPreview(null);setSaving(false);fetchData()
   }
 
@@ -208,10 +259,13 @@ export default function CoachesPage() {
   const totalWageBill=activeContracts.reduce((s,c)=>s+(parseFloat(c.monthly_salary)||0),0)
   const expiringContracts=coaches.filter(c=>{ const d=daysLeft(c.contract_end); return d!==null&&d>=0&&d<=90 })
 
+  const sportConfig = getSportConfig(sportType)
+  const pageTitle = sportConfig.labels?.coaches || 'Team & Staff'
+
   return (
     <Layout>
       <div className="page-outer">
-        <PageHeader label="Organisation" title="Team & Staff" subtitle={`${coaches.length} staff member${coaches.length!==1?'s':''} across departments`} action={<button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>}/>
+        <PageHeader label="Organisation" title={pageTitle} subtitle={`${coaches.length} staff member${coaches.length!==1?'s':''} across departments`} action={<button className="btn-blue" onClick={openAdd}>+ Add Staff Member</button>}/>
 
         {/* Main View Toggle */}
         <div style={{ display:'flex', gap:4, marginBottom:24, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:'var(--r-lg)', padding:4, width:'fit-content' }}>
@@ -446,6 +500,27 @@ export default function CoachesPage() {
 
             <div style={{ padding:24,display:'flex',flexDirection:'column',gap:16 }}>
               {formError&&<div style={{ background:'var(--danger-light)',border:'1px solid rgba(231,76,60,0.25)',borderRadius:'var(--r-md)',padding:'10px 14px',fontSize:13,color:'var(--danger)',fontWeight:600 }}>{formError}</div>}
+
+              {/* Auto-save / Draft status banner */}
+              {!editId && (
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:8,
+                  background: hasDraft && !draftSavedAt ? 'rgba(234,179,8,0.08)' : 'rgba(13,148,136,0.07)',
+                  border: `1px solid ${hasDraft && !draftSavedAt ? 'rgba(234,179,8,0.35)' : 'rgba(13,148,136,0.2)'}`,
+                  borderRadius:10, padding:'9px 14px' }}>
+                  <span style={{ fontSize:12, fontWeight:600, color: hasDraft && !draftSavedAt ? '#92400E' : '#0F766E', display:'flex', alignItems:'center', gap:6 }}>
+                    {draftSavedAt
+                      ? <>✓ Draft auto-saved at {draftSavedAt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</>
+                      : hasDraft
+                        ? <>⚠ Restored unsaved draft — continue where you left off</>
+                        : <>📝 Auto-save enabled — changes saved automatically</>}
+                  </span>
+                  {(draftSavedAt || hasDraft) && (
+                    <button onClick={clearStaffDraft} style={{ fontSize:11, fontWeight:700, color:'#64748B', background:'none', border:'1px solid var(--border)', borderRadius:6, padding:'3px 10px', cursor:'pointer', fontFamily:'var(--font)' }}>
+                      Clear Draft
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Photo upload */}
               <div>

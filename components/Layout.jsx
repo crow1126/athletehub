@@ -303,7 +303,6 @@ export default function Layout({ children }) {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         if (!session) { router.replace('/login'); return }
-        // Capture the auth user ID for per-user notification reads
         setCurrentUserId(session.user.id)
         const { data } = await supabase
           .from('profiles')
@@ -668,6 +667,15 @@ export default function Layout({ children }) {
                   : <div style={{ width:20, height:20, borderRadius:6, background: C.lagoon, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800, color: '#fff' }}>{teamShort?.slice(0,2)}</div>
                 }
                 <span style={{ fontSize:13, color: C.text2, fontWeight:600 }}>{teamName}</span>
+                {profile?.teams?.sport_type && (
+                  <span style={{ fontSize:10, fontWeight:700,
+                    color: profile.teams.sport_type === 'basketball' ? '#B45309' : C.lagoon,
+                    background: profile.teams.sport_type === 'basketball' ? 'rgba(180,83,9,0.1)' : 'var(--lagoon-alpha)',
+                    border: `1px solid ${profile.teams.sport_type === 'basketball' ? 'rgba(180,83,9,0.2)' : 'rgba(13,148,136,0.2)'}`,
+                    borderRadius: 99, padding:'2px 8px', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                    {profile.teams.sport_type === 'basketball' ? 'Basketball' : 'Football'}
+                  </span>
+                )}
               </div>
             )}
             <div style={{ fontSize:13, color: C.text3, fontWeight:500 }}>

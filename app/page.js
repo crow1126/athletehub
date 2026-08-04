@@ -16,8 +16,8 @@ const FEATURES = [
         <circle cx="8.5" cy="11" r="2.5" fill="#CCFBF1" stroke="#0D9488" strokeWidth="1.5"/>
       </svg>
     ), 
-    title: 'Squad Performance Analytics', 
-    desc: 'Record and track match statistics for players including goals, assists, playing minutes, and match ratings. View historical form trends to identify key players and optimize matchday strategy.' 
+    title: 'Multi-Sport Performance Analytics', 
+    desc: 'Track match and game statistics for your players — goals & assists for Football; points, rebounds, steals & blocks for Basketball. View form trends to optimize strategy.' 
   },
   { 
     icon: (
@@ -27,7 +27,7 @@ const FEATURES = [
       </svg>
     ), 
     title: 'Comprehensive Injury Hub', 
-    desc: 'Maintain detailed medical logs for player injuries, recovery progress, and rehabilitation steps. Set expected return-to-play timelines and clear players for action safely.' 
+    desc: 'Maintain detailed medical logs for player injuries, recovery progress, and rehabilitation steps across all sports. Set expected return-to-play timelines safely.' 
   },
   { 
     icon: (
@@ -36,8 +36,8 @@ const FEATURES = [
         <path d="M4 21c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#0D9488" strokeWidth="2" strokeLinecap="round"/>
       </svg>
     ), 
-    title: 'Club & Squad Management', 
-    desc: 'Manage your entire club roster, staff members, and athlete registry. Track key metrics such as positions, contact numbers, age categories, and active contract statuses.' 
+    title: 'Club & Roster Management', 
+    desc: 'Manage your entire club roster, coaching staff, and athlete registry. Customized position maps for Football (GK/DF/MF/FW) and Basketball (Guards/Forwards/Centers).' 
   },
   { 
     icon: (
@@ -50,7 +50,7 @@ const FEATURES = [
       </svg>
     ), 
     title: 'Training & Session Planner', 
-    desc: 'Schedule and organize training sessions. Categorize workouts by focus area, manage training locations or venues, and assign coaches to lead specific training squads.' 
+    desc: 'Schedule and organize training sessions. Categorize workouts by focus area, manage training locations or courts, and assign coaches to lead specific squads.' 
   },
   { 
     icon: (
@@ -60,8 +60,8 @@ const FEATURES = [
         <path d="M9 11h4M11 9v4" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
       </svg>
     ), 
-    title: 'Scouting & Trial Registry', 
-    desc: 'Register and evaluate trialists, track promising scouting targets, and keep historical transfer records to ensure your club never misses out on emerging local talent.' 
+    title: 'Scouting & Trade Board', 
+    desc: 'Register trialists, track promising scouting targets, and keep historical transfer & trade records to ensure your team never misses out on emerging talent.' 
   },
   { 
     icon: (
@@ -94,19 +94,27 @@ const FEATURES = [
 const STATS = [
   { value: '60+', label: 'Clubs Onboarded' },
   { value: '3,500+', label: 'Athletes Tracked' },
-  { value: '20k+', label: 'Matches Logged' },
+  { value: '20k+', label: 'Games & Matches Logged' },
   { value: '96%', label: 'Satisfaction Rate' },
 ]
 
 const LOGOS = [
   { name: 'GFA', style: { fontWeight: 900, fontSize: 22, letterSpacing: '-0.03em' } },
   { name: 'CAF', style: { fontWeight: 800, fontSize: 20, letterSpacing: '0.08em' } },
+  { name: 'GBBA', style: { fontWeight: 900, fontSize: 20, letterSpacing: '0.05em' } },
   { name: 'Premier League', style: { fontWeight: 700, fontSize: 15 } },
-  { name: 'Ghana Stars FC', style: { fontWeight: 900, fontSize: 16, letterSpacing: '-0.02em' } },
   { name: 'Accra Lions', style: { fontWeight: 800, fontSize: 17 } },
 ]
 
 const FAQS = [
+  {
+    q: 'Can I use the same email for both Football and Basketball teams?',
+    a: 'No. ApexTrack maintains separate, isolated platforms for Football and Basketball. Emails registered on the Football side cannot be used on the Basketball side, and vice versa. You must register with a separate email address for each sport platform.'
+  },
+  {
+    q: 'Does ApexTrack support both Football and Basketball clubs?',
+    a: 'Yes! ApexTrack is a full Sports Management Platform offering specialized workflows, metric sets, position maps, and game management for both Football and Basketball organisations.'
+  },
   {
     q: 'How secure is our club and athlete database?',
     a: 'ApexTrack uses Postgres Row Level Security (RLS) and TLS encryption to fully isolate your squad data. Only authorized coaches and administrators within your specific club can access athlete and injury records — no cross-club data leakage is possible.'
@@ -848,20 +856,30 @@ export default function LandingPage() {
         {/* Eyebrow */}
         <div className="hero-eyebrow">
           <div className="hero-eyebrow-dot" />
-          <span className="hero-eyebrow-text">Africa's #1 Football Management Platform</span>
+          <span className="hero-eyebrow-text">Africa's #1 Sports Management Platform</span>
         </div>
 
         {/* Headline */}
         <h1 className="hero-h1">
           Run Your Club<br />
           Smarter — From<br />
-          Pitch to Payroll
+          Court &amp; Pitch to Payroll
         </h1>
 
         {/* Subtext */}
         <p className="hero-sub">
-          Manage squads, track performance, log injuries, and pay your staff — all in one powerful platform built for African football clubs.
+          Manage rosters, track game &amp; match performance, log injuries, and run payroll — with dedicated platforms for Football &amp; Basketball clubs.
         </p>
+
+        {/* Sport Platform Badges */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
+          <span style={{ background: '#F0FDFA', border: '1px solid #CCFBF1', color: '#0D9488', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            ⚽ Football Platform
+          </span>
+          <span style={{ background: '#FEF3C7', border: '1px solid #FDE68A', color: '#B45309', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            🏀 Basketball Platform
+          </span>
+        </div>
 
         {/* CTA Buttons */}
         <div className="hero-btns">
@@ -1268,7 +1286,7 @@ export default function LandingPage() {
             <Link href="/login" className="footer-link">Sign In</Link>
           </div>
         </div>
-        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Built for African football.</div>
+        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Multi-Sport Management Platform built for African football &amp; basketball clubs.</div>
       </footer>
     </>
   )

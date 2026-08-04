@@ -237,6 +237,20 @@ export default function LoginPage() {
     if (!acceptedTerms) { setError('Please accept the Terms of Service and Privacy Policy to register.'); return }
     setLoading(true)
     try {
+      // 1. Check if email is already registered on a different sport platform
+      const emailCheckRes = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim().toLowerCase(), sport_type: sportType || 'football' }),
+      })
+      const emailCheckData = await emailCheckRes.json()
+      if (emailCheckData.conflict) {
+        setError(emailCheckData.error || 'This email is already registered on another sport platform.')
+        setLoading(false)
+        return
+      }
+
+      // 2. Check if club name already exists
       const checkRes = await fetch(`/api/signup-provision?club_name=${encodeURIComponent(clubName.trim())}`)
       const checkData = await checkRes.json()
       if (checkData.exists) {
@@ -278,7 +292,7 @@ export default function LoginPage() {
               club_name: clubName.trim(),
               email: email.trim().toLowerCase(),
               logo_url: logoUrl,
-              sport_type: sportType || 'soccer',
+              sport_type: sportType || 'football',
             }),
           })
           const provData = await provRes.json()
@@ -287,7 +301,7 @@ export default function LoginPage() {
           console.warn('Auto-provision failed (non-blocking):', provErr.message)
         }
         setSuccess('Account created! Check your email for "Confirm your email - Apex Track" and click the button to activate. Then sign in here.')
-        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setSportType('soccer'); setClubLogo(null); setLogoPreview('')
+        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setSportType('football'); setClubLogo(null); setLogoPreview('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }
     setLoading(false)

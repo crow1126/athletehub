@@ -10,27 +10,63 @@ function getDb() {
   })
 }
 
+function normalizeSport(s) {
+  if (!s) return 'football'
+  const low = String(s).toLowerCase().trim()
+  if (low === 'soccer') return 'football'
+  return low
+}
+
 export async function POST(req) {
   try {
-    const { email } = await req.json()
+    const { email, sport_type } = await req.json()
 
     if (!email || !email.trim()) {
       return NextResponse.json({ error: 'Email address is required' }, { status: 400 })
     }
 
     const db = getDb()
-    const { data: profile, error } = await db
+    const cleanEmail = email.trim().toLowerCase()
+
+    const { data: profiles, error } = await db
       .from('profiles')
-      .select('id')
-      .eq('email', email.trim().toLowerCase())
-      .maybeSingle()
+      .select('id, team_id, teams(sport_type)')
+      .eq('email', cleanEmail)
 
     if (error) {
       console.error('Check email DB error:', error.message)
       return NextResponse.json({ error: 'Database lookup error' }, { status: 500 })
     }
 
-    return NextResponse.json({ exists: !!profile })
+    if (!profiles || profiles.length === 0) {
+      return NextResponse.json({ exists: false, conflict: false })
+    }
+
+    // Find the sport associated with existing profile/team
+    let existingSport = 'football'
+    for (const p of profiles) {
+      if (p.teams?.sport_type) {
+        existingSport = normalizeSport(p.teams.sport_type)
+        break
+      }
+    }
+
+    if (sport_type) {
+      const requestedSport = normalizeSport(sport_type)
+      if (existingSport !== requestedSport) {
+        const existingName = existingSport === 'basketball' ? 'Basketball' : 'Football'
+        const requestedName = requestedSport === 'basketball' ? 'Basketball' : 'Football'
+        return NextResponse.json({
+          exists: true,
+          conflict: true,
+          existingSport,
+          requestedSport,
+          error: `This email is already registered under the ${existingName} platform. Emails used for ${existingName} cannot be used on the ${requestedName} platform.`,
+        })
+      }
+    }
+
+    return NextResponse.json({ exists: true, conflict: false, existingSport })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

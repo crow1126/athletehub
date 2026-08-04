@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
@@ -444,6 +445,23 @@ export default function SettingsPage() {
                   <button onClick={saveProfile} disabled={saving} className="gm-btn" style={{ width:'fit-content',opacity:saving?0.7:1 }}>
                     {saving?'Saving…':'Save Changes'} {!saving&&GM_ICON}
                   </button>
+
+                  {/* Multi-sport: Manage / Switch Teams */}
+                  {isAdmin && (
+                    <div style={{ marginTop:8, padding:'16px 18px', background:'rgba(13,148,136,0.04)', border:'1px solid rgba(13,148,136,0.15)', borderRadius:'var(--r-md)' }}>
+                      <div style={{ fontSize:12, fontWeight:800, color:'#0D9488', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:8 }}>Multi-Sport Management</div>
+                      <div style={{ fontSize:13, color:'var(--text2)', marginBottom:12, lineHeight:1.6 }}>
+                        Manage multiple sport organisations under one account. Switch between your Football club and Basketball team without logging out.
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { const router = document.querySelector('[data-router]'); window.location.href = '/switch-team' }}
+                        onClick={() => window.location.href = '/switch-team'}
+                        style={{ display:'inline-flex', alignItems:'center', gap:8, background:'var(--lagoon-alpha)', color:'#0D9488', border:'1px solid rgba(13,148,136,0.25)', borderRadius:'var(--r-md)', padding:'9px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>
+                        Manage Teams / Switch Sport
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -872,13 +872,39 @@ export default function LandingPage() {
         </p>
 
         {/* Sport Platform Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 28 }}>
-          <span style={{ background: '#F0FDFA', border: '1px solid #CCFBF1', color: '#0D9488', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            ⚽ Football Platform
-          </span>
-          <span style={{ background: '#FEF3C7', border: '1px solid #FDE68A', color: '#B45309', fontSize: 12, fontWeight: 700, padding: '4px 12px', borderRadius: 99, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            🏀 Basketball Platform
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 28 }}>
+          {/* Football badge */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(13,148,136,0.06)', border: '1px solid rgba(13,148,136,0.22)', borderRadius: 12, padding: '7px 16px' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#0F766E,#0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {/* Football / pitch icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.8"/>
+                <path d="M12 2C12 2 9 6 9 12s3 10 3 10M12 2c0 0 3 4 3 10s-3 10-3 10M2 9h20M2 15h20" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#0D9488', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>Football</div>
+              <div style={{ fontSize: 10, color: '#64748B', fontWeight: 500, marginTop: 1 }}>Platform</div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ width: 1, height: 28, background: '#E2E8F0' }} />
+
+          {/* Basketball badge */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(180,83,9,0.05)', border: '1px solid rgba(180,83,9,0.18)', borderRadius: 12, padding: '7px 16px' }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'linear-gradient(135deg,#B45309,#D97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {/* Basketball hoop / ball icon */}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.8"/>
+                <path d="M2 12h20M12 2c-3.3 2.8-5 6.2-5 10s1.7 7.2 5 10M12 2c3.3 2.8 5 6.2 5 10s-1.7 7.2-5 10" stroke="#fff" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#B45309', letterSpacing: '0.06em', textTransform: 'uppercase', lineHeight: 1 }}>Basketball</div>
+              <div style={{ fontSize: 10, color: '#64748B', fontWeight: 500, marginTop: 1 }}>Platform</div>
+            </div>
+          </div>
         </div>
 
         {/* CTA Buttons */}

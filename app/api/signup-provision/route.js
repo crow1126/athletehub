@@ -55,6 +55,10 @@ export async function POST(req) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
 
+    const db = getDb()
+    let teamId = null
+    let assignedRole = 'admin'
+
     function normalizeSport(s) {
       if (!s) return 'football'
       const low = String(s).toLowerCase().trim()

@@ -46,7 +46,7 @@
   --r-lg:  16px;
   --r-xl:  24px;
 
-  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
 
   /* Status Colors */
   --success:       #059669; /* Emerald 600 */
@@ -60,22 +60,24 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  /* Soft mint-green to white gradient — top-left green fades to white on the right */
-  background: linear-gradient(135deg, #C8EDCE 0%, #E4F7E8 30%, #F0FBF4 60%, #FFFFFF 100%);
-  background-attachment: fixed;
+  /* Soft mint-green gradient background with hardware acceleration */
+  background: #F0FBF4;
+  background-image: linear-gradient(135deg, #C8EDCE 0%, #E4F7E8 30%, #F0FBF4 60%, #FFFFFF 100%);
   color: var(--text2);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  min-height: 100vh;
 }
 
 .card {
-  background: rgba(255, 255, 255, 0.92);
+  background: #FFFFFF;
   border: 1px solid var(--border);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
-  backdrop-filter: blur(4px);
+  contain: content;
 }
 .card:hover {
   box-shadow: var(--shadow-md);

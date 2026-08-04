@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getSportConfig } from '@/lib/sportsConfig'
+import { getTenantProfile } from '@/lib/tenant'
 
 const SportContext = createContext({
   sportId: 'football',
@@ -18,17 +19,9 @@ export function SportProvider({ children }) {
   useEffect(() => {
     async function loadSport() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user?.id) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('team_id, teams(sport_type)')
-            .eq('id', session.user.id)
-            .single()
-
-          const rawSport = profile?.teams?.sport_type || 'football'
-          setSportId(rawSport)
-        }
+        const { profile } = await getTenantProfile('team_id, teams(sport_type)')
+        const rawSport = profile?.teams?.sport_type || 'football'
+        setSportId(rawSport)
       } catch (e) {
         console.error('Error loading sport context:', e)
       } finally {

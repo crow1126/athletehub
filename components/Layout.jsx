@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
 import { getSportConfig } from '@/lib/sportsConfig'
+import { getTenantProfile } from '@/lib/tenant'
 
 import {
   LayoutDashboard, Users, ShieldCheck, CalendarDays, HeartPulse, TrendingUp, 
@@ -301,18 +302,10 @@ export default function Layout({ children }) {
   useEffect(() => {
     async function loadProfile() {
       try {
-        const { data: { session } } = await supabase.auth.getSession()
+        const { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url, sport_type)')
         if (!session) { router.replace('/login'); return }
         setCurrentUserId(session.user.id)
-        const { data } = await supabase
-          .from('profiles')
-          .select('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url, sport_type)')
-          .eq('id', session.user.id)
-          .single()
-        setProfile(data
-          ? { ...data, email: session.user.email }
-          : { full_name: session.user.email, role: 'admin', email: session.user.email }
-        )
+        setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
       } catch (e) { console.error('Layout error:', e) }
       setLoading(false)
     }

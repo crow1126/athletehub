@@ -5,7 +5,7 @@ import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { getSportConfig } from '@/lib/sportsConfig'
+
 import Link from 'next/link'
 import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock } from 'lucide-react'
 
@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function load() {
-      const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url,sport_type)')
+      const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
       setProfile(p)
       setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin')
       const [{ data: a }, { data: i }, { data: c }, { data: s }] = await Promise.all([
@@ -108,8 +108,7 @@ export default function Dashboard() {
     </Layout>
   )
 
-  const sportConfig = getSportConfig(profile?.teams?.sport_type || 'football')
-  const labels = sportConfig.labels || {}
+  const labels = { athletes: 'Athletes', coaches: 'Staff', transfers: 'Transfers', performance: 'Performance Stats' }
 
   const iconProps = { size: 18, strokeWidth: 2 }
   const stats = [
@@ -145,12 +144,13 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Hero banner ── */}
-      <div className="dash-hero" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #14B8A6 100%)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: -100, right: -50, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%)' }} />
-        <div style={{ position: 'absolute', bottom: -50, left: 100, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%)' }} />
+      <div className="dash-hero" style={{ background: 'linear-gradient(135deg, #022C22 0%, #064E3B 45%, #047857 100%)', position: 'relative', overflow: 'hidden', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(2, 44, 34, 0.2)' }}>
+        <div style={{ position: 'absolute', top: -100, right: -50, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', bottom: -50, left: 100, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)' }} />
 
         <div style={{ position: 'relative', maxWidth: 1280, margin: '0 auto' }}>
-          <div style={{ fontSize: 13, color: 'rgba(248, 250, 252, 0.7)', fontWeight: 500, marginBottom: 12 }}>
+          <div style={{ fontSize: 13, color: '#ECFDF5', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
             {greet} · {today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
 
@@ -158,26 +158,26 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             {clubLogo && (
               <img src={clubLogo} alt={clubName || 'Club'}
-                style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', padding: 4, flexShrink: 0, backdropFilter: 'blur(4px)' }}
+                style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: '#FFFFFF', border: '2px solid rgba(255,255,255,0.4)', padding: 4, flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
                 onError={e => e.target.style.display = 'none'}
               />
             )}
             <div>
               {clubName && (
-                <div style={{ fontSize: 12, color: 'rgba(248, 250, 252, 0.6)', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                <div style={{ fontSize: 13, color: '#A7F3D0', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
                   {clubName}
                 </div>
               )}
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em' }}>
-                Welcome, <span style={{ color: 'var(--lagoon-light)' }}>{profile?.full_name || 'Admin'}</span>
+              <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+                Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : 'Admin')}</span>
               </h1>
             </div>
           </div>
 
           {todaySess.length > 0 && (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(110,231,183,0.4)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
               <Flame size={14} color="#FFD700" />
-              <span style={{ fontSize: 12, color: '#FFF', fontWeight: 600 }}>{todaySess.length} session{todaySess.length > 1 ? 's' : ''} today</span>
+              <span style={{ fontSize: 12, color: '#F0FDF4', fontWeight: 700 }}>{todaySess.length} session{todaySess.length > 1 ? 's' : ''} today</span>
             </div>
           )}
         </div>

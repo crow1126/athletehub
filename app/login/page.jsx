@@ -49,7 +49,7 @@ export default function LoginPage() {
   const [password,   setPassword]  = useState('')
   const [fullName,   setFullName]  = useState('')
   const [clubName,   setClubName]  = useState('')
-  const [sportType,  setSportType] = useState('soccer')
+
   const [clubLogo,   setClubLogo]  = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
   const [showPass,   setShowPass]  = useState(false)
@@ -300,7 +300,7 @@ export default function LoginPage() {
           console.warn('Auto-provision failed (non-blocking):', provErr.message)
         }
         setSuccess('Account created! Check your email for "Confirm your email - Apex Track" and click the button to activate. Then sign in here.')
-        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setSportType('football'); setClubLogo(null); setLogoPreview('')
+        setTab('login'); setPassword(''); setFullName(''); setClubName(''); setClubLogo(null); setLogoPreview('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }
     setLoading(false)

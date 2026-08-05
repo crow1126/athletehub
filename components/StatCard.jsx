@@ -68,8 +68,8 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
 
       {/* Value */}
       <div style={{
-        fontSize: 30, fontWeight: 900,
-        color: '#111',
+        fontSize: 32, fontWeight: 900,
+        color: '#06160E',
         lineHeight: 1, marginBottom: 4,
         letterSpacing: '-0.03em',
         position: 'relative',
@@ -79,8 +79,8 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
 
       {/* Label */}
       <div style={{
-        fontSize: 12, color: '#555',
-        fontWeight: 500,
+        fontSize: 13, color: '#1A3D2D',
+        fontWeight: 700,
         marginBottom: note ? 8 : 0,
         position: 'relative',
       }}>
@@ -91,16 +91,18 @@ export default function StatCard({ label, value, note, icon, accent, trend, href
       {note && (
         <div style={{
           display: 'inline-flex', alignItems: 'center',
-          fontSize: 10, fontWeight: 700,
-          color: ac,
-          background: `${ac}12`,
-          border: `1px solid ${ac}25`,
+          fontSize: 11, fontWeight: 800,
+          color: '#046A4E',
+          background: '#D1FAE5',
+          border: '1px solid #A7F3D0',
           padding: '2px 9px', borderRadius: 20,
           position: 'relative',
         }}>
           {note}
         </div>
       )}
+
+
 
       {/* Bottom accent bar on hover */}
       <div style={{

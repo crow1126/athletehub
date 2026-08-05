@@ -5,7 +5,7 @@ import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { getSportConfig } from '@/lib/sportsConfig'
+
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
 
@@ -95,7 +95,7 @@ export default function AthletesPage() {
   const [statFilter,   setStatFilter]   = useState('')
   const [formError,    setFormError]    = useState('')
   const [teamId,       setTeamId]       = useState(null)
-  const [sportType,    setSportType]    = useState('football')
+
   const [draftSavedAt, setDraftSavedAt] = useState(null)
   const [hasDraft,     setHasDraft]     = useState(false)
   const draftTimer = useRef(null)
@@ -324,10 +324,9 @@ export default function AthletesPage() {
     )
   })
 
-  const sportConfig = getSportConfig(sportType)
-  const positionGroups = sportConfig.positions || POSITION_GROUPS
-  const pageTitle = sportConfig.labels?.athletes || 'Athletes'
-  const jerseyLabel = sportConfig.jerseyLabel || 'Jersey No.'
+  const positionGroups = POSITION_GROUPS
+  const pageTitle = 'Athletes'
+  const jerseyLabel = 'Jersey No.'
 
   return (
     <Layout>
@@ -351,9 +350,9 @@ export default function AthletesPage() {
 
       <div className="ath-outer">
         <PageHeader
-          label={`${sportConfig.name} Registry`} title={pageTitle}
+          label="Football Registry" title={pageTitle}
           subtitle={`${filtered.length} of ${athletes.length} ${pageTitle.toLowerCase()} registered`}
-          action={<button className="btn-blue" onClick={openAdd}>+ Register {sportType === 'basketball' ? 'Player' : 'Athlete'}</button>}
+          action={<button className="btn-blue" onClick={openAdd}>+ Register Athlete</button>}
         />
 
         <div className="ath-filters fade-up">
@@ -603,22 +602,12 @@ export default function AthletesPage() {
                   </select>
                 </div>
                 <div>
-                  <label style={lbl}>{sportType === 'basketball' ? 'Dominant Hand' : 'Strong Foot'}</label>
+                  <label style={lbl}>Strong Foot</label>
                   <select className="form-inp" value={form.strong_foot} onChange={e=>set('strong_foot')(e.target.value)} style={inp}>
                     <option value="">Select…</option>
-                    {sportType === 'basketball' ? (
-                      <>
-                        <option value="right">Right Hand</option>
-                        <option value="left">Left Hand</option>
-                        <option value="both">Ambidextrous</option>
-                      </>
-                    ) : (
-                      <>
-                        <option value="right">Right Foot (RF)</option>
-                        <option value="left">Left Foot (LF)</option>
-                        <option value="both">Both Feet</option>
-                      </>
-                    )}
+                    <option value="right">Right Foot (RF)</option>
+                    <option value="left">Left Foot (LF)</option>
+                    <option value="both">Both Feet</option>
                   </select>
                 </div>
               </div>
@@ -626,8 +615,8 @@ export default function AthletesPage() {
               {/* Team Section + Jersey Number */}
               <div className="modal-g2">
                 <div>
-                  <label style={lbl}>{sportType === 'basketball' ? 'Court Role / Unit' : 'Team Section'}</label>
-                  <input className="form-inp" value={form.team_section} onChange={e=>set('team_section')(e.target.value)} style={inp} placeholder={sportType === 'basketball' ? 'e.g. Starting 5 / Rotation' : 'e.g. Defense inside'}/>
+                  <label style={lbl}>Team Section</label>
+                  <input className="form-inp" value={form.team_section} onChange={e=>set('team_section')(e.target.value)} style={inp} placeholder="e.g. Defense inside"/>
                 </div>
                 <div>
                   <label style={lbl}>{jerseyLabel}</label>

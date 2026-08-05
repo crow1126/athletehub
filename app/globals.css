@@ -6,39 +6,39 @@
    ============================================================ */
 
 :root {
-  /* Brand Accents (Teal) */
+  /* Brand Accents (Teal & Emerald) */
   --lagoon:        #0D9488; /* Teal 600 */
   --lagoon-light:  #14B8A6; /* Teal 500 */
   --lagoon-deep:   #0F766E; /* Teal 700 */
   --lagoon-pale:   #F0FDFA; /* Teal 50 */
-  --lagoon-alpha:  rgba(13, 148, 136, 0.1);
+  --lagoon-alpha:  rgba(13, 148, 136, 0.12);
 
-  /* Mint Green Palette — for backgrounds & surfaces */
-  --mint-50:       #F0FBF4; /* Very pale mint — main app bg */
-  --mint-100:      #DCF5E5; /* Soft mint — sidebar bg */
-  --mint-200:      #BBE9CE; /* Muted mint — hover states */
-  --mint-300:      #86D4A8; /* Medium mint — accents */
+  /* Mint Green Palette — rich, clean, high contrast */
+  --mint-50:       #F4FAF6; /* Main app background */
+  --mint-100:      #D8F2E2; /* Sidebar bg & tint */
+  --mint-200:      #B2E6C6; /* Hover states */
+  --mint-300:      #76D29A; /* Medium mint accents */
 
   /* Surfaces */
-  --floral:        #F0FBF4; /* Mint 50  - App Background */
+  --floral:        #F4FAF6; /* Mint 50 - App Background */
   --floral-dark:   #FFFFFF; /* Pure White - Sidebar / Cards */
-  --floral-muted:  #E8F7EE; /* Tinted hover states */
+  --floral-muted:  #E5F5EB; /* Tinted hover states */
   
-  --border:        #D4EDDE; /* Soft green-tinted border */
-  --border-light:  #EBF7F0;
+  --border:        #BEE3CB; /* Clean, visible green-tinted border */
+  --border-light:  #E0F3E7;
 
-  /* Typography */
+  /* High-Contrast Typography for Maximum Readability */
   --font:   var(--font-jakarta), system-ui, sans-serif;
-  --text:   #0F2218; /* Deep forest - Headings */
-  --text2:  #1E4433; /* Dark green - Body */
-  --text3:  #5A7A68; /* Muted sage - Secondary */
+  --text:   #081C12; /* Deep rich forest - Headings */
+  --text2:  #123325; /* Dark forest green - Body */
+  --text3:  #2C523F; /* Crisp dark sage - Secondary labels */
 
   /* Soft Green-tinted Shadows */
-  --shadow-sm:  0 1px 3px 0 rgba(13, 100, 60, 0.06);
-  --shadow-md:  0 4px 8px -1px rgba(13, 100, 60, 0.08), 0 2px 4px -2px rgba(13, 100, 60, 0.04);
-  --shadow-lg:  0 10px 20px -3px rgba(13, 100, 60, 0.08), 0 4px 6px -4px rgba(13, 100, 60, 0.04);
-  --shadow-xl:  0 20px 30px -5px rgba(13, 100, 60, 0.08), 0 8px 12px -6px rgba(13, 100, 60, 0.04);
-  --shadow-glow: 0 0 24px rgba(13, 148, 136, 0.18);
+  --shadow-sm:  0 1px 3px 0 rgba(8, 50, 30, 0.08);
+  --shadow-md:  0 4px 10px -1px rgba(8, 50, 30, 0.1), 0 2px 4px -2px rgba(8, 50, 30, 0.05);
+  --shadow-lg:  0 12px 24px -3px rgba(8, 50, 30, 0.12), 0 4px 8px -4px rgba(8, 50, 30, 0.06);
+  --shadow-xl:  0 20px 32px -5px rgba(8, 50, 30, 0.14), 0 8px 16px -6px rgba(8, 50, 30, 0.08);
+  --shadow-glow: 0 0 24px rgba(13, 148, 136, 0.22);
 
   /* Border Radii */
   --r-sm:  8px;
@@ -49,7 +49,7 @@
   --transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.15s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.15s ease, background-color 0.15s ease, opacity 0.15s ease;
 
   /* Status Colors */
-  --success:       #059669; /* Emerald 600 */
+  --success:       #047857; /* Emerald 700 */
   --success-light: #D1FAE5; /* Emerald 100 */
   --danger:        #E11D48; /* Rose 600 */
   --danger-light:  #FFE4E6; /* Rose 100 */
@@ -60,9 +60,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  /* Soft mint-green gradient background with hardware acceleration */
-  background: #F0FBF4;
-  background-image: linear-gradient(135deg, #C8EDCE 0%, #E4F7E8 30%, #F0FBF4 60%, #FFFFFF 100%);
+  /* Rich emerald & mint green background gradient */
+  background: #F4FAF6;
+  background-image: linear-gradient(135deg, #D4F0DD 0%, #EFF8F2 45%, #F4FAF6 70%, #FFFFFF 100%);
   color: var(--text2);
   font-family: var(--font);
   -webkit-font-smoothing: antialiased;

@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
-import { getSportConfig } from '@/lib/sportsConfig'
+
 import { getTenantProfile } from '@/lib/tenant'
 
 import {
@@ -399,17 +399,7 @@ export default function Layout({ children }) {
 
   const role        = profile?.role || 'admin'
   const allowed     = ROLE_PERMISSIONS[role] || ROLE_PERMISSIONS['admin']
-  const sportConfig = getSportConfig(profile?.teams?.sport_type || 'football')
-  const labels      = sportConfig.labels || {}
-
-  const navLinks = ALL_NAV.filter(n => allowed.includes(n.page)).map(n => {
-    let customLabel = n.label
-    if (n.page === 'athletes') customLabel = labels.athletes || n.label
-    if (n.page === 'coaches')  customLabel = labels.coaches || n.label
-    if (n.page === 'transfers') customLabel = labels.transfers || n.label
-    if (n.page === 'performance') customLabel = labels.performance || n.label
-    return { ...n, label: customLabel }
-  })
+  const navLinks = ALL_NAV.filter(n => allowed.includes(n.page))
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 

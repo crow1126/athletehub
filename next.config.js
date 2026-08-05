@@ -2,6 +2,11 @@
 const nextConfig = {
   allowedDevOrigins: ['10.244.248.115'],
 
+  // Limit concurrent build workers to prevent OOM on machines with limited RAM/swap
+  experimental: {
+    cpus: 2,
+  },
+
   async redirects() {
     return [
       {

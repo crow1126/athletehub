@@ -48,7 +48,7 @@ export default function SettingsPage() {
   const [isAdmin,       setIsAdmin]       = useState(false)
   const [msg,           setMsg]           = useState({ text:'', type:'' })
   const [profileForm,   setProfileForm]   = useState({ full_name:'', phone:'' })
-  const [sportType,     setSportType]     = useState('football')
+
   const [pwForm,        setPwForm]        = useState({ newPw:'', confirm:'' })
   const [issueForm,     setIssueForm]     = useState({ coach_id:'', username:'', password:'', role:'physio', notes:'', full_name:'' })
   const [issueSaving,   setIssueSaving]   = useState(false)
@@ -404,61 +404,11 @@ export default function SettingsPage() {
                   <div><label style={lbl}>System Role</label><input value={profile?.role||''} disabled style={{ ...inp,opacity:0.55,cursor:'not-allowed',textTransform:'capitalize' }}/></div>
                   <div><label style={lbl}>Club / Team</label><input value={profile?.teams?.name||'No team assigned'} disabled style={{ ...inp,opacity:0.55,cursor:'not-allowed' }}/></div>
                   
-                  {/* Sport Context Setting */}
-                  {isAdmin && (
-                    <div>
-                      <label style={lbl}>Organization Sport Type</label>
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                        {[
-                          { id:'football',   label:'Football' },
-                          { id:'basketball', label:'Basketball' },
-                        ].map(sp => (
-                          <button
-                            key={sp.id}
-                            type="button"
-                            onClick={() => setSportType(sp.id)}
-                            style={{
-                              padding:'10px 14px',
-                              background: (sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) ? 'rgba(13,148,136,0.08)' : '#fff',
-                              border: (sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) ? '2px solid #0D9488' : '1px solid var(--border)',
-                              borderRadius:'var(--r-md)',
-                              fontSize:13,
-                              fontWeight:700,
-                              color: (sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) ? '#0D9488' : 'var(--text)',
-                              cursor:'pointer',
-                              textAlign:'center'
-                            }}
-                          >
-                            {sp.label}
-                            {(sportType === sp.id || (sportType === 'soccer' && sp.id === 'football')) && <div style={{ fontSize:10, color:'#0D9488', fontWeight:600 }}>Active</div>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
                   <div><label style={lbl}>Phone</label><input value={profileForm.phone} onChange={e=>setProfileForm(f=>({...f,phone:e.target.value}))} style={inp} placeholder="+233 24 000 0000" onFocus={onFocus} onBlur={onBlur}/></div>
                   <MsgBox m={msg}/>
                   <button onClick={saveProfile} disabled={saving} className="gm-btn" style={{ width:'fit-content',opacity:saving?0.7:1 }}>
                     {saving?'Saving…':'Save Changes'} {!saving&&GM_ICON}
                   </button>
-
-                  {/* Multi-sport: Manage / Switch Teams */}
-                  {isAdmin && (
-                    <div style={{ marginTop:8, padding:'16px 18px', background:'rgba(13,148,136,0.04)', border:'1px solid rgba(13,148,136,0.15)', borderRadius:'var(--r-md)' }}>
-                      <div style={{ fontSize:12, fontWeight:800, color:'#0D9488', letterSpacing:'0.06em', textTransform:'uppercase', marginBottom:8 }}>Multi-Sport Management</div>
-                      <div style={{ fontSize:13, color:'var(--text2)', marginBottom:12, lineHeight:1.6 }}>
-                        Manage multiple sport organisations under one account. Switch between your Football club and Basketball team without logging out.
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => { const router = document.querySelector('[data-router]'); window.location.href = '/switch-team' }}
-                        onClick={() => window.location.href = '/switch-team'}
-                        style={{ display:'inline-flex', alignItems:'center', gap:8, background:'var(--lagoon-alpha)', color:'#0D9488', border:'1px solid rgba(13,148,136,0.25)', borderRadius:'var(--r-md)', padding:'9px 16px', fontSize:12, fontWeight:700, cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>
-                        Manage Teams / Switch Sport
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

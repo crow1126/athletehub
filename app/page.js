@@ -1272,7 +1272,7 @@ export default function LandingPage() {
             <Link href="/login" className="footer-link">Sign In</Link>
           </div>
         </div>
-        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Multi-Sport Management Platform built for African football &amp; basketball clubs.</div>
+        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Football Club Management Platform built for African football clubs.</div>
       </footer>
     </>
   )

@@ -7,7 +7,7 @@ import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { getSportConfig } from '@/lib/sportsConfig'
+
 
 const currency = v => v ? `GHS ${parseFloat(v).toLocaleString('en-GH', { minimumFractionDigits: 2 })}` : '—'
 const daysLeft = d => { if (!d) return null; const diff = Math.floor((new Date(d) - new Date()) / 86400000); return diff }
@@ -96,7 +96,7 @@ export default function CoachesPage() {
   const [currentUser,  setCurrentUser]  = useState(null)
   const [hasStampCols, setHasStampCols] = useState(false)
   const [teamId,       setTeamId]       = useState(null)
-  const [sportType,    setSportType]    = useState('football')
+
   const [draftSavedAt, setDraftSavedAt] = useState(null)
   const [hasDraft,     setHasDraft]     = useState(false)
   const draftTimer = useRef(null)
@@ -258,8 +258,7 @@ export default function CoachesPage() {
   const totalWageBill=activeContracts.reduce((s,c)=>s+(parseFloat(c.monthly_salary)||0),0)
   const expiringContracts=coaches.filter(c=>{ const d=daysLeft(c.contract_end); return d!==null&&d>=0&&d<=90 })
 
-  const sportConfig = getSportConfig(sportType)
-  const pageTitle = sportConfig.labels?.coaches || 'Team & Staff'
+  const pageTitle = 'Team & Staff'
 
   return (
     <Layout>

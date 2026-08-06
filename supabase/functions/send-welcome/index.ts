@@ -30,9 +30,10 @@ serve(async (req) => {
       : 'Use your registered email and password to sign in.'
 
     const welcomeHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
-      '<div style="background:linear-gradient(135deg,#004F4F,#008080);padding:28px;border-radius:12px 12px 0 0;text-align:center;">' +
-      '<h1 style="color:#FFFCF6;margin:0;font-size:22px;">Welcome to Apex Track</h1>' +
-      '<p style="color:rgba(255,252,246,0.7);margin:6px 0 0;">' + (club_name || "Your club") + ' is now live</p>' +
+      '<div style="background:linear-gradient(135deg,#022C22,#047857);padding:28px;border-radius:12px 12px 0 0;text-align:center;">' +
+      '<img src="https://apextrackgh.com/logo.png" alt="Apex Track" style="max-height:44px;width:auto;margin-bottom:12px;display:inline-block;" />' +
+      '<h1 style="color:#FFFFFF;margin:0;font-size:22px;">Welcome to Apex Track</h1>' +
+      '<p style="color:rgba(236,253,245,0.85);margin:6px 0 0;">' + (club_name || "Your club") + ' is now live</p>' +
       '</div>' +
       '<div style="background:#FFFCF6;padding:28px;border-radius:0 0 12px 12px;border:1px solid #E0F0F0;">' +
       '<p style="color:#003D3D;font-size:15px;">Hi ' + (full_name || 'there') + ',</p>' +

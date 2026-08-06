@@ -443,8 +443,8 @@ export default function LandingPage() {
           position: relative; transition: all 0.25s ease;
         }
         .price-card.featured {
-          border-color: #0D9488;
-          box-shadow: 0 12px 40px rgba(13,148,136,0.08);
+          border-color: #E2E8F0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.03);
         }
         .price-badge {
           position: absolute; top: 20px; right: 20px;
@@ -996,7 +996,6 @@ export default function LandingPage() {
 
             {/* Captain Tier Card */}
             <div className="price-card featured">
-              <div className="price-badge">Most Popular</div>
               <div>
                 <div className="price-tier">Captain</div>
                 <p className="price-desc">For semi-pro and professional clubs serious about performance, analytics, and staff payroll.</p>
@@ -1006,6 +1005,7 @@ export default function LandingPage() {
                   {[
                     'Unlimited active athletes',
                     'Everything in Starting XI plan',
+                    'ApexPay (Payroll & MoMo disbursements)',
                     'Performance Analytics (xG, xA, match ratings)',
                     'Scouting Module & Transfer History',
                     'Advanced Reports (board-level summaries)',

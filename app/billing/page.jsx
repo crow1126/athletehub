@@ -87,7 +87,7 @@ const PLANS = {
   starting_xi:{ label:'Starting XI', price:199, usd:13, popular:false,
     features:['Up to 40 athletes','Squad Roster','Training Scheduler','Injury Hub','Basic Reports (PDF export)','Admin + Coach + Physio roles','Email support'],
     locked:  ['ApexPay Payroll Module','Performance Analytics','Scouting Module + Transfers','Advanced Reports','Analyst role','Custom club branding'] },
-  captain:    { label:'Captain',      price:499, usd:33, popular:true,
+  captain:    { label:'Captain',      price:499, usd:33, popular:false,
     features:['Unlimited athletes','Everything in Starting XI','ApexPay Payroll & MoMo Disbursements','Performance Analytics (xG, xA, match ratings)','Scouting Module + Transfers','Advanced Reports (board/medical)','All 4 roles including Analyst','Custom club branding','Priority support + onboarding'],
     locked:[] },
 }

@@ -132,10 +132,8 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: resendEmail }),
       })
-      let errMsg = 'Failed to resend verification email.'
-      try { const j = await res.json(); errMsg = j.error || errMsg } catch (_e) { /* ignore parse error */ }
-      if (!res.ok) throw new Error(errMsg)
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || 'Failed to resend verification email.')
       setSuccess(data.message || 'Verification email sent. Check your inbox.')
       setNeedsVerification(true)
     } catch (err) {

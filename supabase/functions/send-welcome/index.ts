@@ -29,11 +29,11 @@ serve(async (req) => {
       ? 'After confirming, return to Apex Track and sign in with the email and password you registered.'
       : 'Use your registered email and password to sign in.'
 
-    const LOGO_B64 = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjEyOCIgaGVpZ2h0PSIxMjgiIHJ4PSIyOCIgZmlsbD0idXJsKCNiZykiLz4KICA8cGF0aCBkPSJNMjQgOTJMNTIgMzZMODAgOTJINjdMNjEuNSA4MEg0Mi41TDM3IDkySDI0Wk00Ny41IDY5SDU2LjVMNTIgNTguNUw0Ny41IDY5WiIgZmlsbD0id2hpdGUiLz4KICA8cGF0aCBkPSJNODYgMzdIMTA2QzExMi42MjcgMzcgMTE4IDQyLjM3MjYgMTE4IDQ5QzExOCA1NS42Mjc0IDExMi42MjcgNjEgMTA2IDYxSDk2VjkySDg2VjM3Wk0xMDYgNTFDMTA3LjEwNSA1MSAxMDggNTAuMTA0NiAxMDggNDlDMTA4IDQ3Ljg5NTQgMTA3LjEwNSA0NyAxMDYgNDdIOTZWNTFIMTA2WiIgZmlsbD0iI0NDRkJGMSIvPgogIDxkZWZzPgogICAgPGxpbmVhckdyYWRpZW50IGlkPSJiZyIgeDE9IjEzIiB5MT0iOCIgeDI9IjExNiIgeTI9IjEyMiIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiPgogICAgICA8c3RvcCBzdG9wLWNvbG9yPSIjMEY3NjZFIi8+CiAgICAgIDxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzBEOTQ4OCIvPgogICAgPC9saW5lYXJHcmFkaWVudD4KICA8L2RlZnM+Cjwvc3ZnPgo='
+    const logoUrl = 'https://apextrackgh.com/logo.png'
 
     const welcomeHtml = '<div style="font-family:sans-serif;max-width:500px;margin:0 auto;">' +
       '<div style="background:linear-gradient(135deg,#022C22,#047857);padding:28px 28px 24px;border-radius:12px 12px 0 0;text-align:center;">' +
-      '<img src="' + LOGO_B64 + '" alt="Apex Track" width="48" height="48" style="width:48px;height:48px;border-radius:12px;display:inline-block;margin-bottom:10px;" />' +
+      '<img src="' + logoUrl + '" alt="Apex Track" width="56" height="56" style="width:56px;height:56px;border-radius:14px;display:inline-block;margin-bottom:10px;object-fit:cover;box-shadow:0 4px 12px rgba(0,0,0,0.15);" />' +
       '<h1 style="color:#FFFFFF;margin:0;font-size:22px;font-weight:800;letter-spacing:-0.5px;">Apex Track</h1>' +
       '<p style="color:rgba(236,253,245,0.85);margin:6px 0 0;font-size:14px;">' + (club_name || "Your club") + ' is now live</p>' +
       '</div>' +

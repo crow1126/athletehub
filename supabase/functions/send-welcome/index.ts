@@ -1,4 +1,7 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+
+declare const Deno: any;
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 const SUPERADMIN_EMAIL = "admin@apextrackgh.com"
@@ -10,7 +13,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders })
   }
@@ -90,7 +93,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), {
       status: 200, headers: corsHeaders
     })
-  } catch (err) {
+  } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500, headers: corsHeaders
     })

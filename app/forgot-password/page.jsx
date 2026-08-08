@@ -1,8 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
 
 function OrbCanvas() {
   const ref = useRef(null)
@@ -58,37 +56,23 @@ export default function ForgotPasswordPage() {
 
     setLoading(true)
     try {
-      // 1. Verify if email exists in database
-      const checkRes = await fetch('/api/auth/check-email', {
+      // Server-side route: admin.generateLink (service role) + Resend email
+      // Bypasses Supabase built-in SMTP which does not work on this project
+      const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: targetEmail })
       })
-      const checkData = await checkRes.json()
+      const data = await res.json()
 
-      if (!checkRes.ok) {
-        throw new Error(checkData.error || 'Failed to check account.')
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to send reset email.')
       }
 
-      if (!checkData.exists) {
-        setError('This email address is not registered in our system.')
-        setLoading(false)
-        return
-      }
-
-      // 2. Call Supabase reset password
-      const { error: resetErr } = await supabase.auth.resetPasswordForEmail(targetEmail, {
-        redirectTo: `${window.location.origin}/auth/reset-password`,
-      })
-
-      if (resetErr) {
-        setError(resetErr.message)
-      } else {
-        setSuccess('Password reset email sent! Check your inbox for the reset link.')
-        setEmail('')
-      }
+      setSuccess('Password reset email sent! Check your inbox (and spam folder) for the reset link.')
+      setEmail('')
     } catch (err) {
-      setError(err.message || 'An unexpected error occurred.')
+      setError(err.message || 'An unexpected error occurred. Please try again.')
     }
     setLoading(false)
   }

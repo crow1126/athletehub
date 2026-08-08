@@ -4,7 +4,7 @@ import { generalLimiter } from '@/lib/rateLimit'
 
 const supabase = createServiceClient()
 
-// Deterministic generator fallback if GROQ_API_KEY is not defined
+// Deterministic generator fallback if AI services fail or keys are unconfigured
 function generatePlayerProfile(name) {
   const query = name.trim()
   if (query.length < 2) return null
@@ -48,6 +48,82 @@ function generatePlayerProfile(name) {
   }
 }
 
+function parseModelJson(text) {
+  try {
+    return JSON.parse(text)
+  } catch {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+    if (match) return JSON.parse(match[1])
+    const firstBrace = text.indexOf('{')
+    const lastBrace = text.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return JSON.parse(text.substring(firstBrace, lastBrace + 1))
+    }
+    throw new Error('Invalid JSON format in model output.')
+  }
+}
+
+async function callClaudeHaiku(query, systemPrompt, apiKey) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'content-type': 'application/json'
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-haiku-20241022',
+      max_tokens: 600,
+      system: systemPrompt,
+      messages: [
+        { role: 'user', content: `Retrieve the scouting profile for football player: "${query.trim()}"` }
+      ]
+    })
+  })
+
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const errorMsg = body?.error?.message || `Anthropic HTTP Error ${res.status}`
+    throw new Error(`Claude Haiku API error: ${errorMsg}`)
+  }
+
+  const text = body.content?.[0]?.text
+  if (!text) throw new Error('Empty text content returned from Claude Haiku.')
+
+  return parseModelJson(text)
+}
+
+async function callGroq(query, systemPrompt, apiKey) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `Retrieve the scouting profile for football player: "${query.trim()}"` }
+      ],
+      response_format: { type: 'json_object' },
+      temperature: 0.3,
+      max_tokens: 500
+    })
+  })
+
+  const body = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const errorMsg = body?.error?.message || `Groq HTTP Error ${res.status}`
+    throw new Error(`Groq API error: ${errorMsg}`)
+  }
+
+  const text = body.choices?.[0]?.message?.content
+  if (!text) throw new Error('Empty response from Groq API.')
+
+  return parseModelJson(text)
+}
+
 export async function GET(req) {
   // Rate limit by IP (30 requests / minute)
   const limited = generalLimiter(req)
@@ -63,16 +139,6 @@ export async function GET(req) {
 
     if (!query || query.trim().length < 2) {
       return NextResponse.json({ error: 'Search query must be at least 2 characters long.' }, { status: 400 })
-    }
-
-    const apiKey = process.env.GROQ_API_KEY
-    if (!apiKey) {
-      const fallbackData = generatePlayerProfile(query)
-      return NextResponse.json({
-        source: 'fallback',
-        warning: 'GROQ_API_KEY not configured. Using deterministic offline generator.',
-        data: fallbackData
-      })
     }
 
     const systemPrompt = `You are an expert football scout database. When given a player name, return ONLY a valid JSON object with these exact fields:
@@ -94,68 +160,56 @@ export async function GET(req) {
 
 If the player is a known professional footballer, use their real stats. If unknown, generate plausible realistic stats. Return ONLY the JSON object, no markdown, no extra text.`
 
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Retrieve the scouting profile for football player: "${query.trim()}"` }
-        ],
-        response_format: { type: 'json_object' },
-        temperature: 0.3,
-        max_tokens: 500
-      })
-    })
+    const anthropicKey = process.env.ANTHROPIC_API_KEY
+    const groqKey = process.env.GROQ_API_KEY
 
-    if (!res.ok) {
-      const errBody = await res.json().catch(() => ({}))
-      console.error('Groq API Error:', res.status, errBody)
+    let lastError = null
 
-      const fallbackData = generatePlayerProfile(query)
-      return NextResponse.json({
-        source: 'fallback',
-        warning: `Groq API error (${res.status}). Using offline fallback.`,
-        data: fallbackData
-      })
-    }
-
-    const raw = await res.json()
-    const text = raw.choices?.[0]?.message?.content
-
-    if (!text) {
-      throw new Error('Empty response from Groq API.')
-    }
-
-    let playerData
-    try {
-      playerData = JSON.parse(text)
-    } catch {
-      const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
-      if (match) {
-        playerData = JSON.parse(match[1])
-      } else {
-        throw new Error('Could not parse JSON from Groq response.')
+    // 1. Try Claude Haiku first if Anthropic API Key is configured
+    if (anthropicKey) {
+      try {
+        const data = await callClaudeHaiku(query, systemPrompt, anthropicKey)
+        return NextResponse.json({
+          source: 'claude-haiku',
+          model: 'claude-3-5-haiku-20241022',
+          data
+        })
+      } catch (err) {
+        console.error('Claude Haiku API lookup failed:', err.message)
+        lastError = err.message
       }
     }
 
+    // 2. Fallback to Groq if configured
+    if (groqKey) {
+      try {
+        const data = await callGroq(query, systemPrompt, groqKey)
+        return NextResponse.json({
+          source: 'groq-fallback',
+          warning: lastError ? `Anthropic Claude notice: ${lastError}. Used Groq fallback.` : null,
+          data
+        })
+      } catch (err) {
+        console.error('Groq API lookup failed:', err.message)
+        if (!lastError) lastError = err.message
+      }
+    }
+
+    // 3. Fallback to deterministic generator
+    const fallbackData = generatePlayerProfile(query)
     return NextResponse.json({
-      source: 'ai',
-      data: playerData
+      source: 'offline-fallback',
+      warning: lastError ? `AI lookup notice: ${lastError}. Using offline fallback.` : 'No AI provider keys configured. Using offline fallback.',
+      data: fallbackData
     })
 
   } catch (error) {
     console.error('AI Lookup Route Error:', error)
-    // Always fall back gracefully
     const query = new URL(req.url).searchParams.get('query') || ''
     const fallbackData = generatePlayerProfile(query)
     return NextResponse.json({
-      source: 'fallback',
-      warning: 'Unexpected error. Using offline fallback.',
+      source: 'offline-fallback',
+      warning: 'Unexpected error during scouting lookup. Using offline fallback.',
       data: fallbackData
     })
   }

@@ -4,6 +4,7 @@ import AuthGuard from '@/components/AuthGuard'
 import { Analytics } from "@vercel/analytics/next"
 import ClickTracker from '@/components/ClickTracker'
 import PWAProvider from '@/components/PWAProvider'
+import CapacitorProvider from '@/components/CapacitorProvider'
 import InstallPWAButton from '@/components/InstallPWAButton'
 
 const jakarta = Plus_Jakarta_Sans({ 
@@ -40,6 +41,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={jakarta.variable}>
       <body className="antialiased">
         <PWAProvider />
+        <CapacitorProvider />
         <AuthGuard>
           {children}
         </AuthGuard>

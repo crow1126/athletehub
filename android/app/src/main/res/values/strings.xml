@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ApexTrack GH</string>
+    <string name="title_activity_main">ApexTrack GH</string>
+    <string name="package_name">gh.apextrack.app</string>
+    <string name="custom_url_scheme">gh.apextrack.app</string>
+</resources>

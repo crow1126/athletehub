@@ -169,6 +169,15 @@ function BillingContent(){
   // Usage Stats
   const [athleteCount, setAthleteCount] = useState(0)
   const [staffCount,   setStaffCount]   = useState(0)
+  const [isNativeApp,  setIsNativeApp]  = useState(false)
+
+  useEffect(() => {
+    import('@capacitor/core').then(({ Capacitor }) => {
+      if (Capacitor.isNativePlatform()) {
+        setIsNativeApp(true)
+      }
+    }).catch(() => {})
+  }, [])
 
   const flash=(text,type='success')=>{ setMsg({text,type}); setTimeout(()=>setMsg({text:'',type:''}),9000) }
 
@@ -343,6 +352,17 @@ function BillingContent(){
             <div style={{fontSize:14,fontWeight:700,color:'var(--danger)',marginBottom:2}}>Your subscription has expired</div>
             <div style={{fontSize:13,color:'#9F1239'}}>Subscribe now to restore access to your club data.</div>
           </AlertBanner>
+        )}
+
+        {isNativeApp&&(
+          <div style={{background:'linear-gradient(135deg, #0F766E, #0D9488)',color:'#FFFFFF',padding:'16px 20px',borderRadius:'var(--r-lg)',marginBottom:24,boxShadow:'var(--shadow-md)'}}>
+            <div style={{fontSize:14,fontWeight:700,marginBottom:4,display:'flex',alignItems:'center',gap:8}}>
+              <span>📲</span> Mobile App Subscription Management
+            </div>
+            <div style={{fontSize:12,opacity:0.92,lineHeight:1.6}}>
+              Club subscriptions and billing management for ApexTrack GH are administered via our web dashboard. To change your plan or make payments, please sign in at <strong>apextrackgh.com</strong> on any desktop or mobile web browser.
+            </div>
+          </div>
         )}
 
         {/* Tabs */}

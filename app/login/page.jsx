@@ -514,13 +514,10 @@ export default function LoginPage() {
             {/* Progress bar */}
             <div style={{ height: 3, background: 'linear-gradient(90deg,#0D9488,#14B8A6,#99F6E4)', borderRadius: '22px 22px 0 0', backgroundSize: '200% 100%', animation: 'shimmer 2.5s ease infinite' }} />
             <div className="auth-card" style={{ borderRadius: '0 0 22px 22px', borderTop: 'none' }}>
-              {/* In desktop Electron mode: no Register tab — registration is done via web */}
-              {!isElectron && (
-                <div className="auth-tabs">
-                  <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>Sign In</button>
-                  <button className={`auth-tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); setSuccess(''); }}>Register</button>
-                </div>
-              )}
+              <div className="auth-tabs">
+                <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => { setTab('login'); setError(''); setSuccess(''); }}>Sign In</button>
+                <button className={`auth-tab ${tab === 'signup' ? 'active' : ''}`} onClick={() => { setTab('signup'); setError(''); setSuccess(''); }}>Register</button>
+              </div>
 
               {/* Logo row */}
               <div style={{ padding: '24px 28px 4px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -571,11 +568,7 @@ export default function LoginPage() {
                   <p style={{ textAlign: 'center', fontSize: 12, color: '#64748B' }}>
                     <Link href="/forgot-password" style={{ color: '#94A3B8', fontWeight: 600, textDecoration: 'none' }}>Forgot password?</Link>
                     {'  ·  '}
-                    {isElectron ? (
-                      <>No account? <a href="https://apextrackgh.com/login?tab=signup" target="_blank" rel="noopener noreferrer" style={{ color: '#0D9488', fontWeight: 700, textDecoration: 'none' }}>Register via web</a></>
-                    ) : (
-                      <>No account? <button type="button" onClick={() => { setTab('signup'); setError(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Register here</button></>
-                    )}
+                    No account? <button type="button" onClick={() => { setTab('signup'); setError(''); }} style={{ background: 'none', border: 'none', color: '#0D9488', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Register here</button>
                   </p>
                 </form>
               ) : (

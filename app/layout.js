@@ -39,6 +39,13 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={jakarta.variable}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{if(typeof navigator!=='undefined'&&(navigator.userAgent.includes('Electron')||navigator.userAgent.includes('ApexTrackDesktop')||window.electronAPI?.isElectron)){document.documentElement.classList.add('is-electron')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body className="antialiased">
         <PWAProvider />
         <CapacitorProvider />

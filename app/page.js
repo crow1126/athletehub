@@ -138,7 +138,16 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState(null)
-  const [isElectron, setIsElectron] = useState(false)
+  const [isElectron, setIsElectron] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        !!window.electronAPI?.isElectron ||
+        navigator.userAgent.includes('Electron') ||
+        navigator.userAgent.includes('ApexTrackDesktop')
+      )
+    }
+    return false
+  })
 
   // Detect Electron synchronously before first paint to avoid the
   // flash where the Download tab briefly appears then disappears.
@@ -824,7 +833,7 @@ export default function LandingPage() {
         <div className="mobile-menu">
           <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>×</button>
           {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
-            <button key={l} className="mobile-menu-link" onClick={() => scrollTo(l)}>{l}</button>
+            <button key={l} className={`mobile-menu-link${l === 'Download' ? ' electron-hide' : ''}`} onClick={() => scrollTo(l)}>{l}</button>
           ))}
           <Link href="/login" className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>
             Get Started
@@ -841,7 +850,7 @@ export default function LandingPage() {
 
         <div className="nav-links-center">
           {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
-            <button key={l} className="nav-link" onClick={() => scrollTo(l)}>
+            <button key={l} className={`nav-link${l === 'Download' ? ' electron-hide' : ''}`} data-nav={l} onClick={() => scrollTo(l)}>
               {l} <span className="nav-link-arrow">▾</span>
             </button>
           ))}
@@ -882,7 +891,7 @@ export default function LandingPage() {
             <a 
               href="#download"
               onClick={e => { e.preventDefault(); document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="btn-primary" 
+              className="btn-primary electron-hide" 
               style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
@@ -1090,7 +1099,7 @@ export default function LandingPage() {
 
       {/* ── DOWNLOAD SECTION (EDITORIAL ART STYLE) ── */}
       {!isElectron && (
-        <section className="download-section" id="download">
+        <section className="download-section electron-hide" id="download">
           <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div className="section-eyebrow">
               <div className="eyebrow-line" />
@@ -1273,7 +1282,7 @@ export default function LandingPage() {
           <div className="footer-brand">Apex<span>Track</span></div>
           <div className="footer-links">
             {!isElectron && (
-              <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link">Download Windows App (.exe)</a>
+              <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link electron-hide">Download Windows App (.exe)</a>
             )}
             <Link href="/privacy" className="footer-link">Privacy Policy</Link>
             <Link href="/terms" className="footer-link">Terms of Service</Link>

@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+/* ── ELECTRON APP ZERO-FLASH RULE ── */
+html.is-electron .electron-hide,
+html.is-electron [data-nav="Download"],
+html.is-electron #download,
+html.is-electron a[href*="ApexTrack-Setup.exe"] {
+  display: none !important;
+}
+
 /* ============================================================
    MINT BREEZE THEME — Apex Track
    Soft Green Gradient · Clean Whites · Crisp Teal Accents

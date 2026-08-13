@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { IconMenu, IconCheck } from '@/lib/icons'
@@ -140,12 +140,21 @@ export default function LandingPage() {
   const [activeFaq, setActiveFaq] = useState(null)
   const [isElectron, setIsElectron] = useState(false)
 
+  // Detect Electron synchronously before first paint to avoid the
+  // flash where the Download tab briefly appears then disappears.
+  useLayoutEffect(() => {
+    if (
+      window.electronAPI?.isElectron ||
+      navigator.userAgent.includes('Electron') ||
+      navigator.userAgent.includes('ApexTrackDesktop')
+    ) {
+      setIsElectron(true)
+    }
+  }, [])
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 48)
     window.addEventListener('scroll', onScroll)
-    if (typeof window !== 'undefined' && (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron'))) {
-      setIsElectron(true)
-    }
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 

@@ -217,7 +217,7 @@ export default function AthletesPage() {
   async function uploadPhoto(athleteId) {
     if (!photoFile) return null
     const ext = photoFile.name.split('.').pop()
-    const path = `${athleteId}.${ext}`
+    const path = teamId ? `${teamId}/${athleteId}.${ext}` : `${athleteId}.${ext}`
     const { error } = await supabase.storage.from('athlete-photos').upload(path, photoFile, { upsert:true })
     if (error) { console.error('Upload error:', error); return null }
     const { data } = supabase.storage.from('athlete-photos').getPublicUrl(path)

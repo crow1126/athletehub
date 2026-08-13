@@ -186,7 +186,7 @@ export default function CoachesPage() {
     if (!photoFile) return null
     try {
       const ext=photoFile.name.split('.').pop()
-      const path=`staff/${coachId}.${ext}`
+      const path=teamId ? `${teamId}/staff_${coachId}.${ext}` : `staff/${coachId}.${ext}`
       const {error}=await supabase.storage.from('athlete-photos').upload(path,photoFile,{upsert:true})
       if (error){console.error('Photo upload:',error);return null}
       const {data}=supabase.storage.from('athlete-photos').getPublicUrl(path)

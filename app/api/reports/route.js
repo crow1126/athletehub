@@ -1,7 +1,16 @@
 import { NextResponse } from 'next/server'
+import { createServiceClient, getRequester } from '@/lib/serverAuth'
+
+const db = createServiceClient()
 
 export async function POST(req) {
   try {
+    // Auth guard — reject unauthenticated / inactive users
+    const requester = await getRequester(req, db)
+    if (requester.error) {
+      return NextResponse.json({ error: requester.error }, { status: requester.status })
+    }
+
     const body = await req.json()
     const {
       type, month, year, reportType = 'monthly',

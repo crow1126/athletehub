@@ -266,20 +266,7 @@ export default function LoginPage() {
       })
       if (authError) { setError(authError.message); setLoading(false); return }
       if (data?.user) {
-        let logoUrl = null
-        if (clubLogo) {
-          try {
-            const ext = clubLogo.name.split('.').pop()
-            const path = `club-logos/${data.user.id}.${ext}`
-            const { error: uploadErr } = await supabase.storage.from('athlete-photos').upload(path, clubLogo, { upsert: true })
-            if (!uploadErr) {
-              logoUrl = supabase.storage.from('athlete-photos').getPublicUrl(path).data.publicUrl
-            }
-          } catch (uploadErr) {
-            console.warn('Logo upload failed (non-blocking):', uploadErr.message)
-          }
-        }
-
+        let provTeamId = null
         try {
           const provRes = await fetch('/api/signup-provision', {
             method: 'POST',
@@ -289,13 +276,28 @@ export default function LoginPage() {
               full_name: fullName.trim(),
               club_name: clubName.trim(),
               email: email.trim().toLowerCase(),
-              logo_url: logoUrl,
             }),
           })
           const provData = await provRes.json()
           if (!provRes.ok) console.warn('Auto-provision warning:', provData.error)
+          else provTeamId = provData.team_id
         } catch (provErr) {
           console.warn('Auto-provision failed (non-blocking):', provErr.message)
+        }
+
+        if (clubLogo && provTeamId) {
+          try {
+            const ext = clubLogo.name.split('.').pop()
+            const path = `${provTeamId}/logo.${ext}`
+            const { error: uploadErr } = await supabase.storage.from('athlete-photos').upload(path, clubLogo, { upsert: true })
+            if (!uploadErr) {
+              const logoUrl = supabase.storage.from('athlete-photos').getPublicUrl(path).data.publicUrl
+              await supabase.from('profiles').update({ club_logo_url: logoUrl }).eq('id', data.user.id)
+              await supabase.from('teams').update({ logo_url: logoUrl }).eq('id', provTeamId)
+            }
+          } catch (uploadErr) {
+            console.warn('Logo upload failed (non-blocking):', uploadErr.message)
+          }
         }
         setSuccess('Account created! Check your email for "Confirm your email - Apex Track" and click the button to activate. Then sign in here.')
         setTab('login'); setPassword(''); setFullName(''); setClubName(''); setClubLogo(null); setLogoPreview('')

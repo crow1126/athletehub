@@ -154,18 +154,22 @@ export default function LandingPage() {
 
   function triggerWhatsAppBooking(form = demoForm) {
     const message = 
-`*ApexTrack Demo Request* ⚽
+`*APEXTRACK DEMO REQUEST*
+----------------------------------------
+*Club / Academy:* ${form.club || 'Not specified'}
+*Contact Person:* ${form.name || 'Not specified'}
+*Role:* ${form.role || 'Club Executive'}
+*Phone / WhatsApp:* ${form.phone || 'Not specified'}
+*Email:* ${form.email || 'Not specified'}
 
-👤 *Contact Person:* ${form.name || 'Not specified'}
-🏆 *Club / Academy:* ${form.club || 'Not specified'}
-💼 *Role:* ${form.role || 'Club Executive'}
-📱 *Phone / WhatsApp:* ${form.phone || 'Not specified'}
-📧 *Email:* ${form.email || 'Not specified'}
-📅 *Preferred Date:* ${form.date || 'Flexible'}
-⏰ *Preferred Time:* ${form.time || 'Flexible'}
-🎯 *Focus Area:* ${form.interest || 'Full System Walkthrough'}
-${form.notes ? `📝 *Notes:* ${form.notes}\n` : ''}
-Hi support team, I would like to schedule a 1-on-1 live demo of ApexTrack for our football club.`
+*Preferred Schedule:*
+- Date: ${form.date || 'Flexible'}
+- Time: ${form.time || 'Flexible'}
+- Focus: ${form.interest || 'Full System Walkthrough'}
+${form.notes ? `\n*Notes:*\n${form.notes}\n` : ''}----------------------------------------
+Hi ApexTrack Support, I would like to schedule a 1-on-1 walkthrough for our club.
+
+https://apextrackgh.com`
 
     const whatsappUrl = `https://wa.me/233554074984?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
@@ -173,21 +177,26 @@ Hi support team, I would like to schedule a 1-on-1 live demo of ApexTrack for ou
   }
 
   function triggerEmailBooking(form = demoForm) {
-    const subject = `ApexTrack Demo Request - ${form.club || form.name || 'Football Club'}`
+    const subject = `Demo Request: ${form.club || 'Club'} - ${form.name || 'Walkthrough'}`
     const body = 
-`ApexTrack Demo Request Details:
+`APEXTRACK DEMO REQUEST
+========================================
 
-Contact Person: ${form.name || 'Not specified'}
 Club / Academy: ${form.club || 'Not specified'}
+Contact Person: ${form.name || 'Not specified'}
 Role: ${form.role || 'Club Executive'}
 Phone / WhatsApp: ${form.phone || 'Not specified'}
 Email: ${form.email || 'Not specified'}
-Preferred Date: ${form.date || 'Flexible'}
-Preferred Time: ${form.time || 'Flexible'}
-Focus Area: ${form.interest || 'Full System Walkthrough'}
-Notes / Requirements: ${form.notes || 'None'}
 
-Please schedule a demo session for our technical team. Thank you!`
+Preferred Schedule:
+- Date: ${form.date || 'Flexible'}
+- Time: ${form.time || 'Flexible'}
+- Focus Area: ${form.interest || 'Full System Walkthrough'}
+${form.notes ? `\nAdditional Notes:\n${form.notes}\n` : ''}
+========================================
+ApexTrack Football Management Platform
+Website: https://apextrackgh.com
+Direct Support: admin@apextrackgh.com / WhatsApp: +233554074984`
 
     const mailtoUrl = `mailto:admin@apextrackgh.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
     window.location.href = mailtoUrl
@@ -1287,7 +1296,7 @@ Please schedule a demo session for our technical team. Thank you!`
               <span className="eyebrow-text">Desktop App</span>
             </div>
             <h2 className="section-title">Download ApexTrack</h2>
-            <p className="section-sub">Install the full platform on your computer. Works offline, syncs when online.</p>
+            <p className="section-sub">Install the dedicated Windows desktop client for fast, focused club management.</p>
           </div>
 
           <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
@@ -1317,7 +1326,7 @@ Please schedule a demo session for our technical team. Thank you!`
                   </h3>
                   
                   <p className="dl-sub-editorial">
-                    The complete club management suite. Fast, stable, works without internet.
+                    The dedicated desktop application for football clubs. Fast, secure, and seamlessly connected to your club database.
                   </p>
 
                   <div className="dl-cta-row">
@@ -1364,15 +1373,15 @@ Please schedule a demo session for our technical team. Thank you!`
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Offline-first — full functionality without internet</span>
+                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Dedicated desktop workspace — no browser distractions</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Auto-syncs to the cloud when connected</span>
+                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Real-time sync with club cloud database</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                       <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Row-level security — your club data stays yours</span>
+                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Strict Postgres RLS data isolation &amp; security</span>
                     </div>
                   </div>
 

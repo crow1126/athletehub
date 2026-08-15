@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { IconMenu, IconCheck } from '@/lib/icons'
 
-const NAV_LINKS = ['Features', 'Pricing', 'Download', 'FAQ', 'Support']
+const NAV_LINKS = ['Features', 'Pricing', 'Demo', 'Download', 'FAQ', 'Support']
 
 const FEATURES = [
   { 
@@ -138,6 +138,61 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState(null)
+  const [demoModalOpen, setDemoModalOpen] = useState(false)
+  const [demoSubmitted, setDemoSubmitted] = useState(false)
+  const [demoForm, setDemoForm] = useState({
+    name: '',
+    club: '',
+    phone: '',
+    email: '',
+    date: '',
+    time: '',
+    role: 'Club Executive / Admin',
+    interest: 'Full System Walkthrough',
+    notes: ''
+  })
+
+  function triggerWhatsAppBooking(form = demoForm) {
+    const message = 
+`*ApexTrack Demo Request* ⚽
+
+👤 *Contact Person:* ${form.name || 'Not specified'}
+🏆 *Club / Academy:* ${form.club || 'Not specified'}
+💼 *Role:* ${form.role || 'Club Executive'}
+📱 *Phone / WhatsApp:* ${form.phone || 'Not specified'}
+📧 *Email:* ${form.email || 'Not specified'}
+📅 *Preferred Date:* ${form.date || 'Flexible'}
+⏰ *Preferred Time:* ${form.time || 'Flexible'}
+🎯 *Focus Area:* ${form.interest || 'Full System Walkthrough'}
+${form.notes ? `📝 *Notes:* ${form.notes}\n` : ''}
+Hi support team, I would like to schedule a 1-on-1 live demo of ApexTrack for our football club.`
+
+    const whatsappUrl = `https://wa.me/233554074984?text=${encodeURIComponent(message)}`
+    window.open(whatsappUrl, '_blank')
+    setDemoSubmitted(true)
+  }
+
+  function triggerEmailBooking(form = demoForm) {
+    const subject = `ApexTrack Demo Request - ${form.club || form.name || 'Football Club'}`
+    const body = 
+`ApexTrack Demo Request Details:
+
+Contact Person: ${form.name || 'Not specified'}
+Club / Academy: ${form.club || 'Not specified'}
+Role: ${form.role || 'Club Executive'}
+Phone / WhatsApp: ${form.phone || 'Not specified'}
+Email: ${form.email || 'Not specified'}
+Preferred Date: ${form.date || 'Flexible'}
+Preferred Time: ${form.time || 'Flexible'}
+Focus Area: ${form.interest || 'Full System Walkthrough'}
+Notes / Requirements: ${form.notes || 'None'}
+
+Please schedule a demo session for our technical team. Thank you!`
+
+    const mailtoUrl = `mailto:admin@apextrackgh.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    window.location.href = mailtoUrl
+    setDemoSubmitted(true)
+  }
   const [isElectron, setIsElectron] = useState(() => {
     if (typeof window !== 'undefined') {
       return (
@@ -765,6 +820,111 @@ export default function LandingPage() {
           border-color: #0D9488; background: #F0FDFA; transform: translateY(-1px);
         }
 
+        /* ── DEMO BOOKING SECTION & MODAL ── */
+        .demo-section {
+          padding: 96px 48px;
+          background: transparent;
+        }
+        .demo-card {
+          max-width: 1100px; margin: 0 auto;
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(13, 148, 136, 0.25);
+          border-radius: 28px;
+          padding: 48px;
+          box-shadow: 0 20px 60px rgba(13, 148, 136, 0.08), 0 4px 20px rgba(0, 0, 0, 0.02);
+        }
+        .demo-grid {
+          display: grid; grid-template-columns: 1fr 1.15fr; gap: 48px; align-items: start;
+        }
+        .demo-info-title {
+          font-size: clamp(28px, 3.2vw, 38px); font-weight: 800; color: #0F172A;
+          letter-spacing: -0.03em; line-height: 1.15; margin-bottom: 16px;
+        }
+        .demo-info-sub {
+          font-size: 15px; color: #64748B; line-height: 1.65; margin-bottom: 28px;
+        }
+        .demo-feature-list {
+          display: flex; flex-direction: column; gap: 14px; margin-bottom: 32px;
+        }
+        .demo-feature-item {
+          display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 600; color: #334155;
+        }
+        .demo-feature-icon {
+          width: 28px; height: 28px; border-radius: 8px; background: #F0FDFA; border: 1px solid #CCFBF1;
+          display: flex; align-items: center; justify-content: center; color: #0D9488; flex-shrink: 0;
+        }
+        .demo-contact-strip {
+          display: flex; flex-direction: column; gap: 12px; padding: 20px;
+          background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px;
+        }
+        .demo-contact-chip {
+          display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; color: #0F172A;
+          text-decoration: none; transition: color 0.2s;
+        }
+        .demo-contact-chip:hover { color: #0D9488; }
+        
+        .demo-form {
+          display: flex; flex-direction: column; gap: 16px;
+        }
+        .demo-form-row {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+        }
+        .demo-field {
+          display: flex; flex-direction: column; gap: 6px; text-align: left;
+        }
+        .demo-label {
+          font-size: 12px; font-weight: 700; color: #334155; letter-spacing: -0.01em;
+        }
+        .demo-input, .demo-select, .demo-textarea {
+          width: 100%; padding: 11px 14px; font-size: 14px; font-family: inherit;
+          background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 10px;
+          color: #0F172A; transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+        }
+        .demo-input:focus, .demo-select:focus, .demo-textarea:focus {
+          border-color: #0D9488; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+        }
+        .demo-actions {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;
+        }
+        .btn-whatsapp {
+          background: #25D366; color: #FFFFFF; border: none; border-radius: 10px;
+          padding: 13px 18px; font-size: 14px; font-weight: 700; font-family: inherit;
+          cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+          transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(37, 211, 102, 0.25); text-decoration: none;
+        }
+        .btn-whatsapp:hover { background: #1EBE5D; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(37, 211, 102, 0.35); }
+        .btn-email-submit {
+          background: #0F172A; color: #FFFFFF; border: none; border-radius: 10px;
+          padding: 13px 18px; font-size: 14px; font-weight: 700; font-family: inherit;
+          cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+          transition: all 0.2s ease; box-shadow: 0 4px 14px rgba(15, 23, 42, 0.15); text-decoration: none;
+        }
+        .btn-email-submit:hover { background: #1E293B; transform: translateY(-1px); }
+
+        /* MODAL STYLES */
+        .demo-modal-overlay {
+          position: fixed; inset: 0; z-index: 999;
+          background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px);
+          display: flex; align-items: center; justify-content: center;
+          padding: 20px; animation: fadeIn 0.2s ease;
+        }
+        .demo-modal-container {
+          background: #FFFFFF; border-radius: 24px;
+          width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          position: relative; animation: fadeUp 0.3s ease;
+          padding: 36px; border: 1px solid #E2E8F0;
+        }
+        .demo-modal-close {
+          position: absolute; top: 20px; right: 20px;
+          width: 36px; height: 36px; border-radius: 50%;
+          background: #F1F5F9; border: none; font-size: 20px; color: #64748B;
+          cursor: pointer; display: flex; align-items: center; justify-content: center;
+          transition: all 0.15s;
+        }
+        .demo-modal-close:hover { background: #E2E8F0; color: #0F172A; }
+
         /* ── FOOTER ── */
         .footer {
           background: #0F172A; padding: 48px 48px 32px;
@@ -857,6 +1017,7 @@ export default function LandingPage() {
         </div>
 
         <div className="nav-right">
+          <button className="nav-pricing-btn" style={{ color: '#0D9488', fontWeight: 700 }} onClick={() => setDemoModalOpen(true)}>Book Demo</button>
           <button className="nav-pricing-btn" onClick={() => scrollTo('Pricing')}>Pricing</button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
@@ -887,24 +1048,32 @@ export default function LandingPage() {
 
         {/* CTA Buttons */}
         <div className="hero-btns">
+          <button 
+            onClick={() => setDemoModalOpen(true)}
+            className="btn-primary" 
+            style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+              <rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            </svg>
+            Book 1-on-1 Demo
+          </button>
           {!isElectron && (
             <a 
               href="#download"
               onClick={e => { e.preventDefault(); document.getElementById('download')?.scrollIntoView({ behavior: 'smooth' }) }}
-              className="btn-primary electron-hide" 
-              style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
+              className="btn-outline electron-hide" 
+              style={{ gap: 8 }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Download Windows App
+              Windows App
             </a>
           )}
           <Link href="/login?tab=signup" className="btn-primary">
-            Get Started — It&apos;s Free
-          </Link>
-          <Link href="/login" className="btn-outline">
-            Sign In — Dashboard
+            Get Started — Free
           </Link>
         </div>
 
@@ -1292,6 +1461,174 @@ export default function LandingPage() {
         </div>
         <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Football Club Management Platform built for African football clubs.</div>
       </footer>
+
+      {/* ── DEMO BOOKING MODAL ── */}
+      {demoModalOpen && (
+        <div className="demo-modal-overlay" onClick={() => setDemoModalOpen(false)}>
+          <div className="demo-modal-container" onClick={e => e.stopPropagation()}>
+            <button className="demo-modal-close" onClick={() => setDemoModalOpen(false)}>×</button>
+
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDFA', border: '1px solid #CCFBF1', color: '#0D9488', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 99, textTransform: 'uppercase', marginBottom: 10 }}>
+                ⚽ Schedule Live Demo
+              </div>
+              <h3 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 6 }}>
+                Book Your ApexTrack Walkthrough
+              </h3>
+              <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.5 }}>
+                Fill in your details to connect instantly with our support team on WhatsApp or Email.
+              </p>
+            </div>
+
+            {demoSubmitted ? (
+              <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F0FDFA', border: '2px solid #0D9488', color: '#0D9488', fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  ✓
+                </div>
+                <h4 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>
+                  Demo Request Received!
+                </h4>
+                <p style={{ fontSize: 14, color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
+                  Your request details have been prepared for direct dispatch. You can also contact us instantly via WhatsApp or Email:
+                </p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 360, margin: '0 auto' }}>
+                  <a href="https://wa.me/233554074984" target="_blank" rel="noopener noreferrer" className="btn-whatsapp" style={{ width: '100%' }}>
+                    Open Chat on WhatsApp (0554074984)
+                  </a>
+                  <a href="mailto:admin@apextrackgh.com" className="btn-email-submit" style={{ width: '100%' }}>
+                    Email Support Team (admin@apextrackgh.com)
+                  </a>
+                  <button onClick={() => { setDemoSubmitted(false); setDemoModalOpen(false); }} className="btn-outline" style={{ marginTop: 8, padding: 10 }}>
+                    Close Dialog
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={(e) => { e.preventDefault(); triggerWhatsAppBooking(); }}>
+                <div className="demo-form-row" style={{ marginBottom: 12 }}>
+                  <div className="demo-field">
+                    <label className="demo-label">Contact Person *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Coach Kwame Mensah" 
+                      className="demo-input" 
+                      value={demoForm.name} 
+                      onChange={e => setDemoForm({ ...demoForm, name: e.target.value })} 
+                    />
+                  </div>
+                  <div className="demo-field">
+                    <label className="demo-label">Club / Academy Name *</label>
+                    <input 
+                      type="text" 
+                      required 
+                      placeholder="e.g. Accra Stars FC" 
+                      className="demo-input" 
+                      value={demoForm.club} 
+                      onChange={e => setDemoForm({ ...demoForm, club: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <div className="demo-form-row" style={{ marginBottom: 12 }}>
+                  <div className="demo-field">
+                    <label className="demo-label">WhatsApp / Phone *</label>
+                    <input 
+                      type="tel" 
+                      required 
+                      placeholder="e.g. 0554074984" 
+                      className="demo-input" 
+                      value={demoForm.phone} 
+                      onChange={e => setDemoForm({ ...demoForm, phone: e.target.value })} 
+                    />
+                  </div>
+                  <div className="demo-field">
+                    <label className="demo-label">Email Address</label>
+                    <input 
+                      type="email" 
+                      placeholder="admin@club.com" 
+                      className="demo-input" 
+                      value={demoForm.email} 
+                      onChange={e => setDemoForm({ ...demoForm, email: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <div className="demo-form-row" style={{ marginBottom: 12 }}>
+                  <div className="demo-field">
+                    <label className="demo-label">Preferred Date</label>
+                    <input 
+                      type="date" 
+                      className="demo-input" 
+                      value={demoForm.date} 
+                      onChange={e => setDemoForm({ ...demoForm, date: e.target.value })} 
+                    />
+                  </div>
+                  <div className="demo-field">
+                    <label className="demo-label">Preferred Time</label>
+                    <input 
+                      type="time" 
+                      className="demo-input" 
+                      value={demoForm.time} 
+                      onChange={e => setDemoForm({ ...demoForm, time: e.target.value })} 
+                    />
+                  </div>
+                </div>
+
+                <div className="demo-field" style={{ marginBottom: 12 }}>
+                  <label className="demo-label">Primary Interest</label>
+                  <select 
+                    className="demo-select" 
+                    value={demoForm.interest} 
+                    onChange={e => setDemoForm({ ...demoForm, interest: e.target.value })}
+                  >
+                    <option value="Full System Walkthrough">Full System Walkthrough</option>
+                    <option value="Squad & Roster Tracking">Squad & Roster Tracking</option>
+                    <option value="ApexPay Club Payroll">ApexPay Club Payroll</option>
+                    <option value="Injury Hub & Rehab Tracking">Injury Hub & Rehab Tracking</option>
+                    <option value="Match Performance & Analytics">Match Performance & Analytics</option>
+                    <option value="Scouting & Transfers">Scouting & Transfers</option>
+                  </select>
+                </div>
+
+                <div className="demo-field" style={{ marginBottom: 20 }}>
+                  <label className="demo-label">Specific Requirements / Notes</label>
+                  <textarea 
+                    rows="2" 
+                    placeholder="Any specific questions or squad size details..." 
+                    className="demo-textarea" 
+                    value={demoForm.notes} 
+                    onChange={e => setDemoForm({ ...demoForm, notes: e.target.value })} 
+                  />
+                </div>
+
+                <div className="demo-actions">
+                  <button 
+                    type="button" 
+                    className="btn-whatsapp"
+                    onClick={() => triggerWhatsAppBooking()}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                    </svg>
+                    Send via WhatsApp
+                  </button>
+                  <button 
+                    type="button" 
+                    className="btn-email-submit"
+                    onClick={() => triggerEmailBooking()}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 8l9 6 9-6M21 5v14H3V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Send via Email
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </>
   )
 }

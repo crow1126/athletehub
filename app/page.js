@@ -152,55 +152,73 @@ export default function LandingPage() {
     notes: ''
   })
 
-  function triggerWhatsAppBooking(form = demoForm) {
-    const message = 
-`*APEXTRACK DEMO REQUEST*
-----------------------------------------
-*Club / Academy:* ${form.club || 'Not specified'}
-*Contact Person:* ${form.name || 'Not specified'}
-*Role:* ${form.role || 'Club Executive'}
-*Phone / WhatsApp:* ${form.phone || 'Not specified'}
-*Email:* ${form.email || 'Not specified'}
+  function triggerWhatsAppBooking(form = demoForm, shouldOpen = true) {
+    const lines = [
+      '*APEXTRACK DEMO REQUEST*',
+      '----------------------------------------',
+      `*Club / Academy:* ${form.club?.trim() || 'Not specified'}`,
+      `*Contact Person:* ${form.name?.trim() || 'Not specified'}`,
+      `*Role:* ${form.role || 'Club Executive'}`,
+      `*Phone / WhatsApp:* ${form.phone?.trim() || 'Not specified'}`,
+      `*Email:* ${form.email?.trim() || 'Not specified'}`,
+      '',
+      '*Preferred Schedule:*',
+      `- Date: ${form.date || 'Flexible'}`,
+      `- Time: ${form.time || 'Flexible'}`,
+      `- Focus: ${form.interest || 'Full System Walkthrough'}`,
+    ]
+    if (form.notes?.trim()) {
+      lines.push('', `*Notes:*\n${form.notes.trim()}`)
+    }
+    lines.push('----------------------------------------')
+    lines.push('Hi ApexTrack Support, I would like to schedule a 1-on-1 walkthrough for our club.')
+    lines.push('')
+    lines.push('https://apextrackgh.com')
 
-*Preferred Schedule:*
-- Date: ${form.date || 'Flexible'}
-- Time: ${form.time || 'Flexible'}
-- Focus: ${form.interest || 'Full System Walkthrough'}
-${form.notes ? `\n*Notes:*\n${form.notes}\n` : ''}----------------------------------------
-Hi ApexTrack Support, I would like to schedule a 1-on-1 walkthrough for our club.
-
-https://apextrackgh.com`
-
+    const message = lines.join('\n')
     const whatsappUrl = `https://wa.me/233554074984?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
-    setDemoSubmitted(true)
+
+    if (shouldOpen && typeof window !== 'undefined') {
+      window.open(whatsappUrl, '_blank')
+      setDemoSubmitted(true)
+    }
+
+    return whatsappUrl
   }
 
-  function triggerEmailBooking(form = demoForm) {
-    const subject = `Demo Request: ${form.club || 'Club'} - ${form.name || 'Walkthrough'}`
-    const body = 
-`APEXTRACK DEMO REQUEST
-========================================
+  function triggerEmailBooking(form = demoForm, shouldOpen = true) {
+    const subject = `Demo Request: ${form.club?.trim() || 'Club'} - ${form.name?.trim() || 'Walkthrough'}`
+    const lines = [
+      'APEXTRACK DEMO REQUEST',
+      '========================================',
+      `Club / Academy: ${form.club?.trim() || 'Not specified'}`,
+      `Contact Person: ${form.name?.trim() || 'Not specified'}`,
+      `Role: ${form.role || 'Club Executive'}`,
+      `Phone / WhatsApp: ${form.phone?.trim() || 'Not specified'}`,
+      `Email: ${form.email?.trim() || 'Not specified'}`,
+      '',
+      'Preferred Schedule:',
+      `- Date: ${form.date || 'Flexible'}`,
+      `- Time: ${form.time || 'Flexible'}`,
+      `- Focus Area: ${form.interest || 'Full System Walkthrough'}`,
+    ]
+    if (form.notes?.trim()) {
+      lines.push('', `Additional Notes:\n${form.notes.trim()}`)
+    }
+    lines.push('========================================')
+    lines.push('ApexTrack Football Management Platform')
+    lines.push('Website: https://apextrackgh.com')
+    lines.push('Direct Support: admin@apextrackgh.com / WhatsApp: +233554074984')
 
-Club / Academy: ${form.club || 'Not specified'}
-Contact Person: ${form.name || 'Not specified'}
-Role: ${form.role || 'Club Executive'}
-Phone / WhatsApp: ${form.phone || 'Not specified'}
-Email: ${form.email || 'Not specified'}
-
-Preferred Schedule:
-- Date: ${form.date || 'Flexible'}
-- Time: ${form.time || 'Flexible'}
-- Focus Area: ${form.interest || 'Full System Walkthrough'}
-${form.notes ? `\nAdditional Notes:\n${form.notes}\n` : ''}
-========================================
-ApexTrack Football Management Platform
-Website: https://apextrackgh.com
-Direct Support: admin@apextrackgh.com / WhatsApp: +233554074984`
-
+    const body = lines.join('\n')
     const mailtoUrl = `mailto:admin@apextrackgh.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    window.location.href = mailtoUrl
-    setDemoSubmitted(true)
+
+    if (shouldOpen && typeof window !== 'undefined') {
+      window.location.href = mailtoUrl
+      setDemoSubmitted(true)
+    }
+
+    return mailtoUrl
   }
   const [isElectron, setIsElectron] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -1518,26 +1536,57 @@ Direct Support: admin@apextrackgh.com / WhatsApp: +233554074984`
             </div>
 
             {demoSubmitted ? (
-              <div style={{ textAlign: 'center', padding: '32px 16px' }}>
-                <div style={{ width: 56, height: 56, borderRadius: '50%', background: '#F0FDFA', border: '2px solid #0D9488', color: '#0D9488', fontSize: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <div style={{ textAlign: 'center', padding: '24px 12px' }}>
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#F0FDFA', border: '2px solid #0D9488', color: '#0D9488', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
                   ✓
                 </div>
-                <h4 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>
-                  Demo Request Received!
+                <h4 style={{ fontSize: 19, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
+                  Request Ready to Send
                 </h4>
-                <p style={{ fontSize: 14, color: '#64748B', marginBottom: 24, lineHeight: 1.6 }}>
-                  Your request details have been prepared for direct dispatch. You can also contact us instantly via WhatsApp or Email:
+                <p style={{ fontSize: 13, color: '#64748B', marginBottom: 20, lineHeight: 1.5 }}>
+                  Click below to dispatch your demo request details directly to our WhatsApp or Support Email:
                 </p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 360, margin: '0 auto' }}>
-                  <a href="https://wa.me/233554074984" target="_blank" rel="noopener noreferrer" className="btn-whatsapp" style={{ width: '100%' }}>
-                    Open Chat on WhatsApp (0554074984)
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 380, margin: '0 auto' }}>
+                  <a 
+                    href={triggerWhatsAppBooking(demoForm, false)} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="btn-whatsapp" 
+                    style={{ width: '100%', textDecoration: 'none' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                    </svg>
+                    Send to WhatsApp (0554074984)
                   </a>
-                  <a href="mailto:admin@apextrackgh.com" className="btn-email-submit" style={{ width: '100%' }}>
-                    Email Support Team (admin@apextrackgh.com)
+                  <a 
+                    href={triggerEmailBooking(demoForm, false)} 
+                    className="btn-email-submit" 
+                    style={{ width: '100%', textDecoration: 'none' }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                      <path d="M3 8l9 6 9-6M21 5v14H3V5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    Send to Support Email
                   </a>
-                  <button onClick={() => { setDemoSubmitted(false); setDemoModalOpen(false); }} className="btn-outline" style={{ marginTop: 8, padding: 10 }}>
-                    Close Dialog
-                  </button>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setDemoSubmitted(false)} 
+                      className="btn-outline" 
+                      style={{ flex: 1, padding: '10px 12px', fontSize: 13 }}
+                    >
+                      Edit Info
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={() => { setDemoSubmitted(false); setDemoModalOpen(false); }} 
+                      className="btn-outline" 
+                      style={{ flex: 1, padding: '10px 12px', fontSize: 13 }}
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (

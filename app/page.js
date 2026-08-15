@@ -1287,7 +1287,7 @@ Please schedule a demo session for our technical team. Thank you!`
               <span className="eyebrow-text">Desktop App</span>
             </div>
             <h2 className="section-title">Download ApexTrack</h2>
-            <p className="section-sub">The full platform, installed natively on your computer. Works offline for core features, syncs automatically when online.</p>
+            <p className="section-sub">Install the full platform on your computer. Works offline, syncs when online.</p>
           </div>
 
           <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
@@ -1309,15 +1309,15 @@ Please schedule a demo session for our technical team. Thank you!`
                 <div className="dl-left">
                   <div className="dl-greeting">
                     <div className="dl-greeting-dot" />
-                    Native Desktop Suite
+                    Windows Desktop
                   </div>
 
                   <h3 className="dl-headline-editorial">
-                    ApexTrack <span className="highlight-dot">Desktop</span>
+                    ApexTrack <span className="highlight-dot">for Windows</span>
                   </h3>
                   
                   <p className="dl-sub-editorial">
-                    Engineered for high-reliability matchday operations. Native speed, zero latency, local offline database, and automatic background sync.
+                    The complete club management suite. Fast, stable, works without internet.
                   </p>
 
                   <div className="dl-cta-row">
@@ -1361,15 +1361,18 @@ Please schedule a demo session for our technical team. Thank you!`
                   <img src="/logo.png" alt="ApexTrack Logo" className="dl-art-giant-logo" />
                   
                   {/* Vertical Rotated Text (matching Image 1) */}
-                  <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                      <span style={{ color: '#0D9488', fontWeight: 800 }}>⚡ Zero-Latency Engine:</span> Rapid match logging &amp; squad filtering
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Offline-first — full functionality without internet</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                      <span style={{ color: '#0D9488', fontWeight: 800 }}>🔌 Offline Pitch Mode:</span> Operates seamlessly without internet
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Auto-syncs to the cloud when connected</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', fontWeight: 600 }}>
-                      <span style={{ color: '#0D9488', fontWeight: 800 }}>🔒 Database Isolation:</span> Strict RLS security &amp; local encryption
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
+                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Row-level security — your club data stays yours</span>
                     </div>
                   </div>
 

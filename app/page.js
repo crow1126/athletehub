@@ -1498,9 +1498,6 @@ Please schedule a demo session for our technical team. Thank you!`
                   Apex<span style={{ color: '#0D9488' }}>Track</span>
                 </span>
               </div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDFA', border: '1px solid #CCFBF1', color: '#0D9488', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 99, textTransform: 'uppercase', width: 'fit-content' }}>
-                ⚽ Schedule 1-on-1 Live Demo
-              </div>
               <div>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   Book Your ApexTrack Walkthrough

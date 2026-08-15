@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { IconMenu, IconCheck } from '@/lib/icons'
 
-const NAV_LINKS = ['Features', 'Pricing', 'Demo', 'Download', 'FAQ', 'Support']
+const NAV_LINKS = ['Features', 'Pricing', 'Download', 'FAQ', 'Support']
 
 const FEATURES = [
   { 
@@ -116,8 +116,8 @@ const FAQS = [
     a: 'ApexTrack uses Postgres Row Level Security (RLS) and TLS encryption to fully isolate your squad data. Only authorized coaches and administrators within your specific club can access athlete and injury records — no cross-club data leakage is possible.'
   },
   {
-    q: 'What is ApexPay and which plan includes it?',
-    a: 'ApexPay is our built-in club payroll system. It allows administrators to manage staff salaries, run payroll cycles, top up a club wallet via Mobile Money (MoMo), and disburse funds to players and staff — all within the platform. ApexPay is exclusively included in the Captain plan.'
+    q: 'What is ApexPay and when will it be available?',
+    a: 'ApexPay is our upcoming club payroll system (Coming Soon). It will allow administrators to manage staff salaries, run payroll cycles, top up a club wallet via Mobile Money (MoMo), and disburse funds directly to players and staff.'
   },
   {
     q: 'Is there a limit on how many players or coaches we can add?',
@@ -284,7 +284,7 @@ Please schedule a demo session for our technical team. Thank you!`
         .nav-brand-name span { color: #0D9488; }
 
         .nav-links-center {
-          display: flex; align-items: center; gap: 36px;
+          display: flex; align-items: center; gap: 28px;
           position: absolute; left: 50%; transform: translateX(-50%);
         }
         .nav-link {
@@ -1017,8 +1017,20 @@ Please schedule a demo session for our technical team. Thank you!`
         </div>
 
         <div className="nav-right">
-          <button className="nav-pricing-btn" style={{ color: '#0D9488', fontWeight: 700 }} onClick={() => setDemoModalOpen(true)}>Book Demo</button>
-          <button className="nav-pricing-btn" onClick={() => scrollTo('Pricing')}>Pricing</button>
+          <button 
+            className="nav-pricing-btn" 
+            style={{ 
+              color: '#0D9488', 
+              background: '#F0FDFA', 
+              border: '1.5px solid #CCFBF1', 
+              borderRadius: 99, 
+              padding: '6px 16px', 
+              fontWeight: 700 
+            }} 
+            onClick={() => setDemoModalOpen(true)}
+          >
+            Book Demo
+          </button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
             <IconMenu size={20} color="currentColor" />
@@ -1192,7 +1204,7 @@ Please schedule a demo session for our technical team. Thank you!`
                   {[
                     'Unlimited active athletes',
                     'Everything in Starting XI plan',
-                    'ApexPay (Payroll & MoMo disbursements)',
+                    'ApexPay (Payroll & MoMo) — Coming Soon',
                     'Performance Analytics (xG, xA, match ratings)',
                     'Scouting Module & Transfer History',
                     'Advanced Reports (board-level summaries)',
@@ -1210,18 +1222,18 @@ Please schedule a demo session for our technical team. Thank you!`
                 {/* ApexPay included callout */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 8,
-                  background: '#F0FDFA', border: '1px solid #99F6E4',
+                  background: '#FEF3C7', border: '1px solid #FDE68A',
                   borderRadius: 10, padding: '10px 14px', marginBottom: 24
                 }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="#0D9488" strokeWidth="2"/>
-                    <path d="M2 10h20" stroke="#0D9488" strokeWidth="2"/>
-                    <circle cx="7" cy="15" r="1.5" fill="#0D9488"/>
-                    <path d="M12 14h5" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
+                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="#D97706" strokeWidth="2"/>
+                    <path d="M2 10h20" stroke="#D97706" strokeWidth="2"/>
+                    <circle cx="7" cy="15" r="1.5" fill="#D97706"/>
+                    <path d="M12 14h5" stroke="#D97706" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                   <div>
-                    <span style={{ fontSize: 12, color: '#0D9488', fontWeight: 800 }}>ApexPay Included</span>
-                    <span style={{ fontSize: 11, color: '#0F766E', marginLeft: 6, fontWeight: 500 }}>— Club payroll & MoMo disbursements</span>
+                    <span style={{ fontSize: 12, color: '#B45309', fontWeight: 800 }}>ApexPay (Coming Soon)</span>
+                    <span style={{ fontSize: 11, color: '#92400E', marginLeft: 6, fontWeight: 500 }}>— Club payroll & MoMo disbursements</span>
                   </div>
                 </div>
               </div>
@@ -1254,7 +1266,7 @@ Please schedule a demo session for our technical team. Thank you!`
               </div>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>What is ApexPay?</div>
-                <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Included in Captain Plan</div>
+                <div style={{ fontSize: 11, color: '#D97706', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Coming Soon</div>
               </div>
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
@@ -1297,15 +1309,15 @@ Please schedule a demo session for our technical team. Thank you!`
                 <div className="dl-left">
                   <div className="dl-greeting">
                     <div className="dl-greeting-dot" />
-                    Hi There,
+                    Native Desktop Suite
                   </div>
 
                   <h3 className="dl-headline-editorial">
-                    I am Apex<span className="highlight-dot">Track</span>
+                    ApexTrack <span className="highlight-dot">Desktop</span>
                   </h3>
                   
                   <p className="dl-sub-editorial">
-                    I am squad manager during matchday &amp; work with football clubs 24/7 with native speed and offline power.
+                    Engineered for high-reliability matchday operations. Native speed, zero latency, local offline database, and automatic background sync.
                   </p>
 
                   <div className="dl-cta-row">
@@ -1349,8 +1361,16 @@ Please schedule a demo session for our technical team. Thank you!`
                   <img src="/logo.png" alt="ApexTrack Logo" className="dl-art-giant-logo" />
                   
                   {/* Vertical Rotated Text (matching Image 1) */}
-                  <div className="dl-art-vertical-text">
-                    NATIVE DESKTOP • OFFLINE POWERED • ZERO LATENCY
+                  <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', fontWeight: 600 }}>
+                      <span style={{ color: '#0D9488', fontWeight: 800 }}>⚡ Zero-Latency Engine:</span> Rapid match logging &amp; squad filtering
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', fontWeight: 600 }}>
+                      <span style={{ color: '#0D9488', fontWeight: 800 }}>🔌 Offline Pitch Mode:</span> Operates seamlessly without internet
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#334155', fontWeight: 600 }}>
+                      <span style={{ color: '#0D9488', fontWeight: 800 }}>🔒 Database Isolation:</span> Strict RLS security &amp; local encryption
+                    </div>
                   </div>
 
                   {/* Brand Showcase Emblem Card (No Photo) */}
@@ -1468,16 +1488,24 @@ Please schedule a demo session for our technical team. Thank you!`
           <div className="demo-modal-container" onClick={e => e.stopPropagation()}>
             <button className="demo-modal-close" onClick={() => setDemoModalOpen(false)}>×</button>
 
-            <div style={{ marginBottom: 24 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDFA', border: '1px solid #CCFBF1', color: '#0D9488', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 99, textTransform: 'uppercase', marginBottom: 10 }}>
-                ⚽ Schedule Live Demo
+            <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <img src="/logo.png" alt="ApexTrack Logo" style={{ height: 38, width: 'auto', borderRadius: 8 }} />
+                <span style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em' }}>
+                  Apex<span style={{ color: '#0D9488' }}>Track</span>
+                </span>
               </div>
-              <h3 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 6 }}>
-                Book Your ApexTrack Walkthrough
-              </h3>
-              <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.5 }}>
-                Fill in your details to connect instantly with our support team on WhatsApp or Email.
-              </p>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#F0FDFA', border: '1px solid #CCFBF1', color: '#0D9488', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 99, textTransform: 'uppercase', width: 'fit-content' }}>
+                ⚽ Schedule 1-on-1 Live Demo
+              </div>
+              <div>
+                <h3 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                  Book Your ApexTrack Walkthrough
+                </h3>
+                <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.5 }}>
+                  Fill in your details to connect instantly with our support team on WhatsApp or Email.
+                </p>
+              </div>
             </div>
 
             {demoSubmitted ? (
@@ -1584,7 +1612,7 @@ Please schedule a demo session for our technical team. Thank you!`
                   >
                     <option value="Full System Walkthrough">Full System Walkthrough</option>
                     <option value="Squad & Roster Tracking">Squad & Roster Tracking</option>
-                    <option value="ApexPay Club Payroll">ApexPay Club Payroll</option>
+                    <option value="ApexPay Club Payroll (Coming Soon)">ApexPay Club Payroll (Coming Soon)</option>
                     <option value="Injury Hub & Rehab Tracking">Injury Hub & Rehab Tracking</option>
                     <option value="Match Performance & Analytics">Match Performance & Analytics</option>
                     <option value="Scouting & Transfers">Scouting & Transfers</option>

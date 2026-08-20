@@ -284,6 +284,7 @@ export default function Layout({ children }) {
   const [switcherOpen,  setSwitcherOpen]  = useState(false)
   const [clubSearch,    setClubSearch]    = useState('')
   const [readOnly,      setReadOnly]      = useState(false)
+  const [blockedToast,  setBlockedToast]  = useState(null)
   const switcherRef = useRef(null)
 
   const unreadCount = notifications.filter(n => !n._isRead).length
@@ -335,11 +336,17 @@ export default function Layout({ children }) {
     const onROChange = (e) => {
       setReadOnly(e.detail?.isReadOnly ?? isSuperadminReadOnly())
     }
+    const onBlocked = (e) => {
+      setBlockedToast({ action: e.detail?.action || 'mutation', table: e.detail?.table || 'data' })
+      setTimeout(() => setBlockedToast(null), 6000)
+    }
     window.addEventListener('apex_superadmin_team_changed', onTeamChange)
     window.addEventListener('apex_superadmin_readonly_changed', onROChange)
+    window.addEventListener('apex_readonly_blocked', onBlocked)
     return () => {
       window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
       window.removeEventListener('apex_superadmin_readonly_changed', onROChange)
+      window.removeEventListener('apex_readonly_blocked', onBlocked)
     }
   }, [loadProfile])
 
@@ -433,14 +440,11 @@ export default function Layout({ children }) {
   const navLinks = ALL_NAV.filter(n => allowed.includes(n.page))
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const isSandbox = !profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test')
+  const isSandbox = (role === 'superadmin') && (!profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test'))
 
-  const teamName  = profile?.teams?.name      || profile?.club_name  || null
-  const teamShort = profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : null)
-  // ── KEY FIX: prefer club_logo_url from profiles, fall back to teams.logo_url ──
-  const teamLogo  = (profile?.club_logo_url && !profile.club_logo_url.startsWith('data:'))
-    ? profile.club_logo_url
-    : (profile?.teams?.logo_url || null)
+  const teamName  = isSandbox ? 'Apex Test Sandbox' : (profile?.teams?.name || (role !== 'superadmin' ? profile?.club_name : null) || 'Admin Workspace')
+  const teamShort = isSandbox ? 'TEST' : (profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : 'ADM'))
+  const teamLogo  = isSandbox ? null : ((profile?.teams?.logo_url) || (role !== 'superadmin' && profile?.club_logo_url && !profile.club_logo_url.startsWith('data:') ? profile.club_logo_url : null))
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.floral }}>
@@ -452,6 +456,13 @@ export default function Layout({ children }) {
   const sideW = expanded ? 240 : 72
 
   function ClubLogo({ size = 44 }) {
+    if (isSandbox) {
+      return (
+        <div style={{ width:size, height:size, borderRadius:12, background:'linear-gradient(135deg, #0F766E, #0D9488)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#FFFFFF', fontWeight:900, fontSize:size*0.32, letterSpacing:'0.05em', boxShadow:'0 2px 8px rgba(13,148,136,0.3)' }} title="Apex Test Sandbox">
+          TEST
+        </div>
+      )
+    }
     if (teamLogo && !logoError) {
       return (
         <img src={teamLogo} alt={teamName || 'Club'} onError={() => setLogoError(true)}
@@ -1053,6 +1064,74 @@ export default function Layout({ children }) {
         )}
         <main style={{ flex:1 }}>{children}</main>
       </div>
+
+      {/* READ-ONLY MUTATION BLOCKED TOAST */}
+      {blockedToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: 24,
+          right: 24,
+          zIndex: 99999,
+          background: '#0F172A',
+          border: '1.5px solid #EF4444',
+          borderRadius: 14,
+          padding: '14px 18px',
+          color: '#F8FAFC',
+          boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
+          maxWidth: 420,
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: 12,
+          animation: 'notifDrop 0.2s ease',
+        }}>
+          <div style={{ width:28, height:28, borderRadius:8, background:'rgba(239,68,68,0.2)', color:'#EF4444', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:900, fontSize:14 }}>
+            <Lock size={15} />
+          </div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:'#FCA5A5' }}>
+              Action Blocked (Read-Only Mode)
+            </div>
+            <div style={{ fontSize:12, color:'#CBD5E1', marginTop:3, lineHeight:1.4 }}>
+              Database <strong>{blockedToast.action}</strong> on <em>{blockedToast.table}</em> was blocked to protect this club's live records.
+            </div>
+            <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8 }}>
+              <button
+                onClick={() => {
+                  setSuperadminReadOnly(false)
+                  setReadOnly(false)
+                  setBlockedToast(null)
+                }}
+                style={{
+                  background: '#EF4444',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  borderRadius: 6,
+                  padding: '4px 10px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Enable Live Access
+              </button>
+              <button
+                onClick={() => setBlockedToast(null)}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: '#94A3B8',
+                  borderRadius: 6,
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}

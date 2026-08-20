@@ -1067,7 +1067,27 @@ export default function SuperadminPage() {
                                       {p.is_active ? 'Active' : 'Blocked'}
                                     </Btn>
                                     {/* Actions */}
-                                    <div style={{ display:'flex', gap:5, flexShrink:0 }}>
+                                    <div style={{ display:'flex', gap:5, flexShrink:0, alignItems:'center' }}>
+                                      {p.role !== 'superadmin' && (
+                                        <Btn
+                                          onClick={async () => {
+                                            if (!confirm(`Assume real session for ${p.full_name || p.email} (${p.role || 'user'})?\n\nThis will enforce their exact RLS scope so you see what they see.`)) return
+                                            const { startImpersonation } = await import('@/lib/impersonate')
+                                            showToast('Switching session to ' + (p.full_name || p.email) + '...', 'info')
+                                            const res = await startImpersonation(p.id)
+                                            if (res.ok) {
+                                              router.push('/dashboard')
+                                            } else {
+                                              showToast('Impersonation failed: ' + res.error, 'error')
+                                            }
+                                          }}
+                                          style={{ fontSize:10, padding:'3px 8px', background:'#D97706', color:'#FFFFFF', border:'none', fontWeight:700 }}
+                                          disabled={acting}
+                                          title="Log in as this user with their real RLS scope"
+                                        >
+                                          Login As
+                                        </Btn>
+                                      )}
                                       {p.registration_status !== 'approved' && (
                                         <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✓ Approve</Btn>
                                       )}

@@ -7,6 +7,8 @@ import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
 
 import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam, isSuperadminReadOnly, setSuperadminReadOnly } from '@/lib/tenant'
+import { isImpersonating, getImpersonationInfo, stopImpersonation } from '@/lib/impersonate'
+import { logger } from '@/lib/logger'
 
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
@@ -287,6 +289,11 @@ export default function Layout({ children }) {
   const [blockedToast,  setBlockedToast]  = useState(null)
   const switcherRef = useRef(null)
 
+  // ── Impersonation state ──
+  const [impersonating, setImpersonating] = useState(false)
+  const [impersonInfo,  setImpersonInfo]  = useState(null)
+  const [exitingImpersonation, setExitingImpersonation] = useState(false)
+
   const unreadCount = notifications.filter(n => !n._isRead).length
 
   useEffect(() => {
@@ -319,7 +326,21 @@ export default function Layout({ children }) {
       setCurrentUserId(session.user.id)
       setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
 
-      if (p?.role === 'superadmin') {
+      // Set logger context so all subsequent logs are tagged with this tenant
+      if (p) {
+        logger.setContext({
+          team_id: p.team_id || null,
+          user_id: session.user.id,
+          role:    p.role || 'admin',
+        })
+      }
+
+      // Check if we are currently impersonating a user
+      const impInfo = getImpersonationInfo()
+      setImpersonating(!!impInfo)
+      setImpersonInfo(impInfo)
+
+      if (p?.role === 'superadmin' && !impInfo) {
         setReadOnly(isSuperadminReadOnly())
         const { data: teamsList } = await supabase.from('teams').select('id, name, short_name, logo_url').order('name')
         if (teamsList) setAllClubs(teamsList)
@@ -330,23 +351,26 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     loadProfile()
-    const onTeamChange = () => {
-      loadProfile()
-    }
-    const onROChange = (e) => {
-      setReadOnly(e.detail?.isReadOnly ?? isSuperadminReadOnly())
-    }
-    const onBlocked = (e) => {
+    const onTeamChange    = () => loadProfile()
+    const onROChange      = (e) => setReadOnly(e.detail?.isReadOnly ?? isSuperadminReadOnly())
+    const onBlocked       = (e) => {
       setBlockedToast({ action: e.detail?.action || 'mutation', table: e.detail?.table || 'data' })
       setTimeout(() => setBlockedToast(null), 6000)
     }
-    window.addEventListener('apex_superadmin_team_changed', onTeamChange)
+    const onImpersonStart = () => loadProfile()
+    const onImpersonEnd   = () => loadProfile()
+
+    window.addEventListener('apex_superadmin_team_changed',    onTeamChange)
     window.addEventListener('apex_superadmin_readonly_changed', onROChange)
-    window.addEventListener('apex_readonly_blocked', onBlocked)
+    window.addEventListener('apex_readonly_blocked',            onBlocked)
+    window.addEventListener('apex_impersonation_started',       onImpersonStart)
+    window.addEventListener('apex_impersonation_ended',         onImpersonEnd)
     return () => {
-      window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
+      window.removeEventListener('apex_superadmin_team_changed',    onTeamChange)
       window.removeEventListener('apex_superadmin_readonly_changed', onROChange)
-      window.removeEventListener('apex_readonly_blocked', onBlocked)
+      window.removeEventListener('apex_readonly_blocked',            onBlocked)
+      window.removeEventListener('apex_impersonation_started',       onImpersonStart)
+      window.removeEventListener('apex_impersonation_ended',         onImpersonEnd)
     }
   }, [loadProfile])
 
@@ -1062,6 +1086,70 @@ export default function Layout({ children }) {
             </div>
           </div>
         )}
+
+        {/* ── IMPERSONATION ACTIVE BANNER ── */}
+        {impersonating && impersonInfo && (
+          <div style={{
+            background: 'linear-gradient(90deg, #78350F, #92400E)',
+            borderBottom: '2px solid #F59E0B',
+            padding: '10px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 10,
+            fontSize: 12,
+            zIndex: 199,
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ width:28, height:28, borderRadius:8, background:'rgba(251,191,36,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FCD34D' }}>
+                <Eye size={15} />
+              </div>
+              <div>
+                <div style={{ fontWeight:900, color:'#FCD34D', fontSize:12, letterSpacing:'0.04em', textTransform:'uppercase' }}>
+                  Impersonation Active
+                </div>
+                <div style={{ color:'#FDE68A', fontSize:11, marginTop:1 }}>
+                  Logged in as <strong>{impersonInfo.full_name || impersonInfo.email}</strong>
+                  {' · '}<span style={{ background:'rgba(0,0,0,0.25)', padding:'1px 6px', borderRadius:99, fontWeight:700, textTransform:'capitalize' }}>{impersonInfo.role}</span>
+                  {impersonInfo.club_name && <>{' @ '}<strong>{impersonInfo.club_name}</strong></>}
+                  <span style={{ marginLeft:8, color:'#D97706', fontStyle:'italic', fontWeight:400 }}>
+                    RLS enforced — you see exactly what this user sees
+                  </span>
+                </div>
+              </div>
+            </div>
+            <button
+              disabled={exitingImpersonation}
+              onClick={async () => {
+                setExitingImpersonation(true)
+                const { ok, error } = await stopImpersonation()
+                if (!ok) {
+                  alert(`Failed to exit impersonation: ${error}`)
+                  setExitingImpersonation(false)
+                }
+                // loadProfile() called automatically via apex_impersonation_ended event
+              }}
+              style={{
+                background: exitingImpersonation ? 'rgba(255,255,255,0.1)' : '#F59E0B',
+                border: 'none',
+                color: exitingImpersonation ? '#FDE68A' : '#1C1917',
+                borderRadius: 8,
+                padding: '6px 14px',
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: exitingImpersonation ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                transition: 'all 0.15s',
+              }}
+            >
+              {exitingImpersonation ? 'Restoring session…' : '← Exit Impersonation'}
+            </button>
+          </div>
+        )}
+
         <main style={{ flex:1 }}>{children}</main>
       </div>
 

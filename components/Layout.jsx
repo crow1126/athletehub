@@ -6,12 +6,12 @@ import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
 
-import { getTenantProfile } from '@/lib/tenant'
+import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
 
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
   Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
-  Wallet, Menu, X, Bell
+  Wallet, Menu, X, Bell, ChevronDown, Building2
 } from 'lucide-react'
 
 const ALL_NAV = [
@@ -279,6 +279,12 @@ export default function Layout({ children }) {
   const [currentUserId,  setCurrentUserId]  = useState(null)
   const notifPanelRef = useRef(null)
 
+  // ── Superadmin Workspace Switcher state ──
+  const [allClubs,      setAllClubs]      = useState([])
+  const [switcherOpen,  setSwitcherOpen]  = useState(false)
+  const [clubSearch,    setClubSearch]    = useState('')
+  const switcherRef = useRef(null)
+
   const unreadCount = notifications.filter(n => !n._isRead).length
 
   useEffect(() => {
@@ -290,30 +296,43 @@ export default function Layout({ children }) {
 
   useEffect(() => { setMobileMenu(false) }, [path])
 
-  // Close notification panel when clicking outside
+  // Close notification panel and switcher when clicking outside
   useEffect(() => {
-    if (!notifOpen) return
     function handleClickOutside(e) {
       if (notifPanelRef.current && !notifPanelRef.current.contains(e.target)) {
         setNotifOpen(false)
       }
+      if (switcherRef.current && !switcherRef.current.contains(e.target)) {
+        setSwitcherOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [notifOpen])
+  }, [notifOpen, switcherOpen])
+
+  const loadProfile = useCallback(async () => {
+    try {
+      const { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
+      if (!session) { router.replace('/login'); return }
+      setCurrentUserId(session.user.id)
+      setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
+
+      if (p?.role === 'superadmin') {
+        const { data: teamsList } = await supabase.from('teams').select('id, name, short_name, logo_url').order('name')
+        if (teamsList) setAllClubs(teamsList)
+      }
+    } catch (e) { console.error('Layout error:', e) }
+    setLoading(false)
+  }, [router])
 
   useEffect(() => {
-    async function loadProfile() {
-      try {
-        const { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)')
-        if (!session) { router.replace('/login'); return }
-        setCurrentUserId(session.user.id)
-        setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
-      } catch (e) { console.error('Layout error:', e) }
-      setLoading(false)
-    }
     loadProfile()
-  }, [])
+    const onTeamChange = () => {
+      loadProfile()
+    }
+    window.addEventListener('apex_superadmin_team_changed', onTeamChange)
+    return () => window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
+  }, [loadProfile])
 
   // ── Load + subscribe to notifications once profile is loaded ──
   const fetchNotifications = useCallback(async (teamId, userId) => {
@@ -673,37 +692,207 @@ export default function Layout({ children }) {
             {ALL_NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'Dashboard'}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-            {role === 'superadmin' && (
-              <Link href="/superadmin"
-                style={{
-                  display:'inline-flex',
-                  alignItems:'center',
-                  gap:7,
-                  background:'linear-gradient(135deg, #0F766E, #0D9488)',
-                  color:'#FFFFFF',
-                  borderRadius:99,
-                  padding:'7px 16px',
-                  fontSize:12,
-                  fontWeight:700,
-                  textDecoration:'none',
-                  boxShadow:'0 2px 10px rgba(13, 148, 136, 0.3)',
-                  transition:'all 0.2s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.opacity = '0.92'}
-                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-              >
-                <ShieldAlert size={15} strokeWidth={2.2} />
-                <span>Superadmin Console &rarr;</span>
-              </Link>
-            )}
-            {teamName && (
-              <div style={{ display:'flex', alignItems:'center', gap:8, background: C.floralMuted, borderRadius:99, padding:'6px 14px', border:`1px solid ${C.border}` }}>
-                {teamLogo && !logoError
-                  ? <img src={teamLogo} alt={teamName} onError={() => setLogoError(true)} style={{ width:20, height:20, objectFit:'contain', borderRadius:6 }} />
-                  : <div style={{ width:20, height:20, borderRadius:6, background: C.lagoon, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800, color: '#fff' }}>{teamShort?.slice(0,2)}</div>
-                }
-                <span style={{ fontSize:13, color: C.text2, fontWeight:600 }}>{teamName}</span>
-              </div>
+            {role === 'superadmin' ? (
+              <>
+                {/* Superadmin Workspace Switcher */}
+                <div style={{ position:'relative' }} ref={switcherRef}>
+                  <button
+                    onClick={() => setSwitcherOpen(v => !v)}
+                    style={{
+                      display:'inline-flex',
+                      alignItems:'center',
+                      gap:8,
+                      background: '#F0FDFA',
+                      border: '1.5px solid #99F6E4',
+                      borderRadius: 99,
+                      padding: '6px 14px',
+                      color: '#0F766E',
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s',
+                      boxShadow: switcherOpen ? '0 0 0 3px rgba(13,148,136,0.15)' : '0 1px 3px rgba(0,0,0,0.04)',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#CCFBF1'}
+                    onMouseLeave={e => e.currentTarget.style.background = switcherOpen ? '#CCFBF1' : '#F0FDFA'}
+                    title="Switch inspected club workspace"
+                  >
+                    <Building2 size={15} strokeWidth={2.2} style={{ color:'#0D9488' }} />
+                    <span style={{ maxWidth: 160, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                      {teamName || 'Sandbox Workspace'}
+                    </span>
+                    <span style={{ fontSize:9, background:'#0D9488', color:'#fff', padding:'1px 6px', borderRadius:99, fontWeight:800 }}>
+                      WORKSPACE
+                    </span>
+                    <ChevronDown size={14} style={{ transform: switcherOpen ? 'rotate(180deg)' : 'none', transition:'transform 0.2s', color:'#0D9488' }} />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {switcherOpen && (
+                    <div style={{
+                      position:'absolute',
+                      top:'calc(100% + 8px)',
+                      right: 0,
+                      width: 320,
+                      background: '#FFFFFF',
+                      borderRadius: 14,
+                      boxShadow: '0 12px 36px rgba(0,0,0,0.15)',
+                      border: '1px solid #E2E8F0',
+                      zIndex: 200,
+                      overflow: 'hidden',
+                      animation: 'notifDrop 0.2s ease',
+                    }}>
+                      <div style={{ padding:'12px 14px', borderBottom:'1px solid #F1F5F9', background:'#F8FAFC' }}>
+                        <div style={{ fontSize:11, fontWeight:800, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                          Switch Club Workspace
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Search club name or code…"
+                          value={clubSearch}
+                          onChange={e => setClubSearch(e.target.value)}
+                          style={{
+                            width:'100%',
+                            padding:'7px 10px',
+                            borderRadius:8,
+                            border:'1px solid #CBD5E1',
+                            fontSize:12,
+                            outline:'none',
+                            boxSizing:'border-box',
+                          }}
+                          autoFocus
+                        />
+                      </div>
+
+                      <div style={{ maxHeight: 260, overflowY:'auto', padding:'6px' }}>
+                        {/* Sandbox Workspace Option */}
+                        <button
+                          onClick={() => {
+                            setSuperadminActiveTeam(null)
+                            setSwitcherOpen(false)
+                            window.location.reload()
+                          }}
+                          style={{
+                            width:'100%',
+                            display:'flex',
+                            alignItems:'center',
+                            gap:10,
+                            padding:'8px 10px',
+                            borderRadius:8,
+                            border:'none',
+                            background: (!profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test')) ? '#F0FDFA' : 'transparent',
+                            color: '#0F766E',
+                            cursor:'pointer',
+                            textAlign:'left',
+                            marginBottom: 4,
+                            fontWeight: 700,
+                            fontSize: 12,
+                          }}
+                        >
+                          <div style={{ width:28, height:28, borderRadius:6, background:'#CCFBF1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#0F766E' }}>
+                            TEST
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>Apex Test Sandbox</div>
+                            <div style={{ fontSize:10, color:'#64748B', fontWeight:500 }}>Isolated testing workspace</div>
+                          </div>
+                          {(!profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test')) && (
+                            <span style={{ fontSize:11, color:'#0D9488', fontWeight:800 }}>✓</span>
+                          )}
+                        </button>
+
+                        {/* Registered Clubs List */}
+                        {allClubs
+                          .filter(c => !clubSearch || c.name?.toLowerCase().includes(clubSearch.toLowerCase()) || c.short_name?.toLowerCase().includes(clubSearch.toLowerCase()))
+                          .map(c => {
+                            const isCurrent = profile?.team_id === c.id
+                            return (
+                              <button
+                                key={c.id}
+                                onClick={() => {
+                                  setSuperadminActiveTeam(c.id)
+                                  setSwitcherOpen(false)
+                                  window.location.reload()
+                                }}
+                                style={{
+                                  width:'100%',
+                                  display:'flex',
+                                  alignItems:'center',
+                                  gap:10,
+                                  padding:'8px 10px',
+                                  borderRadius:8,
+                                  border:'none',
+                                  background: isCurrent ? '#F0FDFA' : 'transparent',
+                                  color: isCurrent ? '#0F766E' : '#334155',
+                                  cursor:'pointer',
+                                  textAlign:'left',
+                                  transition:'background 0.1s',
+                                  fontSize: 12,
+                                }}
+                                onMouseEnter={e => { if(!isCurrent) e.currentTarget.style.background = '#F8FAFC' }}
+                                onMouseLeave={e => { if(!isCurrent) e.currentTarget.style.background = 'transparent' }}
+                              >
+                                {c.logo_url ? (
+                                  <img src={c.logo_url} alt={c.name} style={{ width:28, height:28, borderRadius:6, objectFit:'cover', border:'1px solid #E2E8F0' }} />
+                                ) : (
+                                  <div style={{ width:28, height:28, borderRadius:6, background:'#E2E8F0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#475569' }}>
+                                    {c.short_name?.slice(0,2) || c.name?.slice(0,2)}
+                                  </div>
+                                )}
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <div style={{ fontWeight: isCurrent ? 800 : 600, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{c.name}</div>
+                                  <div style={{ fontSize:10, color:'#64748B' }}>CODE: {c.short_name}</div>
+                                </div>
+                                {isCurrent && (
+                                  <span style={{ fontSize:11, color:'#0D9488', fontWeight:800 }}>✓</span>
+                                )}
+                              </button>
+                            )
+                          })}
+                      </div>
+
+                      <div style={{ padding:'8px 12px', borderTop:'1px solid #F1F5F9', background:'#F8FAFC', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                        <Link href="/superadmin" onClick={() => setSwitcherOpen(false)} style={{ fontSize:11, color:'#0D9488', fontWeight:700, textDecoration:'none' }}>
+                          Open Superadmin Console &rarr;
+                        </Link>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Return button */}
+                <Link href="/superadmin"
+                  style={{
+                    display:'inline-flex',
+                    alignItems:'center',
+                    gap:7,
+                    background:'linear-gradient(135deg, #0F766E, #0D9488)',
+                    color:'#FFFFFF',
+                    borderRadius:99,
+                    padding:'7px 16px',
+                    fontSize:12,
+                    fontWeight:700,
+                    textDecoration:'none',
+                    boxShadow:'0 2px 10px rgba(13, 148, 136, 0.3)',
+                    transition:'all 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.92'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                  <ShieldAlert size={15} strokeWidth={2.2} />
+                  <span>Superadmin Console &rarr;</span>
+                </Link>
+              </>
+            ) : (
+              teamName && (
+                <div style={{ display:'flex', alignItems:'center', gap:8, background: C.floralMuted, borderRadius:99, padding:'6px 14px', border:`1px solid ${C.border}` }}>
+                  {teamLogo && !logoError
+                    ? <img src={teamLogo} alt={teamName} onError={() => setLogoError(true)} style={{ width:20, height:20, objectFit:'contain', borderRadius:6 }} />
+                    : <div style={{ width:20, height:20, borderRadius:6, background: C.lagoon, display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, fontWeight:800, color: '#fff' }}>{teamShort?.slice(0,2)}</div>
+                  }
+                  <span style={{ fontSize:13, color: C.text2, fontWeight:600 }}>{teamName}</span>
+                </div>
+              )
             )}
             <div style={{ fontSize:13, color: C.text3, fontWeight:500 }}>
               {new Date().toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' })}

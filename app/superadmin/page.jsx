@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
 
 // ── ICONS ──
 const IconUsers = () => (
@@ -204,6 +205,9 @@ export default function SuperadminPage() {
   const [newPassword, setNewPassword] = useState('')
   const [newClub, setNewClub] = useState('')
   const [addingAdmin, setAddingAdmin] = useState(false)
+
+  const [inspectModal, setInspectModal] = useState(false)
+  const [inspectSearch, setInspectSearch] = useState('')
 
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
@@ -809,8 +813,8 @@ export default function SuperadminPage() {
                 <Btn variant="primary" onClick={() => { setAddModal(true); setMobileNav(false) }} style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
                   + Provision Admin
                 </Btn>
-                <Btn onClick={() => router.push('/dashboard')} style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
-                  Admin Suite →
+                <Btn onClick={() => { setInspectModal(true); setMobileNav(false) }} style={{ width:'100%', justifyContent:'center', padding:'10px 14px', background:'#0F766E', color:'#fff', border:'none' }}>
+                  Admin Suite ▾
                 </Btn>
                 <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
                   Sign Out
@@ -890,8 +894,8 @@ export default function SuperadminPage() {
               <Btn variant="primary" onClick={() => setAddModal(true)} className="sa-provision-btn" style={{ fontSize:12 }}>
                 + Provision Admin
               </Btn>
-              <Btn onClick={() => router.push('/dashboard')} style={{ fontSize:12 }}>
-                Admin Suite →
+              <Btn onClick={() => setInspectModal(true)} style={{ fontSize:12, background:'#0F766E', color:'#fff', border:'none' }}>
+                Admin Suite ▾
               </Btn>
               <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ fontSize:12 }}>
                 Sign Out
@@ -1003,6 +1007,35 @@ export default function SuperadminPage() {
                               {/* Aggregate status indicators */}
                               {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Pending</span>}
                               {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 8px', borderRadius:99, flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}><IconCheckCircle /> Approved</span>}
+                              
+                              {/* Inspect Workspace Action */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const targetId = matchedTeam?.id || firstUserWithTeam?.team_id
+                                  setSuperadminActiveTeam(targetId || null)
+                                  router.push('/dashboard')
+                                }}
+                                style={{
+                                  fontSize:11,
+                                  fontWeight:700,
+                                  background:'#0F766E',
+                                  color:'#FFFFFF',
+                                  padding:'5px 12px',
+                                  borderRadius:8,
+                                  border:'none',
+                                  cursor:'pointer',
+                                  flexShrink:0,
+                                  transition:'opacity 0.15s',
+                                  boxShadow:'0 2px 6px rgba(15,118,110,0.25)',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                                title="Inspect this club's Admin Suite"
+                              >
+                                Inspect &rarr;
+                              </button>
+
                               {/* User count badge */}
                               <span style={{ fontSize:12, fontWeight:800, background:'#f1f5f9', color:'#334155', borderRadius:99, padding:'2px 10px', flexShrink:0, minWidth:28, textAlign:'center' }}>{group.users.length}</span>
                               <span style={{ color:'#94a3b8', fontSize:14, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
@@ -1249,9 +1282,17 @@ export default function SuperadminPage() {
                                       style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID"></button>
                                   </div>
                                 </div>
-                                <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center', marginTop:4 }} disabled={acting}>
-                                  Wipe Team
-                                </Btn>
+                                <div style={{ display:'flex', gap:6, marginTop:4 }}>
+                                  <Btn variant="primary" onClick={() => {
+                                    setSuperadminActiveTeam(t.id)
+                                    router.push('/dashboard')
+                                  }} style={{ fontSize:11, flex:1, justifyContent:'center' }}>
+                                    Inspect Workspace →
+                                  </Btn>
+                                  <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, padding:'7px 12px' }} disabled={acting} title="Wipe Team">
+                                    Wipe
+                                  </Btn>
+                                </div>
                               </div>
                             </div>
                           )
@@ -1778,6 +1819,128 @@ export default function SuperadminPage() {
               <Btn variant="primary" onClick={handleAddAdmin} disabled={addingAdmin} style={{ flex:2, justifyContent:'center' }}>
                 {addingAdmin?'Provisioning…':'Provision Account'}
               </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* INSPECT WORKSPACE MODAL */}
+      {inspectModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', backdropFilter:'blur(8px)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:500, display:'flex', flexDirection:'column', gap:16 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #f1f5f9', paddingBottom:12 }}>
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Enter Admin Suite</h3>
+                <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>Select a workspace to inspect or test the system</p>
+              </div>
+              <button onClick={() => setInspectModal(false)} style={{ background:'none', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
+            </div>
+
+            {/* Sandbox Option */}
+            <div
+              onClick={() => {
+                setSuperadminActiveTeam(null)
+                setInspectModal(false)
+                router.push('/dashboard')
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #F0FDFA, #CCFBF1)',
+                border: '1.5px solid #99F6E4',
+                borderRadius: 12,
+                padding: '14px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                transition: 'transform 0.15s, box-shadow 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(13,148,136,0.15)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+            >
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <div style={{ width:40, height:40, borderRadius:10, background:'#0F766E', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:900 }}>
+                  TEST
+                </div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:800, color:'#0F766E' }}>Apex Test Sandbox</div>
+                  <div style={{ fontSize:11, color:'#134E48', marginTop:2 }}>Isolated test workspace with zero club data interference</div>
+                </div>
+              </div>
+              <span style={{ fontSize:12, fontWeight:700, color:'#0F766E' }}>Enter &rarr;</span>
+            </div>
+
+            {/* Club Search and List */}
+            <div>
+              <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                Or Inspect Specific Club
+              </label>
+              <input
+                className="sa-custom-input"
+                type="text"
+                placeholder="Search registered clubs by name or code…"
+                value={inspectSearch}
+                onChange={e => setInspectSearch(e.target.value)}
+                style={{ marginBottom:10 }}
+              />
+
+              <div style={{ maxHeight:200, overflowY:'auto', display:'flex', flexDirection:'column', gap:6, paddingRight:4 }}>
+                {activeTeams
+                  .filter(t => !inspectSearch || t.name?.toLowerCase().includes(inspectSearch.toLowerCase()) || t.short_name?.toLowerCase().includes(inspectSearch.toLowerCase()))
+                  .map(t => {
+                    const teamUsers = getTeamUsers(t.id)
+                    const admin = teamUsers.find(p => p.role === 'admin')
+                    const sub = getSubForTeam(t.id)
+                    const subBadge = getSubBadge(sub)
+
+                    return (
+                      <div
+                        key={t.id}
+                        onClick={() => {
+                          setSuperadminActiveTeam(t.id)
+                          setInspectModal(false)
+                          router.push('/dashboard')
+                        }}
+                        style={{
+                          display:'flex',
+                          alignItems:'center',
+                          justifyContent:'space-between',
+                          padding:'10px 12px',
+                          borderRadius:10,
+                          border:'1px solid #E2E8F0',
+                          background:'#fff',
+                          cursor:'pointer',
+                          transition:'all 0.15s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#99F6E4' }}
+                        onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E2E8F0' }}
+                      >
+                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0, flex:1 }}>
+                          <ClubLogoImg url={t.logo_url} name={t.name} size={32} />
+                          <div style={{ minWidth:0, flex:1 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              {t.name}
+                            </div>
+                            <div style={{ fontSize:10, color:'#64748B' }}>
+                              Admin: {admin?.full_name || 'Unassigned'} · CODE: {t.short_name}
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
+                          {subBadge && (
+                            <span style={{ fontSize:9, fontWeight:700, background:subBadge.bg, color:subBadge.color, padding:'2px 6px', borderRadius:99 }}>
+                              {subBadge.label}
+                            </span>
+                          )}
+                          <span style={{ fontSize:11, fontWeight:700, color:'#0D9488' }}>Inspect &rarr;</span>
+                        </div>
+                      </div>
+                    )
+                  })}
+              </div>
+            </div>
+
+            <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', justifyContent:'flex-end' }}>
+              <Btn onClick={() => setInspectModal(false)}>Close</Btn>
             </div>
           </div>
         </div>

@@ -96,6 +96,11 @@ export default function AuthGuard({ children }) {
         }
       }
 
+      // Superadmin is platform-level and completely subscription-free across all modules and routes
+      if (profile.role === 'superadmin') {
+        return
+      }
+
       if (!BILLING_BYPASS.some(b => path === b || path.startsWith(b + '/')) && profile.team_id) {
         const { data: sub } = await supabase
           .from('subscriptions').select('status,plan,current_period_end,trial_ends_at')
@@ -108,7 +113,7 @@ export default function AuthGuard({ children }) {
             (sub.plan !== 'trial' && new Date(sub.current_period_end) < new Date())
 
           if (isExpired) {
-            if (profile.role === 'admin' || profile.role === 'superadmin') {
+            if (profile.role === 'admin') {
               router.replace('/billing?reason=expired')
             } else {
               await supabase.auth.signOut()

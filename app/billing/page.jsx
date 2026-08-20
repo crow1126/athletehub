@@ -1,11 +1,13 @@
 'use client'
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Link from 'next/link'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { PLAN_LIMITS } from '@/lib/subscription'
 import { fetchWithAuth } from '@/lib/tenant'
+import { ShieldCheck, Smartphone } from 'lucide-react'
 
 const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxx'
 
@@ -338,26 +340,46 @@ function BillingContent(){
       <div className="page-outer" style={{maxWidth: 960}}>
         <PageHeader label="Subscription" title="Billing & Plan" subtitle="Manage your Apex Track subscription" action={apexBrand}/>
 
-        {upgradeReason==='upgrade_required'&&blockedModule&&(
-          <AlertBanner variant="warning" action={
-            <button onClick={()=>setTab('upgrade')} className="gm-btn btn-hover-effect" style={{padding:'8px 18px',fontSize:12,flexShrink:0}}>Upgrade</button>
-          }>
-            <div style={{fontSize:14,fontWeight:700,color:'#92400E',marginBottom:2}}>{MODULE_NAMES[blockedModule]||blockedModule} requires a higher plan</div>
-            <div style={{fontSize:13,color:'#78350F'}}>Upgrade your subscription to unlock this module.</div>
-          </AlertBanner>
-        )}
+        {profile?.role === 'superadmin' ? (
+          <div style={{ background:'linear-gradient(135deg, #0F766E, #0D9488)', color:'#FFFFFF', padding:'16px 20px', borderRadius:'var(--r-lg)', marginBottom:24, boxShadow:'var(--shadow-md)', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, marginBottom:3, display:'flex', alignItems:'center', gap:8 }}>
+                <ShieldCheck size={18} strokeWidth={2.2} style={{ flexShrink:0 }} />
+                <span>Superadmin Platform Access — Subscription-Exempt</span>
+              </div>
+              <div style={{ fontSize:12, opacity:0.92 }}>
+                As a platform Superadmin, your account has permanent unrestricted access to all modules, features, and club records without subscription fees.
+              </div>
+            </div>
+            <Link href="/superadmin" style={{ background:'#FFFFFF', color:'#0F766E', padding:'7px 16px', borderRadius:8, fontSize:12, fontWeight:700, textDecoration:'none', whiteSpace:'nowrap', boxShadow:'0 2px 6px rgba(0,0,0,0.1)' }}>
+              Open Superadmin Console &rarr;
+            </Link>
+          </div>
+        ) : (
+          <>
+            {upgradeReason==='upgrade_required'&&blockedModule&&(
+              <AlertBanner variant="warning" action={
+                <button onClick={()=>setTab('upgrade')} className="gm-btn btn-hover-effect" style={{padding:'8px 18px',fontSize:12,flexShrink:0}}>Upgrade</button>
+              }>
+                <div style={{fontSize:14,fontWeight:700,color:'#92400E',marginBottom:2}}>{MODULE_NAMES[blockedModule]||blockedModule} requires a higher plan</div>
+                <div style={{fontSize:13,color:'#78350F'}}>Upgrade your subscription to unlock this module.</div>
+              </AlertBanner>
+            )}
 
-        {upgradeReason==='expired'&&(
-          <AlertBanner variant="danger">
-            <div style={{fontSize:14,fontWeight:700,color:'var(--danger)',marginBottom:2}}>Your subscription has expired</div>
-            <div style={{fontSize:13,color:'#9F1239'}}>Subscribe now to restore access to your club data.</div>
-          </AlertBanner>
+            {upgradeReason==='expired'&&(
+              <AlertBanner variant="danger">
+                <div style={{fontSize:14,fontWeight:700,color:'var(--danger)',marginBottom:2}}>Your subscription has expired</div>
+                <div style={{fontSize:13,color:'#9F1239'}}>Subscribe now to restore access to your club data.</div>
+              </AlertBanner>
+            )}
+          </>
         )}
 
         {isNativeApp&&(
           <div style={{background:'linear-gradient(135deg, #0F766E, #0D9488)',color:'#FFFFFF',padding:'16px 20px',borderRadius:'var(--r-lg)',marginBottom:24,boxShadow:'var(--shadow-md)'}}>
             <div style={{fontSize:14,fontWeight:700,marginBottom:4,display:'flex',alignItems:'center',gap:8}}>
-              <span>📲</span> Mobile App Subscription Management
+              <Smartphone size={18} strokeWidth={2.2} style={{ flexShrink:0 }} />
+              <span>Mobile App Subscription Management</span>
             </div>
             <div style={{fontSize:12,opacity:0.92,lineHeight:1.6}}>
               Club subscriptions and billing management for ApexTrack GH are administered via our web dashboard. To change your plan or make payments, please sign in at <strong>apextrackgh.com</strong> on any desktop or mobile web browser.

@@ -30,6 +30,46 @@ const IconClose = () => (
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
 )
+const IconCreditCard = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+)
+const IconCheckCircle = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+)
+const IconBarChart = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+)
+const IconLink = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+  </svg>
+)
+const IconGlobe = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="2" y1="12" x2="22" y2="12" />
+    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+  </svg>
+)
+const IconMapPin = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+  </svg>
+)
+
+const ANALYTICS_KPIS = [
+  { key: 'events',    label: 'Total Events',   note: 'Recorded clicks',  Icon: IconBarChart },
+  { key: 'paths',     label: 'Unique Paths',   note: 'Active pages',     Icon: IconLink },
+  { key: 'referrers', label: 'Referrers',      note: 'Traffic sources',  Icon: IconGlobe },
+  { key: 'countries', label: 'Countries',      note: 'Visitor locations',Icon: IconMapPin },
+]
 
 const TABLES = ['profiles', 'athletes', 'teams', 'contracts', 'injuries', 'transfers', 'subscriptions', 'site_clicks']
 
@@ -128,6 +168,7 @@ export default function SuperadminPage() {
   const [section, setSection] = useState('users')
   const [profiles, setProfiles] = useState([])
   const [teams, setTeams] = useState([])
+  const [subscriptions, setSubscriptions] = useState([])
   const [athletes, setAthletes] = useState([])
   const [mobileNav, setMobileNav] = useState(false)
   const [expandedUser, setExpandedUser] = useState(null)
@@ -193,6 +234,8 @@ export default function SuperadminPage() {
       const data = await fetchWithAuth('/api/admin/superadmin-data?section=profiles')
       setProfiles(data.profiles || [])
       if (data.athletes) setAthletes(data.athletes)
+      if (data.teams) setTeams(data.teams)
+      if (data.subscriptions) setSubscriptions(data.subscriptions)
     } catch (err) { showToast('Failed to load profiles: ' + err.message, 'error') }
     finally { setLoading(false) }
   }, [fetchWithAuth])
@@ -201,6 +244,7 @@ export default function SuperadminPage() {
     try {
       const data = await fetchWithAuth('/api/admin/superadmin-data?section=teams')
       setTeams(data.teams || [])
+      if (data.subscriptions) setSubscriptions(data.subscriptions)
     } catch (err) { console.error(err) }
   }, [fetchWithAuth])
 
@@ -232,6 +276,42 @@ export default function SuperadminPage() {
   function showToast(msg, type='success') { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
   // ── DB HELPER FUNCTIONS FOR USER AND TEAM ROOTS ──
+  function getSubForTeam(teamId) {
+    if (!teamId) return null
+    return subscriptions.find(s => s.team_id === teamId) || null
+  }
+
+  function getSubBadge(sub) {
+    if (!sub) return { label: 'No Plan Recorded', plan: 'None', bg: '#f1f5f9', color: '#64748b', days: null, isExpired: false, end: '—' }
+    const planNames = {
+      trial: 'Free Trial',
+      starting_xi: 'Starting XI',
+      starter: 'Starting XI',
+      captain: 'Captain',
+      academy: 'Captain',
+      elite: 'Captain',
+    }
+    const name = planNames[sub.plan] || sub.plan || 'Trial'
+    const isTrial = sub.plan === 'trial'
+    const end = isTrial ? sub.trial_ends_at : sub.current_period_end
+    let days = null
+    let isExpired = false
+    let endFormatted = '—'
+    if (end) {
+      const d = new Date(end)
+      endFormatted = isNaN(d) ? '—' : d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+      days = Math.max(0, Math.ceil((d - new Date()) / 86400000))
+      isExpired = d < new Date()
+    }
+    if (sub.status === 'cancelled' || isExpired) {
+      return { label: `${name} (Expired)`, plan: name, bg: '#fff1f2', color: '#e11d48', days: 0, isExpired: true, end: endFormatted, status: sub.status || 'expired' }
+    }
+    if (isTrial) {
+      return { label: `Trial · ${days ?? 0}d left`, plan: 'Free Trial', bg: '#FEF3C7', color: '#D97706', days, isTrial: true, end: endFormatted, status: 'trial' }
+    }
+    return { label: `${name} · Active`, plan: name, bg: '#d1fae5', color: '#059669', days, isActive: true, end: endFormatted, status: 'active' }
+  }
+
   function resolveIdName(colName, val) {
     if (!val) return null
     if (colName === 'team_id' || (colName === 'id' && dbTable === 'teams')) {
@@ -322,23 +402,8 @@ export default function SuperadminPage() {
     return 'Desktop'
   }
 
-  function getCountryFlag(code) {
-    const map = {
-      GH: '🇬🇭',
-      US: '🇺🇸',
-      NG: '🇳🇬',
-      GB: '🇬🇧',
-      CA: '🇨🇦',
-      BR: '🇧🇷',
-      IN: '🇮🇳',
-      DE: '🇩🇪',
-      FR: '🇫🇷',
-      ZA: '🇿🇦',
-      KE: '🇰🇪',
-      CI: '🇨🇮',
-    }
-    const c = (code || 'GH').toUpperCase()
-    return map[c] || '🏳️'
+  function getCountryCode(code) {
+    return (code || 'GH').toUpperCase().slice(0, 2)
   }
 
   function getCountryFullName(code) {
@@ -909,6 +974,13 @@ export default function SuperadminPage() {
                         const hasPending  = group.users.some(u => u.registration_status?.startsWith('pending'))
                         const borderColor = isOpen ? '#99f6e4' : '#e2e8f0'
                         const headerBg    = isOpen ? '#f0fdfa' : '#fff'
+
+                        // Find matching team and its subscription
+                        const firstUserWithTeam = group.users.find(u => u.team_id)
+                        const matchedTeam = firstUserWithTeam ? teams.find(t => t.id === firstUserWithTeam.team_id) : teams.find(t => t.name?.toLowerCase() === group.club_name?.toLowerCase())
+                        const clubSub = matchedTeam ? getSubForTeam(matchedTeam.id) : null
+                        const clubSubBadge = clubSub ? getSubBadge(clubSub) : null
+
                         return (
                           <div key={group.club_name} style={{ border:`1px solid ${borderColor}`, borderRadius:14, overflow:'hidden', transition:'border 0.2s', boxShadow: isOpen ? '0 4px 16px rgba(13,148,136,0.08)' : '0 1px 4px rgba(0,0,0,0.04)' }}>
                             {/* Club header row — click to expand/collapse */}
@@ -922,9 +994,15 @@ export default function SuperadminPage() {
                                 <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.club_name}</div>
                                 <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{group.users.length} user{group.users.length !== 1 ? 's' : ''} attached</div>
                               </div>
+                              {/* Subscription status indicator */}
+                              {clubSubBadge && (
+                                <span style={{ fontSize:10, fontWeight:700, background:clubSubBadge.bg, color:clubSubBadge.color, padding:'3px 8px', borderRadius:99, flexShrink:0, border:`1px solid ${clubSubBadge.color}30`, display:'inline-flex', alignItems:'center', gap:4 }}>
+                                  <IconCreditCard />{clubSubBadge.label}
+                                </span>
+                              )}
                               {/* Aggregate status indicators */}
-                              {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Has Pending</span>}
-                              {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>✓ All Approved</span>}
+                              {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Pending</span>}
+                              {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 8px', borderRadius:99, flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}><IconCheckCircle /> Approved</span>}
                               {/* User count badge */}
                               <span style={{ fontSize:12, fontWeight:800, background:'#f1f5f9', color:'#334155', borderRadius:99, padding:'2px 10px', flexShrink:0, minWidth:28, textAlign:'center' }}>{group.users.length}</span>
                               <span style={{ color:'#94a3b8', fontSize:14, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
@@ -1034,89 +1112,153 @@ export default function SuperadminPage() {
             })()}
 
             {/* ── CLUBS & TEAMS ── */}
-            {section === 'clubs' && (
-              <div style={{ display:'flex', flexDirection:'column', gap:28 }}>
+            {section === 'clubs' && (() => {
+              const totalClubs = activeTeams.length
+              const paidClubs = activeTeams.filter(t => {
+                const s = getSubForTeam(t.id)
+                return s && s.plan !== 'trial' && s.status !== 'cancelled' && (s.current_period_end ? new Date(s.current_period_end) >= new Date() : true)
+              }).length
+              const trialClubs = activeTeams.filter(t => {
+                const s = getSubForTeam(t.id)
+                return s && s.plan === 'trial' && (s.trial_ends_at ? new Date(s.trial_ends_at) >= new Date() : true)
+              }).length
+              const expiredClubs = activeTeams.filter(t => {
+                const s = getSubForTeam(t.id)
+                if (!s) return false
+                return s.status === 'cancelled' || (s.plan === 'trial' ? new Date(s.trial_ends_at) < new Date() : (s.current_period_end && new Date(s.current_period_end) < new Date()))
+              }).length
 
-                {/* ACTIVE TEAMS */}
-                <div>
-                  <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
-                    <div style={{ width:8, height:8, borderRadius:'50%', background:'#059669', boxShadow:'0 0 6px #05966960' }} />
-                    <h2 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Active Teams</h2>
-                    <span style={{ fontSize:11, background:'#d1fae5', color:'#059669', padding:'2px 10px', borderRadius:99, fontWeight:700 }}>{activeTeams.length}</span>
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:24 }}>
+
+                  {/* Subscription KPI Overview */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:12 }}>
+                    <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:14, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em' }}>Total Active Clubs</div>
+                      <div style={{ fontSize:26, fontWeight:900, color:'#0f172a', marginTop:4 }}>{totalClubs}</div>
+                      <div style={{ fontSize:11, color:'#0d9488', marginTop:2 }}>Clubs on platform</div>
+                    </div>
+                    <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:14, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#15803d', textTransform:'uppercase', letterSpacing:'0.06em' }}>Paid Subscriptions</div>
+                      <div style={{ fontSize:26, fontWeight:900, color:'#166534', marginTop:4 }}>{paidClubs}</div>
+                      <div style={{ fontSize:11, color:'#15803d', marginTop:2 }}>Starting XI & Captain</div>
+                    </div>
+                    <div style={{ background:'#fffbeb', border:'1px solid #fde68a', borderRadius:14, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#b45309', textTransform:'uppercase', letterSpacing:'0.06em' }}>Free Trials</div>
+                      <div style={{ fontSize:26, fontWeight:900, color:'#92400e', marginTop:4 }}>{trialClubs}</div>
+                      <div style={{ fontSize:11, color:'#b45309', marginTop:2 }}>30-day active trials</div>
+                    </div>
+                    <div style={{ background:'#fff1f2', border:'1px solid #fecdd3', borderRadius:14, padding:'16px 20px', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#be123c', textTransform:'uppercase', letterSpacing:'0.06em' }}>Expired / Inactive</div>
+                      <div style={{ fontSize:26, fontWeight:900, color:'#9f1239', marginTop:4 }}>{expiredClubs}</div>
+                      <div style={{ fontSize:11, color:'#be123c', marginTop:2 }}>Require renewal</div>
+                    </div>
                   </div>
 
-                  {activeTeams.length === 0 ? (
-                    <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:13, background:'#f8fafc', borderRadius:14, border:'1px dashed #e2e8f0' }}>
-                      No active teams found.
+                  {/* ACTIVE TEAMS */}
+                  <div>
+                    <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:14 }}>
+                      <div style={{ width:8, height:8, borderRadius:'50%', background:'#059669', boxShadow:'0 0 6px #05966960' }} />
+                      <h2 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Active Teams &amp; Subscriptions</h2>
+                      <span style={{ fontSize:11, background:'#d1fae5', color:'#059669', padding:'2px 10px', borderRadius:99, fontWeight:700 }}>{activeTeams.length}</span>
                     </div>
-                  ) : (
-                    <div className="sa-teams-grid">
-                      {activeTeams.map(t => {
-                        const teamUsers = getTeamUsers(t.id)
-                        const admin = teamUsers.find(p => p.role === 'admin')
-                        const otherUsers = teamUsers.filter(p => p.role !== 'admin' && p.role !== 'superadmin')
-                        return (
-                          <div key={t.id} className="sa-card">
-                            <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
-                              <ClubLogoImg url={t.logo_url} name={t.name} size={44} />
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.name}</div>
-                                <div style={{ fontSize:10, color:'#64748b', fontFamily:'monospace', marginTop:2 }}>CODE: {t.short_name}</div>
-                              </div>
-                              <span style={{ fontSize:9, background:'#d1fae5', color:'#059669', padding:'2px 8px', borderRadius:99, fontWeight:800, flexShrink:0 }}>ACTIVE</span>
-                            </div>
 
-                            <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', flexDirection:'column', gap:8 }}>
-                              {/* Admin */}
-                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                                <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>Club Admin</span>
-                                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                                  {admin ? (
-                                    <>
-                                      <span style={{ fontSize:12, color:'#0f172a', fontWeight:600 }}>{admin.full_name}</span>
-                                      <RoleBadge role="admin" />
-                                    </>
-                                  ) : <span style={{ fontSize:12, color:'#94a3b8', fontStyle:'italic' }}>Unassigned</span>}
+                    {activeTeams.length === 0 ? (
+                      <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:13, background:'#f8fafc', borderRadius:14, border:'1px dashed #e2e8f0' }}>
+                        No active teams found.
+                      </div>
+                    ) : (
+                      <div className="sa-teams-grid">
+                        {activeTeams.map(t => {
+                          const teamUsers = getTeamUsers(t.id)
+                          const admin = teamUsers.find(p => p.role === 'admin')
+                          const otherUsers = teamUsers.filter(p => p.role !== 'admin' && p.role !== 'superadmin')
+                          const sub = getSubForTeam(t.id)
+                          const subBadge = getSubBadge(sub)
+
+                          return (
+                            <div key={t.id} className="sa-card">
+                              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
+                                <ClubLogoImg url={t.logo_url} name={t.name} size={44} />
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.name}</div>
+                                  <div style={{ fontSize:10, color:'#64748b', fontFamily:'monospace', marginTop:2 }}>CODE: {t.short_name}</div>
                                 </div>
+                                <span style={{ fontSize:9, background:'#d1fae5', color:'#059669', padding:'2px 8px', borderRadius:99, fontWeight:800, flexShrink:0 }}>ACTIVE</span>
                               </div>
 
-                              {/* Other role users */}
-                              {otherUsers.length > 0 && (
-                                <div>
-                                  <div style={{ fontSize:10, color:'#94a3b8', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Team Members</div>
-                                  <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
-                                    {otherUsers.slice(0, 6).map(u => (
-                                      <div key={u.id} style={{ display:'flex', alignItems:'center', gap:4, background:'#f8fafc', borderRadius:8, padding:'3px 8px', border:'1px solid #e2e8f0' }}>
-                                        <span style={{ fontSize:11, fontWeight:600, color:'#334155' }}>{u.full_name?.split(' ')[0]}</span>
-                                        <RoleBadge role={u.role} />
-                                      </div>
-                                    ))}
-                                    {otherUsers.length > 6 && (
-                                      <span style={{ fontSize:10, color:'#94a3b8', padding:'3px 6px' }}>+{otherUsers.length - 6} more</span>
-                                    )}
+                              <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', flexDirection:'column', gap:10 }}>
+                                
+                                {/* Subscription Details Box */}
+                                <div style={{ background: subBadge.isExpired ? '#fff5f5' : '#f8fafc', borderRadius:10, padding:'10px 12px', border:`1px solid ${subBadge.isExpired ? '#fecdd3' : '#e2e8f0'}`, display:'flex', flexDirection:'column', gap:6 }}>
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                                    <span style={{ fontSize:10, color:'#64748b', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Plan &amp; Billing</span>
+                                    <span style={{ fontSize:11, fontWeight:700, background:subBadge.bg, color:subBadge.color, padding:'2px 8px', borderRadius:99, border:`1px solid ${subBadge.color}30` }}>
+                                      {subBadge.label}
+                                    </span>
+                                  </div>
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11 }}>
+                                    <span style={{ color:'#64748b' }}>{sub?.plan === 'trial' ? 'Trial Expiry:' : 'Next Renewal:'}</span>
+                                    <span style={{ fontWeight:600, color:subBadge.isExpired ? '#e11d48' : '#0f172a' }}>
+                                      {subBadge.end} {subBadge.days !== null ? `(${subBadge.days}d left)` : ''}
+                                    </span>
+                                  </div>
+                                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:10, color:'#64748b', borderTop:'1px dashed #e2e8f0', paddingTop:4 }}>
+                                    <span>Allocated Limits:</span>
+                                    <span style={{ fontWeight:600 }}>{sub?.athlete_limit >= 999 ? 'Unlimited' : (sub?.athlete_limit || '40')} Athletes · {sub?.staff_limit >= 99 ? 'Unlimited' : (sub?.staff_limit || '15')} Staff</span>
                                   </div>
                                 </div>
-                              )}
 
-                              {/* Team ID */}
-                              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
-                                <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>Team ID</span>
-                                <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
-                                  <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
-                                  <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
-                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID"></button>
+                                {/* Admin */}
+                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                                  <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>Club Admin</span>
+                                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                                    {admin ? (
+                                      <>
+                                        <span style={{ fontSize:12, color:'#0f172a', fontWeight:600 }}>{admin.full_name}</span>
+                                        <RoleBadge role="admin" />
+                                      </>
+                                    ) : <span style={{ fontSize:12, color:'#94a3b8', fontStyle:'italic' }}>Unassigned</span>}
+                                  </div>
                                 </div>
+
+                                {/* Other role users */}
+                                {otherUsers.length > 0 && (
+                                  <div>
+                                    <div style={{ fontSize:10, color:'#94a3b8', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>Team Members</div>
+                                    <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                                      {otherUsers.slice(0, 6).map(u => (
+                                        <div key={u.id} style={{ display:'flex', alignItems:'center', gap:4, background:'#f8fafc', borderRadius:8, padding:'3px 8px', border:'1px solid #e2e8f0' }}>
+                                          <span style={{ fontSize:11, fontWeight:600, color:'#334155' }}>{u.full_name?.split(' ')[0]}</span>
+                                          <RoleBadge role={u.role} />
+                                        </div>
+                                      ))}
+                                      {otherUsers.length > 6 && (
+                                        <span style={{ fontSize:10, color:'#94a3b8', padding:'3px 6px' }}>+{otherUsers.length - 6} more</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Team ID */}
+                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8 }}>
+                                  <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>Team ID</span>
+                                  <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
+                                    <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
+                                    <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
+                                      style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID"></button>
+                                  </div>
+                                </div>
+                                <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center', marginTop:4 }} disabled={acting}>
+                                  Wipe Team
+                                </Btn>
                               </div>
-                              <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center', marginTop:8 }} disabled={acting}>
-                                Wipe Team
-                              </Btn>
                             </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
 
                 {/* DELETED / ORPHANED TEAMS */}
                 <div>
@@ -1181,7 +1323,8 @@ export default function SuperadminPage() {
                   )}
                 </div>
               </div>
-            )}
+            )
+          })()}
 
             {section === 'analytics' && (() => {
               const pathsList     = getAggregatedStats(clicks, c => getCleanPath(c.url))
@@ -1209,18 +1352,18 @@ export default function SuperadminPage() {
                   {/* ── KPI METRIC CARDS ── */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14 }}>
                     {[
-                      { label:'Total Events', val:clicks.length, icon:'📊', note:'Recorded clicks' },
-                      { label:'Unique Paths', val:pathsList.length, icon:'🔗', note:'Active pages' },
-                      { label:'Referrers', val:referrersList.length, icon:'🌐', note:'Traffic sources' },
-                      { label:'Countries', val:countriesList.length, icon:'🌍', note:'Visitor locations' },
-                    ].map(kpi => (
-                      <div key={kpi.label} className="sa-card" style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:4 }}>
+                      { label:'Total Events',  val:clicks.length,          note:'Recorded clicks',   Icon:IconBarChart },
+                      { label:'Unique Paths',   val:pathsList.length,        note:'Active pages',      Icon:IconLink },
+                      { label:'Referrers',      val:referrersList.length,    note:'Traffic sources',   Icon:IconGlobe },
+                      { label:'Countries',      val:countriesList.length,    note:'Visitor locations', Icon:IconMapPin },
+                    ].map(({ label, val, note, Icon }) => (
+                      <div key={label} className="sa-card" style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:4 }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em' }}>{kpi.label}</span>
-                          <span style={{ fontSize:16 }}>{kpi.icon}</span>
+                          <span style={{ fontSize:11, fontWeight:700, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em' }}>{label}</span>
+                          <span style={{ color:'#0D9488', display:'flex', alignItems:'center' }}><Icon /></span>
                         </div>
-                        <div style={{ fontSize:22, fontWeight:800, color:'#0F2218', letterSpacing:'-0.03em' }}>{kpi.val}</div>
-                        <div style={{ fontSize:11, color:'#5A7A68' }}>{kpi.note}</div>
+                        <div style={{ fontSize:22, fontWeight:800, color:'#0F2218', letterSpacing:'-0.03em' }}>{val}</div>
+                        <div style={{ fontSize:11, color:'#5A7A68' }}>{note}</div>
                       </div>
                     ))}
                   </div>
@@ -1295,7 +1438,7 @@ export default function SuperadminPage() {
                             <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
                               <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
                               <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1, display:'flex', alignItems:'center', gap:8 }}>
-                                <span style={{ fontSize:15 }}>{getCountryFlag(item.name)}</span>
+                                <span style={{ fontSize:10, fontWeight:800, background:'#0D9488', color:'#fff', borderRadius:4, padding:'1px 5px', fontFamily:'monospace', letterSpacing:'0.05em' }}>{getCountryCode(item.name)}</span>
                                 <span>{getCountryFullName(item.name)}</span>
                               </span>
                               <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
@@ -1385,7 +1528,7 @@ export default function SuperadminPage() {
                                 </td>
                                 <td className="sa-td" style={{ fontSize:12, fontWeight:700, color:'#0F2218' }}>
                                   <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
-                                    <span>{getCountryFlag(c.country)}</span>
+                                    <span style={{ fontSize:10, fontWeight:800, background:'#0D9488', color:'#fff', borderRadius:4, padding:'1px 5px', fontFamily:'monospace', letterSpacing:'0.05em' }}>{getCountryCode(c.country)}</span>
                                     <span>{getCountryFullName(c.country)}</span>
                                   </span>
                                 </td>

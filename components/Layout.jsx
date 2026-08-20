@@ -9,39 +9,42 @@ import InstallPWAButton from '@/components/InstallPWAButton'
 import { getTenantProfile } from '@/lib/tenant'
 
 import {
-  LayoutDashboard, Users, ShieldCheck, CalendarDays, HeartPulse, TrendingUp, 
+  LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
   Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
   Wallet, Menu, X, Bell
 } from 'lucide-react'
 
 const ALL_NAV = [
-  { href:'/dashboard',   label:'Dashboard',   page:'dashboard'   },
-  { href:'/athletes',    label:'Athletes',    page:'athletes'    },
-  { href:'/coaches',     label:'Staff',       page:'coaches'     },
-  { href:'/schedule',    label:'Schedule',    page:'schedule'    },
-  { href:'/injuries',    label:'Medical',     page:'injuries'    },
-  { href:'/performance', label:'Performance', page:'performance' },
-  { href:'/scouting',    label:'Scouting',    page:'scouting'    },
-  { href:'/contracts',   label:'Contracts',   page:'contracts'   },
-  { href:'/reports',     label:'Reports',     page:'reports'     },
-  { href:'/settings',    label:'Settings',    page:'settings'    },
-  { href:'/transfers',   label:'Transfers',   page:'transfers'   },
-  { href:'/billing',     label:'Billing',     page:'billing'     },
-  { href:'/pay',         label:'ApexPay',     page:'pay'         },
+  { href:'/superadmin',  label:'Superadmin Console', page:'superadmin' },
+  { href:'/dashboard',   label:'Dashboard',          page:'dashboard'   },
+  { href:'/athletes',    label:'Athletes',           page:'athletes'    },
+  { href:'/coaches',     label:'Staff',              page:'coaches'     },
+  { href:'/schedule',    label:'Schedule',           page:'schedule'    },
+  { href:'/injuries',    label:'Medical',            page:'injuries'    },
+  { href:'/performance', label:'Performance',        page:'performance' },
+  { href:'/scouting',    label:'Scouting',           page:'scouting'    },
+  { href:'/contracts',   label:'Contracts',          page:'contracts'   },
+  { href:'/reports',     label:'Reports',            page:'reports'     },
+  { href:'/settings',    label:'Settings',           page:'settings'    },
+  { href:'/transfers',   label:'Transfers',          page:'transfers'   },
+  { href:'/billing',     label:'Billing',            page:'billing'     },
+  { href:'/pay',         label:'ApexPay',            page:'pay'         },
 ]
 
-const MOBILE_NAV = ['dashboard','athletes','schedule','injuries','settings']
+const MOBILE_NAV = ['superadmin','dashboard','athletes','schedule','injuries','settings']
 
 const MOBILE_NAV_LABELS = {
-  dashboard: 'Home',
-  athletes:  'Squad',
-  schedule:  'Schedule',
-  injuries:  'Medical',
-  settings:  'Settings',
+  superadmin: 'Console',
+  dashboard:  'Home',
+  athletes:   'Squad',
+  schedule:   'Schedule',
+  injuries:   'Medical',
+  settings:   'Settings',
 }
 
 const iconProps = { size: 20, strokeWidth: 2 }
 const ICONS = {
+  superadmin:  <ShieldAlert {...iconProps} />,
   dashboard:   <LayoutDashboard {...iconProps} />,
   athletes:    <Users {...iconProps} />,
   coaches:     <ShieldCheck {...iconProps} />,
@@ -447,6 +450,24 @@ export default function Layout({ children }) {
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+            {role === 'superadmin' && (
+              <Link href="/superadmin" style={{
+                display:'flex',
+                alignItems:'center',
+                gap:4,
+                background:'linear-gradient(135deg, #0F766E, #0D9488)',
+                color:'#fff',
+                borderRadius:8,
+                padding:'5px 10px',
+                fontSize:11,
+                fontWeight:700,
+                textDecoration:'none',
+                boxShadow:'0 2px 6px rgba(13,148,136,0.25)',
+              }}>
+                <ShieldAlert size={13} strokeWidth={2.2} />
+                <span>Console</span>
+              </Link>
+            )}
             {/* Bell — mobile */}
             <BellButton
               notifications={notifications}
@@ -480,9 +501,17 @@ export default function Layout({ children }) {
                 }
                 return (
                   <Link key={href} href={href}
-                    style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', color: active ? C.lagoon : C.text2, fontWeight: active ? 600 : 500, fontSize:15, textDecoration:'none', background: active ? 'var(--lagoon-alpha)' : 'transparent', borderLeft: active ? `3px solid ${C.lagoon}` : '3px solid transparent' }}>
-                    <span style={{ color: active ? C.lagoon : C.text3 }}>{ICONS[page]}</span>
+                    style={{ 
+                      display:'flex', alignItems:'center', gap:14, padding:'14px 20px', 
+                      color: active ? (page === 'superadmin' ? '#0F766E' : C.lagoon) : (page === 'superadmin' ? '#0D9488' : C.text2), 
+                      fontWeight: active ? 700 : (page === 'superadmin' ? 700 : 500), 
+                      fontSize:15, textDecoration:'none', 
+                      background: active ? 'var(--lagoon-alpha)' : (page === 'superadmin' ? '#F0FDFA' : 'transparent'), 
+                      borderLeft: active ? `3px solid ${page === 'superadmin' ? '#0F766E' : C.lagoon}` : (page === 'superadmin' ? '3px solid #99F6E4' : '3px solid transparent') 
+                    }}>
+                    <span style={{ color: active ? (page === 'superadmin' ? '#0F766E' : C.lagoon) : (page === 'superadmin' ? '#0D9488' : C.text3) }}>{ICONS[page]}</span>
                     {label}
+                    {page === 'superadmin' && <span style={{ marginLeft:'auto', fontSize:9, background:'#CCFBF1', color:'#0F766E', padding:'2px 6px', borderRadius:4, fontWeight:800 }}>SUPERADMIN</span>}
                   </Link>
                 )
               })}
@@ -589,14 +618,15 @@ export default function Layout({ children }) {
                   display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
                   justifyContent: expanded ? 'flex-start' : 'center',
                   borderRadius:12, 
-                  background: active ? activeBg : 'transparent', 
-                  color: active ? activeColor : C.text3, 
-                  fontWeight: active ? 600 : 500, 
-                  fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0
+                  background: active ? activeBg : (page === 'superadmin' ? '#F0FDFA' : 'transparent'), 
+                  color: active ? activeColor : (page === 'superadmin' ? '#0F766E' : C.text3), 
+                  fontWeight: active ? 600 : (page === 'superadmin' ? 700 : 500), 
+                  fontSize:14, textDecoration:'none', transition:'all 0.15s', whiteSpace:'nowrap', overflow:'hidden', flexShrink:0,
+                  border: page === 'superadmin' && !active ? '1px solid #CCFBF1' : '1px solid transparent',
                 }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = C.floralMuted; e.currentTarget.style.color = C.text2 } }}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = C.text3 } }}>
-                <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', minWidth:24 }}>
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = (page === 'superadmin' ? '#CCFBF1' : C.floralMuted); e.currentTarget.style.color = C.text2 } }}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = (page === 'superadmin' ? '#F0FDFA' : 'transparent'); e.currentTarget.style.color = (page === 'superadmin' ? '#0F766E' : C.text3) } }}>
+                <span style={{ flexShrink:0, display:'flex', alignItems:'center', justifyContent:'center', minWidth:24, color: page === 'superadmin' ? '#0D9488' : 'inherit' }}>
                   {ICONS[page] || ICONS.dashboard}
                 </span>
                 {expanded && <span style={{ overflow:'hidden', textOverflow:'ellipsis', marginTop:1 }}>{label}</span>}
@@ -643,6 +673,29 @@ export default function Layout({ children }) {
             {ALL_NAV.find(n => path === n.href || path.startsWith(n.href + '/'))?.label || 'Dashboard'}
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+            {role === 'superadmin' && (
+              <Link href="/superadmin"
+                style={{
+                  display:'inline-flex',
+                  alignItems:'center',
+                  gap:7,
+                  background:'linear-gradient(135deg, #0F766E, #0D9488)',
+                  color:'#FFFFFF',
+                  borderRadius:99,
+                  padding:'7px 16px',
+                  fontSize:12,
+                  fontWeight:700,
+                  textDecoration:'none',
+                  boxShadow:'0 2px 10px rgba(13, 148, 136, 0.3)',
+                  transition:'all 0.2s',
+                }}
+                onMouseEnter={e => e.currentTarget.style.opacity = '0.92'}
+                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+              >
+                <ShieldAlert size={15} strokeWidth={2.2} />
+                <span>Superadmin Console &rarr;</span>
+              </Link>
+            )}
             {teamName && (
               <div style={{ display:'flex', alignItems:'center', gap:8, background: C.floralMuted, borderRadius:99, padding:'6px 14px', border:`1px solid ${C.border}` }}>
                 {teamLogo && !logoError

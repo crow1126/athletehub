@@ -96,14 +96,16 @@ export async function GET(req) {
       result.athletes = athletes || []
     }
 
-    // Teams
-    if (section === 'all' || section === 'teams') {
-      const { data, error } = await db
-        .from('teams')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (error) console.error('Teams fetch error:', error.message)
-      result.teams = data || []
+    // Teams & Subscriptions
+    if (section === 'all' || section === 'teams' || section === 'profiles') {
+      const [teamsRes, subsRes] = await Promise.all([
+        db.from('teams').select('*').order('created_at', { ascending: false }),
+        db.from('subscriptions').select('*'),
+      ])
+      if (teamsRes.error) console.error('Teams fetch error:', teamsRes.error.message)
+      if (subsRes.error) console.error('Subscriptions fetch error:', subsRes.error.message)
+      result.teams = teamsRes.data || []
+      result.subscriptions = subsRes.data || []
     }
 
     // Activities

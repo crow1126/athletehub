@@ -98,6 +98,25 @@ export async function GET(req) {
 
     // Teams & Subscriptions
     if (section === 'all' || section === 'teams' || section === 'profiles') {
+      // Ensure Apex Test Sandbox exists
+      const { data: existingSandbox } = await db.from('teams').select('id').ilike('name', '%sandbox%').maybeSingle()
+      if (!existingSandbox) {
+        const { data: newSandbox } = await db.from('teams').insert([{
+          name: 'Apex Test Sandbox',
+          short_name: 'TEST',
+          primary_color: '#0D9488'
+        }]).select().single()
+        if (newSandbox?.id) {
+          const trialEnd = new Date(); trialEnd.setFullYear(trialEnd.getFullYear() + 10)
+          await db.from('subscriptions').insert([{
+            team_id: newSandbox.id,
+            plan: 'captain',
+            status: 'active',
+            current_period_end: trialEnd.toISOString()
+          }])
+        }
+      }
+
       const [teamsRes, subsRes] = await Promise.all([
         db.from('teams').select('*').order('created_at', { ascending: false }),
         db.from('subscriptions').select('*'),

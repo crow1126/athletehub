@@ -6,12 +6,12 @@ import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
 
-import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
+import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam, isSuperadminReadOnly, setSuperadminReadOnly } from '@/lib/tenant'
 
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
   Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
-  Wallet, Menu, X, Bell, ChevronDown, Building2
+  Wallet, Menu, X, Bell, ChevronDown, Building2, Eye, Lock, Unlock, PlayCircle
 } from 'lucide-react'
 
 const ALL_NAV = [
@@ -283,6 +283,7 @@ export default function Layout({ children }) {
   const [allClubs,      setAllClubs]      = useState([])
   const [switcherOpen,  setSwitcherOpen]  = useState(false)
   const [clubSearch,    setClubSearch]    = useState('')
+  const [readOnly,      setReadOnly]      = useState(false)
   const switcherRef = useRef(null)
 
   const unreadCount = notifications.filter(n => !n._isRead).length
@@ -318,6 +319,7 @@ export default function Layout({ children }) {
       setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
 
       if (p?.role === 'superadmin') {
+        setReadOnly(isSuperadminReadOnly())
         const { data: teamsList } = await supabase.from('teams').select('id, name, short_name, logo_url').order('name')
         if (teamsList) setAllClubs(teamsList)
       }
@@ -330,8 +332,15 @@ export default function Layout({ children }) {
     const onTeamChange = () => {
       loadProfile()
     }
+    const onROChange = (e) => {
+      setReadOnly(e.detail?.isReadOnly ?? isSuperadminReadOnly())
+    }
     window.addEventListener('apex_superadmin_team_changed', onTeamChange)
-    return () => window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
+    window.addEventListener('apex_superadmin_readonly_changed', onROChange)
+    return () => {
+      window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
+      window.removeEventListener('apex_superadmin_readonly_changed', onROChange)
+    }
   }, [loadProfile])
 
   // ── Load + subscribe to notifications once profile is loaded ──
@@ -424,6 +433,7 @@ export default function Layout({ children }) {
   const navLinks = ALL_NAV.filter(n => allowed.includes(n.page))
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  const isSandbox = !profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test')
 
   const teamName  = profile?.teams?.name      || profile?.club_name  || null
   const teamShort = profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : null)
@@ -913,6 +923,134 @@ export default function Layout({ children }) {
             />
           </div>
         </header>
+
+        {/* SUPERADMIN WORKSPACE INSPECTION & DIAGNOSTICS BAR */}
+        {role === 'superadmin' && (
+          <div style={{
+            background: isSandbox ? '#042F2E' : '#0F172A',
+            borderBottom: '1px solid rgba(255,255,255,0.1)',
+            padding: '8px 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 10,
+            fontSize: 12,
+            color: '#E2E8F0',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          }}>
+            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                fontWeight: 800,
+                color: isSandbox ? '#5EEAD4' : '#FDE047',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontSize: 11
+              }}>
+                {isSandbox ? '🔬 Sandbox Test Mode' : '🔍 Club Inspection Mode'}
+              </span>
+
+              <span style={{ color: '#64748B' }}>|</span>
+
+              <span>
+                Workspace: <strong style={{ color: '#FFFFFF' }}>{teamName || 'Apex Test Sandbox'}</strong>
+              </span>
+
+              {!isSandbox ? (
+                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    background: readOnly ? 'rgba(59, 130, 246, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                    color: readOnly ? '#93C5FD' : '#FCA5A5',
+                    border: `1px solid ${readOnly ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
+                    borderRadius: 99,
+                    padding: '2px 8px',
+                    fontSize: 10,
+                    fontWeight: 700
+                  }}>
+                    {readOnly ? <Lock size={11} /> : <Unlock size={11} />}
+                    {readOnly ? 'Read-Only Observer' : 'Live Action Access'}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      const next = !readOnly
+                      setSuperadminReadOnly(next)
+                      setReadOnly(next)
+                    }}
+                    style={{
+                      background: 'rgba(255,255,255,0.12)',
+                      border: '1px solid rgba(255,255,255,0.2)',
+                      color: '#FFFFFF',
+                      borderRadius: 6,
+                      padding: '2px 8px',
+                      fontSize: 10,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s'
+                    }}
+                    title={readOnly ? 'Enable live actions for this club' : 'Enable safe read-only observation'}
+                  >
+                    {readOnly ? 'Switch to Live Access' : 'Switch to Read-Only'}
+                  </button>
+                </div>
+              ) : (
+                <span style={{ fontSize:11, color:'#99F6E4' }}>
+                  Isolated test environment · No customer data impacted
+                </span>
+              )}
+            </div>
+
+            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+              <span style={{ fontSize:11, color:'#94A3B8', fontFamily:'monospace' }}>
+                Scope: {profile?.team_id ? `${profile.team_id.slice(0,8)}...` : 'TEST-ENV'}
+              </span>
+
+              {!isSandbox && (
+                <button
+                  onClick={() => {
+                    setSuperadminActiveTeam(null)
+                    window.location.reload()
+                  }}
+                  style={{
+                    background: 'rgba(13, 148, 136, 0.3)',
+                    border: '1px solid rgba(20, 184, 166, 0.4)',
+                    color: '#5EEAD4',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Enter Sandbox &rarr;
+                </button>
+              )}
+
+              <Link
+                href="/superadmin"
+                style={{
+                  color: '#94A3B8',
+                  textDecoration: 'none',
+                  fontSize: 11,
+                  fontWeight: 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 3
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = '#FFFFFF'}
+                onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
+              >
+                Exit to Superadmin &rarr;
+              </Link>
+            </div>
+          </div>
+        )}
         <main style={{ flex:1 }}>{children}</main>
       </div>
 

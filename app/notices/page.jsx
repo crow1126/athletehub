@@ -92,6 +92,18 @@ export default function NoticeBoardPage() {
     return ['admin', 'coach', 'superadmin'].includes(profile?.role)
   }, [profile?.role])
 
+  const getAuthHeaders = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      return {
+        'Content-Type': 'application/json',
+        ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+      }
+    } catch {
+      return { 'Content-Type': 'application/json' }
+    }
+  }
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
@@ -100,7 +112,8 @@ export default function NoticeBoardPage() {
 
       if (teamId) {
         // 1. Fetch notices
-        const res = await fetch(`/api/notices?team_id=${teamId}`)
+        const headers = await getAuthHeaders()
+        const res = await fetch(`/api/notices?team_id=${teamId}`, { headers })
         const data = await res.json()
         if (data.notices) setNotices(data.notices)
 
@@ -185,9 +198,10 @@ export default function NoticeBoardPage() {
 
     setSubmitting(true)
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch('/api/notices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           title: title.trim(),
           content: content.trim(),
@@ -233,9 +247,10 @@ export default function NoticeBoardPage() {
 
   const handleTogglePin = async (notice) => {
     try {
+      const headers = await getAuthHeaders()
       const res = await fetch('/api/notices', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           id: notice.id,
           is_pinned: !notice.is_pinned,
@@ -254,7 +269,8 @@ export default function NoticeBoardPage() {
   const handleDeleteNotice = async (notice) => {
     if (!confirm(`Delete notice "${notice.title}"?`)) return
     try {
-      const res = await fetch(`/api/notices?id=${notice.id}`, { method: 'DELETE' })
+      const headers = await getAuthHeaders()
+      const res = await fetch(`/api/notices?id=${notice.id}`, { method: 'DELETE', headers })
       const data = await res.json()
       if (!res.ok || !data.ok) throw new Error(data.error || 'Delete failed')
 

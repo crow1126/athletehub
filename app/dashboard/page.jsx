@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
 import Link from 'next/link'
-import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock } from 'lucide-react'
+import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock, Megaphone, Pin, Radio } from 'lucide-react'
 
 const AV_COLORS = ['#006A6A', '#008080', '#2D6B6B', '#5A9494', '#004F4F', '#5C3058']
 function initials(n) { return (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }
@@ -64,6 +64,7 @@ export default function Dashboard() {
   const [injuries, setInjuries] = useState([])
   const [coaches, setCoaches] = useState([])
   const [sessions, setSessions] = useState([])
+  const [notices, setNotices] = useState([])
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -72,14 +73,15 @@ export default function Dashboard() {
     async function load() {
       const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
       setProfile(p)
-      setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin')
-      const [{ data: a }, { data: i }, { data: c }, { data: s }] = await Promise.all([
+      setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin' || p?.role === 'coach')
+      const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }] = await Promise.all([
         scopeTeam(supabase.from('athletes').select('*'), teamId).order('created_at', { ascending: false }),
         scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), teamId),
         scopeTeam(supabase.from('coaches').select('*'), teamId),
         scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), teamId).order('date', { ascending: true }),
+        scopeTeam(supabase.from('notices').select('*'), teamId).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
       ])
-      setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || [])
+      setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || [])
       setLoading(false)
     }
     load()
@@ -197,6 +199,82 @@ export default function Dashboard() {
 
         {/* Left column */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+          {/* ── Squad Notice Board Widget ── */}
+          <div className="card fade-up" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CCFBF1' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0FDFA, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Megaphone size={15} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', margin: 0 }}>Squad Notice Board</h2>
+                  <div style={{ fontSize: 10, color: '#0D9488', fontWeight: 700 }}>Live Moolre SMS Broadcasts</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Link href="/notices" style={{ fontSize: 12, color: '#0F766E', fontWeight: 700, padding: '5px 12px', borderRadius: 8, background: '#CCFBF1', textDecoration: 'none' }}>
+                  Open Board →
+                </Link>
+              </div>
+            </div>
+
+            {notices.length === 0 ? (
+              <div style={{ padding: '24px 18px', textAlign: 'center', color: '#64748B', fontSize: 12 }}>
+                <div>No announcements posted yet.</div>
+                <Link href="/notices" style={{ display: 'inline-block', marginTop: 6, color: '#0D9488', fontWeight: 700, fontSize: 12, textDecoration: 'none' }}>
+                  + Post squad notice &amp; send SMS
+                </Link>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {notices.map((n, idx) => (
+                  <div key={n.id} style={{
+                    padding: '12px 18px',
+                    borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 4,
+                    background: n.category === 'urgent' ? '#FFFDFD' : '#FFFFFF',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {n.is_pinned && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '1px 6px', borderRadius: 4 }}>
+                            <Pin size={9} /> PINNED
+                          </span>
+                        )}
+                        <span style={{
+                          fontSize: 9,
+                          fontWeight: 800,
+                          background: n.category === 'urgent' ? '#FEE2E2' : '#F0FDFA',
+                          color: n.category === 'urgent' ? '#DC2626' : '#0D9488',
+                          padding: '1px 6px',
+                          borderRadius: 4,
+                          textTransform: 'uppercase',
+                        }}>
+                          {n.category}
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{n.title}</span>
+                      </div>
+                      <span style={{ fontSize: 10, color: '#94A3B8' }}>{new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {n.content}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 10, color: '#64748B', marginTop: 2 }}>
+                      <span>By {n.author_name || 'Coach'}</span>
+                      {n.sms_sent && (
+                        <span style={{ color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                          <Radio size={10} /> SMS broadcast ({n.sms_count} players)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Recent Athletes */}
           <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>

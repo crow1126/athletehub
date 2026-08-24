@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import PlayerLayout from '@/components/PlayerLayout'
 import { supabase } from '@/lib/supabase'
-import { Zap, Calendar, TrendingUp, Award, Activity, MapPin } from 'lucide-react'
+import { Zap, Calendar, TrendingUp, Award, Activity, MapPin, Megaphone, Pin, Clock } from 'lucide-react'
 import Link from 'next/link'
 
 export default function PlayerDashboard() {
@@ -10,6 +10,7 @@ export default function PlayerDashboard() {
   const [athlete, setAthlete] = useState(null)
   const [stats, setStats] = useState([])
   const [sessions, setSessions] = useState([])
+  const [notices, setNotices] = useState([])
   const [activeInjury, setActiveInjury] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -26,6 +27,17 @@ export default function PlayerDashboard() {
           .single()
 
         setProfile(prof)
+
+        if (prof?.team_id) {
+          const { data: notifList } = await supabase
+            .from('notices')
+            .select('*')
+            .eq('team_id', prof.team_id)
+            .order('is_pinned', { ascending: false })
+            .order('created_at', { ascending: false })
+            .limit(4)
+          if (notifList) setNotices(notifList)
+        }
 
         if (prof?.athlete_id) {
           const todayStr = new Date().toISOString().split('T')[0]
@@ -295,6 +307,67 @@ export default function PlayerDashboard() {
             </div>
           ))}
         </div>
+
+        {/* ── Squad Notice Board for Players ── */}
+        {notices.length > 0 && (
+          <div className="section-card" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CCFBF1', marginTop: 16 }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0FDFA, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Megaphone size={16} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', margin: 0 }}>Team Notice Board</h3>
+                  <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 600 }}>Announcements from Coach &amp; Staff</div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {notices.map((n, idx) => (
+                <div key={n.id} style={{
+                  padding: '14px 20px',
+                  borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
+                  background: n.category === 'urgent' ? '#FFFDFD' : '#FFFFFF',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {n.is_pinned && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 8px', borderRadius: 99 }}>
+                          <Pin size={10} /> PINNED
+                        </span>
+                      )}
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        background: n.category === 'urgent' ? '#FEE2E2' : '#F0FDFA',
+                        color: n.category === 'urgent' ? '#DC2626' : '#0D9488',
+                        padding: '2px 8px',
+                        borderRadius: 99,
+                        textTransform: 'uppercase',
+                      }}>
+                        {n.category}
+                      </span>
+                      <span style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{n.title}</span>
+                    </div>
+                    <span style={{ fontSize: 11, color: '#94A3B8' }}>{new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
+                  </div>
+
+                  <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.5, margin: 0 }}>
+                    {n.content}
+                  </p>
+
+                  <div style={{ fontSize: 11, color: '#64748B', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                    <span>Posted by <strong>{n.author_name || 'Coach'}</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Dashboard split */}
         <div className="dashboard-grid">

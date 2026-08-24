@@ -6,19 +6,19 @@ import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
 
-import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam, isSuperadminReadOnly, setSuperadminReadOnly } from '@/lib/tenant'
-import { isImpersonating, getImpersonationInfo, stopImpersonation } from '@/lib/impersonate'
+import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
 import { logger } from '@/lib/logger'
 
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
   Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
-  Wallet, Menu, X, Bell, ChevronDown, Building2, Eye, Lock, Unlock, PlayCircle
+  Wallet, Menu, X, Bell, ChevronDown, Building2, Megaphone
 } from 'lucide-react'
 
 const ALL_NAV = [
   { href:'/superadmin',  label:'Superadmin Console', page:'superadmin' },
   { href:'/dashboard',   label:'Dashboard',          page:'dashboard'   },
+  { href:'/notices',     label:'Notice Board',       page:'notices'     },
   { href:'/athletes',    label:'Athletes',           page:'athletes'    },
   { href:'/coaches',     label:'Staff',              page:'coaches'     },
   { href:'/schedule',    label:'Schedule',           page:'schedule'    },
@@ -33,11 +33,12 @@ const ALL_NAV = [
   { href:'/pay',         label:'ApexPay',            page:'pay'         },
 ]
 
-const MOBILE_NAV = ['superadmin','dashboard','athletes','schedule','injuries','settings']
+const MOBILE_NAV = ['superadmin','dashboard','notices','athletes','schedule','injuries','settings']
 
 const MOBILE_NAV_LABELS = {
   superadmin: 'Console',
   dashboard:  'Home',
+  notices:    'Notices',
   athletes:   'Squad',
   schedule:   'Schedule',
   injuries:   'Medical',
@@ -48,6 +49,7 @@ const iconProps = { size: 20, strokeWidth: 2 }
 const ICONS = {
   superadmin:  <ShieldAlert {...iconProps} />,
   dashboard:   <LayoutDashboard {...iconProps} />,
+  notices:     <Megaphone {...iconProps} />,
   athletes:    <Users {...iconProps} />,
   coaches:     <ShieldCheck {...iconProps} />,
   schedule:    <CalendarDays {...iconProps} />,
@@ -285,14 +287,7 @@ export default function Layout({ children }) {
   const [allClubs,      setAllClubs]      = useState([])
   const [switcherOpen,  setSwitcherOpen]  = useState(false)
   const [clubSearch,    setClubSearch]    = useState('')
-  const [readOnly,      setReadOnly]      = useState(false)
-  const [blockedToast,  setBlockedToast]  = useState(null)
   const switcherRef = useRef(null)
-
-  // ── Impersonation state ──
-  const [impersonating, setImpersonating] = useState(false)
-  const [impersonInfo,  setImpersonInfo]  = useState(null)
-  const [exitingImpersonation, setExitingImpersonation] = useState(false)
 
   const unreadCount = notifications.filter(n => !n._isRead).length
 
@@ -335,13 +330,7 @@ export default function Layout({ children }) {
         })
       }
 
-      // Check if we are currently impersonating a user
-      const impInfo = getImpersonationInfo()
-      setImpersonating(!!impInfo)
-      setImpersonInfo(impInfo)
-
-      if (p?.role === 'superadmin' && !impInfo) {
-        setReadOnly(isSuperadminReadOnly())
+      if (p?.role === 'superadmin') {
         const { data: teamsList } = await supabase.from('teams').select('id, name, short_name, logo_url').order('name')
         if (teamsList) setAllClubs(teamsList)
       }
@@ -351,26 +340,10 @@ export default function Layout({ children }) {
 
   useEffect(() => {
     loadProfile()
-    const onTeamChange    = () => loadProfile()
-    const onROChange      = (e) => setReadOnly(e.detail?.isReadOnly ?? isSuperadminReadOnly())
-    const onBlocked       = (e) => {
-      setBlockedToast({ action: e.detail?.action || 'mutation', table: e.detail?.table || 'data' })
-      setTimeout(() => setBlockedToast(null), 6000)
-    }
-    const onImpersonStart = () => loadProfile()
-    const onImpersonEnd   = () => loadProfile()
-
-    window.addEventListener('apex_superadmin_team_changed',    onTeamChange)
-    window.addEventListener('apex_superadmin_readonly_changed', onROChange)
-    window.addEventListener('apex_readonly_blocked',            onBlocked)
-    window.addEventListener('apex_impersonation_started',       onImpersonStart)
-    window.addEventListener('apex_impersonation_ended',         onImpersonEnd)
+    const onTeamChange = () => loadProfile()
+    window.addEventListener('apex_superadmin_team_changed', onTeamChange)
     return () => {
-      window.removeEventListener('apex_superadmin_team_changed',    onTeamChange)
-      window.removeEventListener('apex_superadmin_readonly_changed', onROChange)
-      window.removeEventListener('apex_readonly_blocked',            onBlocked)
-      window.removeEventListener('apex_impersonation_started',       onImpersonStart)
-      window.removeEventListener('apex_impersonation_ended',         onImpersonEnd)
+      window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
     }
   }, [loadProfile])
 
@@ -985,7 +958,7 @@ export default function Layout({ children }) {
                 letterSpacing: '0.05em',
                 fontSize: 11
               }}>
-                {isSandbox ? '🔬 Sandbox Test Mode' : '🔍 Club Inspection Mode'}
+                {isSandbox ? '🔬 Sandbox Test Mode' : '🔍 Workspace Inspection'}
               </span>
 
               <span style={{ color: '#64748B' }}>|</span>
@@ -994,47 +967,7 @@ export default function Layout({ children }) {
                 Workspace: <strong style={{ color: '#FFFFFF' }}>{teamName || 'Apex Test Sandbox'}</strong>
               </span>
 
-              {!isSandbox ? (
-                <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    background: readOnly ? 'rgba(59, 130, 246, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                    color: readOnly ? '#93C5FD' : '#FCA5A5',
-                    border: `1px solid ${readOnly ? 'rgba(59, 130, 246, 0.4)' : 'rgba(239, 68, 68, 0.4)'}`,
-                    borderRadius: 99,
-                    padding: '2px 8px',
-                    fontSize: 10,
-                    fontWeight: 700
-                  }}>
-                    {readOnly ? <Lock size={11} /> : <Unlock size={11} />}
-                    {readOnly ? 'Read-Only Observer' : 'Live Action Access'}
-                  </span>
-
-                  <button
-                    onClick={() => {
-                      const next = !readOnly
-                      setSuperadminReadOnly(next)
-                      setReadOnly(next)
-                    }}
-                    style={{
-                      background: 'rgba(255,255,255,0.12)',
-                      border: '1px solid rgba(255,255,255,0.2)',
-                      color: '#FFFFFF',
-                      borderRadius: 6,
-                      padding: '2px 8px',
-                      fontSize: 10,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      transition: 'all 0.15s'
-                    }}
-                    title={readOnly ? 'Enable live actions for this club' : 'Enable safe read-only observation'}
-                  >
-                    {readOnly ? 'Switch to Live Access' : 'Switch to Read-Only'}
-                  </button>
-                </div>
-              ) : (
+              {isSandbox && (
                 <span style={{ fontSize:11, color:'#99F6E4' }}>
                   Isolated test environment · No customer data impacted
                 </span>
@@ -1087,139 +1020,8 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        {/* ── IMPERSONATION ACTIVE BANNER ── */}
-        {impersonating && impersonInfo && (
-          <div style={{
-            background: 'linear-gradient(90deg, #78350F, #92400E)',
-            borderBottom: '2px solid #F59E0B',
-            padding: '10px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 10,
-            fontSize: 12,
-            zIndex: 199,
-          }}>
-            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-              <div style={{ width:28, height:28, borderRadius:8, background:'rgba(251,191,36,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#FCD34D' }}>
-                <Eye size={15} />
-              </div>
-              <div>
-                <div style={{ fontWeight:900, color:'#FCD34D', fontSize:12, letterSpacing:'0.04em', textTransform:'uppercase' }}>
-                  Impersonation Active
-                </div>
-                <div style={{ color:'#FDE68A', fontSize:11, marginTop:1 }}>
-                  Logged in as <strong>{impersonInfo.full_name || impersonInfo.email}</strong>
-                  {' · '}<span style={{ background:'rgba(0,0,0,0.25)', padding:'1px 6px', borderRadius:99, fontWeight:700, textTransform:'capitalize' }}>{impersonInfo.role}</span>
-                  {impersonInfo.club_name && <>{' @ '}<strong>{impersonInfo.club_name}</strong></>}
-                  <span style={{ marginLeft:8, color:'#D97706', fontStyle:'italic', fontWeight:400 }}>
-                    RLS enforced — you see exactly what this user sees
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button
-              disabled={exitingImpersonation}
-              onClick={async () => {
-                setExitingImpersonation(true)
-                const { ok, error } = await stopImpersonation()
-                if (!ok) {
-                  alert(`Failed to exit impersonation: ${error}`)
-                  setExitingImpersonation(false)
-                }
-                // loadProfile() called automatically via apex_impersonation_ended event
-              }}
-              style={{
-                background: exitingImpersonation ? 'rgba(255,255,255,0.1)' : '#F59E0B',
-                border: 'none',
-                color: exitingImpersonation ? '#FDE68A' : '#1C1917',
-                borderRadius: 8,
-                padding: '6px 14px',
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: exitingImpersonation ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                transition: 'all 0.15s',
-              }}
-            >
-              {exitingImpersonation ? 'Restoring session…' : '← Exit Impersonation'}
-            </button>
-          </div>
-        )}
-
         <main style={{ flex:1 }}>{children}</main>
       </div>
-
-      {/* READ-ONLY MUTATION BLOCKED TOAST */}
-      {blockedToast && (
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 99999,
-          background: '#0F172A',
-          border: '1.5px solid #EF4444',
-          borderRadius: 14,
-          padding: '14px 18px',
-          color: '#F8FAFC',
-          boxShadow: '0 12px 36px rgba(0,0,0,0.35)',
-          maxWidth: 420,
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: 12,
-          animation: 'notifDrop 0.2s ease',
-        }}>
-          <div style={{ width:28, height:28, borderRadius:8, background:'rgba(239,68,68,0.2)', color:'#EF4444', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, fontWeight:900, fontSize:14 }}>
-            <Lock size={15} />
-          </div>
-          <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:'#FCA5A5' }}>
-              Action Blocked (Read-Only Mode)
-            </div>
-            <div style={{ fontSize:12, color:'#CBD5E1', marginTop:3, lineHeight:1.4 }}>
-              Database <strong>{blockedToast.action}</strong> on <em>{blockedToast.table}</em> was blocked to protect this club's live records.
-            </div>
-            <div style={{ marginTop:8, display:'flex', alignItems:'center', gap:8 }}>
-              <button
-                onClick={() => {
-                  setSuperadminReadOnly(false)
-                  setReadOnly(false)
-                  setBlockedToast(null)
-                }}
-                style={{
-                  background: '#EF4444',
-                  border: 'none',
-                  color: '#FFFFFF',
-                  borderRadius: 6,
-                  padding: '4px 10px',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Enable Live Access
-              </button>
-              <button
-                onClick={() => setBlockedToast(null)}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  color: '#94A3B8',
-                  borderRadius: 6,
-                  padding: '4px 8px',
-                  fontSize: 11,
-                  cursor: 'pointer',
-                }}
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}

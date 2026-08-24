@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Layout from '@/components/Layout'
+import PlayerLayout from '@/components/PlayerLayout'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import {
@@ -291,8 +292,10 @@ export default function NoticeBoardPage() {
     return notices.filter(n => n.is_pinned).length
   }, [notices])
 
+  const LayoutComponent = profile?.role === 'player' ? PlayerLayout : Layout
+
   return (
-    <Layout>
+    <LayoutComponent>
       <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 20px 48px' }}>
         
         {/* Toast Notification */}
@@ -1026,6 +1029,6 @@ export default function NoticeBoardPage() {
         )}
 
       </div>
-    </Layout>
+    </LayoutComponent>
   )
 }

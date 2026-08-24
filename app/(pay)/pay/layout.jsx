@@ -315,7 +315,11 @@ export default function PayLayout({ children }) {
   }
 
   const mainUrl = typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.host.replace(/^pay\./i, '')}/dashboard`
+    ? (profile?.role === 'player'
+        ? `${window.location.protocol}//${window.location.host.replace(/^pay\./i, '')}/player-hub`
+        : (profile?.role === 'superadmin'
+            ? `${window.location.protocol}//${window.location.host.replace(/^pay\./i, '')}/superadmin`
+            : `${window.location.protocol}//${window.location.host.replace(/^pay\./i, '')}/dashboard`))
     : '/dashboard'
 
   const initials = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()

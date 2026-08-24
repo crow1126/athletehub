@@ -4,12 +4,13 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
-import { User, Zap, Calendar, LogOut, Bell } from 'lucide-react'
+import { User, Zap, Calendar, LogOut, Bell, Megaphone } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/player-hub', label: 'My Profile', icon: <User size={20} strokeWidth={2} /> },
   { href: '/player-hub/performance', label: 'My Stats', icon: <Zap size={20} strokeWidth={2} /> },
   { href: '/player-hub/schedule', label: 'Schedule', icon: <Calendar size={20} strokeWidth={2} /> },
+  { href: '/notices', label: 'Notice Board', icon: <Megaphone size={20} strokeWidth={2} /> },
 ]
 
 const C = {
@@ -398,7 +399,7 @@ export default function PlayerLayout({ children }) {
         <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 64, background: C.floralDark, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 100, paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
           {NAV_ITEMS.map(({ href, label, icon }) => {
             const active = path === href
-            const shortLabel = href === '/player-hub' ? 'Profile' : href.includes('performance') ? 'Stats' : 'Schedule'
+            const shortLabel = href === '/player-hub' ? 'Profile' : href.includes('performance') ? 'Stats' : href.includes('schedule') ? 'Schedule' : 'Notices'
             return (
               <Link key={href} href={href}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '6px 4px', textDecoration: 'none', color: active ? C.lagoon : C.text3, flex: 1, minWidth: 0, maxWidth: 96 }}>

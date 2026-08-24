@@ -39,14 +39,29 @@ export default function PlayerDashboard() {
           if (notifList) setNotices(notifList)
         }
 
-        if (prof?.athlete_id) {
+        let effectiveAthleteId = prof?.athlete_id
+        if (!effectiveAthleteId && prof?.team_id && prof?.full_name) {
+          const { data: matchedAth } = await supabase
+            .from('athletes')
+            .select('id')
+            .eq('team_id', prof.team_id)
+            .ilike('name', prof.full_name.trim())
+            .limit(1)
+            .maybeSingle()
+          if (matchedAth?.id) {
+            effectiveAthleteId = matchedAth.id
+            supabase.from('profiles').update({ athlete_id: matchedAth.id }).eq('id', prof.id).then(() => {})
+          }
+        }
+
+        if (effectiveAthleteId) {
           const todayStr = new Date().toISOString().split('T')[0]
 
           const [athRes, statsRes, sessionsRes, injuriesRes] = await Promise.all([
-            supabase.from('athletes').select('*').eq('id', prof.athlete_id).single(),
-            supabase.from('performance_stats').select('*').eq('athlete_id', prof.athlete_id).order('match_date', { ascending: false }),
+            supabase.from('athletes').select('*').eq('id', effectiveAthleteId).single(),
+            supabase.from('performance_stats').select('*').eq('athlete_id', effectiveAthleteId).order('match_date', { ascending: false }),
             supabase.from('training_sessions').select('*').eq('team_id', prof.team_id).gte('date', todayStr).order('date', { ascending: true }).limit(3),
-            supabase.from('injuries').select('*').eq('athlete_id', prof.athlete_id).eq('status', 'Active').order('date_of_injury', { ascending: false }).limit(1)
+            supabase.from('injuries').select('*').eq('athlete_id', effectiveAthleteId).eq('status', 'Active').order('date_of_injury', { ascending: false }).limit(1)
           ])
 
           setAthlete(athRes.data)

@@ -17,17 +17,33 @@ export default function MyPerformance() {
 
         const { data: prof } = await supabase
           .from('profiles')
-          .select('id, athlete_id')
+          .select('id, full_name, team_id, athlete_id')
           .eq('id', session.user.id)
           .single()
 
         setProfile(prof)
 
-        if (prof?.athlete_id) {
+        let effectiveAthleteId = prof?.athlete_id
+        if (!effectiveAthleteId && prof?.team_id && prof?.full_name) {
+          const { data: matchedAth } = await supabase
+            .from('athletes')
+            .select('id')
+            .eq('team_id', prof.team_id)
+            .ilike('name', prof.full_name.trim())
+            .limit(1)
+            .maybeSingle()
+          if (matchedAth?.id) {
+            effectiveAthleteId = matchedAth.id
+            setProfile(p => ({ ...p, athlete_id: matchedAth.id }))
+            supabase.from('profiles').update({ athlete_id: matchedAth.id }).eq('id', prof.id).then(() => {})
+          }
+        }
+
+        if (effectiveAthleteId) {
           const { data: statsData } = await supabase
             .from('performance_stats')
             .select('*')
-            .eq('athlete_id', prof.athlete_id)
+            .eq('athlete_id', effectiveAthleteId)
             .order('match_date', { ascending: false })
 
           setStats(statsData || [])

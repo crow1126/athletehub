@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'
@@ -60,6 +61,7 @@ function MiniChart({ data = [40, 55, 48, 62, 58, 72, 68, 75, 70, 80], color = '#
 }
 
 export default function Dashboard() {
+  const router = useRouter()
   const [athletes, setAthletes] = useState([])
   const [injuries, setInjuries] = useState([])
   const [coaches, setCoaches] = useState([])
@@ -72,6 +74,10 @@ export default function Dashboard() {
   useEffect(() => {
     async function load() {
       const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+      if (p?.role === 'player') {
+        router.replace('/player-hub')
+        return
+      }
       setProfile(p)
       setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin' || p?.role === 'coach')
       const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }] = await Promise.all([
@@ -85,7 +91,7 @@ export default function Dashboard() {
       setLoading(false)
     }
     load()
-  }, [])
+  }, [router])
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]

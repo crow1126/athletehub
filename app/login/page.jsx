@@ -85,27 +85,7 @@ export default function LoginPage() {
         try {
           const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
           if (profile?.is_active !== false) {
-            const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
-            if (isPaySub) {
-              window.location.href = '/'
-            } else if (profile?.role === 'accountant') {
-              if (window.electronAPI?.isElectron || (typeof navigator !== 'undefined' && (navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop')))) {
-                window.location.href = '/pay'
-                return
-              }
-              const host = window.location.host.replace(/^www\./i, '')
-              const protocol = window.location.protocol
-              const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
-              let redirectUrl = isIP
-                ? `${protocol}//${host}/pay`
-                : (host.startsWith('localhost:')
-                  ? `${protocol}//pay.${host}`
-                  : `${protocol}//pay.apextrackgh.com`)
-              if (session) {
-                redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
-              }
-              window.location.href = redirectUrl
-            } else if (profile?.role === 'superadmin') {
+            if (profile?.role === 'superadmin') {
               router.replace('/superadmin')
             } else if (profile?.role === 'player') {
               router.replace('/player-hub')
@@ -191,29 +171,7 @@ export default function LoginPage() {
         }
         setLoading(false); return
       }
-      const isPaySub = typeof window !== 'undefined' && (window.location.hostname.startsWith('pay.apextrackgh.com') || window.location.hostname.startsWith('pay.localhost'))
-      if (isPaySub) {
-        window.location.href = '/'
-      } else if (profile?.role === 'accountant') {
-        if (window.electronAPI?.isElectron || (typeof navigator !== 'undefined' && (navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop')))) {
-          window.location.href = '/pay'
-          return
-        }
-        const host = window.location.host.replace(/^www\./i, '')
-        const protocol = window.location.protocol
-        const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
-        let redirectUrl = isIP
-          ? `${protocol}//${host}/pay`
-          : (host.startsWith('localhost:')
-            ? `${protocol}//pay.${host}`
-            : `${protocol}//pay.apextrackgh.com`)
-        
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session) {
-          redirectUrl += `#access_token=${encodeURIComponent(session.access_token)}&refresh_token=${encodeURIComponent(session.refresh_token)}`
-        }
-        window.location.href = redirectUrl
-      } else if (profile?.role === 'superadmin') {
+      if (profile?.role === 'superadmin') {
         window.location.href = '/superadmin'
       } else if (profile?.role === 'player') {
         window.location.href = '/player-hub'

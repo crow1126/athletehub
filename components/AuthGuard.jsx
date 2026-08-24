@@ -64,34 +64,19 @@ export default function AuthGuard({ children }) {
       }
       if (profile.is_active === false) { await supabase.auth.signOut(); router.replace('/login?reason=disabled'); return }
 
-      // /pay routes: require admin, superadmin, or accountant, bypass subscription checks
+      // ApexPay: Restricted to all roles (Coming Soon)
       if (path === '/pay' || path.startsWith('/pay/')) {
-        if (profile.role !== 'admin' && profile.role !== 'superadmin' && profile.role !== 'accountant') {
-          router.replace('/dashboard?reason=insufficient_permissions')
-          return
-        }
-        return // allow in
+        const dest = profile.role === 'player' ? '/player-hub' : (profile.role === 'superadmin' ? '/superadmin' : '/dashboard')
+        router.replace(dest)
+        return
       }
 
-      // If user is accountant but trying to access non-pay routes, redirect to pay subdomain.
-      // No token passing needed — the shared .apextrackgh.com cookie is already present.
-      if (profile.role === 'accountant') {
-        const isElectron = typeof window !== 'undefined' && (window.electronAPI?.isElectron || navigator.userAgent.includes('Electron') || navigator.userAgent.includes('ApexTrackDesktop'))
-        if (isElectron) {
-          if (path !== '/pay' && !path.startsWith('/pay/')) {
-            router.replace('/pay')
-          }
-          return
-        }
-        const isPaySub = typeof window !== 'undefined' && window.location.hostname.startsWith('pay.')
-        if (!isPaySub) {
-          const host     = window.location.host.replace(/^www\./i, '')
-          const protocol = window.location.protocol
-          const isIP     = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname)
-          const redirectUrl = isIP
-            ? `${protocol}//${host}/pay`
-            : `${protocol}//pay.${host}`
-          window.location.href = redirectUrl
+      // Player role protection: strictly redirect players trying to access staff/admin routes to /player-hub
+      if (profile.role === 'player') {
+        const allowedPlayerPrefixes = ['/player-hub', '/notices', '/settings']
+        const isPlayerAllowed = allowedPlayerPrefixes.some(p => path === p || path.startsWith(p + '/'))
+        if (!isPlayerAllowed) {
+          router.replace('/player-hub')
           return
         }
       }

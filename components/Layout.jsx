@@ -30,7 +30,6 @@ const ALL_NAV = [
   { href:'/settings',    label:'Settings',           page:'settings'    },
   { href:'/transfers',   label:'Transfers',          page:'transfers'   },
   { href:'/billing',     label:'Billing',            page:'billing'     },
-  { href:'/pay',         label:'ApexPay',            page:'pay'         },
 ]
 
 const MOBILE_NAV = ['superadmin','dashboard','notices','athletes','schedule','injuries','settings']
@@ -318,6 +317,11 @@ export default function Layout({ children }) {
     try {
       const { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
       if (!session) { router.replace('/login'); return }
+      if (p?.role === 'player' && (path === '/dashboard' || path === '/')) {
+        router.replace('/player-hub')
+        return
+      }
+
       setCurrentUserId(session.user.id)
       setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
 

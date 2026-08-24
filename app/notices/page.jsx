@@ -158,30 +158,20 @@ export default function NoticeBoardPage() {
   }
 
   // Count recipients with phone for selected target group in composer
+  // Matches exact position codes used in the athlete form
   const eligibleSmsRecipients = useMemo(() => {
     const withPhone = athletes.filter(a => a.phone && a.phone.trim().length >= 8)
     if (targetGroup === 'all') return withPhone
-    if (targetGroup === 'goalkeepers') {
-      return withPhone.filter(a => (a.position || '').toLowerCase().includes('goalkeeper') || (a.position || '').toLowerCase() === 'gk')
-    }
-    if (targetGroup === 'defenders') {
-      return withPhone.filter(a => {
-        const p = (a.position || '').toLowerCase()
-        return p.includes('defender') || p.includes('back') || p === 'cb' || p === 'lb' || p === 'rb'
-      })
-    }
-    if (targetGroup === 'midfielders') {
-      return withPhone.filter(a => {
-        const p = (a.position || '').toLowerCase()
-        return p.includes('midfield') || p === 'cm' || p === 'dm' || p === 'am'
-      })
-    }
-    if (targetGroup === 'forwards') {
-      return withPhone.filter(a => {
-        const p = (a.position || '').toLowerCase()
-        return p.includes('forward') || p.includes('striker') || p.includes('winger') || p.includes('attacker') || p === 'st' || p === 'rw' || p === 'lw'
-      })
-    }
+
+    const GK_POSITIONS   = new Set(['GK', 'Goalkeeper'])
+    const DEF_POSITIONS  = new Set(['CB', 'RB', 'LB', 'RWB', 'LWB', 'Defender', 'Centre-Back', 'Right Back', 'Left Back'])
+    const MID_POSITIONS  = new Set(['CDM', 'CM', 'CAM', 'RM', 'LM', 'Midfielder', 'Defensive Midfielder', 'Central Midfielder', 'Attacking Midfielder', 'Right Midfielder', 'Left Midfielder'])
+    const FWD_POSITIONS  = new Set(['RW', 'LW', 'CF', 'SS', 'ST', 'Forward', 'Right Winger', 'Left Winger', 'Centre Forward', 'Second Striker', 'Striker', 'Attacker'])
+
+    if (targetGroup === 'goalkeepers') return withPhone.filter(a => GK_POSITIONS.has(a.position))
+    if (targetGroup === 'defenders')   return withPhone.filter(a => DEF_POSITIONS.has(a.position))
+    if (targetGroup === 'midfielders') return withPhone.filter(a => MID_POSITIONS.has(a.position))
+    if (targetGroup === 'forwards')    return withPhone.filter(a => FWD_POSITIONS.has(a.position))
     return withPhone
   }, [athletes, targetGroup])
 

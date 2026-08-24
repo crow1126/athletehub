@@ -134,15 +134,19 @@ export async function POST(req) {
         .not('phone', 'is', null)
         .neq('phone', '')
 
-      // Target filter
+      // Target filter — matches exact position codes used in the athlete form
+      // Goalkeeper: GK
+      // Defenders:  CB, RB, LB, RWB, LWB
+      // Midfielders: CDM, CM, CAM, RM, LM
+      // Forwards:   RW, LW, CF, SS, ST
       if (target_group === 'goalkeepers') {
-        query = query.ilike('position', '%goalkeeper%')
+        query = query.in('position', ['GK', 'Goalkeeper'])
       } else if (target_group === 'defenders') {
-        query = query.or('position.ilike.%defender%,position.ilike.%back%,position.ilike.%cb%,position.ilike.%lb%,position.ilike.%rb%')
+        query = query.in('position', ['CB', 'RB', 'LB', 'RWB', 'LWB', 'Defender', 'Centre-Back', 'Right Back', 'Left Back'])
       } else if (target_group === 'midfielders') {
-        query = query.or('position.ilike.%midfield%,position.ilike.%cm%,position.ilike.%dm%,position.ilike.%am%')
+        query = query.in('position', ['CDM', 'CM', 'CAM', 'RM', 'LM', 'Midfielder', 'Defensive Midfielder', 'Central Midfielder', 'Attacking Midfielder', 'Right Midfielder', 'Left Midfielder'])
       } else if (target_group === 'forwards') {
-        query = query.or('position.ilike.%forward%,position.ilike.%striker%,position.ilike.%winger%,position.ilike.%attacker%')
+        query = query.in('position', ['RW', 'LW', 'CF', 'SS', 'ST', 'Forward', 'Right Winger', 'Left Winger', 'Centre Forward', 'Second Striker', 'Striker', 'Attacker'])
       }
 
       const { data: athletes, error: athErr } = await query
@@ -161,6 +165,7 @@ export async function POST(req) {
             message: content.trim(),
             category,
             authorName,
+            position: ath.position,
           })
         }))
 

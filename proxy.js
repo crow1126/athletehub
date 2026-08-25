@@ -9,8 +9,10 @@ function getCookieDomain(hostname) {
   if (!hostname || hostname === 'localhost' || /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)) {
     return undefined
   }
-  const parts = hostname.split('.')
-  return parts.length >= 2 ? '.' + parts.slice(-2).join('.') : undefined
+  if (hostname.endsWith('apextrackgh.com')) {
+    return '.apextrackgh.com'
+  }
+  return undefined
 }
 
 // Routes that don't require authentication

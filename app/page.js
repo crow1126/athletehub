@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { IconMenu, IconCheck } from '@/lib/icons'
+import { supabase } from '@/lib/supabase'
 
 const NAV_LINKS = ['Features', 'Pricing', 'Download', 'FAQ', 'Support']
 
@@ -138,6 +139,44 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('is_active, role')
+            .eq('id', session.user.id)
+            .single()
+
+          if (profile && profile.is_active !== false) {
+            if (profile.role === 'superadmin') {
+              router.replace('/superadmin')
+            } else if (profile.role === 'player') {
+              router.replace('/player-hub')
+            } else {
+              router.replace('/dashboard')
+            }
+            return
+          }
+        } catch (_e) {}
+      }
+
+      if (typeof window !== 'undefined') {
+        const isStandalone =
+          window.navigator?.standalone === true ||
+          window.matchMedia?.('(display-mode: standalone)')?.matches ||
+          window.electronAPI?.isElectron ||
+          navigator.userAgent.includes('Electron') ||
+          navigator.userAgent.includes('ApexTrackDesktop')
+
+        if (isStandalone) {
+          router.replace('/login')
+        }
+      }
+    }).catch(() => {})
+  }, [router])
   const [demoModalOpen, setDemoModalOpen] = useState(false)
   const [demoSubmitted, setDemoSubmitted] = useState(false)
   const [demoForm, setDemoForm] = useState({

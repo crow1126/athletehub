@@ -110,12 +110,9 @@ export default function AuthGuard({ children }) {
             (sub.plan !== 'trial' && new Date(sub.current_period_end) < new Date())
 
           if (isExpired) {
-            if (profile.role === 'admin') {
-              router.replace('/billing?reason=expired')
-            } else {
-              await supabase.auth.signOut()
-              router.replace('/login?reason=subscription_expired')
-            }
+            // Never sign the user out — just redirect to billing so they can renew
+            // Signing out on expiry was breaking PWA persistent sessions
+            router.replace('/billing?reason=expired')
             return
           }
 
@@ -132,7 +129,8 @@ export default function AuthGuard({ children }) {
 
   useEffect(() => {
     checkSession()
-    interval.current = setInterval(checkSession, 30000)
+    // Poll every 5 minutes instead of 30s — reduces false sign-outs on slow networks
+    interval.current = setInterval(checkSession, 5 * 60 * 1000)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       const clean = path ? (path.split('?')[0].length > 1 ? path.split('?')[0].replace(/\/$/, '') : path.split('?')[0]) : '/'
       if (event === 'SIGNED_OUT' && !PUBLIC_ROUTES.includes(clean)) router.replace('/login?reason=signed_out')

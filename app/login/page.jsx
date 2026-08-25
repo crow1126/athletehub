@@ -75,8 +75,8 @@ export default function LoginPage() {
       if (p.get('reason') === 'profile_error') setError('Account profile lookup error. Please try again or contact support.')
       if (p.get('reason') === 'signed_out') setSuccess('You have been signed out.')
       if (p.get('reason') === 'subscription_expired') {
-        setSubExpired(true); supabase.auth.signOut()
-        return
+        setSubExpired(true)
+        // Don't force signOut here — let users stay authenticated so billing page can load
       }
       if (p.get('tab') === 'signup') setTab('signup')
     }

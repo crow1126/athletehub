@@ -110,9 +110,15 @@ export default function AuthGuard({ children }) {
             (sub.plan !== 'trial' && new Date(sub.current_period_end) < new Date())
 
           if (isExpired) {
-            // Never sign the user out — just redirect to billing so they can renew
-            // Signing out on expiry was breaking PWA persistent sessions
-            router.replace('/billing?reason=expired')
+            if (profile.role === 'admin') {
+              // Admins can see billing and renew — just redirect, keep them logged in
+              router.replace('/billing?reason=expired')
+            } else {
+              // Non-admin staff (coaches, physios, etc.) don't have billing access
+              // Sign them out cleanly so they get a clear "contact your admin" message
+              await supabase.auth.signOut()
+              router.replace('/login?reason=subscription_expired')
+            }
             return
           }
 

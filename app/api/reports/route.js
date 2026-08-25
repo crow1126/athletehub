@@ -24,6 +24,10 @@ export async function POST(req) {
       reportType = 'monthly',
     } = body
 
+    const targetYear  = parseInt(year, 10)
+    const targetMonth = parseInt(month, 10)
+    const isYearly    = reportType === 'yearly'
+
     // Enforce multitenant isolation: regular staff can ONLY access their own team_id
     const teamId = requester.profile.role === 'superadmin' && body.teamId
       ? body.teamId
@@ -56,7 +60,6 @@ export async function POST(req) {
       { data: sessionsRaw },
       { data: coachesRaw },
       { data: contractsRaw },
-      { data: transfersRaw },
     ] = await Promise.all([
       db.from('athletes').select('*, coaches(name)').eq('team_id', teamId).order('name', { ascending: true }),
       db.from('injuries').select('*, athletes(name, club, position)').eq('team_id', teamId).order('date_of_injury', { ascending: false }),
@@ -64,20 +67,17 @@ export async function POST(req) {
       db.from('training_sessions').select('*').eq('team_id', teamId).order('date', { ascending: false }),
       db.from('coaches').select('*').eq('team_id', teamId).order('name', { ascending: true }),
       db.from('contracts').select('*, athletes(name, position, club)').eq('team_id', teamId).order('created_at', { ascending: false }),
-      db.from('transfers').select('*, athletes(name, position, club)').eq('team_id', teamId).order('created_at', { ascending: false }),
     ])
 
-    const athletes    = athletesRaw    || []
-    const injuries    = injuriesRaw    || []
-    const performance = performanceRaw || []
-    const sessions    = sessionsRaw    || []
-    const coaches     = coachesRaw     || []
-    const contracts   = contractsRaw   || []
-    const transfers   = transfersRaw   || []
+    const allAthletes    = athletesRaw    || []
+    const allInjuries    = injuriesRaw    || []
+    const allPerformance = performanceRaw || []
+    const allSessions    = sessionsRaw    || []
+    const allCoaches     = coachesRaw     || []
+    const allContracts   = contractsRaw   || []
 
-    const isYearly  = reportType === 'yearly'
-    const periodStr = isYearly ? `Year ${year}` : `${MONTHS[month]} ${year}`
-    const fileDate  = isYearly ? `Year_${year}` : `${MONTHS[month]}_${year}`
+    const periodStr = isYearly ? `Year ${targetYear}` : `${MONTHS[targetMonth]} ${targetYear}`
+    const fileDate  = isYearly ? `Year_${targetYear}` : `${MONTHS[targetMonth]}_${targetYear}`
     const safeClub  = clubName.replace(/[^a-zA-Z0-9_-]/g, '_')
 
     let XLSX
@@ -89,22 +89,58 @@ export async function POST(req) {
 
     const wb = XLSX.utils.book_new()
 
-    // ── Date Filtering Helper ────────────────────────────────────────────────
-    function filterPeriod(items, dateField) {
-      return items.filter(item => {
-        const val = item[dateField]
-        if (!val) return true
-        try {
-          const d = new Date(val)
-          if (isNaN(d.getTime())) return true
-          return isYearly
-            ? d.getFullYear() === year
-            : (d.getFullYear() === year && d.getMonth() === month)
-        } catch {
-          return true
-        }
-      })
+    // ── 4. Precise Date & Tenure Filtering Helpers ───────────────────────────
+    // Period window boundaries
+    const periodStart = isYearly
+      ? new Date(targetYear, 0, 1, 0, 0, 0, 0)
+      : new Date(targetYear, targetMonth, 1, 0, 0, 0, 0)
+
+    const periodEnd = isYearly
+      ? new Date(targetYear, 11, 31, 23, 59, 59, 999)
+      : new Date(targetYear, targetMonth + 1, 0, 23, 59, 59, 999)
+
+    // Checks if an event date occurred strictly within the period
+    function isEventInPeriod(dateVal) {
+      if (!dateVal) return false
+      try {
+        const d = new Date(dateVal)
+        if (isNaN(d.getTime())) return false
+        return isYearly
+          ? d.getFullYear() === targetYear
+          : (d.getFullYear() === targetYear && d.getMonth() === targetMonth)
+      } catch {
+        return false
+      }
     }
+
+    // Checks if a person/contract tenure was active during the period
+    function isTenureActiveInPeriod(startVal, endVal, fallbackCreated) {
+      const s = startVal || fallbackCreated
+      if (!s) return false
+      try {
+        const startDate = new Date(s)
+        if (isNaN(startDate.getTime())) return false
+        // Started after period ended -> was NOT in the club yet
+        if (startDate > periodEnd) return false
+
+        // If an end date exists, must have ended on or after period start
+        if (endVal) {
+          const endDate = new Date(endVal)
+          if (!isNaN(endDate.getTime()) && endDate < periodStart) return false
+        }
+        return true
+      } catch {
+        return false
+      }
+    }
+
+    // Filter each dataset strictly by the selected period
+    const athletes    = allAthletes.filter(a => isTenureActiveInPeriod(a.in_club_since || a.joined_date, null, a.created_at))
+    const injuries    = allInjuries.filter(i => isEventInPeriod(i.date_of_injury))
+    const performance = allPerformance.filter(p => isEventInPeriod(p.match_date))
+    const sessions    = allSessions.filter(s => isEventInPeriod(s.date))
+    const coaches     = allCoaches.filter(c => isTenureActiveInPeriod(c.contract_start, c.contract_end, c.created_at))
+    const contracts   = allContracts.filter(ct => isTenureActiveInPeriod(ct.contract_start, ct.contract_end, ct.created_at))
 
     function addSheet(name, rows) {
       const safeName = name.slice(0, 31)
@@ -113,7 +149,7 @@ export async function POST(req) {
           [`${clubName.toUpperCase()} — ${name.toUpperCase()}`],
           [`Period: ${periodStr} | Generated: ${new Date().toLocaleDateString('en-GB')}`],
           [''],
-          ['No records found for this period.']
+          [`No records found for ${periodStr}.`]
         ])
         ws['!cols'] = [{ wch: 45 }]
         XLSX.utils.book_append_sheet(wb, ws, safeName)
@@ -127,7 +163,7 @@ export async function POST(req) {
       XLSX.utils.book_append_sheet(wb, ws, safeName)
     }
 
-    // ── 4. Build Detailed Report Sheets ──────────────────────────────────────
+    // ── 5. Build Detailed Report Sheets ──────────────────────────────────────
 
     // ── SQUAD / ATHLETES SHEET ──
     if (type === 'athletes' || type === 'summary') {
@@ -155,18 +191,17 @@ export async function POST(req) {
       }))
       addSheet('Squad Roster', athleteRows)
 
-      // Position breakdown
-      const posCounts = { 'Goalkeepers (GK)': 0, 'Defenders (DF)': 0, 'Midfielders (MF)': 0, 'Forwards (FW)': 0, 'Other': 0 }
-      athletes.forEach(a => {
-        const p = (a.position || '').toUpperCase()
-        if (p.includes('GK') || p.includes('GOAL')) posCounts['Goalkeepers (GK)']++
-        else if (p.includes('DF') || p.includes('CB') || p.includes('LB') || p.includes('RB') || p.includes('BACK')) posCounts['Defenders (DF)']++
-        else if (p.includes('MF') || p.includes('CM') || p.includes('DM') || p.includes('AM') || p.includes('MID')) posCounts['Midfielders (MF)']++
-        else if (p.includes('FW') || p.includes('ST') || p.includes('LW') || p.includes('RW') || p.includes('ATT')) posCounts['Forwards (FW)']++
-        else posCounts['Other']++
-      })
-
       if (type === 'athletes') {
+        const posCounts = { 'Goalkeepers (GK)': 0, 'Defenders (DF)': 0, 'Midfielders (MF)': 0, 'Forwards (FW)': 0, 'Other': 0 }
+        athletes.forEach(a => {
+          const p = (a.position || '').toUpperCase()
+          if (p.includes('GK') || p.includes('GOAL')) posCounts['Goalkeepers (GK)']++
+          else if (p.includes('DF') || p.includes('CB') || p.includes('LB') || p.includes('RB') || p.includes('BACK')) posCounts['Defenders (DF)']++
+          else if (p.includes('MF') || p.includes('CM') || p.includes('DM') || p.includes('AM') || p.includes('MID')) posCounts['Midfielders (MF)']++
+          else if (p.includes('FW') || p.includes('ST') || p.includes('LW') || p.includes('RW') || p.includes('ATT')) posCounts['Forwards (FW)']++
+          else posCounts['Other']++
+        })
+
         const breakdownRows = Object.entries(posCounts).map(([pos, count]) => ({
           'Position Group': pos,
           'Total Players': count,
@@ -178,8 +213,7 @@ export async function POST(req) {
 
     // ── INJURY & MEDICAL LOG ──
     if (type === 'injuries' || type === 'summary') {
-      const filteredInjuries = filterPeriod(injuries, 'date_of_injury')
-      const injuryRows = filteredInjuries.map(i => {
+      const injuryRows = injuries.map(i => {
         let daysMissed = '-'
         if (i.date_of_injury) {
           const start = new Date(i.date_of_injury)
@@ -205,8 +239,7 @@ export async function POST(req) {
 
     // ── PERFORMANCE ANALYTICS ──
     if (type === 'performance' || type === 'summary') {
-      const filteredPerf = filterPeriod(performance, 'match_date')
-      const perfRows = filteredPerf.map(p => ({
+      const perfRows = performance.map(p => ({
         'Match Date':          p.match_date || '-',
         'Athlete':             p.athletes?.name || 'Unknown Athlete',
         'Position':            p.athletes?.position || '-',
@@ -230,10 +263,9 @@ export async function POST(req) {
       }))
       addSheet('Performance Stats', perfRows)
 
-      // Aggregated season totals per athlete
-      if (type === 'performance' && filteredPerf.length > 0) {
+      if (type === 'performance' && performance.length > 0) {
         const byAthlete = {}
-        filteredPerf.forEach(p => {
+        performance.forEach(p => {
           const name = p.athletes?.name || 'Unknown'
           if (!byAthlete[name]) {
             byAthlete[name] = { matches: 0, minutes: 0, goals: 0, assists: 0, ratings: [], passes: [] }
@@ -263,8 +295,7 @@ export async function POST(req) {
 
     // ── TRAINING SESSIONS ──
     if (type === 'sessions' || type === 'summary') {
-      const filteredSessions = filterPeriod(sessions, 'date')
-      const sessionRows = filteredSessions.map(s => {
+      const sessionRows = sessions.map(s => {
         const leadCoach = coaches.find(c => c.id === s.coach_id)
         return {
           'Session Date':    s.date || '-',
@@ -317,7 +348,6 @@ export async function POST(req) {
       }))
       addSheet('Player Contracts', contractRows)
 
-      // Wage summary
       const activeContracts = contracts.filter(c => c.status === 'Active' || !c.status)
       const weeklyWageTotal = activeContracts.reduce((sum, c) => sum + parseFloat(c.weekly_wage || 0), 0)
 
@@ -326,8 +356,7 @@ export async function POST(req) {
         { 'Financial Metric': 'Report Period',                  'Amount / Value': periodStr },
         { 'Financial Metric': 'Report Generated On',            'Amount / Value': new Date().toLocaleDateString('en-GB') },
         { 'Financial Metric': '--------------------------------', 'Amount / Value': '--------------------' },
-        { 'Financial Metric': 'Total Player Contracts on File', 'Amount / Value': contracts.length },
-        { 'Financial Metric': 'Active Contracts',               'Amount / Value': activeContracts.length },
+        { 'Financial Metric': 'Active Player Contracts in Period', 'Amount / Value': activeContracts.length },
         { 'Financial Metric': 'Expired Contracts',              'Amount / Value': contracts.filter(c => c.status === 'Expired').length },
         { 'Financial Metric': 'In Active Negotiation',          'Amount / Value': contracts.filter(c => c.status === 'Negotiating').length },
         { 'Financial Metric': '--------------------------------', 'Amount / Value': '--------------------' },
@@ -378,7 +407,7 @@ export async function POST(req) {
       wb.Sheets['Executive Overview'] = overviewWs
     }
 
-    // ── 5. Generate & Return Binary XLSX ─────────────────────────────────────
+    // ── 6. Generate & Return Binary XLSX ─────────────────────────────────────
     const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' })
     const filename = `${safeClub}_${fileDate}_${type}_report.xlsx`
 

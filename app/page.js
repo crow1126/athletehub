@@ -139,6 +139,19 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState(null)
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const isStandalone =
+        window.navigator?.standalone === true ||
+        window.matchMedia?.('(display-mode: standalone)')?.matches ||
+        window.electronAPI?.isElectron ||
+        navigator.userAgent.includes('Electron') ||
+        navigator.userAgent.includes('ApexTrackDesktop')
+      const hasAuthCookie = document.cookie.includes('sb-') || document.cookie.includes('auth')
+      return isStandalone || hasAuthCookie
+    }
+    return false
+  })
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -173,9 +186,13 @@ export default function LandingPage() {
 
         if (isStandalone) {
           router.replace('/login')
+          return
         }
       }
-    }).catch(() => {})
+      setShowSplash(false)
+    }).catch(() => {
+      setShowSplash(false)
+    })
   }, [router])
   const [demoModalOpen, setDemoModalOpen] = useState(false)
   const [demoSubmitted, setDemoSubmitted] = useState(false)
@@ -288,9 +305,59 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  function scrollTo(id) {
-    document.getElementById(id.toLowerCase())?.scrollIntoView({ behavior: 'smooth' })
-    setMenuOpen(false)
+  if (showSplash) {
+    return (
+      <div style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: '#FFFFFF',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 99999,
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif"
+      }}>
+        <style>{`
+          @keyframes pulseScale {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.85; }
+          }
+          @keyframes spinSlow {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 18,
+          animation: 'pulseScale 1.8s ease-in-out infinite'
+        }}>
+          <div style={{
+            width: 72,
+            height: 72,
+            borderRadius: 18,
+            background: 'linear-gradient(135deg, #0D9488, #0F766E)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 12px 30px rgba(13,148,136,0.25)',
+            padding: 8
+          }}>
+            <img src="/logo.png" alt="ApexTrack" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 10 }} />
+          </div>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
+              Apex<span style={{ color: '#0D9488' }}>Track</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
+              Connecting to squad...
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (

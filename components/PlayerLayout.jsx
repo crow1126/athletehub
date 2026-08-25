@@ -256,9 +256,14 @@ export default function PlayerLayout({ children }) {
           .eq('id', session.user.id)
           .single()
         
-        if (!data || data.role !== 'player' || data.is_active === false) {
+        if (!data || data.is_active === false) {
           await supabase.auth.signOut()
           router.replace('/login?reason=disabled')
+          return
+        }
+
+        if (data.role !== 'player') {
+          router.replace(data.role === 'superadmin' ? '/superadmin' : '/dashboard')
           return
         }
         setProfile({ ...data, email: session.user.email })

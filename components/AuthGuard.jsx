@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { canAccess } from '@/lib/auth'
 import { canAccessModule } from '@/lib/subscription'
 
 const PUBLIC_ROUTES  = ['/', '/login', '/auth/confirm', '/auth/reset-password', '/forgot-password', '/privacy', '/terms', '/security', '/download']
@@ -9,7 +10,9 @@ const BILLING_BYPASS = ['/billing', '/login', '/pay']
 
 function pathToModule(path) {
   const map = {
+    '/superadmin':  'superadmin',
     '/dashboard':   'dashboard',
+    '/notices':     'notices',
     '/athletes':    'athletes',
     '/coaches':     'coaches',
     '/schedule':    'schedule',
@@ -18,6 +21,7 @@ function pathToModule(path) {
     '/scouting':    'scouting',
     '/contracts':   'contracts',
     '/reports':     'reports',
+    '/transfers':   'transfers',
     '/settings':    'settings',
     '/billing':     'billing',
     '/player-hub':  'player-hub',
@@ -83,6 +87,14 @@ export default function AuthGuard({ children }) {
 
       // Superadmin is platform-level and completely subscription-free across all modules and routes
       if (profile.role === 'superadmin') {
+        return
+      }
+
+      // Role permission check: redirect if user role does not have access to this module
+      const currentMod = pathToModule(path)
+      if (currentMod && !canAccess(profile.role, currentMod)) {
+        const fallback = profile.role === 'player' ? '/player-hub' : '/dashboard'
+        router.replace(fallback)
         return
       }
 

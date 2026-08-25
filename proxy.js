@@ -72,15 +72,15 @@ export async function proxy(request) {
     }
   }
 
-  // ── 2. Skip auth check for public routes & static assets ──────────────────
-  // Check against the rewritten path so /pay/* routes are also guarded.
+  // ── 2. Handle root path (/) and public routes ─────────────────────────────
   const checkPath = rewriteUrl?.pathname ?? request.nextUrl.pathname
-  const isPublic =
-    PUBLIC_EXACT.includes(checkPath) ||
-    PUBLIC_PREFIXES.some(p => checkPath.startsWith(p)) ||
-    checkPath.match(/\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot|ico)$/)
+  const isStatic = checkPath.match(/\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot|ico)$/)
+  if (isStatic) {
+    return rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
+  }
 
-  if (isPublic) {
+  const isPublicPrefix = PUBLIC_PREFIXES.some(p => checkPath.startsWith(p))
+  if (isPublicPrefix) {
     return rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
   }
 
@@ -98,7 +98,6 @@ export async function proxy(request) {
         getAll: () => request.cookies.getAll(),
         setAll: (cookiesToSet) => {
           cookiesToSet.forEach(({ name, value, options }) => {
-            // Write refreshed tokens back with the apex-domain scope
             response.cookies.set(name, value, {
               ...options,
               ...(cookieDomain ? { domain: cookieDomain } : {}),
@@ -114,6 +113,30 @@ export async function proxy(request) {
 
   // getUser() validates the JWT server-side and silently refreshes the token
   const { data: { user } } = await supabase.auth.getUser()
+
+  // If visiting root (/) and already logged in, redirect directly from server with 0 flash
+  if (checkPath === '/') {
+    if (user) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, is_active')
+          .eq('id', user.id)
+          .single()
+
+        if (profile && profile.is_active !== false) {
+          const dest = profile.role === 'superadmin'
+            ? '/superadmin'
+            : (profile.role === 'player' ? '/player-hub' : '/dashboard')
+          return NextResponse.redirect(new URL(dest, request.url))
+        }
+      } catch (_e) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    }
+    // Visitor is not logged in: serve landing page normally
+    return rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
+  }
 
   if (!user) {
     // Always redirect to the main domain login, never stay on the pay subdomain

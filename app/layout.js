@@ -42,7 +42,7 @@ export default function RootLayout({ children }) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{if(typeof navigator!=='undefined'&&(navigator.userAgent.includes('Electron')||navigator.userAgent.includes('ApexTrackDesktop')||window.electronAPI?.isElectron)){document.documentElement.classList.add('is-electron')}}catch(e){}})()`,
+            __html: `(function(){try{var isStandalone=window.navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||(typeof navigator!=='undefined'&&(navigator.userAgent.includes('Electron')||navigator.userAgent.includes('ApexTrackDesktop')))||window.electronAPI?.isElectron;if(isStandalone){document.documentElement.classList.add('is-standalone');}if(typeof navigator!=='undefined'&&(navigator.userAgent.includes('Electron')||navigator.userAgent.includes('ApexTrackDesktop')||window.electronAPI?.isElectron)){document.documentElement.classList.add('is-electron');}}catch(e){}})()`,
           }}
         />
       </head>

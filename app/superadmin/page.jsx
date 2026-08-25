@@ -209,6 +209,17 @@ export default function SuperadminPage() {
   const [inspectModal, setInspectModal] = useState(false)
   const [inspectSearch, setInspectSearch] = useState('')
 
+  // Subscription management modal state
+  const [subModal, setSubModal] = useState(false)
+  const [subTeam, setSubTeam] = useState(null)
+  const [subPlan, setSubPlan] = useState('captain')
+  const [subStatus, setSubStatus] = useState('active')
+  const [subAthleteLimit, setSubAthleteLimit] = useState(999999)
+  const [subStaffLimit, setSubStaffLimit] = useState(99999)
+  const [subEndDate, setSubEndDate] = useState('')
+  const [subNotes, setSubNotes] = useState('')
+  const [subSaving, setSubSaving] = useState(false)
+
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
 
@@ -314,6 +325,105 @@ export default function SuperadminPage() {
       return { label: `Trial · ${days ?? 0}d left`, plan: 'Free Trial', bg: '#FEF3C7', color: '#D97706', days, isTrial: true, end: endFormatted, status: 'trial' }
     }
     return { label: `${name} · Active`, plan: name, bg: '#d1fae5', color: '#059669', days, isActive: true, end: endFormatted, status: 'active' }
+  }
+
+  function openSubModal(team) {
+    if (!team) return
+    const sub = getSubForTeam(team.id)
+    setSubTeam(team)
+    setSubPlan(sub?.plan || 'captain')
+    setSubStatus(sub?.status || 'active')
+    setSubAthleteLimit(sub?.athlete_limit >= 999 ? 999999 : (sub?.athlete_limit || 999999))
+    setSubStaffLimit(sub?.staff_limit >= 99 ? 99999 : (sub?.staff_limit || 99999))
+    
+    if (sub?.current_period_end) {
+      try {
+        setSubEndDate(new Date(sub.current_period_end).toISOString().split('T')[0])
+      } catch {
+        setSubEndDate('2099-12-31')
+      }
+    } else {
+      const d = new Date()
+      d.setFullYear(d.getFullYear() + 100)
+      setSubEndDate(d.toISOString().split('T')[0])
+    }
+    setSubNotes(sub?.notes || '')
+    setSubModal(true)
+  }
+
+  async function handleQuickUnlimited(teamId, teamName) {
+    try {
+      setSubSaving(true)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No active session')
+
+      const farFuture = new Date()
+      farFuture.setFullYear(farFuture.getFullYear() + 100)
+
+      const res = await fetch('/api/admin/subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          team_id: teamId,
+          plan: 'captain',
+          status: 'active',
+          athlete_limit: 999999,
+          staff_limit: 99999,
+          current_period_end: farFuture.toISOString(),
+          notes: 'Granted Unlimited VIP Access via Superadmin'
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update subscription')
+      showToast(`⚡ Granted Unlimited Captain Access to ${teamName || 'Team'}!`)
+      loadTeams()
+      loadProfiles()
+      if (subModal) setSubModal(false)
+    } catch (err) {
+      showToast(err.message, 'error')
+    } finally {
+      setSubSaving(false)
+    }
+  }
+
+  async function handleSaveSub(e) {
+    if (e) e.preventDefault()
+    if (!subTeam) return
+    try {
+      setSubSaving(true)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No active session')
+
+      const res = await fetch('/api/admin/subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          team_id: subTeam.id,
+          plan: subPlan,
+          status: subStatus,
+          athlete_limit: Number(subAthleteLimit),
+          staff_limit: Number(subStaffLimit),
+          current_period_end: subEndDate ? new Date(subEndDate).toISOString() : null,
+          notes: subNotes
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save subscription')
+      showToast(`Subscription updated for ${subTeam.name}!`)
+      setSubModal(false)
+      loadTeams()
+      loadProfiles()
+    } catch (err) {
+      showToast(err.message, 'error')
+    } finally {
+      setSubSaving(false)
+    }
   }
 
   function resolveIdName(colName, val) {
@@ -1000,7 +1110,27 @@ export default function SuperadminPage() {
                               </div>
                               {/* Subscription status indicator */}
                               {clubSubBadge && (
-                                <span style={{ fontSize:10, fontWeight:700, background:clubSubBadge.bg, color:clubSubBadge.color, padding:'3px 8px', borderRadius:99, flexShrink:0, border:`1px solid ${clubSubBadge.color}30`, display:'inline-flex', alignItems:'center', gap:4 }}>
+                                <span
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    if (matchedTeam) openSubModal(matchedTeam)
+                                  }}
+                                  title={matchedTeam ? "Click to Manage Plan & Limits" : "Subscription Status"}
+                                  style={{
+                                    fontSize:10,
+                                    fontWeight:700,
+                                    background:clubSubBadge.bg,
+                                    color:clubSubBadge.color,
+                                    padding:'3px 8px',
+                                    borderRadius:99,
+                                    flexShrink:0,
+                                    border:`1px solid ${clubSubBadge.color}30`,
+                                    display:'inline-flex',
+                                    alignItems:'center',
+                                    gap:4,
+                                    cursor: matchedTeam ? 'pointer' : 'default'
+                                  }}
+                                >
                                   <IconCreditCard />{clubSubBadge.label}
                                 </span>
                               )}
@@ -1008,6 +1138,33 @@ export default function SuperadminPage() {
                               {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Pending</span>}
                               {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 8px', borderRadius:99, flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}><IconCheckCircle /> Approved</span>}
                               
+                              {/* Manage Plan Button */}
+                              {matchedTeam && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openSubModal(matchedTeam)
+                                  }}
+                                  style={{
+                                    fontSize:11,
+                                    fontWeight:700,
+                                    background:'#F0FDFA',
+                                    color:'#0F766E',
+                                    border:'1px solid #99F6E4',
+                                    padding:'5px 10px',
+                                    borderRadius:8,
+                                    cursor:'pointer',
+                                    flexShrink:0,
+                                    transition:'background 0.15s',
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = '#CCFBF1'}
+                                  onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
+                                  title="Manage Club Plan & Limits"
+                                >
+                                  💳 Plan
+                                </button>
+                              )}
+
                               {/* Inspect Workspace Action */}
                               <button
                                 onClick={(e) => {
@@ -1223,11 +1380,27 @@ export default function SuperadminPage() {
                               <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', flexDirection:'column', gap:10 }}>
                                 
                                 {/* Subscription Details Box */}
-                                <div style={{ background: subBadge.isExpired ? '#fff5f5' : '#f8fafc', borderRadius:10, padding:'10px 12px', border:`1px solid ${subBadge.isExpired ? '#fecdd3' : '#e2e8f0'}`, display:'flex', flexDirection:'column', gap:6 }}>
+                                <div
+                                  onClick={() => openSubModal(t)}
+                                  title="Click to Manage Plan & Limits"
+                                  style={{
+                                    background: subBadge.isExpired ? '#fff5f5' : '#f8fafc',
+                                    borderRadius:10,
+                                    padding:'10px 12px',
+                                    border:`1px solid ${subBadge.isExpired ? '#fecdd3' : '#e2e8f0'}`,
+                                    display:'flex',
+                                    flexDirection:'column',
+                                    gap:6,
+                                    cursor:'pointer',
+                                    transition:'border-color 0.15s, transform 0.15s'
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#0d9488'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+                                  onMouseLeave={e => { e.currentTarget.style.borderColor = subBadge.isExpired ? '#fecdd3' : '#e2e8f0'; e.currentTarget.style.transform = 'none' }}
+                                >
                                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                                     <span style={{ fontSize:10, color:'#64748b', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em' }}>Plan &amp; Billing</span>
-                                    <span style={{ fontSize:11, fontWeight:700, background:subBadge.bg, color:subBadge.color, padding:'2px 8px', borderRadius:99, border:`1px solid ${subBadge.color}30` }}>
-                                      {subBadge.label}
+                                    <span style={{ fontSize:11, fontWeight:700, background:subBadge.bg, color:subBadge.color, padding:'2px 8px', borderRadius:99, border:`1px solid ${subBadge.color}30`, display:'inline-flex', alignItems:'center', gap:4 }}>
+                                      <IconCreditCard />{subBadge.label}
                                     </span>
                                   </div>
                                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', fontSize:11 }}>
@@ -1283,6 +1456,14 @@ export default function SuperadminPage() {
                                   </div>
                                 </div>
                                 <div style={{ display:'flex', gap:6, marginTop:4 }}>
+                                  <Btn onClick={() => openSubModal(t)} style={{ fontSize:11, flex:1, justifyContent:'center', background:'#f0fdfa', borderColor:'#99f6e4', color:'#0f766e', fontWeight:700 }}>
+                                    💳 Manage Plan
+                                  </Btn>
+                                  <Btn onClick={() => handleQuickUnlimited(t.id, t.name)} disabled={subSaving} style={{ fontSize:11, padding:'7px 10px', background:'#fef3c7', borderColor:'#fde68a', color:'#b45309', fontWeight:700 }} title="Grant 100-Yr Unlimited Captain Plan">
+                                    ⚡ Unlimited
+                                  </Btn>
+                                </div>
+                                <div style={{ display:'flex', gap:6 }}>
                                   <Btn variant="primary" onClick={() => {
                                     setSuperadminActiveTeam(t.id)
                                     router.push('/dashboard')
@@ -1942,6 +2123,329 @@ export default function SuperadminPage() {
             <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', justifyContent:'flex-end' }}>
               <Btn onClick={() => setInspectModal(false)}>Close</Btn>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SUBSCRIPTION & PLAN MANAGEMENT MODAL */}
+      {subModal && subTeam && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(8px)', zIndex:600, display:'flex', alignItems:'center', justifyContent:'center', padding:16, overflowY:'auto' }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:580, maxHeight:'90vh', overflowY:'auto', display:'flex', flexDirection:'column', gap:18, boxShadow:'0 24px 60px rgba(0,0,0,0.3)', border:'1.5px solid #0D9488' }}>
+            
+            {/* Header */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', borderBottom:'1px solid #f1f5f9', paddingBottom:14 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                <ClubLogoImg url={subTeam.logo_url} name={subTeam.name} size={48} />
+                <div>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <h3 style={{ fontSize:17, fontWeight:800, color:'#0f172a' }}>{subTeam.name}</h3>
+                    <span style={{ fontSize:10, fontWeight:700, background:'#0F766E15', color:'#0F766E', padding:'2px 8px', borderRadius:99, border:'1px solid #0F766E30' }}>
+                      {subTeam.short_name || 'CLUB'}
+                    </span>
+                  </div>
+                  <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>
+                    Manage subscription tier, athlete capacity, staff seats, and expiration
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setSubModal(false)}
+                style={{ background:'#f1f5f9', border:'none', color:'#64748b', width:28, height:28, borderRadius:'50%', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Quick 1-Click Action Presets */}
+            <div>
+              <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
+                ⚡ Quick Presets
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:8 }}>
+                
+                {/* Unlimited Captain Preset */}
+                <button
+                  type="button"
+                  onClick={() => handleQuickUnlimited(subTeam.id, subTeam.name)}
+                  disabled={subSaving}
+                  style={{
+                    background: 'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+                    border: '1.5px solid #F59E0B',
+                    borderRadius: 12,
+                    padding: '12px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(245,158,11,0.25)' }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
+                >
+                  <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:800, color:'#92400E' }}>
+                    <span>👑 Unlimited Captain</span>
+                  </div>
+                  <div style={{ fontSize:10, color:'#B45309', marginTop:4, lineHeight:1.3 }}>
+                    Unlimited athletes &amp; staff · Lifetime validity (2099)
+                  </div>
+                  <div style={{ fontSize:10, fontWeight:800, color:'#78350F', marginTop:6 }}>
+                    Apply 1-Click &rarr;
+                  </div>
+                </button>
+
+                {/* 30-Day Trial Preset */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubPlan('trial')
+                    setSubStatus('trial')
+                    setSubAthleteLimit(999)
+                    setSubStaffLimit(99)
+                    const d = new Date()
+                    d.setDate(d.getDate() + 30)
+                    setSubEndDate(d.toISOString().split('T')[0])
+                  }}
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 12,
+                    padding: '12px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#0D9488'; e.currentTarget.style.background = '#F0FDFA' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.background = '#F8FAFC' }}
+                >
+                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A' }}>
+                    🚀 30-Day Trial
+                  </div>
+                  <div style={{ fontSize:10, color:'#64748B', marginTop:4, lineHeight:1.3 }}>
+                    Full platform trial · 30-day countdown
+                  </div>
+                  <div style={{ fontSize:10, fontWeight:700, color:'#0D9488', marginTop:6 }}>
+                    Select Preset
+                  </div>
+                </button>
+
+                {/* Starting XI Preset */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubPlan('starting_xi')
+                    setSubStatus('active')
+                    setSubAthleteLimit(40)
+                    setSubStaffLimit(15)
+                    const d = new Date()
+                    d.setMonth(d.getMonth() + 1)
+                    setSubEndDate(d.toISOString().split('T')[0])
+                  }}
+                  style={{
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 12,
+                    padding: '12px',
+                    textAlign: 'left',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#0D9488'; e.currentTarget.style.background = '#F0FDFA' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.background = '#F8FAFC' }}
+                >
+                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A' }}>
+                    ⚽ Starting XI
+                  </div>
+                  <div style={{ fontSize:10, color:'#64748B', marginTop:4, lineHeight:1.3 }}>
+                    40 athletes limit · 1 month validity
+                  </div>
+                  <div style={{ fontSize:10, fontWeight:700, color:'#0D9488', marginTop:6 }}>
+                    Select Preset
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Subscription Form */}
+            <form onSubmit={handleSaveSub} style={{ display:'flex', flexDirection:'column', gap:14, borderTop:'1px solid #f1f5f9', paddingTop:14 }}>
+              
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
+                    Plan Tier
+                  </label>
+                  <select
+                    className="sa-custom-input"
+                    value={subPlan}
+                    onChange={e => {
+                      const p = e.target.value
+                      setSubPlan(p)
+                      if (p === 'captain') {
+                        setSubAthleteLimit(999999)
+                        setSubStaffLimit(99999)
+                      } else if (p === 'starting_xi') {
+                        setSubAthleteLimit(40)
+                        setSubStaffLimit(15)
+                      }
+                    }}
+                    style={{ fontWeight:700, color:'#0f172a' }}
+                  >
+                    <option value="captain">Captain (Unlimited Tier)</option>
+                    <option value="starting_xi">Starting XI (Standard Tier)</option>
+                    <option value="trial">Free Trial</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
+                    Status
+                  </label>
+                  <select
+                    className="sa-custom-input"
+                    value={subStatus}
+                    onChange={e => setSubStatus(e.target.value)}
+                    style={{ fontWeight:700 }}
+                  >
+                    <option value="active">Active (Access Granted)</option>
+                    <option value="trial">Trial Mode</option>
+                    <option value="expired">Expired (Requires Upgrade)</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Limits */}
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                    <label style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                      Athlete Limit
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setSubAthleteLimit(999999)}
+                      style={{ background:'none', border:'none', color:'#0D9488', fontSize:10, fontWeight:800, cursor:'pointer', padding:0 }}
+                    >
+                      Set Unlimited
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    className="sa-custom-input"
+                    value={subAthleteLimit}
+                    onChange={e => setSubAthleteLimit(e.target.value)}
+                    placeholder="e.g. 40 or 999999"
+                  />
+                  <span style={{ fontSize:10, color:'#94a3b8', marginTop:3, display:'block' }}>
+                    {Number(subAthleteLimit) >= 999 ? '♾️ Unlimited Athlete Profiles' : `Up to ${subAthleteLimit} Athletes`}
+                  </span>
+                </div>
+
+                <div>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                    <label style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                      Staff Limit
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setSubStaffLimit(99999)}
+                      style={{ background:'none', border:'none', color:'#0D9488', fontSize:10, fontWeight:800, cursor:'pointer', padding:0 }}
+                    >
+                      Set Unlimited
+                    </button>
+                  </div>
+                  <input
+                    type="number"
+                    className="sa-custom-input"
+                    value={subStaffLimit}
+                    onChange={e => setSubStaffLimit(e.target.value)}
+                    placeholder="e.g. 15 or 99999"
+                  />
+                  <span style={{ fontSize:10, color:'#94a3b8', marginTop:3, display:'block' }}>
+                    {Number(subStaffLimit) >= 99 ? '♾️ Unlimited Staff Accounts' : `Up to ${subStaffLimit} Staff`}
+                  </span>
+                </div>
+              </div>
+
+              {/* Expiry Date */}
+              <div>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}>
+                  <label style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                    Expiration / Renewal Date
+                  </label>
+                  <div style={{ display:'flex', gap:6 }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date()
+                        d.setDate(d.getDate() + 30)
+                        setSubEndDate(d.toISOString().split('T')[0])
+                      }}
+                      style={{ background:'#f1f5f9', border:'none', borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:700, color:'#475569', cursor:'pointer' }}
+                    >
+                      +30 Days
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const d = new Date()
+                        d.setFullYear(d.getFullYear() + 1)
+                        setSubEndDate(d.toISOString().split('T')[0])
+                      }}
+                      style={{ background:'#f1f5f9', border:'none', borderRadius:6, padding:'2px 89', fontSize:10, fontWeight:700, color:'#475569', cursor:'pointer' }}
+                    >
+                      +1 Year
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSubEndDate('2099-12-31')
+                      }}
+                      style={{ background:'#FEF3C7', border:'1px solid #FDE68A', borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:800, color:'#92400E', cursor:'pointer' }}
+                    >
+                      👑 Lifetime (2099)
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="date"
+                  className="sa-custom-input"
+                  value={subEndDate}
+                  onChange={e => setSubEndDate(e.target.value)}
+                  style={{ fontWeight:600 }}
+                />
+              </div>
+
+              {/* Internal Notes */}
+              <div>
+                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
+                  Superadmin Notes (Internal)
+                </label>
+                <input
+                  type="text"
+                  className="sa-custom-input"
+                  placeholder="e.g. VIP Testing account, Paid via MoMo offline, etc."
+                  value={subNotes}
+                  onChange={e => setSubNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Modal Buttons */}
+              <div style={{ display:'flex', gap:10, borderTop:'1px solid #f1f5f9', paddingTop:14, marginTop:4 }}>
+                <Btn
+                  type="button"
+                  onClick={() => setSubModal(false)}
+                  style={{ flex:1, justifyContent:'center' }}
+                >
+                  Cancel
+                </Btn>
+                <Btn
+                  type="submit"
+                  variant="primary"
+                  disabled={subSaving}
+                  style={{ flex:2, justifyContent:'center', gap:8, background:'linear-gradient(135deg, #0F766E, #0D9488)' }}
+                >
+                  {subSaving ? 'Saving Changes…' : 'Save Subscription Changes →'}
+                </Btn>
+              </div>
+            </form>
           </div>
         </div>
       )}

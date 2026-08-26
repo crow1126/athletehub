@@ -63,7 +63,6 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Only Coaches and Admins can publish notices.' }, { status: 403 })
     }
 
-    const body = await req.json()
     const {
       title,
       content,
@@ -71,7 +70,9 @@ export async function POST(req) {
       target_group = 'all',
       is_pinned = false,
       send_sms = true,
-      team_id: customTeamId
+      team_id: customTeamId,
+      recipient_ids = [],
+      match_details = null,
     } = body
 
     if (!title?.trim() || !content?.trim()) {
@@ -134,12 +135,10 @@ export async function POST(req) {
         .not('phone', 'is', null)
         .neq('phone', '')
 
-      // Target filter — matches exact position codes used in the athlete form
-      // Goalkeeper: GK
-      // Defenders:  CB, RB, LB, RWB, LWB
-      // Midfielders: CDM, CM, CAM, RM, LM
-      // Forwards:   RW, LW, CF, SS, ST
-      if (target_group === 'goalkeepers') {
+      // If specific recipients are selected (e.g. called-up players), only notify them!
+      if (Array.isArray(recipient_ids) && recipient_ids.length > 0) {
+        query = query.in('id', recipient_ids)
+      } else if (target_group === 'goalkeepers') {
         query = query.in('position', ['GK', 'Goalkeeper'])
       } else if (target_group === 'defenders') {
         query = query.in('position', ['CB', 'RB', 'LB', 'RWB', 'LWB', 'Defender', 'Centre-Back', 'Right Back', 'Left Back'])
@@ -165,7 +164,7 @@ export async function POST(req) {
             message: content.trim(),
             category,
             authorName,
-            position: ath.position,
+            matchDetails: match_details,
           })
         }))
 

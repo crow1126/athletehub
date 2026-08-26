@@ -117,7 +117,8 @@ export default function NoticeBoardPage() {
   const [mdKickoff, setMdKickoff] = useState('15:00')
   const [mdVenue, setMdVenue] = useState('')
   const [mdCompetition, setMdCompetition] = useState('')
-  const [mdMeetingTime, setMdMeetingTime] = useState('')
+  const [mdMeetingPoint, setMdMeetingPoint] = useState('Club House')
+  const [mdMeetingTime, setMdMeetingTime] = useState('13:00')
   const [mdFormation, setMdFormation] = useState('')
   const [mdNotes, setMdNotes] = useState('')
   const [mdHeadCoach, setMdHeadCoach] = useState('')
@@ -229,14 +230,10 @@ export default function NoticeBoardPage() {
     )
   }, [eligibleForCallUp, mdPlayerSearch])
 
-  // Players already selected (either XI or bench) — to prevent double selection
-  const allSelectedIds = useMemo(() => new Set([...mdSelectedXI, ...mdSelectedBench]), [mdSelectedXI, mdSelectedBench])
-
   function toggleXI(id) {
     if (mdSelectedXI.includes(id)) {
       setMdSelectedXI(prev => prev.filter(x => x !== id))
     } else if (mdSelectedBench.includes(id)) {
-      // Move from bench to XI if XI has room
       if (mdSelectedXI.length < 11) {
         setMdSelectedBench(prev => prev.filter(x => x !== id))
         setMdSelectedXI(prev => [...prev, id])
@@ -256,7 +253,6 @@ export default function NoticeBoardPage() {
     if (mdSelectedBench.includes(id)) {
       setMdSelectedBench(prev => prev.filter(x => x !== id))
     } else if (mdSelectedXI.includes(id)) {
-      // Move from XI to bench
       setMdSelectedXI(prev => prev.filter(x => x !== id))
       setMdSelectedBench(prev => [...prev, id])
     } else {
@@ -298,6 +294,7 @@ export default function NoticeBoardPage() {
         kickoffTime: mdKickoff,
         venue: mdVenue,
         competition: mdCompetition,
+        meetingPoint: mdMeetingPoint,
         meetingTime: mdMeetingTime,
         formation: mdFormation,
         notes: mdNotes,
@@ -323,6 +320,7 @@ export default function NoticeBoardPage() {
 
     setMdSubmitting(true)
     try {
+      const { formatTime12H } = await import('@/lib/pdfTeamSheet')
       const headers = await getAuthHeaders()
 
       const xiNames = mdSelectedXI.map(id => {
@@ -335,15 +333,36 @@ export default function NoticeBoardPage() {
         return a ? `${getPlayerName(a)}${a.back_number ? ' #' + a.back_number : ''}` : ''
       }).filter(Boolean)
 
-      const dateFormatted = mdDate ? new Date(mdDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : 'TBD'
-      const noticeTitle = `Matchday Call-Up: ${profile?.teams?.name || 'Club'} vs ${mdOpponent.trim()}`
-      let noticeContent = `⚽ MATCHDAY CALL-UP NOTICE\n\nMatch: ${profile?.teams?.name || 'Club'} vs ${mdOpponent.trim()}\nDate: ${dateFormatted}${mdKickoff ? `\nKickoff: ${mdKickoff}` : ''}${mdMeetingTime ? `\nReport By: ${mdMeetingTime}` : ''}${mdVenue ? `\nVenue: ${mdVenue}` : ''}${mdCompetition ? `\nCompetition: ${mdCompetition}` : ''}\n`
+      const dateFormatted = mdDate
+        ? new Date(mdDate).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+        : 'Matchday'
 
-      if (xiNames.length > 0) noticeContent += `\n🟢 STARTING XI (${xiNames.length}):\n${xiNames.map((n, i) => `  ${i + 1}. ${n}`).join('\n')}`
-      if (benchNames.length > 0) noticeContent += `\n\n🔵 BENCH / SUBSTITUTES (${benchNames.length}):\n${benchNames.map((n, i) => `  ${mdSelectedXI.length + i + 1}. ${n}`).join('\n')}`
+      const formattedKickoff = formatTime12H(mdKickoff) || '3:00 PM'
+      const formattedMeeting = formatTime12H(mdMeetingTime)
+
+      const club = profile?.teams?.name || profile?.club_name || 'Club'
+      const noticeTitle = `Matchday Call-Up: ${club} vs ${mdOpponent.trim()}`
+      
+      let noticeContent = `⚽ MATCHDAY SQUAD CALL-UP\n\n`
+      noticeContent += `Fixture: ${club} vs ${mdOpponent.trim()}\n`
+      noticeContent += `📅 Date: ${dateFormatted}\n`
+      noticeContent += `⏰ Kickoff: ${formattedKickoff}\n`
+      if (mdVenue) noticeContent += `📍 Venue: ${mdVenue}\n`
+      if (mdMeetingPoint) noticeContent += `📍 Meeting Point: ${mdMeetingPoint}\n`
+      if (formattedMeeting) noticeContent += `⏱ Meeting Time: ${formattedMeeting}\n`
+      if (mdCompetition) noticeContent += `🏆 Competition: ${mdCompetition}\n`
+
+      if (xiNames.length > 0) {
+        noticeContent += `\n🟢 STARTING XI (${xiNames.length}):\n${xiNames.map((n, i) => `  ${i + 1}. ${n}`).join('\n')}`
+      }
+      if (benchNames.length > 0) {
+        noticeContent += `\n\n🔵 BENCH / SUBSTITUTES (${benchNames.length}):\n${benchNames.map((n, i) => `  ${mdSelectedXI.length + i + 1}. ${n}`).join('\n')}`
+      }
       if (mdFormation) noticeContent += `\n\nFormation: ${mdFormation}`
-      if (mdNotes) noticeContent += `\n\nCoach Notes:\n${mdNotes}`
-      noticeContent += `\n\n— Report in FULL KIT. Players NOT on this list: report for recovery session.\n— All selected players MUST acknowledge receipt.`
+      if (mdNotes) noticeContent += `\n\nCoach Instructions:\n${mdNotes}`
+      noticeContent += `\n\n— Please report promptly in FULL MATCH KIT.\n— Players NOT on this call-up list: report for recovery session.`
+
+      const calledUpIds = [...mdSelectedXI, ...mdSelectedBench]
 
       const res = await fetch('/api/notices', {
         method: 'POST',
@@ -356,6 +375,15 @@ export default function NoticeBoardPage() {
           is_pinned: true,
           send_sms: true,
           team_id: teamId,
+          recipient_ids: calledUpIds,
+          match_details: {
+            opponent: mdOpponent.trim(),
+            matchDate: mdDate,
+            kickoffTime: mdKickoff,
+            venue: mdVenue,
+            meetingPoint: mdMeetingPoint,
+            meetingTime: mdMeetingTime,
+          },
         }),
       })
 
@@ -363,14 +391,15 @@ export default function NoticeBoardPage() {
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to publish matchday call-up.')
 
       if (data.sent > 0) {
-        showToast(`Matchday Call-Up published. ${data.sent} players notified via SMS.`)
+        showToast(`Matchday Call-Up published. ${data.sent} called-up players notified via SMS.`)
       } else {
         showToast('Matchday Call-Up published to Notice Board.')
       }
 
       // Reset matchday state
       setMdOpponent(''); setMdDate(''); setMdKickoff('15:00'); setMdVenue('')
-      setMdCompetition(''); setMdMeetingTime(''); setMdFormation(''); setMdNotes('')
+      setMdCompetition(''); setMdMeetingPoint('Club House'); setMdMeetingTime('13:00')
+      setMdFormation(''); setMdNotes('')
       setMdSelectedXI([]); setMdSelectedBench([]); setMdPlayerSearch('')
       setMatchdayModal(false)
       loadData()
@@ -700,6 +729,10 @@ export default function NoticeBoardPage() {
                       <input type="text" placeholder="e.g. Baba Yara Sports Stadium" value={mdVenue} onChange={e => setMdVenue(e.target.value)} style={inputStyle} />
                     </div>
                     <div>
+                      <label style={labelStyle}>Meeting Point</label>
+                      <input type="text" placeholder="e.g. Club House / Main Gate" value={mdMeetingPoint} onChange={e => setMdMeetingPoint(e.target.value)} style={inputStyle} />
+                    </div>
+                    <div>
                       <label style={labelStyle}>Report / Meeting Time</label>
                       <input type="time" value={mdMeetingTime} onChange={e => setMdMeetingTime(e.target.value)} style={inputStyle} />
                     </div>
@@ -711,7 +744,7 @@ export default function NoticeBoardPage() {
                       <label style={labelStyle}>Formation</label>
                       <input type="text" placeholder="e.g. 4-3-3 / 4-4-2" value={mdFormation} onChange={e => setMdFormation(e.target.value)} style={inputStyle} />
                     </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
+                    <div>
                       <label style={labelStyle}>Head Coach Name</label>
                       <input type="text" placeholder="Head Coach" value={mdHeadCoach} onChange={e => setMdHeadCoach(e.target.value)} style={inputStyle} />
                     </div>

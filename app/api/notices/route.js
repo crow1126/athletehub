@@ -63,6 +63,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Only Coaches and Admins can publish notices.' }, { status: 403 })
     }
 
+    const body = await req.json()
     const {
       title,
       content,

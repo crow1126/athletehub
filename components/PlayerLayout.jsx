@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
+import { triggerNotificationAlert, requestNotificationPermission } from '@/lib/notifications'
 import { User, Zap, Calendar, LogOut, Bell, Megaphone } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -303,12 +304,36 @@ export default function PlayerLayout({ children }) {
 
     fetchNotifications(teamId, currentUserId)
 
-    // Realtime: re-fetch when new notifications arrive OR when read state changes for any user
+    // Request notification permission once user is active
+    requestNotificationPermission().catch(() => {})
+
+    // Realtime: re-fetch and play sound + native push alert when new notifications arrive
     const channel = supabase
       .channel(`notifications:${teamId}:${currentUserId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'notifications', filter: `team_id=eq.${teamId}` },
+        { event: 'INSERT', schema: 'public', table: 'notifications', filter: `team_id=eq.${teamId}` },
+        (payload) => {
+          const newNotif = payload.new
+          if (newNotif) {
+            triggerNotificationAlert({
+              title: newNotif.title || 'ApexTrack Alert',
+              message: newNotif.message || '',
+              url: newNotif.link || '/notices',
+              playSound: true,
+            })
+          }
+          fetchNotifications(teamId, currentUserId)
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'notifications', filter: `team_id=eq.${teamId}` },
+        () => fetchNotifications(teamId, currentUserId)
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'notifications', filter: `team_id=eq.${teamId}` },
         () => fetchNotifications(teamId, currentUserId)
       )
       .on(

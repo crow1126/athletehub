@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain, safeStorage } = require('electron')
+const { app, BrowserWindow, shell, ipcMain, safeStorage, Notification: ElectronNotification } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs = require('fs')
@@ -75,6 +75,30 @@ ipcMain.handle('secure-store-remove', async (event, { key }) => {
   delete store[key]
   writeEncryptedStore(store)
   return true
+})
+
+// ── NATIVE OS NOTIFICATION DISPATCH ──
+ipcMain.handle('show-native-notification', async (event, { title, body }) => {
+  try {
+    if (ElectronNotification && ElectronNotification.isSupported()) {
+      const notif = new ElectronNotification({
+        title: title || 'ApexTrack Notification',
+        body: body || '',
+        icon: path.join(__dirname, 'icon.ico'),
+      })
+      notif.on('click', () => {
+        if (mainWindow) {
+          if (mainWindow.isMinimized()) mainWindow.restore()
+          mainWindow.focus()
+        }
+      })
+      notif.show()
+      return true
+    }
+  } catch (err) {
+    console.error('Failed to show native notification:', err)
+  }
+  return false
 })
 
 // ── SECURITY MEASURE 2: RESTRICT NAVIGATION / WHITELISTED DOMAINS ──

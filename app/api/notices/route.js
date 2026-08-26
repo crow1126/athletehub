@@ -129,37 +129,75 @@ export async function POST(req) {
 
     // 2. Dispatch SMS via Moolre if requested
     if (send_sms) {
-      let query = supabase
-        .from('athletes')
-        .select('id, name, phone, position')
-        .eq('team_id', teamId)
-        .not('phone', 'is', null)
-        .neq('phone', '')
+      let recipientList = []
 
-      // If specific recipients are selected (e.g. called-up players), only notify them!
+      // If specific recipients are selected (e.g. called-up players)
       if (Array.isArray(recipient_ids) && recipient_ids.length > 0) {
-        query = query.in('id', recipient_ids)
-      } else if (target_group === 'goalkeepers') {
-        query = query.in('position', ['GK', 'Goalkeeper'])
-      } else if (target_group === 'defenders') {
-        query = query.in('position', ['CB', 'RB', 'LB', 'RWB', 'LWB', 'Defender', 'Centre-Back', 'Right Back', 'Left Back'])
-      } else if (target_group === 'midfielders') {
-        query = query.in('position', ['CDM', 'CM', 'CAM', 'RM', 'LM', 'Midfielder', 'Defensive Midfielder', 'Central Midfielder', 'Attacking Midfielder', 'Right Midfielder', 'Left Midfielder'])
-      } else if (target_group === 'forwards') {
-        query = query.in('position', ['RW', 'LW', 'CF', 'SS', 'ST', 'Forward', 'Right Winger', 'Left Winger', 'Centre Forward', 'Second Striker', 'Striker', 'Attacker'])
+        const { data: specificAthletes } = await supabase
+          .from('athletes')
+          .select('id, name, phone, position')
+          .eq('team_id', teamId)
+          .in('id', recipient_ids)
+          .not('phone', 'is', null)
+          .neq('phone', '')
+
+        if (specificAthletes) {
+          recipientList = specificAthletes.map(a => ({ name: a.name, phone: a.phone, role: 'Athlete' }))
+        }
+      } else if (target_group === 'staff') {
+        // Staff only
+        const { data: staffList } = await supabase
+          .from('coaches')
+          .select('id, name, phone, staff_type')
+          .eq('team_id', teamId)
+          .eq('is_active', true)
+          .not('phone', 'is', null)
+          .neq('phone', '')
+
+        if (staffList) {
+          recipientList = staffList.map(s => ({ name: s.name, phone: s.phone, role: 'Staff' }))
+        }
+      } else if (target_group === 'everyone') {
+        // Both Staff and Players
+        const [{ data: athList }, { data: staffList }] = await Promise.all([
+          supabase.from('athletes').select('id, name, phone').eq('team_id', teamId).not('phone', 'is', null).neq('phone', ''),
+          supabase.from('coaches').select('id, name, phone').eq('team_id', teamId).eq('is_active', true).not('phone', 'is', null).neq('phone', '')
+        ])
+        const pList = (athList || []).map(a => ({ name: a.name, phone: a.phone, role: 'Athlete' }))
+        const sList = (staffList || []).map(s => ({ name: s.name, phone: s.phone, role: 'Staff' }))
+        recipientList = [...pList, ...sList]
+      } else {
+        // Players (all or position specific)
+        let q = supabase
+          .from('athletes')
+          .select('id, name, phone, position')
+          .eq('team_id', teamId)
+          .not('phone', 'is', null)
+          .neq('phone', '')
+
+        if (target_group === 'goalkeepers') {
+          q = q.in('position', ['GK', 'Goalkeeper'])
+        } else if (target_group === 'defenders') {
+          q = q.in('position', ['CB', 'RB', 'LB', 'RWB', 'LWB', 'Defender', 'Centre-Back', 'Right Back', 'Left Back'])
+        } else if (target_group === 'midfielders') {
+          q = q.in('position', ['CDM', 'CM', 'CAM', 'RM', 'LM', 'Midfielder', 'Defensive Midfielder', 'Central Midfielder', 'Attacking Midfielder', 'Right Midfielder', 'Left Midfielder'])
+        } else if (target_group === 'forwards') {
+          q = q.in('position', ['RW', 'LW', 'CF', 'SS', 'ST', 'Forward', 'Right Winger', 'Left Winger', 'Centre Forward', 'Second Striker', 'Striker', 'Attacker'])
+        }
+
+        const { data: athList } = await q
+        if (athList) {
+          recipientList = athList.map(a => ({ name: a.name, phone: a.phone, role: 'Athlete' }))
+        }
       }
 
-      const { data: athletes, error: athErr } = await query
+      if (recipientList.length > 0) {
+        targetCount = recipientList.length
 
-      if (athErr) {
-        console.warn('[notices POST] fetch athletes error:', athErr.message)
-      } else if (athletes && athletes.length > 0) {
-        targetCount = athletes.length
-
-        const recipients = athletes.map(ath => ({
-          phone: ath.phone,
+        const recipients = recipientList.map(person => ({
+          phone: person.phone,
           message: buildNoticeSMS({
-            athleteName: ath.name ? ath.name.split(' ')[0] : '',
+            athleteName: person.name ? person.name.split(' ')[0] : '',
             clubName: clubName,
             title: title.trim(),
             message: content.trim(),

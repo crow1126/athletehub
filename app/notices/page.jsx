@@ -21,7 +21,9 @@ const CATEGORIES = [
 ]
 
 const TARGET_GROUPS = [
-  { id: 'all',         label: 'Full Squad (All Athletes)' },
+  { id: 'everyone',    label: 'Everyone (Staff & Players)' },
+  { id: 'all',         label: 'Players Only (Full Squad)' },
+  { id: 'staff',       label: 'Staff Only (Coaches & Management)' },
   { id: 'goalkeepers', label: 'Goalkeepers (GK)' },
   { id: 'defenders',   label: 'Defenders (DF / Backs)' },
   { id: 'midfielders', label: 'Midfielders (MF)' },
@@ -105,7 +107,7 @@ export default function NoticeBoardPage() {
   const [content, setContent] = useState('')
   const [category, setCategory] = useState('general')
   const [selectedSessionId, setSelectedSessionId] = useState('')
-  const [targetGroup, setTargetGroup] = useState('all')
+  const [targetGroup, setTargetGroup] = useState('everyone')
   const [isPinned, setIsPinned] = useState(false)
   const [sendSms, setSendSms] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -422,18 +424,30 @@ export default function NoticeBoardPage() {
   }
 
   const eligibleSmsRecipients = useMemo(() => {
-    const withPhone = athletes.filter(a => a.phone && a.phone.trim().length >= 8)
-    if (targetGroup === 'all') return withPhone
+    const playersWithPhone = athletes.filter(a => a.phone && a.phone.trim().length >= 8)
+    const staffWithPhone = coaches.filter(c => c.phone && c.phone.trim().length >= 8)
+
+    if (targetGroup === 'everyone') {
+      return [...playersWithPhone, ...staffWithPhone]
+    }
+    if (targetGroup === 'staff') {
+      return staffWithPhone
+    }
+    if (targetGroup === 'all') {
+      return playersWithPhone
+    }
+
     const GK_POSITIONS  = new Set(['GK', 'Goalkeeper'])
     const DEF_POSITIONS = new Set(['CB', 'RB', 'LB', 'RWB', 'LWB', 'Defender', 'Centre-Back', 'Right Back', 'Left Back'])
     const MID_POSITIONS = new Set(['CDM', 'CM', 'CAM', 'RM', 'LM', 'Midfielder', 'Defensive Midfielder', 'Central Midfielder', 'Attacking Midfielder', 'Right Midfielder', 'Left Midfielder'])
     const FWD_POSITIONS = new Set(['RW', 'LW', 'CF', 'SS', 'ST', 'Forward', 'Right Winger', 'Left Winger', 'Centre Forward', 'Second Striker', 'Striker', 'Attacker'])
-    if (targetGroup === 'goalkeepers') return withPhone.filter(a => GK_POSITIONS.has(a.position))
-    if (targetGroup === 'defenders')   return withPhone.filter(a => DEF_POSITIONS.has(a.position))
-    if (targetGroup === 'midfielders') return withPhone.filter(a => MID_POSITIONS.has(a.position))
-    if (targetGroup === 'forwards')    return withPhone.filter(a => FWD_POSITIONS.has(a.position))
-    return withPhone
-  }, [athletes, targetGroup])
+
+    if (targetGroup === 'goalkeepers') return playersWithPhone.filter(a => GK_POSITIONS.has(a.position))
+    if (targetGroup === 'defenders')   return playersWithPhone.filter(a => DEF_POSITIONS.has(a.position))
+    if (targetGroup === 'midfielders') return playersWithPhone.filter(a => MID_POSITIONS.has(a.position))
+    if (targetGroup === 'forwards')    return playersWithPhone.filter(a => FWD_POSITIONS.has(a.position))
+    return playersWithPhone
+  }, [athletes, coaches, targetGroup])
 
   const handleCreateNotice = async (e) => {
     e.preventDefault()

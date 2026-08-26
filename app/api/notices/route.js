@@ -73,6 +73,7 @@ export async function POST(req) {
       send_sms = true,
       team_id: customTeamId,
       recipient_ids = [],
+      staff_recipient_ids = [],
       match_details = null,
     } = body
 
@@ -142,10 +143,26 @@ export async function POST(req) {
           .neq('phone', '')
 
         if (specificAthletes) {
-          recipientList = specificAthletes.map(a => ({ name: a.name, phone: a.phone, role: 'Athlete' }))
+          recipientList = specificAthletes.map(a => ({ name: a.name, phone: a.phone, role: 'Athlete', staffType: '' }))
+        }
+
+        // Also notify selected staff (Coach, Physio, Analyst, etc.)
+        if (Array.isArray(staff_recipient_ids) && staff_recipient_ids.length > 0) {
+          const { data: specificStaff } = await supabase
+            .from('coaches')
+            .select('id, name, phone, staff_type')
+            .eq('team_id', teamId)
+            .in('id', staff_recipient_ids)
+            .not('phone', 'is', null)
+            .neq('phone', '')
+
+          if (specificStaff) {
+            const staffRecipients = specificStaff.map(s => ({ name: s.name, phone: s.phone, role: 'Staff', staffType: s.staff_type || '' }))
+            recipientList = [...recipientList, ...staffRecipients]
+          }
         }
       } else if (target_group === 'staff') {
-        // Staff only
+        // Staff only — includes coaches, physios, analysts, etc.
         const { data: staffList } = await supabase
           .from('coaches')
           .select('id, name, phone, staff_type')
@@ -155,16 +172,16 @@ export async function POST(req) {
           .neq('phone', '')
 
         if (staffList) {
-          recipientList = staffList.map(s => ({ name: s.name, phone: s.phone, role: 'Staff' }))
+          recipientList = staffList.map(s => ({ name: s.name, phone: s.phone, role: 'Staff', staffType: s.staff_type || '' }))
         }
       } else if (target_group === 'everyone') {
         // Both Staff and Players
         const [{ data: athList }, { data: staffList }] = await Promise.all([
           supabase.from('athletes').select('id, name, phone').eq('team_id', teamId).not('phone', 'is', null).neq('phone', ''),
-          supabase.from('coaches').select('id, name, phone').eq('team_id', teamId).eq('is_active', true).not('phone', 'is', null).neq('phone', '')
+          supabase.from('coaches').select('id, name, phone, staff_type').eq('team_id', teamId).eq('is_active', true).not('phone', 'is', null).neq('phone', '')
         ])
-        const pList = (athList || []).map(a => ({ name: a.name, phone: a.phone, role: 'Athlete' }))
-        const sList = (staffList || []).map(s => ({ name: s.name, phone: s.phone, role: 'Staff' }))
+        const pList = (athList || []).map(a => ({ name: a.name, phone: a.phone, role: 'Athlete', staffType: '' }))
+        const sList = (staffList || []).map(s => ({ name: s.name, phone: s.phone, role: 'Staff', staffType: s.staff_type || '' }))
         recipientList = [...pList, ...sList]
       } else {
         // Players (all or position specific)
@@ -204,6 +221,8 @@ export async function POST(req) {
             category,
             authorName,
             matchDetails: match_details,
+            role: person.role || 'Athlete',
+            staffType: person.staffType || '',
           })
         }))
 

@@ -126,6 +126,7 @@ export default function NoticeBoardPage() {
   const [mdHeadCoach, setMdHeadCoach] = useState('')
   const [mdSelectedXI, setMdSelectedXI] = useState([])   // player ids in starting XI (max 11)
   const [mdSelectedBench, setMdSelectedBench] = useState([]) // player ids on bench
+  const [mdSelectedStaff, setMdSelectedStaff] = useState([]) // staff ids to notify via SMS
   const [mdGeneratingPdf, setMdGeneratingPdf] = useState(false)
   const [mdSubmitting, setMdSubmitting] = useState(false)
   const [mdPlayerSearch, setMdPlayerSearch] = useState('')
@@ -182,7 +183,7 @@ export default function NoticeBoardPage() {
 
         // 4. Coaches list for head coach pre-select
         const { data: coachList } = await scopeTeam(
-          supabase.from('coaches').select('id, name, staff_type').eq('is_active', true).order('name'),
+          supabase.from('coaches').select('id, name, phone, staff_type').eq('is_active', true).order('name'),
           tid
         )
         if (coachList) {
@@ -378,6 +379,7 @@ export default function NoticeBoardPage() {
           send_sms: true,
           team_id: teamId,
           recipient_ids: calledUpIds,
+          staff_recipient_ids: mdSelectedStaff,
           match_details: {
             opponent: mdOpponent.trim(),
             matchDate: mdDate,
@@ -393,7 +395,8 @@ export default function NoticeBoardPage() {
       if (!res.ok || !data.ok) throw new Error(data.error || 'Failed to publish matchday call-up.')
 
       if (data.sent > 0) {
-        showToast(`Matchday Call-Up published. ${data.sent} called-up players notified via SMS.`)
+        const staffNote = mdSelectedStaff.length > 0 ? ` + ${mdSelectedStaff.length} staff notified.` : ''
+        showToast(`Matchday Call-Up published. ${data.sent} player(s) notified via SMS.${staffNote}`)
       } else {
         showToast('Matchday Call-Up published to Notice Board.')
       }
@@ -402,7 +405,7 @@ export default function NoticeBoardPage() {
       setMdOpponent(''); setMdDate(''); setMdKickoff('15:00'); setMdVenue('')
       setMdCompetition(''); setMdMeetingPoint('Club House'); setMdMeetingTime('13:00')
       setMdFormation(''); setMdNotes('')
-      setMdSelectedXI([]); setMdSelectedBench([]); setMdPlayerSearch('')
+      setMdSelectedXI([]); setMdSelectedBench([]); setMdSelectedStaff([]); setMdPlayerSearch('')
       setMatchdayModal(false)
       loadData()
     } catch (err) {
@@ -853,6 +856,43 @@ export default function NoticeBoardPage() {
                         </span>
                       </div>
                     )}
+                  </div>
+                )}\n
+                {/* ── STAFF NOTIFICATION ── */}
+                {coaches.filter(c => c.phone && c.phone.trim().length >= 8).length > 0 && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <Users size={13} />
+                      Notify Staff via SMS
+                      <span style={{ fontSize: 10, background: '#F3F0FF', color: '#7C3AED', borderRadius: 99, padding: '2px 8px', fontWeight: 700 }}>
+                        {mdSelectedStaff.length} selected
+                      </span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 8 }}>
+                      {coaches.filter(c => c.phone && c.phone.trim().length >= 8).map(staff => {
+                        const isSelected = mdSelectedStaff.includes(staff.id)
+                        const roleLabel = (staff.staff_type || 'staff').replace(/_/g, ' ')
+                        const cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : ''
+                        return (
+                          <div
+                            key={staff.id}
+                            onClick={() => setMdSelectedStaff(prev => isSelected ? prev.filter(x => x !== staff.id) : [...prev, staff.id])}
+                            style={{ border: `1.5px solid ${isSelected ? '#7C3AED' : '#E2E8F0'}`, borderRadius: 10, padding: '9px 12px', background: isSelected ? '#F3F0FF' : '#FAFAFA', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}
+                          >
+                            <div style={{ width: 24, height: 24, borderRadius: 6, background: isSelected ? '#7C3AED' : '#E2E8F0', color: isSelected ? '#FFF' : '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>
+                              {isSelected ? '✓' : cap((staff.name || 'S').charAt(0))}
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{staff.name}</div>
+                              <div style={{ fontSize: 10, color: '#7C3AED', fontWeight: 600, textTransform: 'capitalize' }}>{roleLabel}</div>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 6 }}>
+                      Selected staff will receive a personalised matchday assignment SMS.
+                    </div>
                   </div>
                 )}
               </div>

@@ -80,6 +80,17 @@ const C = {
   text3:      'var(--text3)',
 }
 
+const ROLE_DISPLAY_LABELS = {
+  superadmin:  'Superadmin',
+  admin:       'Club Admin',
+  coach:       'Coach',
+  physio:      'Physiotherapist',
+  analyst:     'Performance Analyst',
+  scout:       'Scout',
+  player:      'Player',
+  accountant:  'Accountant',
+}
+
 const NOTIF_TYPE_LABELS = {
   sms_schedule: 'Training Session Scheduled',
   sms_reminder: 'Session Reminder',
@@ -512,7 +523,7 @@ export default function Layout({ children }) {
             <ClubLogo size={32} />
             <div>
               <div style={{ fontSize:14, fontWeight:700, color: C.text }}>{teamName || 'Apex Track'}</div>
-              <div style={{ fontSize:11, color: C.text3, textTransform:'capitalize' }}>{role}</div>
+              <div style={{ fontSize:11, color: C.text3, textTransform:'capitalize' }}>{ROLE_DISPLAY_LABELS[role] || role}</div>
             </div>
           </div>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
@@ -710,7 +721,7 @@ export default function Layout({ children }) {
                 </div>
                 <div style={{ flex:1, overflow:'hidden' }}>
                   <div style={{ fontSize:13, fontWeight:600, color: C.text, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{profile?.full_name || 'Admin'}</div>
-                  <div style={{ fontSize:11, color: C.text3, textTransform:'capitalize', marginTop:2 }}>{role}</div>
+                  <div style={{ fontSize:11, color: C.text3, textTransform:'capitalize', marginTop:2 }}>{ROLE_DISPLAY_LABELS[role] || role}</div>
                 </div>
               </div>
               <button onClick={handleSignOut}

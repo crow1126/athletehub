@@ -1,11 +1,9 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
-import PageHeader from '@/components/PageHeader'
-import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { Heart, HeartOff, FileHeart } from 'lucide-react'
+import { Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
 
 const EMPTY = {
   athlete_id:'', injury_type:'', severity:'Mild',
@@ -14,65 +12,61 @@ const EMPTY = {
 }
 const STATUS_OPTS   = ['Active','Recovered']
 const SEVERITY_OPTS = ['Mild','Moderate','Severe']
-const SEVERITY_STYLES = {
+
+const SEVERITY_STYLE = {
   Mild:     { bg:'#E8F8EE', color:'#1B7A3E', dot:'#27AE60' },
   Moderate: { bg:'#FEF9E7', color:'#B36200', dot:'#F39C12' },
   Severe:   { bg:'#FDEDEC', color:'#C0392B', dot:'#E74C3C' },
 }
-const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
+
+// Roles that can create / edit / delete injury records
+const MEDICAL_ROLES = ['admin','superadmin','physio','sports_scientist','medical']
 
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
-function AthleteAvatar({ ath, size=44, index=0 }) {
+function Avatar({ ath, size=36 }) {
   const [err, setErr] = useState(false)
+  const colors = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
+  const bg = colors[(ath?.name?.charCodeAt(0)||0) % colors.length]
   if (ath?.photo_url && !err) {
-    return <img src={ath.photo_url} alt={ath?.name} onError={()=>setErr(true)} style={{ width:size,height:size,borderRadius:'50%',objectFit:'cover',border:'3px solid rgba(255,255,255,0.4)',flexShrink:0,boxShadow:'0 2px 8px rgba(0,0,0,0.12)' }}/>
+    return <img src={ath.photo_url} alt={ath.name} onError={()=>setErr(true)}
+      style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid #E2E8F0' }}/>
   }
   return (
-    <div style={{ width:size,height:size,borderRadius:'50%',flexShrink:0,background:AV_COLORS[index%AV_COLORS.length],display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.32,fontWeight:800,color:'#fff',border:'2px solid rgba(255,255,255,0.2)' }}>
+    <div style={{ width:size, height:size, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize:size*0.32, fontWeight:800, color:'#fff', flexShrink:0 }}>
       {initials(ath?.name)}
     </div>
   )
 }
 
-function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
-  const fmt = d => !d ? null : new Date(d).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
-  if (!loggedBy&&!loggedAt&&!updatedBy) return null
+function SeverityBadge({ severity }) {
+  const s = SEVERITY_STYLE[severity] || SEVERITY_STYLE.Mild
   return (
-    <div style={{ display:'flex',flexWrap:'wrap',gap:6 }}>
-      {(loggedBy||loggedAt)&&(
-        <div style={{ display:'inline-flex',alignItems:'center',gap:5,background:'rgba(74,144,226,0.08)',border:'1px solid rgba(74,144,226,0.18)',borderRadius:99,padding:'4px 12px' }}>
-          <div style={{ width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#4A90E2,#2E6FC4)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><span style={{ fontSize:9,color:'#fff' }}></span></div>
-          {loggedBy&&<span style={{ fontSize:11,fontWeight:700,color:'#2E6FC4' }}>{loggedBy}</span>}
-          {loggedAt&&<span style={{ fontSize:10,color:'#7A9CC4' }}>· {fmt(loggedAt)}</span>}
-        </div>
-      )}
-      {updatedBy&&(
-        <div style={{ display:'inline-flex',alignItems:'center',gap:5,background:'rgba(155,89,182,0.08)',border:'1px solid rgba(155,89,182,0.18)',borderRadius:99,padding:'4px 12px' }}>
-          <div style={{ width:18,height:18,borderRadius:'50%',background:'linear-gradient(135deg,#9B59B6,#7D3C98)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}><span style={{ fontSize:9,color:'#fff' }}></span></div>
-          <span style={{ fontSize:11,fontWeight:700,color:'#7D3C98' }}>{updatedBy}</span>
-          {updatedAt&&<span style={{ fontSize:10,color:'#9B59B6' }}>· {fmt(updatedAt)}</span>}
-        </div>
-      )}
-    </div>
+    <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:s.bg, color:s.color,
+      padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700 }}>
+      <span style={{ width:6, height:6, borderRadius:'50%', background:s.dot, flexShrink:0 }}/>
+      {severity}
+    </span>
   )
 }
 
-function InlineSelect({ value, options, onSave, renderValue }) {
-  const [ed,setEd]=useState(false)
-  if (ed) return <select autoFocus defaultValue={value} onChange={e=>{onSave(e.target.value);setEd(false)}} onBlur={()=>setEd(false)} style={{ padding:'4px 8px',border:'1px solid #0D9488',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)' }}>{options.map(o=><option key={o}>{o}</option>)}</select>
-  return <div onClick={()=>setEd(true)} style={{ cursor:'pointer',display:'inline-flex',alignItems:'center',gap:4 }} title="Click to edit">{renderValue()}<span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}></span></div>
+function StatusBadge({ status }) {
+  const isActive = status === 'Active'
+  return (
+    <span style={{ display:'inline-flex', alignItems:'center', gap:5,
+      background: isActive ? '#FDEDEC' : '#E8F8EE',
+      color: isActive ? '#C0392B' : '#1B7A3E',
+      padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700 }}>
+      <span style={{ width:6, height:6, borderRadius:'50%', background: isActive ? '#E74C3C' : '#27AE60', flexShrink:0 }}/>
+      {status}
+    </span>
+  )
 }
 
-function InlineText({ value, onSave, style={} }) {
-  const [ed,setEd]=useState(false)
-  if (ed) return <input autoFocus defaultValue={value} style={{ padding:'4px 8px',border:'1px solid #0D9488',borderRadius:6,fontSize:13,outline:'none',fontFamily:'var(--font)',background:'var(--surface)',color:'var(--text)',...style }} onBlur={e=>{onSave(e.target.value);setEd(false)}} onKeyDown={e=>{if(e.key==='Enter'){onSave(e.target.value);setEd(false)}if(e.key==='Escape')setEd(false)}}/>
-  return <div onClick={()=>setEd(true)} style={{ cursor:'text',display:'inline-flex',alignItems:'center',gap:4,...style }} title="Click to edit"><span>{value||'—'}</span><span style={{ fontSize:10,color:'var(--text3)',opacity:0.5 }}></span></div>
-}
-
-// Match "Register Athlete" modal look & feel
-const inp = { width:'100%',padding:'10px 14px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:'12px',fontSize:14,outline:'none',color:'#0F172A',fontFamily:'var(--font)',transition:'border-color 0.2s' }
-const lbl = { display:'block',fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:'#64748B',marginBottom:6 }
+const inp = { width:'100%', padding:'10px 14px', background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:10,
+  fontSize:14, outline:'none', color:'#0F172A', fontFamily:'var(--font)', boxSizing:'border-box' }
+const lbl = { display:'block', fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'#64748B', marginBottom:5 }
 
 export default function InjuriesPage() {
   const [injuries,    setInjuries]    = useState([])
@@ -84,200 +78,205 @@ export default function InjuriesPage() {
   const [deleting,    setDeleting]    = useState(null)
   const [form,        setForm]        = useState(EMPTY)
   const [currentUser, setCurrentUser] = useState(null)
-  const [hasStamp,    setHasStamp]    = useState(false)
   const [teamId,      setTeamId]      = useState(null)
+  const [canEdit,     setCanEdit]     = useState(false)
+  const [loading,     setLoading]     = useState(true)
 
   const fetchData = useCallback(async () => {
-    const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+    const { profile: p, teamId: tid } = await getTenantProfile('id,full_name,role,team_id')
     setCurrentUser(p)
-    setTeamId(currentTeamId)
+    setTeamId(tid)
 
-    const { data:ath } = await scopeTeam(supabase.from('athletes').select('id,name,position,photo_url'), currentTeamId).order('name')
-    setAthletes(ath||[])
-
-    const r1 = await scopeTeam(supabase.from('injuries')
-      .select('*,athletes(name,position,club,id,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)'), currentTeamId)
-      .order('date_of_injury',{ascending:false})
-
-    if (!r1.error) { setInjuries(r1.data||[]); setHasStamp(true) }
-    else {
-      const r2 = await scopeTeam(supabase.from('injuries').select('*,athletes(name,position,club,id,photo_url)'), currentTeamId).order('date_of_injury',{ascending:false})
-      setInjuries(r2.data||[]); setHasStamp(false)
+    // Determine if user can write based on their role OR their staff_type via the coaches table
+    let editAllowed = MEDICAL_ROLES.includes(p?.role)
+    if (!editAllowed && p?.id) {
+      const { data: staffRow } = await supabase
+        .from('coaches').select('staff_type').eq('user_id', p.id).maybeSingle()
+      if (staffRow && ['physio','sports_scientist','medical'].includes(staffRow.staff_type)) {
+        editAllowed = true
+      }
     }
+    setCanEdit(editAllowed)
+
+    const { data: ath } = await scopeTeam(
+      supabase.from('athletes').select('id,name,position,photo_url'), tid
+    ).order('name')
+    setAthletes(ath || [])
+
+    const { data: rows } = await scopeTeam(
+      supabase.from('injuries').select('*,athletes(name,position,id,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)'), tid
+    ).order('date_of_injury', { ascending: false })
+    setInjuries(rows || [])
+    setLoading(false)
   }, [])
 
-  useEffect(()=>{fetchData()},[fetchData])
+  useEffect(() => { fetchData() }, [fetchData])
 
-  const set = k => v => setForm(f=>({...f,[k]:v}))
+  const set = k => v => setForm(f => ({ ...f, [k]: v }))
 
-  function openAdd(){ setEditId(null);setForm(EMPTY);setShowForm(true) }
-  function openEdit(inj){
+  function openAdd() { setEditId(null); setForm(EMPTY); setShowForm(true) }
+  function openEdit(inj) {
     setEditId(inj.id)
-    setForm({athlete_id:inj.athlete_id||'',injury_type:inj.injury_type||'',severity:inj.severity||'Mild',date_of_injury:inj.date_of_injury||'',expected_return:inj.expected_return||'',notes:inj.notes||'',status:inj.status||'Active'})
+    setForm({ athlete_id:inj.athlete_id||'', injury_type:inj.injury_type||'', severity:inj.severity||'Mild',
+      date_of_injury:inj.date_of_injury||'', expected_return:inj.expected_return||'', notes:inj.notes||'', status:inj.status||'Active' })
     setShowForm(true)
   }
 
-  async function handleSave(){
+  async function handleSave() {
     if (!form.athlete_id) return alert('Select an athlete.')
     if (!form.injury_type.trim()) return alert('Injury type required.')
     if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
-    const now=new Date().toISOString(), userId=currentUser?.id||null
-    const base={...form,team_id:teamId}
-    if (hasStamp){if(editId){base.updated_by=userId;base.updated_at=now}else{base.logged_by=userId;base.logged_at=now}}
-    if (editId){
-      const {error}=await scopeTeam(supabase.from('injuries').update(base).eq('id',editId), teamId)
+    const now = new Date().toISOString(), userId = currentUser?.id || null
+    const base = { ...form, team_id: teamId }
+    if (editId) {
+      base.updated_by = userId; base.updated_at = now
+      const { error } = await scopeTeam(supabase.from('injuries').update(base).eq('id', editId), teamId)
       if (error) alert(error.message)
-      else{setShowForm(false);fetchData()}
+      else { setShowForm(false); fetchData() }
     } else {
-      const {error}=await supabase.from('injuries').insert([{...base,status:'Active'}])
-      if (!error) await scopeTeam(supabase.from('athletes').update({status:'Injured'}).eq('id',form.athlete_id), teamId)
+      base.logged_by = userId; base.logged_at = now; base.status = 'Active'
+      const { error } = await supabase.from('injuries').insert([base])
+      if (!error) await scopeTeam(supabase.from('athletes').update({ status:'Injured' }).eq('id', form.athlete_id), teamId)
       if (error) alert(error.message)
-      else{setShowForm(false);setForm(EMPTY);fetchData()}
+      else { setShowForm(false); setForm(EMPTY); fetchData() }
     }
     setSaving(false)
   }
 
-  async function handleDelete(id){
-    if (!confirm('Delete this injury record?'))return
+  async function handleDelete(id) {
+    if (!confirm('Delete this injury record?')) return
     setDeleting(id)
-    const {error}=await scopeTeam(supabase.from('injuries').delete().eq('id',id), teamId)
-    if (error) alert('Delete failed: '+error.message)
+    const { error } = await scopeTeam(supabase.from('injuries').delete().eq('id', id), teamId)
+    if (error) alert('Delete failed: ' + error.message)
     else fetchData()
     setDeleting(null)
   }
 
-  async function markRecovered(id,athleteId){
-    const update={status:'Recovered'}
-    if (hasStamp){update.updated_by=currentUser?.id||null;update.updated_at=new Date().toISOString()}
-    await scopeTeam(supabase.from('injuries').update(update).eq('id',id), teamId)
-    await scopeTeam(supabase.from('athletes').update({status:'Active'}).eq('id',athleteId), teamId)
+  async function markRecovered(id, athleteId) {
+    const update = { status:'Recovered', updated_by: currentUser?.id||null, updated_at: new Date().toISOString() }
+    await scopeTeam(supabase.from('injuries').update(update).eq('id', id), teamId)
+    await scopeTeam(supabase.from('athletes').update({ status:'Active' }).eq('id', athleteId), teamId)
     fetchData()
   }
 
-  async function saveField(id,field,value,athleteId){
-    const update={[field]:value}
-    if (hasStamp){update.updated_by=currentUser?.id||null;update.updated_at=new Date().toISOString()}
-    if (field==='status'&&value==='Recovered'&&athleteId) await scopeTeam(supabase.from('athletes').update({status:'Active'}).eq('id',athleteId), teamId)
-    if (field==='status'&&value==='Active'&&athleteId) await scopeTeam(supabase.from('athletes').update({status:'Injured'}).eq('id',athleteId), teamId)
-    const {error}=await scopeTeam(supabase.from('injuries').update(update).eq('id',id), teamId)
-    if (error) alert('Update failed: '+error.message)
-    else fetchData()
-  }
+  const fmtDate = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
 
-  const filtered=filter==='All'?injuries:injuries.filter(i=>i.status===filter)
-  const activeCnt=injuries.filter(i=>i.status==='Active').length
-  const recovCnt=injuries.filter(i=>i.status==='Recovered').length
-  const nowStr=new Date().toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  const filtered  = filter === 'All' ? injuries : injuries.filter(i => i.status === filter)
+  const activeCnt = injuries.filter(i => i.status === 'Active').length
+  const recovCnt  = injuries.filter(i => i.status === 'Recovered').length
 
   return (
     <Layout>
       <div className="page-outer">
-        <PageHeader label="Medical Records" title="Injury Register" subtitle={`${activeCnt} active · ${recovCnt} recovered`}
-          action={<button className="btn-blue" onClick={openAdd} style={{ background:'linear-gradient(135deg,#C0392B,#E74C3C)',boxShadow:'0 4px 14px rgba(231,76,60,0.35)' }}>+ Log Injury</button>}/>
 
-        {/* Stats */}
-        <div className="fade-up stat-grid-3" style={{ display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:24 }}>
+        {/* ── Header ── */}
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:14, marginBottom:24 }}>
+          <div>
+            <div style={{ fontSize:11, fontWeight:700, color:'#0D9488', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>
+              Medical Records
+            </div>
+            <h1 style={{ fontSize:22, fontWeight:900, color:'var(--text)', margin:0, letterSpacing:'-0.02em' }}>Injury Register</h1>
+            <p style={{ fontSize:13, color:'var(--text3)', margin:'4px 0 0', fontWeight:500 }}>
+              {activeCnt} active · {recovCnt} recovered
+              {!canEdit && <span style={{ marginLeft:8, background:'#F1F5F9', color:'#64748B', borderRadius:6, padding:'1px 8px', fontSize:11, fontWeight:700 }}>Read Only</span>}
+            </p>
+          </div>
+          {canEdit && (
+            <button onClick={openAdd} style={{ display:'flex', alignItems:'center', gap:7, background:'linear-gradient(135deg,#C0392B,#E74C3C)', color:'#fff', border:'none', borderRadius:10, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 12px rgba(231,76,60,0.3)', fontFamily:'var(--font)' }}>
+              <Plus size={15}/> Log Injury
+            </button>
+          )}
+        </div>
+
+        {/* ── Stat pills ── */}
+        <div style={{ display:'flex', gap:12, marginBottom:22, flexWrap:'wrap' }}>
           {[
-            {label:'Total Records',  value:injuries.length, icon:<FileHeart size={22} color="#4A90E2"/>, color:'#4A90E2', bg:'#E8F4FF'},
-            {label:'Active Injuries',value:activeCnt,       icon:<HeartOff size={22} color="#E74C3C"/>,  color:'#E74C3C', bg:'#FDEDEC'},
-            {label:'Recovered',      value:recovCnt,        icon:<Heart size={22} color="#27AE60"/>,     color:'#27AE60', bg:'#E8F8EE'},
-          ].map(s=>(
-            <div key={s.label} className="card" style={{ padding:'18px 22px',display:'flex',alignItems:'center',gap:16,borderLeft:`4px solid ${s.color}` }}>
-              <div style={{ width:48,height:48,borderRadius:14,background:s.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0 }}>{s.icon}</div>
+            { label:'Total', value:injuries.length, icon:<FileHeart size={16} color="#4A90E2"/>, color:'#4A90E2', bg:'#EBF4FF' },
+            { label:'Active', value:activeCnt, icon:<HeartOff size={16} color="#E74C3C"/>, color:'#E74C3C', bg:'#FDEDEC' },
+            { label:'Recovered', value:recovCnt, icon:<Heart size={16} color="#27AE60"/>, color:'#27AE60', bg:'#E8F8EE' },
+          ].map(s => (
+            <div key={s.label} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 18px', minWidth:110 }}>
+              <div style={{ width:34, height:34, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
               <div>
-                <div style={{ fontSize:30,fontWeight:900,color:s.color,lineHeight:1,letterSpacing:'-0.02em' }}>{s.value}</div>
-                <div style={{ fontSize:12,color:'var(--text3)',fontWeight:600,marginTop:3 }}>{s.label}</div>
+                <div style={{ fontSize:20, fontWeight:900, color:s.color, lineHeight:1 }}>{s.value}</div>
+                <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginTop:2 }}>{s.label}</div>
               </div>
             </div>
           ))}
         </div>
 
-
-        {/* Filter */}
-        <div className="fade-up tabs-scroll" style={{ display:'flex',gap:4,marginBottom:20,background:'var(--surface)',border:'1px solid var(--border)',borderRadius:'var(--r-lg)',padding:4,width:'fit-content',maxWidth:'100%' }}>
-          {['All','Active','Recovered'].map(f=>(
-            <button key={f} onClick={()=>setFilter(f)} style={{ padding:'8px 22px',background:f==='Active'&&filter===f?'linear-gradient(135deg,#C0392B,#E74C3C)':filter===f?'#0D9488':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:600,color:filter===f?'#fff':'var(--text2)',cursor:'pointer',transition:'var(--transition)',fontFamily:'var(--font)' }}>{f}</button>
+        {/* ── Filter ── */}
+        <div style={{ display:'flex', gap:4, marginBottom:18, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:4, width:'fit-content' }}>
+          {['All','Active','Recovered'].map(f => (
+            <button key={f} onClick={() => setFilter(f)} style={{ padding:'7px 18px', background: filter===f ? (f==='Active'?'linear-gradient(135deg,#C0392B,#E74C3C)':'#0D9488') : 'transparent', border:'none', borderRadius:8, fontSize:12, fontWeight:600, color: filter===f ? '#fff' : 'var(--text2)', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{f}</button>
           ))}
         </div>
 
-        {/* Injury cards */}
-        {filtered.length===0?(
-          <div className="card" style={{ padding:'48px',textAlign:'center',color:'var(--text3)',fontSize:14 }}>No injury records found.</div>
-        ):(
-          <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
-            {filtered.map((inj,idx)=>{
-              const ss=SEVERITY_STYLES[inj.severity]||SEVERITY_STYLES.Mild
-              const isAct=inj.status==='Active'
-              return(
-                <div key={inj.id} className="card fade-up" style={{ padding:0,overflow:'hidden',borderLeft:`4px solid ${isAct?'#E74C3C':'#27AE60'}`,transition:'var(--transition)' }}
-                  onMouseEnter={e=>e.currentTarget.style.boxShadow='var(--shadow-md)'}
-                  onMouseLeave={e=>e.currentTarget.style.boxShadow='var(--shadow-sm)'}>
+        {/* ── Injury Table ── */}
+        {loading ? (
+          <div style={{ padding:40, textAlign:'center', color:'var(--text3)', fontSize:13 }}>Loading…</div>
+        ) : filtered.length === 0 ? (
+          <div className="card" style={{ padding:'48px', textAlign:'center', color:'var(--text3)', fontSize:14 }}>
+            No injury records found.
+          </div>
+        ) : (
+          <div className="card" style={{ overflow:'hidden', padding:0 }}>
+            {/* Table Header */}
+            <div style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', background:'var(--surface2)', borderBottom:'1px solid var(--border)', padding:'10px 18px', gap:12 }}>
+              {['Player','Injury','Severity','Status','Date Injured','Expected Return', canEdit ? 'Actions' : ''].filter(Boolean).map(h => (
+                <div key={h} style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{h}</div>
+              ))}
+            </div>
 
-                  <div style={{ display:'grid',gridTemplateColumns:'2.2fr 1.8fr 1.1fr 1.1fr 1fr 1fr',gap:0 }}>
+            {filtered.map((inj, i) => {
+              const isAct = inj.status === 'Active'
+              const isLast = i === filtered.length - 1
+              return (
+                <div key={inj.id} style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', alignItems:'center', padding:'13px 18px', gap:12, borderBottom: isLast ? 'none' : '1px solid var(--border)', borderLeft: `3px solid ${isAct ? '#E74C3C' : '#27AE60'}`, transition:'background 0.12s' }}
+                  onMouseEnter={e => e.currentTarget.style.background='var(--surface2)'}
+                  onMouseLeave={e => e.currentTarget.style.background='transparent'}>
 
-                    {/* Athlete with photo */}
-                    <div style={{ padding:'16px 18px',borderRight:'1px solid var(--border)',display:'flex',alignItems:'flex-start',gap:12 }}>
-                      <AthleteAvatar ath={inj.athletes} size={46} index={idx}/>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontSize:14,fontWeight:800,color:'var(--text)',marginBottom:3 }}>{inj.athletes?.name}</div>
-                        <div style={{ fontSize:11,color:'var(--text3)',marginBottom:8 }}>{inj.athletes?.position}{inj.athletes?.club?` · ${inj.athletes.club}`:''}</div>
-                        <InlineText value={inj.injury_type} onSave={v=>saveField(inj.id,'injury_type',v,inj.athletes?.id)} style={{ fontSize:13,fontWeight:700,color:'var(--text)',background:'var(--surface2)',padding:'4px 10px',borderRadius:6,border:'1px solid var(--border)' }}/>
-                      </div>
-                    </div>
-
-                    {/* Severity + Status */}
-                    <div style={{ padding:'16px 16px',borderRight:'1px solid var(--border)',display:'flex',flexDirection:'column',gap:12 }}>
-                      <div>
-                        <div style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6 }}>Severity</div>
-                        <InlineSelect value={inj.severity} options={SEVERITY_OPTS} onSave={v=>saveField(inj.id,'severity',v,inj.athletes?.id)}
-                          renderValue={()=>(
-                            <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:ss.bg,color:ss.color,padding:'5px 12px',borderRadius:99,fontSize:12,fontWeight:700,border:`1px solid ${ss.dot}30` }}>
-                              <div style={{ width:7,height:7,borderRadius:'50%',background:ss.dot,boxShadow:`0 0 5px ${ss.dot}` }}/>{inj.severity}
-                            </div>
-                          )}/>
-                      </div>
-                      <div>
-                        <div style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6 }}>Status</div>
-                        <InlineSelect value={inj.status} options={STATUS_OPTS} onSave={v=>saveField(inj.id,'status',v,inj.athletes?.id)}
-                          renderValue={()=>(
-                            <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:isAct?'#FDEDEC':'#E8F8EE',color:isAct?'#C0392B':'#1B7A3E',padding:'5px 12px',borderRadius:99,fontSize:12,fontWeight:700 }}>
-                              <div style={{ width:7,height:7,borderRadius:'50%',background:isAct?'#E74C3C':'#27AE60',boxShadow:`0 0 5px ${isAct?'#E74C3C':'#27AE60'}` }}/>{inj.status}
-                            </div>
-                          )}/>
-                      </div>
-                    </div>
-
-                    {/* Injured date */}
-                    <div style={{ padding:'16px 14px',borderRight:'1px solid var(--border)' }}>
-                      <div style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6 }}>Injured</div>
-                      <InlineText value={inj.date_of_injury} onSave={v=>saveField(inj.id,'date_of_injury',v,inj.athletes?.id)} style={{ fontSize:13,fontWeight:600,color:'var(--text)' }}/>
-                    </div>
-
-                    {/* Return date */}
-                    <div style={{ padding:'16px 14px',borderRight:'1px solid var(--border)' }}>
-                      <div style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6 }}>Return</div>
-                      <InlineText value={inj.expected_return||''} onSave={v=>saveField(inj.id,'expected_return',v,inj.athletes?.id)} style={{ fontSize:13,fontWeight:600,color:inj.expected_return?'var(--text)':'var(--text3)' }}/>
-                    </div>
-
-                    {/* Notes */}
-                    <div style={{ padding:'16px 14px',borderRight:'1px solid var(--border)' }}>
-                      <div style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase',marginBottom:6 }}>Notes</div>
-                      <div style={{ fontSize:11,color:'var(--text2)',lineHeight:1.5,fontStyle:inj.notes?'normal':'italic' }}>{inj.notes||'—'}</div>
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ padding:'14px 12px',display:'flex',flexDirection:'column',gap:6,justifyContent:'center' }}>
-                      <button onClick={()=>openEdit(inj)} style={{ background:'#F0FDFA',color:'#0D9488',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%' }}>Edit</button>
-                      {isAct&&<button onClick={()=>markRecovered(inj.id,inj.athlete_id)} style={{ background:'#E8F8EE',color:'#1B7A3E',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)',width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:4 }}><svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Done</button>}
-                      <button onClick={()=>handleDelete(inj.id)} disabled={deleting===inj.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'6px 0',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',opacity:deleting===inj.id?0.5:1,fontFamily:'var(--font)',width:'100%' }}>{deleting===inj.id?'…':'Delete'}</button>
+                  {/* Player */}
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <Avatar ath={inj.athletes} size={34}/>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{inj.athletes?.name || '—'}</div>
+                      <div style={{ fontSize:11, color:'var(--text3)' }}>{inj.athletes?.position || ''}</div>
                     </div>
                   </div>
 
-                  {/* Stamp footer */}
-                  {(inj.logged_profile?.full_name||inj.logged_at)&&(
-                    <div style={{ padding:'8px 18px 12px',background:'var(--surface2)',borderTop:'1px solid var(--border)' }}>
-                      <PostStamp loggedBy={inj.logged_profile?.full_name} loggedAt={inj.logged_at} updatedBy={inj.updated_profile?.full_name} updatedAt={inj.updated_at}/>
+                  {/* Injury */}
+                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
+
+                  {/* Severity */}
+                  <div><SeverityBadge severity={inj.severity}/></div>
+
+                  {/* Status */}
+                  <div><StatusBadge status={inj.status}/></div>
+
+                  {/* Date injured */}
+                  <div style={{ fontSize:12, color:'var(--text2)', fontWeight:500 }}>{fmtDate(inj.date_of_injury)}</div>
+
+                  {/* Return */}
+                  <div style={{ fontSize:12, color: inj.expected_return ? 'var(--text2)' : 'var(--text3)', fontWeight:500, fontStyle: inj.expected_return ? 'normal' : 'italic' }}>
+                    {fmtDate(inj.expected_return)}
+                  </div>
+
+                  {/* Actions — only for canEdit */}
+                  {canEdit && (
+                    <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                      <button onClick={() => openEdit(inj)} title="Edit" style={{ background:'#F0FDFA', color:'#0D9488', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                        <Pencil size={13}/>
+                      </button>
+                      {isAct && (
+                        <button onClick={() => markRecovered(inj.id, inj.athlete_id)} title="Mark Recovered" style={{ background:'#E8F8EE', color:'#1B7A3E', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                          <Check size={13}/>
+                        </button>
+                      )}
+                      <button onClick={() => handleDelete(inj.id)} disabled={deleting===inj.id} title="Delete" style={{ background:'#FEF2F2', color:'#E74C3C', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center', opacity: deleting===inj.id ? 0.5 : 1 }}>
+                        <Trash2 size={13}/>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -285,63 +284,74 @@ export default function InjuriesPage() {
             })}
           </div>
         )}
-        <p style={{ fontSize:11,color:'var(--text3)',marginTop:12 }}>Click any field to edit inline.</p>
+
+        {/* Notes tooltip row (shown when notes exist) */}
+        {filtered.some(i => i.notes) && (
+          <p style={{ fontSize:11, color:'var(--text3)', marginTop:10 }}>* Hover row or open edit to view notes.</p>
+        )}
+
+        {/* ── Read-only summary for non-medical staff ── */}
+        {!canEdit && (
+          <div style={{ marginTop:20, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'14px 18px', display:'flex', gap:10, alignItems:'flex-start' }}>
+            <HeartOff size={18} color="#D97706" style={{ flexShrink:0, marginTop:1 }}/>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:'#92400E', marginBottom:3 }}>Medical Summary</div>
+              <div style={{ fontSize:12, color:'#78350F', lineHeight:1.6 }}>
+                {activeCnt > 0
+                  ? `${activeCnt} player${activeCnt > 1 ? 's are' : ' is'} currently listed as injured. Detailed medical records and editing are restricted to medical staff and admins.`
+                  : 'No active injuries at this time.'}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Modal */}
-      {showForm&&(
-        <div style={{ position:'fixed',inset:0,background:'rgba(15,23,42,0.6)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
-          <div style={{ background:'#FFFFFF',borderRadius:'20px',width:'100%',maxWidth:520,maxHeight:'92vh',overflow:'auto',boxShadow:'0 25px 60px -10px rgba(0,0,0,0.25)',border:'1px solid #E2E8F0' }}>
-            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)',padding:'20px 24px',display:'flex',justifyContent:'space-between',alignItems:'center',borderRadius:'20px 20px 0 0' }}>
-              <div>
-                <div style={{ fontSize:10, color:'rgba(255,255,255,0.65)', fontWeight:700, letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:3 }}>{editId?'Edit Record':'New Registration'}</div>
-                <h2 style={{ fontSize:18,fontWeight:800,color:'#fff',margin:0 }}>{editId?'Edit Injury':'Log Injury'}</h2>
-              </div>
-              <button onClick={()=>setShowForm(false)} style={{ background:'rgba(255,255,255,0.15)',border:'1px solid rgba(255,255,255,0.25)',width:36,height:36,borderRadius:'50%',fontSize:20,cursor:'pointer',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',lineHeight:1 }}>×</button>
+      {/* ── Modal (Edit / Add) ── only rendered for canEdit users ── */}
+      {showForm && canEdit && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div style={{ background:'#FFFFFF', borderRadius:18, width:'100%', maxWidth:500, maxHeight:'92vh', overflow:'auto', boxShadow:'0 25px 60px rgba(0,0,0,0.22)', border:'1px solid #E2E8F0' }}>
+            {/* Modal header */}
+            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)', padding:'18px 22px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'18px 18px 0 0' }}>
+              <h2 style={{ fontSize:17, fontWeight:800, color:'#fff', margin:0 }}>{editId ? 'Edit Injury' : 'Log Injury'}</h2>
+              <button onClick={() => setShowForm(false)} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:32, height:32, borderRadius:'50%', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><X size={16}/></button>
             </div>
-            <div style={{ padding:24,display:'flex',flexDirection:'column',gap:16 }}>
+            <div style={{ padding:22, display:'flex', flexDirection:'column', gap:15 }}>
               <div>
                 <label style={lbl}>Athlete *</label>
                 <select value={form.athlete_id} onChange={e=>set('athlete_id')(e.target.value)} style={inp} disabled={!!editId}>
                   <option value="">Select athlete…</option>
-                  {athletes.map(a=><option key={a.id} value={a.id}>{a.name} — {a.position}</option>)}
+                  {athletes.map(a => <option key={a.id} value={a.id}>{a.name} — {a.position}</option>)}
                 </select>
-                {form.athlete_id&&(()=>{
-                  const ath=athletes.find(a=>a.id===form.athlete_id)
-                  if (!ath) return null
-                  return (
-                    <div style={{ display:'flex',alignItems:'center',gap:10,marginTop:8,padding:'8px 12px',background:'var(--surface2)',borderRadius:'var(--r-sm)',border:'1px solid var(--border)' }}>
-                      <AthleteAvatar ath={ath} size={32} index={0}/>
-                      <span style={{ fontSize:13,fontWeight:600,color:'var(--text)' }}>{ath.name}</span>
-                      <span style={{ fontSize:11,color:'var(--text3)' }}>{ath.position}</span>
-                    </div>
-                  )
-                })()}
               </div>
-              <div><label style={lbl}>Injury Type *</label><input value={form.injury_type} onChange={e=>set('injury_type')(e.target.value)} placeholder="e.g. Hamstring Strain" style={inp} onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
-              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
-                <div><label style={lbl}>Severity</label><select value={form.severity} onChange={e=>set('severity')(e.target.value)} style={inp}>{SEVERITY_OPTS.map(s=><option key={s}>{s}</option>)}</select></div>
-                <div><label style={lbl}>Status</label><select value={form.status||'Active'} onChange={e=>set('status')(e.target.value)} style={inp}>{STATUS_OPTS.map(s=><option key={s}>{s}</option>)}</select></div>
+              <div>
+                <label style={lbl}>Injury Type *</label>
+                <input value={form.injury_type} onChange={e=>set('injury_type')(e.target.value)} placeholder="e.g. Hamstring Strain" style={inp} onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='#E2E8F0'}/>
               </div>
-              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
-                <div><label style={lbl}>Date of Injury *</label><input type="date" value={form.date_of_injury} onChange={e=>set('date_of_injury')(e.target.value)} style={inp}/></div>
-                <div><label style={lbl}>Expected Return</label><input type="date" value={form.expected_return} onChange={e=>set('expected_return')(e.target.value)} style={inp}/></div>
-              </div>
-              <div><label style={lbl}>Notes</label><textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={3} placeholder="Treatment notes…" style={{ ...inp,resize:'vertical' }}/></div>
-              {currentUser&&(
-                <div style={{ background:'linear-gradient(135deg,rgba(74,144,226,0.08),rgba(74,144,226,0.03))',borderRadius:'var(--r-md)',padding:'12px 16px',border:'1px solid rgba(74,144,226,0.2)',position:'relative',overflow:'hidden' }}>
-                  <div style={{ position:'absolute',top:0,left:0,width:3,height:'100%',background:'linear-gradient(180deg,#E74C3C,#4A90E2)',borderRadius:'3px 0 0 3px' }}/>
-                  <div style={{ fontSize:11,color:'#0F766E',fontWeight:700,marginBottom:4 }}>Will be stamped as:</div>
-                  <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'rgba(74,144,226,0.1)',borderRadius:99,padding:'4px 12px' }}>
-                    <span style={{ fontSize:12 }}></span>
-                    <span style={{ fontSize:12,fontWeight:700,color:'#2E6FC4' }}>{currentUser.full_name}</span>
-                    <span style={{ fontSize:11,color:'#7A9CC4' }}>· {nowStr}</span>
-                  </div>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
+                <div>
+                  <label style={lbl}>Severity</label>
+                  <select value={form.severity} onChange={e=>set('severity')(e.target.value)} style={inp}>{SEVERITY_OPTS.map(s=><option key={s}>{s}</option>)}</select>
                 </div>
-              )}
-              <div style={{ display:'flex',gap:10,paddingTop:8 }}>
-                <button onClick={()=>setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'11px', borderRadius:'12px', fontSize:14, cursor:'pointer', fontWeight:800, fontFamily:'var(--font)' }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'11px', opacity:saving?0.7:1, fontSize:14, background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:'12px', cursor:'pointer', fontWeight:900, fontFamily:'var(--font)' }}>{saving?'Saving…':editId?'Save Changes':'Log Injury'}</button>
+                <div>
+                  <label style={lbl}>Status</label>
+                  <select value={form.status} onChange={e=>set('status')(e.target.value)} style={inp}>{STATUS_OPTS.map(s=><option key={s}>{s}</option>)}</select>
+                </div>
+                <div>
+                  <label style={lbl}>Date of Injury *</label>
+                  <input type="date" value={form.date_of_injury} onChange={e=>set('date_of_injury')(e.target.value)} style={inp}/>
+                </div>
+                <div>
+                  <label style={lbl}>Expected Return</label>
+                  <input type="date" value={form.expected_return} onChange={e=>set('expected_return')(e.target.value)} style={inp}/>
+                </div>
+              </div>
+              <div>
+                <label style={lbl}>Notes / Treatment</label>
+                <textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={3} placeholder="Treatment notes, physio plan…" style={{ ...inp, resize:'vertical', lineHeight:1.5 }}/>
+              </div>
+              <div style={{ display:'flex', gap:10, paddingTop:4 }}>
+                <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'11px', borderRadius:10, fontSize:14, cursor:'pointer', fontWeight:700, fontFamily:'var(--font)' }}>Cancel</button>
+                <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'11px', background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:10, fontSize:14, cursor:'pointer', fontWeight:900, fontFamily:'var(--font)', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving…' : editId ? 'Save Changes' : 'Log Injury'}</button>
               </div>
             </div>
           </div>

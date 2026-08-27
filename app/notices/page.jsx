@@ -346,20 +346,20 @@ export default function NoticeBoardPage() {
       const club = profile?.teams?.name || profile?.club_name || 'Club'
       const noticeTitle = `Matchday Call-Up: ${club} vs ${mdOpponent.trim()}`
       
-      let noticeContent = `⚽ MATCHDAY SQUAD CALL-UP\n\n`
+      let noticeContent = `MATCHDAY SQUAD CALL-UP\n\n`
       noticeContent += `Fixture: ${club} vs ${mdOpponent.trim()}\n`
-      noticeContent += `📅 Date: ${dateFormatted}\n`
-      noticeContent += `⏰ Kickoff: ${formattedKickoff}\n`
-      if (mdVenue) noticeContent += `📍 Venue: ${mdVenue}\n`
-      if (mdMeetingPoint) noticeContent += `📍 Meeting Point: ${mdMeetingPoint}\n`
-      if (formattedMeeting) noticeContent += `⏱ Meeting Time: ${formattedMeeting}\n`
-      if (mdCompetition) noticeContent += `🏆 Competition: ${mdCompetition}\n`
+      noticeContent += `Date: ${dateFormatted}\n`
+      noticeContent += `Kickoff: ${formattedKickoff}\n`
+      if (mdVenue) noticeContent += `Venue: ${mdVenue}\n`
+      if (mdMeetingPoint) noticeContent += `Meeting Point: ${mdMeetingPoint}\n`
+      if (formattedMeeting) noticeContent += `Meeting Time: ${formattedMeeting}\n`
+      if (mdCompetition) noticeContent += `Competition: ${mdCompetition}\n`
 
       if (xiNames.length > 0) {
-        noticeContent += `\n🟢 STARTING XI (${xiNames.length}):\n${xiNames.map((n, i) => `  ${i + 1}. ${n}`).join('\n')}`
+        noticeContent += `\nSTARTING XI (${xiNames.length}):\n${xiNames.map((n, i) => `  ${i + 1}. ${n}`).join('\n')}`
       }
       if (benchNames.length > 0) {
-        noticeContent += `\n\n🔵 BENCH / SUBSTITUTES (${benchNames.length}):\n${benchNames.map((n, i) => `  ${mdSelectedXI.length + i + 1}. ${n}`).join('\n')}`
+        noticeContent += `\n\nBENCH / SUBSTITUTES (${benchNames.length}):\n${benchNames.map((n, i) => `  ${mdSelectedXI.length + i + 1}. ${n}`).join('\n')}`
       }
       if (mdFormation) noticeContent += `\n\nFormation: ${mdFormation}`
       if (mdNotes) noticeContent += `\n\nCoach Instructions:\n${mdNotes}`

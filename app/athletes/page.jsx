@@ -412,7 +412,7 @@ export default function AthletesPage() {
                 <button onClick={()=>handleDelete(ath.id,ath.name)} disabled={deleting===ath.id} style={{ background:'#FFE4E6', color:'#E11D48', border:'none', padding:'5px 11px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer', opacity:deleting===ath.id?0.5:1, fontFamily:'var(--font)' }}>
                   {deleting===ath.id?'…':'Del'}
                 </button>
-                <a href={`/athletes/${ath.id}?print=true`} target="_blank" rel="noopener noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#EFF6FF', color:'#1D4ED8', border:'1px solid #BFDBFE', padding:'5px 11px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer', textDecoration:'none', fontFamily:'var(--font)' }}>
+                <a href={`/athletes/${ath.id}/report?print=true`} target="_blank" rel="noopener noreferrer" style={{ display:'inline-flex', alignItems:'center', gap:4, background:'#EFF6FF', color:'#1D4ED8', border:'1px solid #BFDBFE', padding:'5px 11px', borderRadius:'8px', fontSize:12, fontWeight:600, cursor:'pointer', textDecoration:'none', fontFamily:'var(--font)' }}>
                   <FileText size={13} /> PDF
                 </a>
               </div>

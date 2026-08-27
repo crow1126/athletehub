@@ -366,7 +366,7 @@ export default function PlayerLayout({ children }) {
 
   async function handleSignOut() {
     await signOut()
-    router.replace('/login')
+    window.location.href = '/'
   }
 
   const teamName = profile?.teams?.name || profile?.club_name || null

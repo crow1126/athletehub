@@ -443,7 +443,7 @@ export default function Layout({ children }) {
 
   async function handleSignOut() {
     await signOut()
-    router.replace('/login')
+    window.location.href = '/'
   }
 
   function handleApexPayClick(e) {
@@ -1049,7 +1049,7 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        <main style={{ flex:1 }}>{children}</main>
+        <main style={{ flex:1, minWidth:0, width:'100%', overflowX:'hidden' }}>{children}</main>
       </div>
 
       <style>{`

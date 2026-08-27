@@ -65,7 +65,11 @@ html.is-electron a[href*="ApexTrack-Setup.exe"] {
   --warning-light: #FEF3C7; /* Amber 100 */
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
 
 body {
   /* Rich emerald & mint green background gradient */

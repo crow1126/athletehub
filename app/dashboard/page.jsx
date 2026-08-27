@@ -127,20 +127,66 @@ export default function Dashboard() {
     { label: 'Today', value: todaySess.length, note: 'sessions', icon: <Flame {...iconProps} />, accent: 'var(--warning)' },
   ]
 
+  // Helper to extract clean structured info from matchday / general notices
+  function renderNoticeContent(n) {
+    // Strip raw emojis from legacy or generated strings
+    const cleanText = (n.content || '')
+      .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
+      .replace(/MATCHDAY SQUAD CALL-UP/gi, '')
+      .replace(/MATCHDAY CALL-UP NOTICE/gi, '')
+      .trim()
+
+    if (n.category === 'matchday') {
+      // Extract key fields if present
+      const dateMatch = cleanText.match(/Date:\s*([^\|\n⏰]+)/i)
+      const koMatch = cleanText.match(/Kickoff:\s*([^\|\n📍Report]+)/i) || cleanText.match(/KO:\s*([^\|\n📍]+)/i)
+      const venueMatch = cleanText.match(/Venue:\s*([^\|\n⏱Meet]+)/i)
+      const meetMatch = cleanText.match(/Meeting Point:\s*([^\|\n⏱]+)/i) || cleanText.match(/Meet:\s*([^\|\n@]+)/i)
+
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+          {dateMatch && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#0F766E', background: '#F0FDFA', border: '1px solid #CCFBF1', padding: '2px 8px', borderRadius: 6 }}>
+              <CalendarDays size={11} /> {dateMatch[1].trim()}
+            </span>
+          )}
+          {koMatch && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#1D4ED8', background: '#EFF6FF', border: '1px solid #DBEAFE', padding: '2px 8px', borderRadius: 6 }}>
+              <Clock size={11} /> KO: {koMatch[1].trim()}
+            </span>
+          )}
+          {(venueMatch || meetMatch) && (
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, color: '#475569', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 8px', borderRadius: 6 }}>
+              <Search size={11} /> {venueMatch ? venueMatch[1].trim() : meetMatch[1].trim()}
+            </span>
+          )}
+        </div>
+      )
+    }
+
+    // Standard preview: 1-line clean snippet
+    const snippet = cleanText.split('\n')[0].replace(/\s+/g, ' ').trim()
+    return (
+      <div style={{ fontSize: 12, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginTop: 2 }}>
+        {snippet || 'Notice details…'}
+      </div>
+    )
+  }
+
   return (
     <Layout>
       <style>{`
-        .dash-hero { padding:32px 40px 26px; }
+        .dash-hero { padding:28px 32px 24px; }
         .dash-stats-row { grid-template-columns:repeat(5,1fr); }
-        .dash-grid { grid-template-columns:65% 35%; }
-        .dash-athletes-cols { grid-template-columns:2.2fr 1fr 0.9fr 1fr 0.8fr; }
+        .dash-grid { grid-template-columns:minmax(0, 1.8fr) minmax(0, 1.2fr); width:100%; }
+        .dash-athletes-cols { grid-template-columns:minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
         .dash-athletes-header { display:grid !important; }
-        @media(max-width:900px) {
+        @media(max-width:1100px) {
           .dash-stats-row { grid-template-columns:repeat(3,1fr) !important; }
           .dash-grid { grid-template-columns:1fr !important; }
         }
         @media(max-width:768px) {
-          .dash-hero { padding:20px 16px 18px !important; }
+          .dash-hero { padding:18px 16px 16px !important; }
           .dash-stats-wrap { padding:14px 12px 0 !important; }
           .dash-stats-row { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
           .dash-grid { gap:14px !important; padding:14px 12px 0 !important; }
@@ -156,14 +202,14 @@ export default function Dashboard() {
         <div style={{ position: 'absolute', top: -100, right: -50, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 70%)' }} />
         <div style={{ position: 'absolute', bottom: -50, left: 100, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)' }} />
 
-        <div style={{ position: 'relative', maxWidth: 1280, margin: '0 auto' }}>
+        <div style={{ position: 'relative', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
           <div style={{ fontSize: 13, color: '#ECFDF5', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
             {greet} · {today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
 
           {/* Club logo + name row in hero */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
             {clubLogo && (
               <img src={clubLogo} alt={clubName || 'Club'}
                 style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: '#FFFFFF', border: '2px solid rgba(255,255,255,0.4)', padding: 4, flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
@@ -176,7 +222,7 @@ export default function Dashboard() {
                   {clubName}
                 </div>
               )}
-              <h1 style={{ fontSize: 28, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
+              <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
                 Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : 'Admin')}</span>
               </h1>
             </div>
@@ -192,7 +238,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── Stat Cards ── */}
-      <div className="dash-stats-wrap" style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 40px 0' }}>
+      <div className="dash-stats-wrap" style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 32px 0', width: '100%' }}>
         <div className="dash-stats-row" style={{ display: 'grid', gap: 12 }}>
           {stats.map(s => (
             <StatCard key={s.label} label={s.label} value={s.value} note={s.note} icon={s.icon} accent={s.accent} />
@@ -201,16 +247,16 @@ export default function Dashboard() {
       </div>
 
       {/* ── Main grid ── */}
-      <div className="dash-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '24px 40px 0', display: 'grid', gap: 22, alignItems: 'start' }}>
+      <div className="dash-grid" style={{ maxWidth: 1280, margin: '0 auto', padding: '20px 32px 0', display: 'grid', gap: 20, alignItems: 'start', boxSizing: 'border-box' }}>
 
         {/* Left column */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
 
           {/* ── Squad Notice Board Widget ── */}
-          <div className="card fade-up" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CCFBF1' }}>
+          <div className="card fade-up" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CCFBF1', background: '#FFFFFF', borderRadius: 16 }}>
             <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0FDFA, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Megaphone size={15} />
                 </div>
                 <div>
@@ -219,7 +265,7 @@ export default function Dashboard() {
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Link href="/notices" style={{ fontSize: 12, color: '#0F766E', fontWeight: 700, padding: '5px 12px', borderRadius: 8, background: '#CCFBF1', textDecoration: 'none' }}>
+                <Link href="/notices" style={{ fontSize: 12, color: '#0F766E', fontWeight: 700, padding: '5px 12px', borderRadius: 8, background: '#CCFBF1', textDecoration: 'none', transition: 'all 0.15s' }}>
                   Open Board →
                 </Link>
               </div>
@@ -234,50 +280,74 @@ export default function Dashboard() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {notices.map((n, idx) => (
-                  <div key={n.id} style={{
-                    padding: '12px 18px',
-                    borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 4,
-                    background: n.category === 'urgent' ? '#FFFDFD' : '#FFFFFF',
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        {n.is_pinned && (
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '1px 6px', borderRadius: 4 }}>
-                            <Pin size={9} /> PINNED
+                {notices.map((n, idx) => {
+                  const isMatchday = n.category === 'matchday'
+                  const isUrgent = n.category === 'urgent'
+
+                  return (
+                    <Link
+                      key={n.id}
+                      href="/notices"
+                      style={{
+                        padding: '12px 18px',
+                        borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3,
+                        background: isUrgent ? '#FFFDFD' : isMatchday ? '#FAFDFB' : '#FFFFFF',
+                        textDecoration: 'none',
+                        transition: 'background 0.15s',
+                        minWidth: 0,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                      onMouseLeave={e => e.currentTarget.style.background = isUrgent ? '#FFFDFD' : isMatchday ? '#FAFDFB' : '#FFFFFF'}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
+                          {n.is_pinned && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 6px', borderRadius: 4 }}>
+                              <Pin size={9} /> PINNED
+                            </span>
+                          )}
+                          <span style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4,
+                            fontSize: 9,
+                            fontWeight: 800,
+                            background: isMatchday ? '#ECFDF5' : isUrgent ? '#FEE2E2' : '#F0FDFA',
+                            color: isMatchday ? '#059669' : isUrgent ? '#DC2626' : '#0D9488',
+                            padding: '2px 7px',
+                            borderRadius: 4,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.04em',
+                          }}>
+                            {isMatchday ? <ClipboardList size={10} /> : <Megaphone size={10} />}
+                            {n.category}
+                          </span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {n.title}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: 10, color: '#94A3B8', whiteSpace: 'nowrap' }}>
+                          {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                        </span>
+                      </div>
+
+                      {/* Structured Preview */}
+                      {renderNoticeContent(n)}
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 10, color: '#64748B', marginTop: 4 }}>
+                        <span>By <strong>{n.author_name || 'Coach'}</strong></span>
+                        {n.sms_sent && (
+                          <span style={{ color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <Radio size={10} /> SMS sent ({n.sms_count || 0})
                           </span>
                         )}
-                        <span style={{
-                          fontSize: 9,
-                          fontWeight: 800,
-                          background: n.category === 'urgent' ? '#FEE2E2' : '#F0FDFA',
-                          color: n.category === 'urgent' ? '#DC2626' : '#0D9488',
-                          padding: '1px 6px',
-                          borderRadius: 4,
-                          textTransform: 'uppercase',
-                        }}>
-                          {n.category}
-                        </span>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{n.title}</span>
                       </div>
-                      <span style={{ fontSize: 10, color: '#94A3B8' }}>{new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                    </div>
-                    <div style={{ fontSize: 12, color: '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {n.content}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 10, color: '#64748B', marginTop: 2 }}>
-                      <span>By {n.author_name || 'Coach'}</span>
-                      {n.sms_sent && (
-                        <span style={{ color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                          <Radio size={10} /> SMS broadcast ({n.sms_count} players)
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             )}
           </div>

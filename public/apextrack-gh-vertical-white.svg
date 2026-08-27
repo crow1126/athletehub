@@ -1,0 +1,29 @@
+<svg width="2400" height="2400" viewBox="0 0 1200 1200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tealBright" x1="280" y1="360" x2="880" y2="700" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- APEX ICON EMBLEM (Centered) -->
+  <g transform="translate(60, 40)">
+    <!-- Left Leg of A -->
+    <path d="M510 150 H570 L390 670 H270 L510 150 Z" fill="#FFFFFF"/>
+    
+    <!-- Right Leg of A -->
+    <path d="M570 150 L810 670 H690 L625 530 H510 L570 400 L570 150 Z" fill="#FFFFFF"/>
+
+    <!-- Dynamic Flying Swoosh across A -->
+    <path d="M270 670 C360 570 480 430 815 250 C720 380 610 510 420 620 C370 650 320 665 270 670 Z" fill="url(#tealBright)"/>
+  </g>
+
+  <!-- "APEXTRACK GH" WORDMARK -->
+  <text x="600" y="890" text-anchor="middle" font-family="system-ui, -apple-system, 'Plus Jakarta Sans', 'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="82" letter-spacing="4">
+    <tspan fill="#FFFFFF">APEXTRACK</tspan>
+    <tspan dx="28" fill="#2DD4BF">GH</tspan>
+  </text>
+  
+  <!-- TAGLINE -->
+  <text x="600" y="960" text-anchor="middle" fill="#FFFFFF" fill-opacity="0.9" font-family="system-ui, -apple-system, 'Plus Jakarta Sans', 'Montserrat', 'Arial', sans-serif" font-weight="800" font-size="28" letter-spacing="14">TRACK. ACHIEVE. EXCEL.</text>
+</svg>

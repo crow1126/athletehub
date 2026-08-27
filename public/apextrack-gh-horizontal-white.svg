@@ -1,0 +1,24 @@
+<svg width="4000" height="1200" viewBox="0 0 2000 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="tealHBright" x1="100" y1="100" x2="350" y2="350" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#14B8A6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Compact Emblem on Left -->
+  <g transform="translate(80, 75) scale(0.65)">
+    <path d="M370 50 H430 L250 570 H130 L370 50 Z" fill="#FFFFFF"/>
+    <path d="M430 50 L670 570 H550 L485 430 H370 L430 300 L430 50 Z" fill="#FFFFFF"/>
+    <path d="M130 570 C220 470 340 330 675 150 C580 280 470 410 280 520 C230 550 180 565 130 570 Z" fill="url(#tealHBright)"/>
+  </g>
+
+  <!-- Big Bold Jersey Back Wordmark -->
+  <text x="590" y="340" fill="#FFFFFF" font-family="system-ui, -apple-system, 'Plus Jakarta Sans', 'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="124" letter-spacing="6">
+    <tspan fill="#FFFFFF">APEXTRACK</tspan>
+    <tspan dx="36" fill="#2DD4BF">GH</tspan>
+  </text>
+
+  <!-- Subtitle -->
+  <text x="595" y="415" fill="#FFFFFF" fill-opacity="0.85" font-family="system-ui, -apple-system, 'Plus Jakarta Sans', 'Montserrat', 'Arial', sans-serif" font-weight="800" font-size="28" letter-spacing="14">TRACK. ACHIEVE. EXCEL.</text>
+</svg>

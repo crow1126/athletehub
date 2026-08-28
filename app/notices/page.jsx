@@ -8,7 +8,7 @@ import {
   Megaphone, Plus, Pin, Trash2, Send, Radio, Users, CheckCircle2,
   AlertCircle, Trophy, Calendar, HeartPulse, Search, MessageSquare,
   Clock, RefreshCw, X, MapPin, Layers, Check, FileText, ChevronDown,
-  ShieldAlert,
+  ShieldAlert, Swords,
 } from 'lucide-react'
 
 const CATEGORIES = [
@@ -53,6 +53,93 @@ function CategoryPill({ category, size = 'normal' }) {
       <IconComponent size={isSmall ? 11 : 13} strokeWidth={2.2} />
       <span>{meta.label}</span>
     </span>
+  )
+}
+
+// Strip any stray emoji characters from a string
+function stripEmojis(str) {
+  if (!str) return str
+  return str.replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F300}-\u{1F9FF}\u{E0000}-\u{E01FF}]/gu, '').replace(/  +/g, ' ').trim()
+}
+
+// Map of matchday label prefixes → Lucide icon + accent colour
+const MATCHDAY_LINE_ICONS = [
+  { prefix: 'Fixture:',       Icon: Swords,        color: '#0F172A' },
+  { prefix: 'Date:',          Icon: Calendar,      color: '#0D9488' },
+  { prefix: 'Kickoff:',       Icon: Clock,         color: '#EF4444' },
+  { prefix: 'Venue:',         Icon: MapPin,        color: '#3B82F6' },
+  { prefix: 'Meeting Point:', Icon: MapPin,        color: '#7C3AED' },
+  { prefix: 'Meeting Time:',  Icon: Clock,         color: '#D97706' },
+  { prefix: 'Competition:',   Icon: Trophy,        color: '#059669' },
+  { prefix: 'Formation:',     Icon: Layers,        color: '#64748B' },
+  { prefix: 'STARTING XI',    Icon: CheckCircle2,  color: '#059669' },
+  { prefix: 'BENCH',          Icon: Users,         color: '#3B82F6' },
+  { prefix: 'Coach Instructions:', Icon: MessageSquare, color: '#0F766E' },
+]
+
+function NoticeContent({ notice }) {
+  const raw = stripEmojis(notice.content || '')
+
+  // For matchday notices parse line-by-line and inject icons
+  if (notice.category === 'matchday') {
+    const lines = raw.split('\n')
+    return (
+      <div style={{ fontSize: 13, color: '#334155', lineHeight: 1.7 }}>
+        {lines.map((line, i) => {
+          const trimmed = line.trim()
+          if (!trimmed) return <div key={i} style={{ height: 6 }} />
+
+          const match = MATCHDAY_LINE_ICONS.find(m => trimmed.startsWith(m.prefix))
+          if (match) {
+            const { Icon, color, prefix } = match
+            const value = trimmed.slice(prefix.length).trim()
+            const isHeader = prefix === 'STARTING XI' || prefix === 'BENCH'
+            return (
+              <div key={i} style={{
+                display: 'flex',
+                alignItems: isHeader ? 'center' : 'flex-start',
+                gap: 7,
+                marginTop: isHeader ? 6 : 2,
+                fontWeight: isHeader ? 700 : 400,
+              }}>
+                <Icon size={13} color={color} style={{ flexShrink: 0, marginTop: isHeader ? 1 : 3 }} />
+                <span>
+                  <span style={{ fontWeight: 700, color: '#0F172A' }}>{prefix}</span>
+                  {value ? ' ' + value : ''}
+                </span>
+              </div>
+            )
+          }
+
+          // Player list lines (numbered e.g. "  1. Name #10")
+          if (/^\s*\d+\./.test(line)) {
+            return (
+              <div key={i} style={{ paddingLeft: 22, fontSize: 12, color: '#334155', marginTop: 1 }}>
+                {trimmed}
+              </div>
+            )
+          }
+
+          // Footer instructions
+          if (trimmed.startsWith('—')) {
+            return (
+              <div key={i} style={{ fontSize: 12, color: '#64748B', fontStyle: 'italic', marginTop: 2 }}>
+                {trimmed}
+              </div>
+            )
+          }
+
+          return <div key={i}>{trimmed}</div>
+        })}
+      </div>
+    )
+  }
+
+  // Default: plain pre-wrap text with emojis stripped
+  return (
+    <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>
+      {raw}
+    </p>
   )
 }
 
@@ -681,8 +768,8 @@ export default function NoticeBoardPage() {
                     </div>
                   </div>
 
-                  <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8, lineHeight: 1.3 }}>{notice.title}</h2>
-                  <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', margin: 0 }}>{notice.content}</p>
+                  <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', marginBottom: 8, lineHeight: 1.3 }}>{stripEmojis(notice.title)}</h2>
+                  <NoticeContent notice={notice} />
 
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, color: '#64748B' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

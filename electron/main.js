@@ -80,6 +80,9 @@ ipcMain.handle('secure-store-remove', async (event, { key }) => {
 // ── NATIVE OS NOTIFICATION DISPATCH ──
 ipcMain.handle('show-native-notification', async (event, { title, body }) => {
   try {
+    if (mainWindow) {
+      mainWindow.flashFrame(true)
+    }
     if (ElectronNotification && ElectronNotification.isSupported()) {
       const notif = new ElectronNotification({
         title: title || 'ApexTrack Notification',
@@ -88,6 +91,7 @@ ipcMain.handle('show-native-notification', async (event, { title, body }) => {
       })
       notif.on('click', () => {
         if (mainWindow) {
+          mainWindow.flashFrame(false)
           if (mainWindow.isMinimized()) mainWindow.restore()
           mainWindow.focus()
         }

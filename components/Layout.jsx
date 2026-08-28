@@ -406,7 +406,8 @@ export default function Layout({ children }) {
           if (newNotif) {
             triggerNotificationAlert({
               title: newNotif.title || 'ApexTrack Alert',
-              message: newNotif.message || '',
+              message: newNotif.body || newNotif.message || '',
+              body: newNotif.body || newNotif.message || '',
               url: newNotif.link || '/notices',
               playSound: true,
             })

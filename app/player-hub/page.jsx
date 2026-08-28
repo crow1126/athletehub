@@ -2,8 +2,9 @@
 import { useState, useEffect } from 'react'
 import PlayerLayout from '@/components/PlayerLayout'
 import { supabase } from '@/lib/supabase'
-import { Zap, Calendar, TrendingUp, Award, Activity, MapPin, Megaphone, Pin, Clock } from 'lucide-react'
+import { Zap, Calendar, TrendingUp, Award, Activity, MapPin, Megaphone, Pin, Clock, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import NoticeContent, { stripEmojis } from '@/components/NoticeContent'
 
 export default function PlayerDashboard() {
   const [profile, setProfile] = useState(null)
@@ -328,7 +329,7 @@ export default function PlayerDashboard() {
           <div className="section-card" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CCFBF1', marginTop: 16 }}>
             <div style={{ padding: '14px 20px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0FDFA, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Megaphone size={16} />
                 </div>
                 <div>
@@ -336,50 +337,76 @@ export default function PlayerDashboard() {
                   <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 600 }}>Announcements from Coach &amp; Staff</div>
                 </div>
               </div>
+              <Link href="/notices" style={{ fontSize: 12, color: '#0D9488', fontWeight: 700, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                All Notices <ArrowRight size={13} />
+              </Link>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {notices.map((n, idx) => (
-                <div key={n.id} style={{
-                  padding: '14px 20px',
-                  borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
-                  background: n.category === 'urgent' ? '#FFFDFD' : '#FFFFFF',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {n.is_pinned && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 8px', borderRadius: 99 }}>
-                          <Pin size={10} /> PINNED
+              {notices.map((n, idx) => {
+                const isUrgent = n.category === 'urgent'
+                const isMatchday = n.category === 'matchday'
+                return (
+                  <div key={n.id} style={{
+                    padding: '16px 20px',
+                    borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
+                    background: isUrgent ? '#FFFDFD' : '#FFFFFF',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                  }}>
+                    {/* Top Row: Badges on left, Date on right */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        {n.is_pinned && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 10, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 8px', borderRadius: 99, border: '1px solid #FDE68A' }}>
+                            <Pin size={10} /> PINNED
+                          </span>
+                        )}
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          background: isUrgent ? '#FEE2E2' : isMatchday ? '#ECFDF5' : '#F0FDFA',
+                          color: isUrgent ? '#DC2626' : isMatchday ? '#059669' : '#0D9488',
+                          border: `1px solid ${isUrgent ? '#FECACA' : isMatchday ? '#A7F3D0' : '#CCFBF1'}`,
+                          padding: '2px 8px',
+                          borderRadius: 99,
+                          textTransform: 'uppercase',
+                        }}>
+                          {n.category === 'matchday' ? 'Matchday Call-Up' : n.category}
                         </span>
-                      )}
-                      <span style={{
-                        fontSize: 10,
-                        fontWeight: 800,
-                        background: n.category === 'urgent' ? '#FEE2E2' : '#F0FDFA',
-                        color: n.category === 'urgent' ? '#DC2626' : '#0D9488',
-                        padding: '2px 8px',
-                        borderRadius: 99,
-                        textTransform: 'uppercase',
-                      }}>
-                        {n.category}
+                      </div>
+                      <span style={{ fontSize: 11, color: '#94A3B8', fontWeight: 600 }}>
+                        {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                       </span>
-                      <span style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>{n.title}</span>
                     </div>
-                    <span style={{ fontSize: 11, color: '#94A3B8' }}>{new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</span>
-                  </div>
 
-                  <p style={{ fontSize: 13, color: '#334155', lineHeight: 1.5, margin: 0 }}>
-                    {n.content}
-                  </p>
+                    {/* Notice Title */}
+                    <h4 style={{
+                      fontSize: 15,
+                      fontWeight: 800,
+                      color: '#0F172A',
+                      margin: '2px 0 0',
+                      lineHeight: 1.35,
+                    }}>
+                      {stripEmojis(n.title)}
+                    </h4>
 
-                  <div style={{ fontSize: 11, color: '#64748B', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-                    <span>Posted by <strong>{n.author_name || 'Coach'}</strong></span>
+                    {/* Notice Content / Structured matchday cards */}
+                    <NoticeContent notice={n} />
+
+                    {/* Footer */}
+                    <div style={{ fontSize: 11, color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, paddingTop: 6, borderTop: '1px solid #F8FAFC' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 18, height: 18, borderRadius: '50%', background: '#E2E8F0', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800 }}>
+                          {(n.author_name || 'C')[0].toUpperCase()}
+                        </div>
+                        <span>Posted by <strong>{n.author_name || 'Coach'}</strong> {n.author_role ? `(${n.author_role})` : ''}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}

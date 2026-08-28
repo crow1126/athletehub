@@ -1,11 +1,13 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { initAudioUnlock } from '@/lib/notifications'
 
 export default function CapacitorProvider() {
   const [isOffline, setIsOffline] = useState(false)
   const [isNative, setIsNative] = useState(false)
 
   useEffect(() => {
+    initAudioUnlock()
     let cleanup = () => {}
 
     async function initCapacitor() {

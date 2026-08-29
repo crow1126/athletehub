@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
   showNativeNotification: ({ title, body, icon }) =>
     ipcRenderer.invoke('show-native-notification', { title, body, icon }),
+  printWindow: () => ipcRenderer.invoke('print-window'),
   secureStore: {
     set: (key, value) => ipcRenderer.invoke('secure-store-set', { key, value }),
     get: (key) => ipcRenderer.invoke('secure-store-get', { key }),

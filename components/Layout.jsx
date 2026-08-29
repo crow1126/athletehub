@@ -205,6 +205,39 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
               </button>
             )}
           </div>
+          {/* Permission prompt banner if permission is default */}
+          {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default' && (
+            <div style={{
+              padding: '9px 16px',
+              background: '#F0FDF4',
+              borderBottom: `1px solid ${C.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              fontSize: 11,
+            }}>
+              <span style={{ color: '#166534', fontWeight: 600 }}>Enable push alerts</span>
+              <button
+                onClick={async () => {
+                  await requestNotificationPermission()
+                }}
+                style={{
+                  background: '#16A34A',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 6,
+                  padding: '3px 9px',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                }}
+              >
+                Turn On
+              </button>
+            </div>
+          )}
 
           {/* Notification list */}
           <div style={{ overflowY: 'auto', maxHeight: 400 }}>

@@ -2,14 +2,14 @@
 import React from 'react'
 import {
   Calendar, Clock, MapPin, Trophy, Layers, CheckCircle2,
-  Users, Swords, MessageSquare, ShieldAlert, FileText,
+  Users
 } from 'lucide-react'
 
 // Strip any stray emojis from strings
 export function stripEmojis(str) {
   if (!str) return ''
   return str
-    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}\u{1F300}-\u{1F9FF}\u{E0000}-\u{E01FF}]/gu, '')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FE0F}]/gu, '')
     .replace(/  +/g, ' ')
     .trim()
 }
@@ -19,7 +19,7 @@ export function stripEmojis(str) {
  * Parses matchday structured fields and displays them in a clean grid/cards.
  * For general notices, renders clean typography with full newline preservation.
  */
-export default function NoticeContent({ notice, compact = false }) {
+export default function NoticeContent({ notice }) {
   if (!notice) return null
   const raw = stripEmojis(notice.content || '')
 
@@ -46,7 +46,7 @@ export default function NoticeContent({ notice, compact = false }) {
       if (line.startsWith('—') || line.startsWith('-') || /^Coach Instructions:/i.test(line)) {
         currentSection = 'notes'
         if (!line.startsWith('Coach Instructions:')) {
-          instructions.push(line.replace(/^[—\-]\s*/, ''))
+          instructions.push(line.replace(/^[—-]\s*/, ''))
         }
         continue
       }
@@ -66,7 +66,7 @@ export default function NoticeContent({ notice, compact = false }) {
       }
 
       if (currentSection === 'notes') {
-        instructions.push(line.replace(/^[—\-]\s*/, ''))
+        instructions.push(line.replace(/^[—-]\s*/, ''))
         continue
       }
 

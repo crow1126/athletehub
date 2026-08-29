@@ -3,6 +3,11 @@ const { autoUpdater } = require('electron-updater')
 const path = require('path')
 const fs = require('fs')
 
+// ── WINDOWS APP USER MODEL ID (Mandatory for Windows Action Center / Toasts) ──
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.apextrack.app')
+}
+
 // ── SECURITY MEASURE 4: SIGNED AUTO-UPDATES ──
 autoUpdater.autoDownload = true
 autoUpdater.autoInstallOnAppQuit = true
@@ -105,6 +110,16 @@ ipcMain.handle('show-native-notification', async (event, { title, body }) => {
   return false
 })
 
+// ── PRINT DIALOG HANDLER ──
+ipcMain.handle('print-window', async (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender)
+  if (win) {
+    win.webContents.print({ silent: false, printBackground: true })
+    return true
+  }
+  return false
+})
+
 // ── SECURITY MEASURE 2: RESTRICT NAVIGATION / WHITELISTED DOMAINS ──
 const ALLOWED_INTERNAL_ORIGINS = [
   'https://apextrackgh.com',
@@ -156,6 +171,25 @@ function createWindow() {
     },
   })
 
+  // Setup file download listener on session
+  mainWindow.webContents.session.on('will-download', (event, item, webContents) => {
+    const filename = item.getFilename()
+    item.once('done', (doneEvent, state) => {
+      if (state === 'completed') {
+        if (ElectronNotification && ElectronNotification.isSupported()) {
+          const downloadNotif = new ElectronNotification({
+            title: 'Report Downloaded',
+            body: `${filename} was saved successfully to Downloads.`,
+            icon: path.join(__dirname, 'icon.ico'),
+          })
+          downloadNotif.show()
+        }
+      } else if (state === 'interrupted') {
+        console.warn(`[Download] Download interrupted for: ${filename}`)
+      }
+    })
+  })
+
   // Custom User-Agent tag for bulletproof Electron detection
   const defaultUA = mainWindow.webContents.getUserAgent()
   mainWindow.webContents.setUserAgent(`${defaultUA} Electron ApexTrackDesktop`)
@@ -164,12 +198,36 @@ function createWindow() {
   const startUrl = process.env.ELECTRON_START_URL || 'https://apextrackgh.com/'
   mainWindow.loadURL(startUrl)
 
-  // ── RESTRICT POPUP WINDOWS & EXTERNAL LINKS ──
+  // ── POPUP WINDOWS & REPORTS HANDLING ──
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (isAllowedExternal(url)) {
       shell.openExternal(url)
+      return { action: 'deny' }
     }
-    // Hard-block all other popup attempts inside Electron
+
+    if (isAllowedInternal(url)) {
+      // Allow report previews and internal popups in a focused child window
+      return {
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          width: 1100,
+          height: 850,
+          minWidth: 800,
+          minHeight: 600,
+          title: 'ApexTrack Document Preview',
+          icon: path.join(__dirname, 'icon.ico'),
+          autoHideMenuBar: true,
+          webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            sandbox: true,
+            preload: path.join(__dirname, 'preload.js'),
+          },
+        },
+      }
+    }
+
+    // Hard-block all other unauthorized popup attempts inside Electron
     return { action: 'deny' }
   })
 

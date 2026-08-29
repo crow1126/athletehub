@@ -55,8 +55,12 @@ export default function AthleteReport() {
       const params = new URLSearchParams(window.location.search)
       if (params.get('print') === 'true') {
         const timer = setTimeout(() => {
-          window.print()
-        }, 1000)
+          if (window.electronAPI?.printWindow) {
+            window.electronAPI.printWindow()
+          } else {
+            window.print()
+          }
+        }, 800)
         return () => clearTimeout(timer)
       }
     }
@@ -313,7 +317,16 @@ export default function AthleteReport() {
           <span style={{ color:'rgba(255,255,255,0.6)',fontSize:12,fontFamily:'sans-serif' }}>
             {reportNum}
           </span>
-          <button onClick={()=>window.print()} style={{ background:'#fff',color:'#2B6CB0',border:'none',padding:'9px 22px',borderRadius:6,fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'sans-serif',boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}>
+          <button
+            onClick={() => {
+              if (window.electronAPI?.printWindow) {
+                window.electronAPI.printWindow()
+              } else {
+                window.print()
+              }
+            }}
+            style={{ background:'#fff',color:'#2B6CB0',border:'none',padding:'9px 22px',borderRadius:6,fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'sans-serif',boxShadow:'0 2px 8px rgba(0,0,0,0.15)' }}
+          >
             <span style={{ display:'inline-flex',alignItems:'center',gap:6 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M4 5V2h8v3M4 11H2.5A1.5 1.5 0 011 9.5v-4A1.5 1.5 0 012.5 4h11A1.5 1.5 0 0115 5.5v4a1.5 1.5 0 01-1.5 1.5H12M4 9h8v5H4V9z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Print / Save PDF</span>
           </button>
         </div>

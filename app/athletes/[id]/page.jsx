@@ -120,10 +120,8 @@ export default function AthleteProfilePage() {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <a
+            <Link
               href={`/athletes/${id}/report?print=true`}
-              target="_blank"
-              rel="noopener noreferrer"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -140,7 +138,7 @@ export default function AthleteProfilePage() {
             >
               <FileText size={15} />
               <span>Official PDF Report</span>
-            </a>
+            </Link>
 
             <Link
               href={`/athletes?edit=${ath.id}`}

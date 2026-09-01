@@ -843,8 +843,7 @@ export default function SuperadminPage() {
   const activeTeams = teams.filter(t => {
     const hasApproved = profiles.some(p => (p.team_id === t.id || p.club_name?.trim().toLowerCase() === t.name?.trim().toLowerCase()) && p.registration_status === 'approved')
     const hasUsers = profiles.some(p => p.team_id === t.id || p.club_name?.trim().toLowerCase() === t.name?.trim().toLowerCase())
-    const isSandbox = t.name?.toLowerCase().includes('sandbox')
-    return hasApproved || hasUsers || isSandbox
+    return hasApproved || hasUsers
   })
   const orphanedTeams = teams.filter(t => !activeTeams.some(at => at.id === t.id))
 
@@ -2142,49 +2141,16 @@ export default function SuperadminPage() {
           <div className="sa-card" style={{ width:'100%', maxWidth:500, display:'flex', flexDirection:'column', gap:16 }}>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #f1f5f9', paddingBottom:12 }}>
               <div>
-                <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Enter Admin Suite</h3>
-                <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>Select a workspace to inspect or test the system</p>
+                <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Inspect Club Workspace</h3>
+                <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>Select a registered club to inspect its admin workspace</p>
               </div>
               <button onClick={() => setInspectModal(false)} style={{ background:'none', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
-            </div>
-
-            {/* Sandbox Option */}
-            <div
-              onClick={() => {
-                setSuperadminActiveTeam(null)
-                setInspectModal(false)
-                router.push('/dashboard')
-              }}
-              style={{
-                background: 'linear-gradient(135deg, #F0FDFA, #CCFBF1)',
-                border: '1.5px solid #99F6E4',
-                borderRadius: 12,
-                padding: '14px 16px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                transition: 'transform 0.15s, box-shadow 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 16px rgba(13,148,136,0.15)' }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
-            >
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <div style={{ width:40, height:40, borderRadius:10, background:'#0F766E', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:900 }}>
-                  TEST
-                </div>
-                <div>
-                  <div style={{ fontSize:14, fontWeight:800, color:'#0F766E' }}>Apex Test Sandbox</div>
-                  <div style={{ fontSize:11, color:'#134E48', marginTop:2 }}>Isolated test workspace with zero club data interference</div>
-                </div>
-              </div>
-              <span style={{ fontSize:12, fontWeight:700, color:'#0F766E' }}>Enter &rarr;</span>
             </div>
 
             {/* Club Search and List */}
             <div>
               <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
-                Or Inspect Specific Club
+                Select Club to Inspect
               </label>
               <input
                 className="sa-custom-input"

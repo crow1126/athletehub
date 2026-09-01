@@ -511,11 +511,10 @@ export default function Layout({ children }) {
   const navLinks = ALL_NAV.filter(n => allowed.includes(n.page))
   const mobileNav = navLinks.filter(n => MOBILE_NAV.includes(n.page))
   const initials  = (profile?.full_name || 'AD').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const isSandbox = (role === 'superadmin') && (!profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test'))
 
-  const teamName  = isSandbox ? 'Apex Test Sandbox' : (profile?.teams?.name || (role !== 'superadmin' ? profile?.club_name : null) || 'Admin Workspace')
-  const teamShort = isSandbox ? 'TEST' : (profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : 'ADM'))
-  const teamLogo  = isSandbox ? null : ((profile?.teams?.logo_url) || (role !== 'superadmin' && profile?.club_logo_url && !profile.club_logo_url.startsWith('data:') ? profile.club_logo_url : null))
+  const teamName  = profile?.teams?.name || (role !== 'superadmin' ? profile?.club_name : null) || 'Club Workspace'
+  const teamShort = profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : 'ADM')
+  const teamLogo  = profile?.teams?.logo_url || (role !== 'superadmin' && profile?.club_logo_url && !profile.club_logo_url.startsWith('data:') ? profile.club_logo_url : null)
 
   if (loading) return (
     <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.floral }}>
@@ -527,13 +526,6 @@ export default function Layout({ children }) {
   const sideW = expanded ? 240 : 72
 
   function ClubLogo({ size = 44 }) {
-    if (isSandbox) {
-      return (
-        <div style={{ width:size, height:size, borderRadius:12, background:'linear-gradient(135deg, #0F766E, #0D9488)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#FFFFFF', fontWeight:900, fontSize:size*0.32, letterSpacing:'0.05em', boxShadow:'0 2px 8px rgba(13,148,136,0.3)' }} title="Apex Test Sandbox">
-          TEST
-        </div>
-      )
-    }
     if (teamLogo && !logoError) {
       return (
         <img src={teamLogo} alt={teamName || 'Club'} onError={() => setLogoError(true)}
@@ -857,44 +849,12 @@ export default function Layout({ children }) {
                       </div>
 
                       <div style={{ maxHeight: 260, overflowY:'auto', padding:'6px' }}>
-                        {/* Sandbox Workspace Option */}
-                        <button
-                          onClick={() => {
-                            setSuperadminActiveTeam(null)
-                            setSwitcherOpen(false)
-                            window.location.reload()
-                          }}
-                          style={{
-                            width:'100%',
-                            display:'flex',
-                            alignItems:'center',
-                            gap:10,
-                            padding:'8px 10px',
-                            borderRadius:8,
-                            border:'none',
-                            background: (!profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test')) ? '#F0FDFA' : 'transparent',
-                            color: '#0F766E',
-                            cursor:'pointer',
-                            textAlign:'left',
-                            marginBottom: 4,
-                            fontWeight: 700,
-                            fontSize: 12,
-                          }}
-                        >
-                          <div style={{ width:28, height:28, borderRadius:6, background:'#CCFBF1', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, color:'#0F766E' }}>
-                            TEST
-                          </div>
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>Apex Test Sandbox</div>
-                            <div style={{ fontSize:10, color:'#64748B', fontWeight:500 }}>Isolated testing workspace</div>
-                          </div>
-                          {(!profile?.team_id || profile?.club_name?.toLowerCase().includes('sandbox') || profile?.club_name?.toLowerCase().includes('test')) && (
-                            <span style={{ fontSize:11, color:'#0D9488', fontWeight:800 }}>✓</span>
-                          )}
-                        </button>
-
                         {/* Registered Clubs List */}
-                        {allClubs
+                        {allClubs.length === 0 ? (
+                          <div style={{ padding: 12, textAlign: 'center', color: '#94A3B8', fontSize: 11 }}>
+                            No registered clubs found
+                          </div>
+                        ) : allClubs
                           .filter(c => !clubSearch || c.name?.toLowerCase().includes(clubSearch.toLowerCase()) || c.short_name?.toLowerCase().includes(clubSearch.toLowerCase()))
                           .map(c => {
                             const isCurrent = profile?.team_id === c.id
@@ -1006,10 +966,10 @@ export default function Layout({ children }) {
           </div>
         </header>
 
-        {/* SUPERADMIN WORKSPACE INSPECTION & DIAGNOSTICS BAR */}
+        {/* SUPERADMIN WORKSPACE INSPECTION BAR */}
         {role === 'superadmin' && (
           <div style={{
-            background: isSandbox ? '#042F2E' : '#0F172A',
+            background: '#0F172A',
             borderBottom: '1px solid rgba(255,255,255,0.1)',
             padding: '8px 24px',
             display: 'flex',
@@ -1027,52 +987,25 @@ export default function Layout({ children }) {
                 alignItems: 'center',
                 gap: 5,
                 fontWeight: 800,
-                color: isSandbox ? '#5EEAD4' : '#FDE047',
+                color: '#FDE047',
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
                 fontSize: 11
               }}>
-                {isSandbox ? '🔬 Sandbox Test Mode' : '🔍 Workspace Inspection'}
+                🔍 Workspace Inspection
               </span>
 
               <span style={{ color: '#64748B' }}>|</span>
 
               <span>
-                Workspace: <strong style={{ color: '#FFFFFF' }}>{teamName || 'Apex Test Sandbox'}</strong>
+                Active Club: <strong style={{ color: '#FFFFFF' }}>{teamName}</strong>
               </span>
-
-              {isSandbox && (
-                <span style={{ fontSize:11, color:'#99F6E4' }}>
-                  Isolated test environment · No customer data impacted
-                </span>
-              )}
             </div>
 
             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
               <span style={{ fontSize:11, color:'#94A3B8', fontFamily:'monospace' }}>
-                Scope: {profile?.team_id ? `${profile.team_id.slice(0,8)}...` : 'TEST-ENV'}
+                Team ID: {profile?.team_id ? `${profile.team_id.slice(0,8)}...` : 'NONE'}
               </span>
-
-              {!isSandbox && (
-                <button
-                  onClick={() => {
-                    setSuperadminActiveTeam(null)
-                    window.location.reload()
-                  }}
-                  style={{
-                    background: 'rgba(13, 148, 136, 0.3)',
-                    border: '1px solid rgba(20, 184, 166, 0.4)',
-                    color: '#5EEAD4',
-                    borderRadius: 6,
-                    padding: '3px 8px',
-                    fontSize: 11,
-                    fontWeight: 700,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Enter Sandbox &rarr;
-                </button>
-              )}
 
               <Link
                 href="/superadmin"

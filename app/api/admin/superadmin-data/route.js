@@ -157,20 +157,15 @@ export async function GET(req) {
         }
       }
 
-      // 3. Ensure Apex Test Sandbox exists
-      const existingSandbox = currentTeams.find(t => t.name?.toLowerCase().includes('sandbox'))
-      if (!existingSandbox) {
-        const { data: newSandbox } = await db.from('teams').insert([{
-          name: 'Apex Test Sandbox',
-          short_name: 'TEST',
-          primary_color: '#0D9488'
-        }]).select().single()
-        if (newSandbox?.id) {
-          currentTeams.push(newSandbox)
-        }
+      // 3. Purge any sandbox teams to keep database clean
+      const sandboxTeams = currentTeams.filter(t => t.name?.toLowerCase().includes('sandbox'))
+      for (const sb of sandboxTeams) {
+        await db.from('subscriptions').delete().eq('team_id', sb.id)
+        await db.from('teams').delete().eq('id', sb.id)
       }
+      currentTeams = currentTeams.filter(t => !t.name?.toLowerCase().includes('sandbox'))
 
-      // 4. Ensure all teams have a subscription row
+      // 4. Ensure all valid teams have a subscription row
       const { data: existingSubs } = await db.from('subscriptions').select('*')
       const currentSubs = existingSubs || []
 
@@ -179,18 +174,16 @@ export async function GET(req) {
         if (!hasSub) {
           const trialEnd = new Date()
           trialEnd.setDate(trialEnd.getDate() + 30)
-          const isSandbox = t.name?.toLowerCase().includes('sandbox')
-          if (isSandbox) trialEnd.setFullYear(trialEnd.getFullYear() + 10)
 
           const { data: createdSub } = await db.from('subscriptions').insert([{
             team_id: t.id,
-            plan: isSandbox ? 'captain' : 'trial',
+            plan: 'trial',
             status: 'active',
-            athlete_limit: isSandbox ? 999999 : 999,
-            staff_limit: isSandbox ? 99999 : 99,
+            athlete_limit: 999,
+            staff_limit: 99,
             trial_ends_at: trialEnd.toISOString(),
             current_period_end: trialEnd.toISOString(),
-            notes: isSandbox ? 'Test Sandbox VIP' : 'Auto-provisioned initial trial',
+            notes: 'Auto-provisioned initial trial',
           }]).select().single()
 
           if (createdSub) {

@@ -3,7 +3,8 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check, X } from 'lucide-react'
+import { Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check, X, Activity, ClipboardList } from 'lucide-react'
+import RehabilitationNotes from '@/components/RehabilitationNotes'
 
 const EMPTY = {
   athlete_id:'', injury_type:'', severity:'Mild',
@@ -81,6 +82,7 @@ export default function InjuriesPage() {
   const [teamId,      setTeamId]      = useState(null)
   const [canEdit,     setCanEdit]     = useState(false)
   const [loading,     setLoading]     = useState(true)
+  const [activeTab,   setActiveTab]   = useState('register')
 
   const fetchData = useCallback(async () => {
     const { profile: p, teamId: tid } = await getTenantProfile('id,full_name,role,team_id')
@@ -162,6 +164,11 @@ export default function InjuriesPage() {
 
   const fmtDate = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
 
+  const userRole = currentUser?.role || 'staff'
+  const isPhysio = userRole === 'physio' || userRole === 'superadmin' || currentUser?.staff_type === 'physio' || currentUser?.staff_type === 'medical' || currentUser?.staff_type === 'sports_scientist'
+  const isAdmin = userRole === 'admin' || userRole === 'superadmin'
+  const canViewRehab = isPhysio || isAdmin
+
   const filtered  = filter === 'All' ? injuries : injuries.filter(i => i.status === filter)
   const activeCnt = injuries.filter(i => i.status === 'Active').length
   const recovCnt  = injuries.filter(i => i.status === 'Recovered').length
@@ -171,138 +178,208 @@ export default function InjuriesPage() {
       <div className="page-outer">
 
         {/* ── Header ── */}
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:14, marginBottom:24 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:14, marginBottom:20 }}>
           <div>
             <div style={{ fontSize:11, fontWeight:700, color:'#0D9488', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>
               Medical Records
             </div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:'var(--text)', margin:0, letterSpacing:'-0.02em' }}>Injury Register</h1>
+            <h1 style={{ fontSize:22, fontWeight:900, color:'var(--text)', margin:0, letterSpacing:'-0.02em' }}>
+              {activeTab === 'register' ? 'Injury Register' : 'Rehabilitation Notes'}
+            </h1>
             <p style={{ fontSize:13, color:'var(--text3)', margin:'4px 0 0', fontWeight:500 }}>
-              {activeCnt} active · {recovCnt} recovered
-              {!canEdit && <span style={{ marginLeft:8, background:'#F1F5F9', color:'#64748B', borderRadius:6, padding:'1px 8px', fontSize:11, fontWeight:700 }}>Read Only</span>}
+              {activeTab === 'register' ? (
+                <>
+                  {activeCnt} active · {recovCnt} recovered
+                  {!canEdit && <span style={{ marginLeft:8, background:'#F1F5F9', color:'#64748B', borderRadius:6, padding:'1px 8px', fontSize:11, fontWeight:700 }}>Read Only</span>}
+                </>
+              ) : (
+                <>
+                  Confidential recovery progress, pain scores, exercise protocols &amp; match clearance.
+                  {isAdmin && !isPhysio && <span style={{ marginLeft:8, background:'#FEF3C7', color:'#B45309', borderRadius:6, padding:'1px 8px', fontSize:11, fontWeight:700 }}>Admin Read-Only</span>}
+                </>
+              )}
             </p>
           </div>
-          {canEdit && (
+          {canEdit && activeTab === 'register' && (
             <button onClick={openAdd} style={{ display:'flex', alignItems:'center', gap:7, background:'linear-gradient(135deg,#C0392B,#E74C3C)', color:'#fff', border:'none', borderRadius:10, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 12px rgba(231,76,60,0.3)', fontFamily:'var(--font)' }}>
               <Plus size={15}/> Log Injury
             </button>
           )}
         </div>
 
-        {/* ── Stat pills ── */}
-        <div style={{ display:'flex', gap:12, marginBottom:22, flexWrap:'wrap' }}>
-          {[
-            { label:'Total', value:injuries.length, icon:<FileHeart size={16} color="#4A90E2"/>, color:'#4A90E2', bg:'#EBF4FF' },
-            { label:'Active', value:activeCnt, icon:<HeartOff size={16} color="#E74C3C"/>, color:'#E74C3C', bg:'#FDEDEC' },
-            { label:'Recovered', value:recovCnt, icon:<Heart size={16} color="#27AE60"/>, color:'#27AE60', bg:'#E8F8EE' },
-          ].map(s => (
-            <div key={s.label} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 18px', minWidth:110 }}>
-              <div style={{ width:34, height:34, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
-              <div>
-                <div style={{ fontSize:20, fontWeight:900, color:s.color, lineHeight:1 }}>{s.value}</div>
-                <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginTop:2 }}>{s.label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* ── Top Tabs (Visible to Physios and Admins only; hidden from other staff) ── */}
+        {canViewRehab && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, overflowX: 'auto' }}>
+            <button
+              onClick={() => setActiveTab('register')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 16px',
+                borderRadius: 10,
+                border: 'none',
+                background: activeTab === 'register' ? '#0F766E' : 'var(--surface2)',
+                color: activeTab === 'register' ? '#FFFFFF' : 'var(--text2)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <ClipboardList size={15} />
+              <span>Injury Incidents Register ({injuries.length})</span>
+            </button>
 
-        {/* ── Filter ── */}
-        <div style={{ display:'flex', gap:4, marginBottom:18, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:4, width:'fit-content' }}>
-          {['All','Active','Recovered'].map(f => (
-            <button key={f} onClick={() => setFilter(f)} style={{ padding:'7px 18px', background: filter===f ? (f==='Active'?'linear-gradient(135deg,#C0392B,#E74C3C)':'#0D9488') : 'transparent', border:'none', borderRadius:8, fontSize:12, fontWeight:600, color: filter===f ? '#fff' : 'var(--text2)', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{f}</button>
-          ))}
-        </div>
-
-        {/* ── Injury Table ── */}
-        {loading ? (
-          <div style={{ padding:40, textAlign:'center', color:'var(--text3)', fontSize:13 }}>Loading…</div>
-        ) : filtered.length === 0 ? (
-          <div className="card" style={{ padding:'48px', textAlign:'center', color:'var(--text3)', fontSize:14 }}>
-            No injury records found.
+            <button
+              onClick={() => setActiveTab('rehab')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '8px 16px',
+                borderRadius: 10,
+                border: 'none',
+                background: activeTab === 'rehab' ? '#0F766E' : 'var(--surface2)',
+                color: activeTab === 'rehab' ? '#FFFFFF' : 'var(--text2)',
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+              }}
+            >
+              <Activity size={15} />
+              <span>Rehabilitation Notes &amp; Return-to-Play</span>
+              {isPhysio ? (
+                <span style={{ fontSize: 10, background: '#CCFBF1', color: '#0F766E', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>PHYSIO</span>
+              ) : (
+                <span style={{ fontSize: 10, background: '#FEF3C7', color: '#B45309', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>READ-ONLY</span>
+              )}
+            </button>
           </div>
+        )}
+
+        {/* ── REHABILITATION NOTES TAB ── */}
+        {activeTab === 'rehab' && canViewRehab ? (
+          <RehabilitationNotes currentUser={currentUser} teamId={teamId} />
         ) : (
-          <div className="card" style={{ overflow:'hidden', padding:0 }}>
-            {/* Table Header */}
-            <div style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', background:'var(--surface2)', borderBottom:'1px solid var(--border)', padding:'10px 18px', gap:12 }}>
-              {['Player','Injury','Severity','Status','Date Injured','Expected Return', canEdit ? 'Actions' : ''].filter(Boolean).map(h => (
-                <div key={h} style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{h}</div>
+          <>
+            {/* ── Stat pills ── */}
+            <div style={{ display:'flex', gap:12, marginBottom:22, flexWrap:'wrap' }}>
+              {[
+                { label:'Total', value:injuries.length, icon:<FileHeart size={16} color="#4A90E2"/>, color:'#4A90E2', bg:'#EBF4FF' },
+                { label:'Active', value:activeCnt, icon:<HeartOff size={16} color="#E74C3C"/>, color:'#E74C3C', bg:'#FDEDEC' },
+                { label:'Recovered', value:recovCnt, icon:<Heart size={16} color="#27AE60"/>, color:'#27AE60', bg:'#E8F8EE' },
+              ].map(s => (
+                <div key={s.label} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 18px', minWidth:110 }}>
+                  <div style={{ width:34, height:34, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
+                  <div>
+                    <div style={{ fontSize:20, fontWeight:900, color:s.color, lineHeight:1 }}>{s.value}</div>
+                    <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginTop:2 }}>{s.label}</div>
+                  </div>
+                </div>
               ))}
             </div>
 
-            {filtered.map((inj, i) => {
-              const isAct = inj.status === 'Active'
-              const isLast = i === filtered.length - 1
-              return (
-                <div key={inj.id} style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', alignItems:'center', padding:'13px 18px', gap:12, borderBottom: isLast ? 'none' : '1px solid var(--border)', borderLeft: `3px solid ${isAct ? '#E74C3C' : '#27AE60'}`, transition:'background 0.12s' }}
-                  onMouseEnter={e => e.currentTarget.style.background='var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-
-                  {/* Player */}
-                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                    <Avatar ath={inj.athletes} size={34}/>
-                    <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{inj.athletes?.name || '—'}</div>
-                      <div style={{ fontSize:11, color:'var(--text3)' }}>{inj.athletes?.position || ''}</div>
-                    </div>
-                  </div>
-
-                  {/* Injury */}
-                  <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
-
-                  {/* Severity */}
-                  <div><SeverityBadge severity={inj.severity}/></div>
-
-                  {/* Status */}
-                  <div><StatusBadge status={inj.status}/></div>
-
-                  {/* Date injured */}
-                  <div style={{ fontSize:12, color:'var(--text2)', fontWeight:500 }}>{fmtDate(inj.date_of_injury)}</div>
-
-                  {/* Return */}
-                  <div style={{ fontSize:12, color: inj.expected_return ? 'var(--text2)' : 'var(--text3)', fontWeight:500, fontStyle: inj.expected_return ? 'normal' : 'italic' }}>
-                    {fmtDate(inj.expected_return)}
-                  </div>
-
-                  {/* Actions — only for canEdit */}
-                  {canEdit && (
-                    <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                      <button onClick={() => openEdit(inj)} title="Edit" style={{ background:'#F0FDFA', color:'#0D9488', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                        <Pencil size={13}/>
-                      </button>
-                      {isAct && (
-                        <button onClick={() => markRecovered(inj.id, inj.athlete_id)} title="Mark Recovered" style={{ background:'#E8F8EE', color:'#1B7A3E', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                          <Check size={13}/>
-                        </button>
-                      )}
-                      <button onClick={() => handleDelete(inj.id)} disabled={deleting===inj.id} title="Delete" style={{ background:'#FEF2F2', color:'#E74C3C', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center', opacity: deleting===inj.id ? 0.5 : 1 }}>
-                        <Trash2 size={13}/>
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {/* Notes tooltip row (shown when notes exist) */}
-        {filtered.some(i => i.notes) && (
-          <p style={{ fontSize:11, color:'var(--text3)', marginTop:10 }}>* Hover row or open edit to view notes.</p>
-        )}
-
-        {/* ── Read-only summary for non-medical staff ── */}
-        {!canEdit && (
-          <div style={{ marginTop:20, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'14px 18px', display:'flex', gap:10, alignItems:'flex-start' }}>
-            <HeartOff size={18} color="#D97706" style={{ flexShrink:0, marginTop:1 }}/>
-            <div>
-              <div style={{ fontSize:13, fontWeight:700, color:'#92400E', marginBottom:3 }}>Medical Summary</div>
-              <div style={{ fontSize:12, color:'#78350F', lineHeight:1.6 }}>
-                {activeCnt > 0
-                  ? `${activeCnt} player${activeCnt > 1 ? 's are' : ' is'} currently listed as injured. Detailed medical records and editing are restricted to medical staff and admins.`
-                  : 'No active injuries at this time.'}
-              </div>
+            {/* ── Filter ── */}
+            <div style={{ display:'flex', gap:4, marginBottom:18, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:4, width:'fit-content' }}>
+              {['All','Active','Recovered'].map(f => (
+                <button key={f} onClick={() => setFilter(f)} style={{ padding:'7px 18px', background: filter===f ? (f==='Active'?'linear-gradient(135deg,#C0392B,#E74C3C)':'#0D9488') : 'transparent', border:'none', borderRadius:8, fontSize:12, fontWeight:600, color: filter===f ? '#fff' : 'var(--text2)', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{f}</button>
+              ))}
             </div>
-          </div>
+
+            {/* ── Injury Table ── */}
+            {loading ? (
+              <div style={{ padding:40, textAlign:'center', color:'var(--text3)', fontSize:13 }}>Loading…</div>
+            ) : filtered.length === 0 ? (
+              <div className="card" style={{ padding:'48px', textAlign:'center', color:'var(--text3)', fontSize:14 }}>
+                No injury records found.
+              </div>
+            ) : (
+              <div className="card" style={{ overflow:'hidden', padding:0 }}>
+                {/* Table Header */}
+                <div style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', background:'var(--surface2)', borderBottom:'1px solid var(--border)', padding:'10px 18px', gap:12 }}>
+                  {['Player','Injury','Severity','Status','Date Injured','Expected Return', canEdit ? 'Actions' : ''].filter(Boolean).map(h => (
+                    <div key={h} style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{h}</div>
+                  ))}
+                </div>
+
+                {filtered.map((inj, i) => {
+                  const isAct = inj.status === 'Active'
+                  const isLast = i === filtered.length - 1
+                  return (
+                    <div key={inj.id} style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', alignItems:'center', padding:'13px 18px', gap:12, borderBottom: isLast ? 'none' : '1px solid var(--border)', borderLeft: `3px solid ${isAct ? '#E74C3C' : '#27AE60'}`, transition:'background 0.12s' }}
+                      onMouseEnter={e => e.currentTarget.style.background='var(--surface2)'}
+                      onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+
+                      {/* Player */}
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <Avatar ath={inj.athletes} size={34}/>
+                        <div>
+                          <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{inj.athletes?.name || '—'}</div>
+                          <div style={{ fontSize:11, color:'var(--text3)' }}>{inj.athletes?.position || ''}</div>
+                        </div>
+                      </div>
+
+                      {/* Injury */}
+                      <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
+
+                      {/* Severity */}
+                      <div><SeverityBadge severity={inj.severity}/></div>
+
+                      {/* Status */}
+                      <div><StatusBadge status={inj.status}/></div>
+
+                      {/* Date injured */}
+                      <div style={{ fontSize:12, color:'var(--text2)', fontWeight:500 }}>{fmtDate(inj.date_of_injury)}</div>
+
+                      {/* Return */}
+                      <div style={{ fontSize:12, color: inj.expected_return ? 'var(--text2)' : 'var(--text3)', fontWeight:500, fontStyle: inj.expected_return ? 'normal' : 'italic' }}>
+                        {fmtDate(inj.expected_return)}
+                      </div>
+
+                      {/* Actions — only for canEdit */}
+                      {canEdit && (
+                        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                          <button onClick={() => openEdit(inj)} title="Edit" style={{ background:'#F0FDFA', color:'#0D9488', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                            <Pencil size={13}/>
+                          </button>
+                          {isAct && (
+                            <button onClick={() => markRecovered(inj.id, inj.athlete_id)} title="Mark Recovered" style={{ background:'#E8F8EE', color:'#1B7A3E', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
+                              <Check size={13}/>
+                            </button>
+                          )}
+                          <button onClick={() => handleDelete(inj.id)} disabled={deleting===inj.id} title="Delete" style={{ background:'#FEF2F2', color:'#E74C3C', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center', opacity: deleting===inj.id ? 0.5 : 1 }}>
+                            <Trash2 size={13}/>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Notes tooltip row (shown when notes exist) */}
+            {filtered.some(i => i.notes) && (
+              <p style={{ fontSize:11, color:'var(--text3)', marginTop:10 }}>* Hover row or open edit to view notes.</p>
+            )}
+
+            {/* ── Read-only summary for non-medical staff ── */}
+            {!canEdit && (
+              <div style={{ marginTop:20, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'14px 18px', display:'flex', gap:10, alignItems:'flex-start' }}>
+                <HeartOff size={18} color="#D97706" style={{ flexShrink:0, marginTop:1 }}/>
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:'#92400E', marginBottom:3 }}>Medical Summary</div>
+                  <div style={{ fontSize:12, color:'#78350F', lineHeight:1.6 }}>
+                    {activeCnt > 0
+                      ? `${activeCnt} player${activeCnt > 1 ? 's are' : ' is'} currently listed as injured. Detailed medical records and editing are restricted to medical staff and admins.`
+                      : 'No active injuries at this time.'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 

@@ -1173,11 +1173,7 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section className="hero">
-        {/* Eyebrow */}
-        <div className="hero-eyebrow">
-          <div className="hero-eyebrow-dot" />
-          <span className="hero-eyebrow-text">Ghana's #1 Football Management Software</span>
-        </div>
+        {/* Headline */}
 
         {/* Headline */}
         <h1 className="hero-h1">

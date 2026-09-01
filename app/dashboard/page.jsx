@@ -7,8 +7,8 @@ import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
-import Link from 'next/link'
-import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock, Megaphone, Pin, Radio } from 'lucide-react'
+import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock, Megaphone, Pin, Radio, Activity, Plus } from 'lucide-react'
+import RehabilitationNotes from '@/components/RehabilitationNotes'
 
 const AV_COLORS = ['#006A6A', '#008080', '#2D6B6B', '#5A9494', '#004F4F', '#5C3058']
 function initials(n) { return (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }
@@ -69,23 +69,25 @@ export default function Dashboard() {
   const [notices, setNotices] = useState([])
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
+  const [teamId, setTeamId] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     async function load() {
-      const { profile: p, teamId } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+      const { profile: p, teamId: tid } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
       if (p?.role === 'player') {
         router.replace('/player-hub')
         return
       }
       setProfile(p)
+      setTeamId(tid)
       setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin' || p?.role === 'coach')
       const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }] = await Promise.all([
-        scopeTeam(supabase.from('athletes').select('*'), teamId).order('created_at', { ascending: false }),
-        scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), teamId),
-        scopeTeam(supabase.from('coaches').select('*'), teamId),
-        scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), teamId).order('date', { ascending: true }),
-        scopeTeam(supabase.from('notices').select('*'), teamId).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
+        scopeTeam(supabase.from('athletes').select('*'), tid).order('created_at', { ascending: false }),
+        scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), tid),
+        scopeTeam(supabase.from('coaches').select('*'), tid),
+        scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), tid).order('date', { ascending: true }),
+        scopeTeam(supabase.from('notices').select('*'), tid).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
       ])
       setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || [])
       setLoading(false)
@@ -118,8 +120,19 @@ export default function Dashboard() {
 
   const labels = { athletes: 'Athletes', coaches: 'Staff', transfers: 'Transfers', performance: 'Performance Stats' }
 
+  const userRole = profile?.role || 'staff'
+  const isPhysio = userRole === 'physio' || profile?.staff_type === 'physio' || profile?.staff_type === 'medical' || profile?.staff_type === 'sports_scientist'
+  const isFullAdmin = userRole === 'admin' || userRole === 'superadmin'
+  const canViewRehab = isPhysio || isFullAdmin
+
   const iconProps = { size: 18, strokeWidth: 2 }
-  const stats = [
+  const stats = isPhysio ? [
+    { label: 'Athletes', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} fit & active`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
+    { label: 'In Rehabilitation', value: activeInj.length, note: 'active injuries', icon: <HeartPulse {...iconProps} />, accent: 'var(--danger)' },
+    { label: 'Recovered', value: injuries.filter(i => i.status === 'Recovered').length, note: 'cleared to play', icon: <ShieldCheck {...iconProps} />, accent: 'var(--success)' },
+    { label: 'Upcoming Sessions', value: upcoming.length, note: 'next 7 days', icon: <CalendarDays {...iconProps} />, accent: '#4A90E2' },
+    { label: 'Today', value: todaySess.length, note: 'sessions', icon: <Flame {...iconProps} />, accent: 'var(--warning)' },
+  ] : [
     { label: labels.athletes || 'Athletes', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} active`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
     { label: labels.coaches || 'Staff', value: coaches.length, note: 'members', icon: <ShieldCheck {...iconProps} />, accent: '#4A90E2' },
     { label: 'Sessions', value: upcoming.length, note: 'next 7 days', icon: <CalendarDays {...iconProps} />, accent: 'var(--success)' },
@@ -223,8 +236,13 @@ export default function Dashboard() {
                 </div>
               )}
               <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : 'Admin')}</span>
+                Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : (isPhysio ? 'Team Physio' : 'Admin'))}</span>
               </h1>
+              {isPhysio && (
+                <div style={{ fontSize: 12, color: '#A7F3D0', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Activity size={14} /> Physiotherapy &amp; Medical Dashboard
+                </div>
+              )}
             </div>
           </div>
 
@@ -352,6 +370,17 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* ── Rehabilitation Notes Hub (Physio Full Access & Admin Read-Only; Hidden from other staff) ── */}
+          {canViewRehab && (
+            <div className="fade-up">
+              <RehabilitationNotes
+                currentUser={profile}
+                teamId={teamId}
+                title={isPhysio ? 'Rehabilitation Hub & Clinical Notes' : 'Rehabilitation Notes (Physio Confidential — Read Only)'}
+              />
+            </div>
+          )}
+
           {/* Recent Athletes */}
           <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -459,14 +488,28 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {isAdmin && (
+          {/* Quick Actions (Tailored for Physio / Admin) */}
+          {(isAdmin || isPhysio) && (
             <div className="card fade-up fade-up-2" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700 }}>Quick Actions</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700 }}>{isPhysio ? 'Physio Quick Actions' : 'Quick Actions'}</h3>
                 <TrendingUp size={14} color="var(--text3)" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                {[
+                {isPhysio ? [
+                  { icon: <HeartPulse size={17} strokeWidth={2} />, label: 'Log Injury', href: '/injuries', bg: '#FDEDEC', color: '#C0392B' },
+                  { icon: <Activity size={17} strokeWidth={2} />, label: 'Medical Hub', href: '/injuries', bg: '#EFF8F5', color: '#0D6E5E' },
+                  { icon: <Users size={17} strokeWidth={2} />, label: 'Athletes', href: '/athletes', bg: '#EBF4FF', color: '#1D4ED8' },
+                  { icon: <CalendarDays size={17} strokeWidth={2} />, label: 'Schedule', href: '/schedule', bg: '#EBF8EE', color: '#1B7A3E' },
+                  { icon: <Settings size={17} strokeWidth={2} />, label: 'Settings', href: '/settings', bg: 'var(--surface2)', color: 'var(--plum)' },
+                ].map(({ icon, label, href, bg, color }) => (
+                  <Link key={label} href={href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: bg, border: '1px solid var(--border)', textDecoration: 'none', transition: 'var(--transition)' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', color, flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color, lineHeight: 1.2 }}>{label}</span>
+                  </Link>
+                )) : [
                   { icon: <UserPlus size={17} strokeWidth={2} />, label: 'Add Athlete', href: '/athletes', bg: '#EFF8F5', color: '#0D6E5E' },
                   { icon: <CalendarDays size={17} strokeWidth={2} />, label: 'Schedule', href: '/schedule', bg: '#EBF8EE', color: '#1B7A3E' },
                   { icon: <Search size={17} strokeWidth={2} />, label: 'Scouting', href: '/scouting', bg: '#F3E8FD', color: '#7C3AED' },
@@ -490,3 +533,4 @@ export default function Dashboard() {
     </Layout>
   )
 }
+

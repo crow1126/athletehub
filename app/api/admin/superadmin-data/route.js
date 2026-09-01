@@ -128,7 +128,6 @@ export async function GET(req) {
                 name: clubNameClean,
                 short_name: shortName,
                 logo_url: p.club_logo_url || null,
-                sport_type: 'football',
               }])
               .select()
               .single()

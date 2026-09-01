@@ -108,7 +108,6 @@ export async function POST(req) {
           .insert([{
             name: trimmedClub,
             short_name: shortName,
-            sport_type: 'football',
           }])
           .select()
           .single()

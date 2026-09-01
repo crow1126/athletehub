@@ -87,7 +87,6 @@ export async function POST(req) {
             name: trimmedClub,
             short_name: shortName,
             logo_url: logo_url || null,
-            sport_type: 'football',
           }])
           .select()
           .single()

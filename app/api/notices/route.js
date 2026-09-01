@@ -86,6 +86,12 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Team ID is required.' }, { status: 400 })
     }
 
+    // ── Multitenancy: non-superadmins may only post to their own team ─────────
+    const isSuperadmin = userRole === 'superadmin'
+    if (!isSuperadmin && requester.profile.team_id !== teamId) {
+      return NextResponse.json({ error: 'Unauthorized: you can only post notices to your own team' }, { status: 403 })
+    }
+
     // Get club name for SMS prefix
     let clubName = requester.profile.club_name || ''
     if (!clubName && teamId) {

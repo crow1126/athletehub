@@ -25,7 +25,13 @@ export async function POST(req) {
       return NextResponse.json({ error: requester.error }, { status: requester.status })
     }
 
-    // Fetch the session
+    // ── Multitenancy: enforce requester belongs to the target team ────────────
+    const isSuperadmin = requester.profile.role === 'superadmin'
+    if (!isSuperadmin && requester.profile.team_id !== team_id) {
+      return NextResponse.json({ error: 'Unauthorized: you can only notify athletes in your own team' }, { status: 403 })
+    }
+
+    // Fetch the session — always scoped to team_id to prevent cross-team reads
     const { data: session, error: sErr } = await supabase
       .from('training_sessions')
       .select('*')

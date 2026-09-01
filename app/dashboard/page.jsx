@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Layout from '@/components/Layout'
 import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'

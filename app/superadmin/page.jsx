@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
@@ -34,6 +34,12 @@ const IconClose = () => (
 const IconCreditCard = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
+  </svg>
+)
+const IconCamera = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
   </svg>
 )
 const IconCheckCircle = () => (
@@ -220,6 +226,14 @@ export default function SuperadminPage() {
   const [subNotes, setSubNotes] = useState('')
   const [subSaving, setSubSaving] = useState(false)
 
+  // Club Logo management modal state
+  const [logoModal, setLogoModal] = useState(false)
+  const [logoTarget, setLogoTarget] = useState(null) // { team_id, club_name, name, current_logo }
+  const [logoFile, setLogoFile] = useState(null)
+  const [logoPreview, setLogoPreview] = useState(null)
+  const [logoUrlInput, setLogoUrlInput] = useState('')
+  const [logoSaving, setLogoSaving] = useState(false)
+
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
 
@@ -327,10 +341,78 @@ export default function SuperadminPage() {
     return { label: `${name} · Active`, plan: name, bg: '#d1fae5', color: '#059669', days, isActive: true, end: endFormatted, status: 'active' }
   }
 
-  function openSubModal(team) {
-    if (!team) return
-    const sub = getSubForTeam(team.id)
-    setSubTeam(team)
+  function openLogoModal(teamOrClub) {
+    if (!teamOrClub) return
+    const teamId = teamOrClub.id || (teamOrClub.club_name ? teams.find(t => t.name?.toLowerCase() === teamOrClub.club_name.toLowerCase())?.id : null)
+    const name = teamOrClub.name || teamOrClub.club_name || 'Club'
+    const currentLogo = teamOrClub.logo_url || teamOrClub.logo || null
+    setLogoTarget({
+      team_id: teamId,
+      club_name: teamOrClub.club_name || name,
+      name,
+      current_logo: currentLogo,
+    })
+    setLogoFile(null)
+    setLogoPreview(currentLogo)
+    setLogoUrlInput('')
+    setLogoModal(true)
+  }
+
+  async function handleSaveClubLogo(e) {
+    if (e) e.preventDefault()
+    if (!logoTarget) return
+    if (!logoFile && !logoUrlInput.trim()) {
+      showToast('Please choose an image file or enter an image URL', 'error')
+      return
+    }
+
+    setLogoSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No active session')
+
+      const fd = new FormData()
+      if (logoFile) fd.append('file', logoFile)
+      if (logoUrlInput.trim()) fd.append('logo_url', logoUrlInput.trim())
+      if (logoTarget.team_id) fd.append('team_id', logoTarget.team_id)
+      if (logoTarget.club_name) fd.append('club_name', logoTarget.club_name)
+
+      const res = await fetch('/api/admin/club-logo', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: fd
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to upload logo')
+
+      showToast(`⚡ Club logo updated for ${logoTarget.name}!`)
+      setLogoModal(false)
+      loadTeams()
+      loadProfiles()
+    } catch (err) {
+      showToast(err.message, 'error')
+    } finally {
+      setLogoSaving(false)
+    }
+  }
+
+  function openSubModal(teamOrClub) {
+    if (!teamOrClub) return
+    const teamId = teamOrClub.id || (teamOrClub.club_name ? teams.find(t => t.name?.toLowerCase() === teamOrClub.club_name.toLowerCase())?.id : null)
+    const teamName = teamOrClub.name || teamOrClub.club_name || 'Club'
+    const teamLogo = teamOrClub.logo_url || teamOrClub.logo || null
+    const sub = getSubForTeam(teamId)
+    
+    setSubTeam({
+      id: teamId,
+      name: teamName,
+      short_name: teamOrClub.short_name || teamName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 4),
+      logo_url: teamLogo,
+      club_name: teamName
+    })
     setSubPlan(sub?.plan || 'captain')
     setSubStatus(sub?.status || 'active')
     setSubAthleteLimit(sub?.athlete_limit >= 999 ? 999999 : (sub?.athlete_limit || 999999))
@@ -351,7 +433,7 @@ export default function SuperadminPage() {
     setSubModal(true)
   }
 
-  async function handleQuickUnlimited(teamId, teamName) {
+  async function handleQuickUnlimited(teamId, teamName, clubName) {
     try {
       setSubSaving(true)
       const { data: { session } } = await supabase.auth.getSession()
@@ -367,7 +449,8 @@ export default function SuperadminPage() {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          team_id: teamId,
+          team_id: teamId || null,
+          club_name: clubName || teamName || null,
           plan: 'captain',
           status: 'active',
           athlete_limit: 999999,
@@ -378,7 +461,7 @@ export default function SuperadminPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to update subscription')
-      showToast(`⚡ Granted Unlimited Captain Access to ${teamName || 'Team'}!`)
+      showToast(`⚡ Granted Unlimited Captain Access to ${teamName || clubName || 'Team'}!`)
       loadTeams()
       loadProfiles()
       if (subModal) setSubModal(false)
@@ -404,7 +487,8 @@ export default function SuperadminPage() {
           'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify({
-          team_id: subTeam.id,
+          team_id: subTeam.id || null,
+          club_name: subTeam.club_name || subTeam.name || null,
           plan: subPlan,
           status: subStatus,
           athlete_limit: Number(subAthleteLimit),
@@ -607,40 +691,29 @@ export default function SuperadminPage() {
   async function handleApprove(p) {
     setActing(true)
     try {
-      let teamId = null
-      if (p.club_name) {
-        const { data: existingTeam } = await supabase.from('teams').select('id').ilike('name', p.club_name.trim()).maybeSingle()
-        if (existingTeam?.id) { teamId = existingTeam.id }
-        else {
-          const { data: newTeam, error: teamError } = await supabase.from('teams').insert([{
-            name: p.club_name.trim(),
-            short_name: p.club_name.trim().split(' ').map(w => w[0]).join('').toUpperCase().slice(0,4),
-          }]).select().single()
-          if (!teamError) teamId = newTeam.id
-        }
-        if (teamId) {
-          const { data: existingSub } = await supabase.from('subscriptions').select('id').eq('team_id', teamId).maybeSingle()
-          if (!existingSub) {
-            const trialEnd = new Date(); trialEnd.setDate(trialEnd.getDate() + 30)
-            await supabase.from('subscriptions').insert([{ team_id:teamId, plan:'trial', status:'active', trial_ends_at:trialEnd.toISOString(), current_period_end:trialEnd.toISOString() }])
-          }
-        }
-      }
-      const { error } = await supabase.from('profiles').update({ is_active:true, registration_status:'approved', approved_at:new Date().toISOString(), team_id:teamId }).eq('id', p.id)
-      if (error) throw error
       const { data: { session } } = await supabase.auth.getSession()
-      if (session?.access_token) {
-        await fetch('/api/admin/confirm-email', { method:'POST', headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${session.access_token}` }, body:JSON.stringify({ user_id:p.id }) })
-      }
-      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/send-welcome`, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}` },
-        body:JSON.stringify({ full_name:p.full_name, email:p.email, club_name:p.club_name, app_url:window.location.origin }),
+      if (!session) throw new Error('No active session')
+
+      const res = await fetch('/api/admin/approve-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ userId: p.id })
       })
-      showToast('Approved administrator and team provisioned successfully!')
-      setSelected(null); loadProfiles(); loadTeams()
-    } catch (err) { showToast('Approval failed: ' + err.message, 'error') }
-    finally { setActing(false) }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Approval failed')
+
+      showToast(`Approved ${p.full_name || p.email} and provisioned team successfully!`)
+      setSelected(null)
+      loadProfiles()
+      loadTeams()
+    } catch (err) {
+      showToast('Approval failed: ' + err.message, 'error')
+    } finally {
+      setActing(false)
+    }
   }
 
   async function handleReject(p) {
@@ -767,12 +840,17 @@ export default function SuperadminPage() {
   })
 
   // Split teams into active vs no-admin (orphaned/deletable)
-  const activeTeams = teams.filter(t => profiles.some(p => p.team_id === t.id && p.registration_status === 'approved'))
-  const orphanedTeams = teams.filter(t => !profiles.some(p => p.team_id === t.id && p.registration_status === 'approved'))
+  const activeTeams = teams.filter(t => {
+    const hasApproved = profiles.some(p => (p.team_id === t.id || p.club_name?.trim().toLowerCase() === t.name?.trim().toLowerCase()) && p.registration_status === 'approved')
+    const hasUsers = profiles.some(p => p.team_id === t.id || p.club_name?.trim().toLowerCase() === t.name?.trim().toLowerCase())
+    const isSandbox = t.name?.toLowerCase().includes('sandbox')
+    return hasApproved || hasUsers || isSandbox
+  })
+  const orphanedTeams = teams.filter(t => !activeTeams.some(at => at.id === t.id))
 
   // Get all users for a team
-  function getTeamUsers(teamId) {
-    return profiles.filter(p => p.team_id === teamId)
+  function getTeamUsers(teamId, teamName) {
+    return profiles.filter(p => p.team_id === teamId || (teamName && p.club_name?.trim().toLowerCase() === teamName.trim().toLowerCase()))
   }
 
   if (!authOk) {
@@ -1103,7 +1181,19 @@ export default function SuperadminPage() {
                               style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background:headerBg, border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
                               onMouseEnter={e => e.currentTarget.style.background='#f0fdfa'}
                               onMouseLeave={e => e.currentTarget.style.background=headerBg}>
-                              <ClubLogoImg url={group.logo} name={group.club_name} size={42} />
+                              <div
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openLogoModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
+                                }}
+                                style={{ position:'relative', cursor:'pointer', flexShrink:0 }}
+                                title="Click to Upload or Change Club Logo"
+                              >
+                                <ClubLogoImg url={group.logo} name={group.club_name} size={42} />
+                                <div style={{ position:'absolute', bottom:-2, right:-2, background:'#0D9488', color:'#fff', width:16, height:16, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:9, boxShadow:'0 1px 3px rgba(0,0,0,0.2)', border:'1.5px solid #fff' }}>
+                                  <IconCamera />
+                                </div>
+                              </div>
                               <div style={{ flex:1, minWidth:0 }}>
                                 <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.club_name}</div>
                                 <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{group.users.length} user{group.users.length !== 1 ? 's' : ''} attached</div>
@@ -1113,9 +1203,9 @@ export default function SuperadminPage() {
                                 <span
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    if (matchedTeam) openSubModal(matchedTeam)
+                                    openSubModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
                                   }}
-                                  title={matchedTeam ? "Click to Manage Plan & Limits" : "Subscription Status"}
+                                  title="Click to Manage Plan & Limits"
                                   style={{
                                     fontSize:10,
                                     fontWeight:700,
@@ -1128,7 +1218,7 @@ export default function SuperadminPage() {
                                     display:'inline-flex',
                                     alignItems:'center',
                                     gap:4,
-                                    cursor: matchedTeam ? 'pointer' : 'default'
+                                    cursor:'pointer'
                                   }}
                                 >
                                   <IconCreditCard />{clubSubBadge.label}
@@ -1138,38 +1228,67 @@ export default function SuperadminPage() {
                               {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Pending</span>}
                               {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 8px', borderRadius:99, flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}><IconCheckCircle /> Approved</span>}
                               
-                              {/* Manage Plan Button */}
-                              {matchedTeam && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    openSubModal(matchedTeam)
-                                  }}
-                                  style={{
-                                    fontSize:11,
-                                    fontWeight:700,
-                                    background:'#F0FDFA',
-                                    color:'#0F766E',
-                                    border:'1px solid #99F6E4',
-                                    padding:'5px 10px',
-                                    borderRadius:8,
-                                    cursor:'pointer',
-                                    flexShrink:0,
-                                    transition:'background 0.15s',
-                                  }}
-                                  onMouseEnter={e => e.currentTarget.style.background = '#CCFBF1'}
-                                  onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
-                                  title="Manage Club Plan & Limits"
-                                >
-                                  💳 Plan
-                                </button>
-                              )}
+                              {/* Logo Button */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openLogoModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
+                                }}
+                                style={{
+                                  fontSize:11,
+                                  fontWeight:700,
+                                  background:'#F8FAFC',
+                                  color:'#334155',
+                                  border:'1px solid #CBD5E1',
+                                  padding:'5px 9px',
+                                  borderRadius:8,
+                                  cursor:'pointer',
+                                  flexShrink:0,
+                                  display:'inline-flex',
+                                  alignItems:'center',
+                                  gap:4,
+                                  transition:'all 0.15s',
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.borderColor = '#94A3B8' }}
+                                onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1' }}
+                                title="Upload or Change Club Logo"
+                              >
+                                <IconCamera /> Logo
+                              </button>
+
+                              {/* Manage Plan Button - Always Available */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  openSubModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
+                                }}
+                                style={{
+                                  fontSize:11,
+                                  fontWeight:700,
+                                  background:'#F0FDFA',
+                                  color:'#0F766E',
+                                  border:'1px solid #99F6E4',
+                                  padding:'5px 10px',
+                                  borderRadius:8,
+                                  cursor:'pointer',
+                                  flexShrink:0,
+                                  display:'inline-flex',
+                                  alignItems:'center',
+                                  gap:4,
+                                  transition:'background 0.15s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#CCFBF1'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
+                                title="Manage Club Plan & Limits"
+                              >
+                                💳 Plan
+                              </button>
 
                               {/* Inspect Workspace Action */}
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
-                                  const targetId = matchedTeam?.id || firstUserWithTeam?.team_id
+                                  const targetId = matchedTeam?.id || firstUserWithTeam?.team_id || teams.find(t => t.name?.toLowerCase() === group.club_name?.toLowerCase())?.id
                                   setSuperadminActiveTeam(targetId || null)
                                   router.push('/dashboard')
                                 }}
@@ -1369,7 +1488,16 @@ export default function SuperadminPage() {
                           return (
                             <div key={t.id} className="sa-card">
                               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
-                                <ClubLogoImg url={t.logo_url} name={t.name} size={44} />
+                                <div
+                                  onClick={() => openLogoModal(t)}
+                                  style={{ position:'relative', cursor:'pointer', flexShrink:0 }}
+                                  title="Click to Upload or Change Club Logo"
+                                >
+                                  <ClubLogoImg url={t.logo_url} name={t.name} size={46} />
+                                  <div style={{ position:'absolute', bottom:-2, right:-2, background:'#0D9488', color:'#fff', width:18, height:18, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, boxShadow:'0 1px 3px rgba(0,0,0,0.2)', border:'1.5px solid #fff' }}>
+                                    <IconCamera />
+                                  </div>
+                                </div>
                                 <div style={{ flex:1, minWidth:0 }}>
                                   <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.name}</div>
                                   <div style={{ fontSize:10, color:'#64748b', fontFamily:'monospace', marginTop:2 }}>CODE: {t.short_name}</div>
@@ -1459,8 +1587,11 @@ export default function SuperadminPage() {
                                   <Btn onClick={() => openSubModal(t)} style={{ fontSize:11, flex:1, justifyContent:'center', background:'#f0fdfa', borderColor:'#99f6e4', color:'#0f766e', fontWeight:700 }}>
                                     💳 Manage Plan
                                   </Btn>
-                                  <Btn onClick={() => handleQuickUnlimited(t.id, t.name)} disabled={subSaving} style={{ fontSize:11, padding:'7px 10px', background:'#fef3c7', borderColor:'#fde68a', color:'#b45309', fontWeight:700 }} title="Grant 100-Yr Unlimited Captain Plan">
+                                  <Btn onClick={() => handleQuickUnlimited(t.id, t.name, t.name)} disabled={subSaving} style={{ fontSize:11, padding:'7px 10px', background:'#fef3c7', borderColor:'#fde68a', color:'#b45309', fontWeight:700 }} title="Grant 100-Yr Unlimited Captain Plan">
                                     ⚡ Unlimited
+                                  </Btn>
+                                  <Btn onClick={() => openLogoModal(t)} style={{ fontSize:11, padding:'7px 10px', background:'#f8fafc', borderColor:'#e2e8f0', color:'#475569', fontWeight:700 }} title="Upload or Change Club Logo">
+                                    <IconCamera /> Logo
                                   </Btn>
                                 </div>
                                 <div style={{ display:'flex', gap:6 }}>
@@ -2443,6 +2574,128 @@ export default function SuperadminPage() {
                   style={{ flex:2, justifyContent:'center', gap:8, background:'linear-gradient(135deg, #0F766E, #0D9488)' }}
                 >
                   {subSaving ? 'Saving Changes…' : 'Save Subscription Changes →'}
+                </Btn>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CLUB LOGO UPLOAD MODAL */}
+      {logoModal && logoTarget && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(8px)', zIndex:650, display:'flex', alignItems:'center', justifyContent:'center', padding:16, overflowY:'auto' }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:480, display:'flex', flexDirection:'column', gap:18, boxShadow:'0 24px 60px rgba(0,0,0,0.3)', border:'1.5px solid #0D9488' }}>
+            
+            {/* Header */}
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', borderBottom:'1px solid #f1f5f9', paddingBottom:12 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:36, height:36, borderRadius:10, background:'#F0FDFA', color:'#0D9488', display:'flex', alignItems:'center', justifyContent:'center', border:'1px solid #99F6E4' }}>
+                  <IconCamera />
+                </div>
+                <div>
+                  <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Update Club Logo</h3>
+                  <p style={{ fontSize:11, color:'#64748b', marginTop:2 }}>
+                    {logoTarget.name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setLogoModal(false)}
+                style={{ background:'#f1f5f9', border:'none', color:'#64748b', width:28, height:28, borderRadius:'50%', fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', lineHeight:1 }}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* Logo Preview & Upload */}
+            <form onSubmit={handleSaveClubLogo} style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              
+              {/* Preview Circle */}
+              <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'12px 0', gap:8 }}>
+                <div style={{ width:84, height:84, borderRadius:'50%', border:'2px dashed #0D9488', padding:3, display:'flex', alignItems:'center', justifyContent:'center', background:'#F0FDFA' }}>
+                  {logoPreview ? (
+                    <img
+                      src={logoPreview}
+                      alt="Logo Preview"
+                      style={{ width:'100%', height:'100%', borderRadius:'50%', objectFit:'cover' }}
+                      onError={() => setLogoPreview(null)}
+                    />
+                  ) : (
+                    <Avatar name={logoTarget.name} size={74} />
+                  )}
+                </div>
+                <span style={{ fontSize:11, color:'#64748b', fontWeight:600 }}>
+                  {logoFile ? `Selected: ${logoFile.name}` : (logoTarget.current_logo ? 'Current Club Logo' : 'No Logo Uploaded Yet')}
+                </span>
+              </div>
+
+              {/* File Picker Box */}
+              <div>
+                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
+                  Choose Image File from Computer
+                </label>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/webp, image/svg+xml, image/gif"
+                  onChange={e => {
+                    const f = e.target.files?.[0]
+                    if (f) {
+                      setLogoFile(f)
+                      setLogoPreview(URL.createObjectURL(f))
+                    }
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: 10,
+                    fontSize: 12,
+                    color: '#334155',
+                    cursor: 'pointer'
+                  }}
+                />
+                <span style={{ fontSize:10, color:'#94a3b8', marginTop:3, display:'block' }}>
+                  Supports PNG, JPG, WebP, SVG (Recommended: square 400x400)
+                </span>
+              </div>
+
+              {/* Or Direct Image URL */}
+              <div>
+                <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
+                  Or Direct Image URL
+                </label>
+                <input
+                  type="url"
+                  className="sa-custom-input"
+                  placeholder="https://example.com/logo.png"
+                  value={logoUrlInput}
+                  onChange={e => {
+                    setLogoUrlInput(e.target.value)
+                    if (e.target.value.trim().startsWith('http')) {
+                      setLogoPreview(e.target.value.trim())
+                      setLogoFile(null)
+                    }
+                  }}
+                />
+              </div>
+
+              {/* Modal Buttons */}
+              <div style={{ display:'flex', gap:10, borderTop:'1px solid #f1f5f9', paddingTop:14, marginTop:4 }}>
+                <Btn
+                  type="button"
+                  onClick={() => setLogoModal(false)}
+                  style={{ flex:1, justifyContent:'center' }}
+                >
+                  Cancel
+                </Btn>
+                <Btn
+                  type="submit"
+                  variant="primary"
+                  disabled={logoSaving || (!logoFile && !logoUrlInput.trim())}
+                  style={{ flex:2, justifyContent:'center', gap:8, background:'linear-gradient(135deg, #0F766E, #0D9488)' }}
+                >
+                  {logoSaving ? 'Uploading Logo…' : 'Upload & Save Logo →'}
                 </Btn>
               </div>
             </form>

@@ -96,10 +96,70 @@ export async function GET(req) {
       result.athletes = athletes || []
     }
 
-    // Teams & Subscriptions
+    // Teams & Subscriptions & Profile reconciliation
     if (section === 'all' || section === 'teams' || section === 'profiles') {
-      // Ensure Apex Test Sandbox exists
-      const { data: existingSandbox } = await db.from('teams').select('id').ilike('name', '%sandbox%').maybeSingle()
+      // 1. Fetch current teams and profiles
+      const [teamsRes, profilesRaw] = await Promise.all([
+        db.from('teams').select('*').order('created_at', { ascending: false }),
+        db.from('profiles').select('id,full_name,email,club_name,role,is_active,registration_status,created_at,club_logo_url,phone,team_id')
+      ])
+
+      let currentTeams = teamsRes.data || []
+      const currentProfiles = profilesRaw.data || []
+
+      // 2. Auto-reconcile: find any profiles with club_name that have no team_id or team row
+      for (const p of currentProfiles) {
+        if (p.club_name && p.club_name.trim() && p.role !== 'superadmin') {
+          const clubNameClean = p.club_name.trim()
+          let matchingTeam = currentTeams.find(t => t.id === p.team_id || t.name?.toLowerCase() === clubNameClean.toLowerCase())
+
+          if (!matchingTeam) {
+            // Create team for this club
+            const shortName = clubNameClean
+              .split(' ')
+              .map(w => w[0])
+              .join('')
+              .toUpperCase()
+              .slice(0, 4)
+
+            const { data: newTeam, error: teamCreateErr } = await db
+              .from('teams')
+              .insert([{
+                name: clubNameClean,
+                short_name: shortName,
+                logo_url: p.club_logo_url || null,
+                sport_type: 'football',
+              }])
+              .select()
+              .single()
+
+            if (!teamCreateErr && newTeam) {
+              matchingTeam = newTeam
+              currentTeams.unshift(newTeam)
+            }
+          }
+
+          // Link profile to team if unlinked or logo mismatch
+          if (matchingTeam?.id) {
+            const updates = {}
+            if (p.team_id !== matchingTeam.id) updates.team_id = matchingTeam.id
+            if (matchingTeam.logo_url && !p.club_logo_url) updates.club_logo_url = matchingTeam.logo_url
+            if (!matchingTeam.logo_url && p.club_logo_url) {
+              await db.from('teams').update({ logo_url: p.club_logo_url }).eq('id', matchingTeam.id)
+              matchingTeam.logo_url = p.club_logo_url
+            }
+
+            if (Object.keys(updates).length > 0) {
+              await db.from('profiles').update(updates).eq('id', p.id)
+              p.team_id = matchingTeam.id
+              if (updates.club_logo_url) p.club_logo_url = updates.club_logo_url
+            }
+          }
+        }
+      }
+
+      // 3. Ensure Apex Test Sandbox exists
+      const existingSandbox = currentTeams.find(t => t.name?.toLowerCase().includes('sandbox'))
       if (!existingSandbox) {
         const { data: newSandbox } = await db.from('teams').insert([{
           name: 'Apex Test Sandbox',
@@ -107,24 +167,42 @@ export async function GET(req) {
           primary_color: '#0D9488'
         }]).select().single()
         if (newSandbox?.id) {
-          const trialEnd = new Date(); trialEnd.setFullYear(trialEnd.getFullYear() + 10)
-          await db.from('subscriptions').insert([{
-            team_id: newSandbox.id,
-            plan: 'captain',
-            status: 'active',
-            current_period_end: trialEnd.toISOString()
-          }])
+          currentTeams.push(newSandbox)
         }
       }
 
-      const [teamsRes, subsRes] = await Promise.all([
-        db.from('teams').select('*').order('created_at', { ascending: false }),
-        db.from('subscriptions').select('*'),
-      ])
-      if (teamsRes.error) console.error('Teams fetch error:', teamsRes.error.message)
-      if (subsRes.error) console.error('Subscriptions fetch error:', subsRes.error.message)
-      result.teams = teamsRes.data || []
-      result.subscriptions = subsRes.data || []
+      // 4. Ensure all teams have a subscription row
+      const { data: existingSubs } = await db.from('subscriptions').select('*')
+      const currentSubs = existingSubs || []
+
+      for (const t of currentTeams) {
+        const hasSub = currentSubs.some(s => s.team_id === t.id)
+        if (!hasSub) {
+          const trialEnd = new Date()
+          trialEnd.setDate(trialEnd.getDate() + 30)
+          const isSandbox = t.name?.toLowerCase().includes('sandbox')
+          if (isSandbox) trialEnd.setFullYear(trialEnd.getFullYear() + 10)
+
+          const { data: createdSub } = await db.from('subscriptions').insert([{
+            team_id: t.id,
+            plan: isSandbox ? 'captain' : 'trial',
+            status: 'active',
+            athlete_limit: isSandbox ? 999999 : 999,
+            staff_limit: isSandbox ? 99999 : 99,
+            trial_ends_at: trialEnd.toISOString(),
+            current_period_end: trialEnd.toISOString(),
+            notes: isSandbox ? 'Test Sandbox VIP' : 'Auto-provisioned initial trial',
+          }]).select().single()
+
+          if (createdSub) {
+            currentSubs.push(createdSub)
+          }
+        }
+      }
+
+      result.teams = currentTeams
+      result.subscriptions = currentSubs
+      result.profiles = currentProfiles
     }
 
     // Activities

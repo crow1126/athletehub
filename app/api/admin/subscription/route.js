@@ -73,8 +73,9 @@ export async function POST(req) {
     }
 
     const body = await req.json()
-    const {
+    let {
       team_id,
+      club_name,
       plan = 'captain',
       status = 'active',
       athlete_limit,
@@ -84,8 +85,44 @@ export async function POST(req) {
       notes = null,
     } = body
 
+    if (!team_id && club_name && club_name.trim()) {
+      const trimmedClub = club_name.trim()
+      const { data: existingTeam } = await db
+        .from('teams')
+        .select('id')
+        .ilike('name', trimmedClub)
+        .maybeSingle()
+
+      if (existingTeam?.id) {
+        team_id = existingTeam.id
+      } else {
+        const shortName = trimmedClub
+          .split(' ')
+          .map(w => w[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 4)
+
+        const { data: newTeam, error: teamErr } = await db
+          .from('teams')
+          .insert([{
+            name: trimmedClub,
+            short_name: shortName,
+            sport_type: 'football',
+          }])
+          .select()
+          .single()
+
+        if (teamErr) throw teamErr
+        team_id = newTeam.id
+
+        // Link profiles
+        await db.from('profiles').update({ team_id: newTeam.id }).ilike('club_name', trimmedClub)
+      }
+    }
+
     if (!team_id) {
-      return NextResponse.json({ error: 'team_id is required' }, { status: 400 })
+      return NextResponse.json({ error: 'team_id or valid club_name is required' }, { status: 400 })
     }
 
     // Determine default limits based on plan if not specified

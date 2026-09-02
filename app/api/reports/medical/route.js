@@ -73,22 +73,27 @@ export async function POST(req) {
     // ── 3. Fetch club metadata ───────────────────────────────────────────────
     let clubName = 'Club'
     let clubCity = ''
+    let clubLogoUrl = null
     if (teamId) {
       const { data: teamData } = await db
         .from('teams')
-        .select('name, short_name, city, country')
+        .select('name, short_name, city, country, logo_url')
         .eq('id', teamId)
         .single()
       if (teamData) {
         clubName = teamData.name || teamData.short_name || clubName
         clubCity = teamData.city ? `${teamData.city}, ${teamData.country || 'Ghana'}` : (teamData.country || 'Ghana')
+        clubLogoUrl = teamData.logo_url || null
       }
+    }
+    if (!clubLogoUrl && profile.club_logo_url) {
+      clubLogoUrl = profile.club_logo_url
     }
 
     // ── 4. Fetch data ────────────────────────────────────────────────────────
     let athleteQuery = db
       .from('athletes')
-      .select('id, name, position, date_of_birth, age, club, status, photo_url, back_number, nationality, phone, email, height, weight')
+      .select('id, name, position, date_of_birth, age, club, status, photo_url, back_number, nationality, phone, email, height, weight, preferred_foot')
       .eq('team_id', teamId)
       .order('name')
 
@@ -98,7 +103,7 @@ export async function POST(req) {
 
     let injuryQuery = db
       .from('injuries')
-      .select('*, athletes(id, name, position, club)')
+      .select('*, athletes(id, name, position, club, photo_url)')
       .eq('team_id', teamId)
       .order('date_of_injury', { ascending: false })
 
@@ -108,7 +113,7 @@ export async function POST(req) {
 
     let rehabQuery = db
       .from('rehabilitation_notes')
-      .select('*, athletes(id, name, position), injuries(id, injury_type, severity)')
+      .select('*, athletes(id, name, position, photo_url), injuries(id, injury_type, severity, notes, date_of_injury, expected_return)')
       .eq('team_id', teamId)
       .order('session_date', { ascending: false })
 
@@ -159,6 +164,7 @@ export async function POST(req) {
       meta: {
         clubName,
         clubCity,
+        clubLogoUrl,
         periodStr,
         reportScope,
         reportType,

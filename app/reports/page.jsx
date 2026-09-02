@@ -117,12 +117,12 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
     } catch (_e) { /* fallback */ }
   }
 
-  // Classy Crimson Capsule Badge: "PLAYER CLINICAL DOSSIER"
+  // Classy Teal Capsule Badge: "PLAYER CLINICAL DOSSIER" (No Red UI)
   const badgeW = 46
   const badgeH = 5.6
-  doc.setFillColor(185, 28, 28) // Deep Crimson #B91C1C
+  doc.setFillColor(15, 118, 110) // Rich Teal-700
   doc.roundedRect(leftContentX, 5.2, badgeW, badgeH, 1.4, 1.4, 'F')
-  doc.setDrawColor(239, 68, 68)
+  doc.setDrawColor(45, 212, 191) // Teal-300
   doc.setLineWidth(0.25)
   doc.roundedRect(leftContentX, 5.2, badgeW, badgeH, 1.4, 1.4, 'D')
 
@@ -271,92 +271,66 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
   doc.text(`2. REHABILITATION PLAN & CLINICAL PROTOCOLS (${rehabNotes.length} session record${rehabNotes.length === 1 ? '' : 's'})`, 12, y)
   y += 4
 
-  // Highlight Box: Latest Prescribed Rehabilitation Plan
+  // Highlight Box: Latest Prescribed Rehabilitation Plan (Structured Table - No text overlap)
   const latestRehab = rehabNotes[0]
   const activeInjuryWithNotes = !latestRehab ? injuries.find(i => i.notes && i.notes.trim()) : null
 
   if (latestRehab) {
-    const boxH = 26
-    doc.setFillColor(240, 253, 250) // #F0FDFA light teal
-    doc.roundedRect(12, y, PW - 24, boxH, 2, 2, 'F')
-    doc.setDrawColor(...TEAL)
-    doc.setLineWidth(0.4)
-    doc.roundedRect(12, y, PW - 24, boxH, 2, 2, 'D')
-
-    // Left indicator stripe
-    doc.setFillColor(...TEAL)
-    doc.roundedRect(12, y, 3.5, boxH, 1.5, 1.5, 'F')
-    doc.rect(14, y, 1.5, boxH, 'F')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.setTextColor(...NAVY)
-    doc.text('CURRENT REHABILITATION STRATEGY & ACTIVE PLAN', 18, y + 5)
-
-    doc.setFontSize(7.2)
-    doc.setTextColor(...SLATE)
-    doc.text(`Phase: `, 18, y + 10)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...TEAL)
-    doc.text(String(latestRehab.rehab_phase || 'Phase 1 - Acute Protection'), 30, y + 10)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...SLATE)
-    doc.text(`Pain Level: `, 105, y + 10)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(...NAVY)
-    doc.text(`${latestRehab.pain_level ?? 0} / 10`, 122, y + 10)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...SLATE)
-    doc.text(`Clearance: `, 150, y + 10)
-    doc.setFont('helvetica', 'bold')
-    const clrColor = latestRehab.clearance_status === 'Full Match Clearance' ? GREEN : AMBER
-    doc.setTextColor(...clrColor)
-    doc.text(String(latestRehab.clearance_status || 'In Rehab'), 168, y + 10)
-
-    // Treatment & Clinical Summary
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(...TEXT)
-    const planText = `Protocol: ${latestRehab.treatment_summary || 'Ongoing physiotherapy management'}  |  Target Milestone: ${latestRehab.target_milestone || 'Functional stability & pitch progression'}`
-    const planLines = doc.splitTextToSize(planText, PW - 44)
-    doc.text(planLines, 18, y + 16)
-
-    if (latestRehab.clinical_notes) {
-      const notesSnippet = `Clinical Notes: ${latestRehab.clinical_notes.slice(0, 140)}${latestRehab.clinical_notes.length > 140 ? '…' : ''}`
-      const noteLines = doc.splitTextToSize(notesSnippet, PW - 44)
-      doc.text(noteLines, 18, y + 21)
-    }
-
-    y += boxH + 5
+    autoTable(doc, {
+      startY: y,
+      margin: { left: 12, right: 12 },
+      head: [['CURRENT REHABILITATION STRATEGY & ACTIVE PLAN', '', '']],
+      body: [
+        [
+          { content: `Active Phase:\n${latestRehab.rehab_phase || 'Phase 1 - Acute Protection'}`, styles: { fontStyle: 'bold', textColor: TEAL } },
+          { content: `Pain Scale:\n${latestRehab.pain_level ?? 0} / 10`, styles: { halign: 'center', fontStyle: 'bold', textColor: NAVY } },
+          { content: `RTP Status:\n${latestRehab.clearance_status || 'In Rehab'}`, styles: { halign: 'right', fontStyle: 'bold', textColor: latestRehab.clearance_status === 'Full Match Clearance' ? GREEN : AMBER } },
+        ],
+        [
+          { content: `Prescribed Protocol & Modalities:\n${latestRehab.treatment_summary || 'Ongoing clinical protocols'}`, colSpan: 3, styles: { textColor: TEXT, fontStyle: 'normal' } }
+        ],
+        ...(latestRehab.clinical_notes ? [
+          [{ content: `Clinical Notes & Exercise Progression:\n${latestRehab.clinical_notes}`, colSpan: 3, styles: { textColor: SLATE, fontStyle: 'normal' } }]
+        ] : []),
+        ...(latestRehab.target_milestone ? [
+          [{ content: `Milestone Target: ${latestRehab.target_milestone}`, colSpan: 3, styles: { fontStyle: 'bold', textColor: TEAL } }]
+        ] : [])
+      ],
+      styles: { fontSize: 7.2, cellPadding: 2.4, overflow: 'linebreak', lineColor: [153, 246, 228], lineWidth: 0.2 },
+      headStyles: { fillColor: [240, 253, 250], textColor: NAVY, fontStyle: 'bold', fontSize: 7.8, lineColor: TEAL, lineWidth: 0.3 },
+      bodyStyles: { fillColor: WHITE },
+      columnStyles: {
+        0: { cellWidth: 92 },
+        1: { cellWidth: 44 },
+        2: { cellWidth: 50 },
+      }
+    })
+    y = doc.lastAutoTable.finalY + 6
   } else if (activeInjuryWithNotes) {
-    const boxH = 22
-    doc.setFillColor(254, 243, 199) // #FEF3C7 amber light
-    doc.roundedRect(12, y, PW - 24, boxH, 2, 2, 'F')
-    doc.setDrawColor(...AMBER)
-    doc.setLineWidth(0.4)
-    doc.roundedRect(12, y, PW - 24, boxH, 2, 2, 'D')
-
-    doc.setFillColor(...AMBER)
-    doc.roundedRect(12, y, 3.5, boxH, 1.5, 1.5, 'F')
-    doc.rect(14, y, 1.5, boxH, 'F')
-
-    doc.setFont('helvetica', 'bold')
-    doc.setFontSize(8)
-    doc.setTextColor(...NAVY)
-    doc.text(`INJURY TREATMENT PROTOCOL & CLINICAL NOTES: ${activeInjuryWithNotes.injury_type.toUpperCase()}`, 18, y + 5)
-
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7.2)
-    doc.setTextColor(...TEXT)
-    const injPlanText = `Severity: ${activeInjuryWithNotes.severity || 'Mild'}  |  Status: ${activeInjuryWithNotes.status || 'Active'}  |  Expected Return: ${fmtDate(activeInjuryWithNotes.expected_return)}`
-    doc.text(injPlanText, 18, y + 10)
-
-    const notesSnippet = `Clinical Protocol: ${activeInjuryWithNotes.notes}`
-    const noteLines = doc.splitTextToSize(notesSnippet, PW - 44)
-    doc.text(noteLines, 18, y + 15)
-
-    y += boxH + 5
+    autoTable(doc, {
+      startY: y,
+      margin: { left: 12, right: 12 },
+      head: [[`INJURY TREATMENT PROTOCOL & CLINICAL NOTES: ${(activeInjuryWithNotes.injury_type || 'INJURY').toUpperCase()}`, '', '']],
+      body: [
+        [
+          { content: `Severity:\n${activeInjuryWithNotes.severity || 'Mild'}`, styles: { fontStyle: 'bold', textColor: NAVY } },
+          { content: `Status:\n${activeInjuryWithNotes.status || 'Active'}`, styles: { halign: 'center', fontStyle: 'bold', textColor: activeInjuryWithNotes.status === 'Active' ? AMBER : GREEN } },
+          { content: `Expected Return:\n${fmtDate(activeInjuryWithNotes.expected_return)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: NAVY } },
+        ],
+        [
+          { content: `Clinical Protocol & Treatment Notes:\n${activeInjuryWithNotes.notes}`, colSpan: 3, styles: { textColor: TEXT, fontStyle: 'normal' } }
+        ]
+      ],
+      styles: { fontSize: 7.2, cellPadding: 2.4, overflow: 'linebreak', lineColor: [254, 215, 170], lineWidth: 0.2 },
+      headStyles: { fillColor: [254, 243, 199], textColor: NAVY, fontStyle: 'bold', fontSize: 7.8, lineColor: AMBER, lineWidth: 0.3 },
+      bodyStyles: { fillColor: WHITE },
+      columnStyles: {
+        0: { cellWidth: 62 },
+        1: { cellWidth: 62 },
+        2: { cellWidth: 62 },
+      }
+    })
+    y = doc.lastAutoTable.finalY + 6
   }
 
   // Full Longitudinal Table of Rehab Sessions
@@ -372,38 +346,33 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
     const rehabRows = rehabNotes.map((r, idx) => [
       idx + 1,
       fmtDate(r.session_date),
-      r.rehab_phase || '—',
+      `${r.rehab_phase || '—'}\n[${r.clearance_status || 'In Rehab'}]`,
       `${r.pain_level ?? 0}/10`,
-      r.clearance_status || 'In Rehab',
       r.treatment_summary || '—',
-      r.clinical_notes || '—',
-      r.target_milestone || '—',
+      `${r.clinical_notes || '—'}${r.target_milestone ? `\n\nTarget: ${r.target_milestone}` : ''}`,
     ])
 
     autoTable(doc, {
       startY: y,
       margin: { left: 12, right: 12 },
-      head: [['#', 'Date', 'Rehab Phase', 'Pain', 'Status', 'Prescribed Treatment / Modalities', 'Clinical Notes & Exercises', 'Milestone Target']],
+      head: [['#', 'Date', 'Rehab Phase & Status', 'Pain', 'Prescribed Treatment / Modalities', 'Clinical Notes & Milestone Target']],
       body: rehabRows,
-      styles: { fontSize: 6.5, cellPadding: 2.2, overflow: 'linebreak' },
-      headStyles: { fillColor: SLATE, textColor: WHITE, fontStyle: 'bold', fontSize: 6.8 },
+      styles: { fontSize: 6.8, cellPadding: 2.2, overflow: 'linebreak' },
+      headStyles: { fillColor: SLATE, textColor: WHITE, fontStyle: 'bold', fontSize: 7.0 },
       alternateRowStyles: { fillColor: LIGHT },
       columnStyles: {
-        0: { cellWidth: 6, halign: 'center' },
-        1: { cellWidth: 18 },
-        2: { cellWidth: 26, fontStyle: 'bold' },
+        0: { cellWidth: 7, halign: 'center' },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 38, fontStyle: 'bold' },
         3: { cellWidth: 12, halign: 'center' },
-        4: { cellWidth: 24 },
-        5: { cellWidth: 32 },
-        6: { cellWidth: 'auto' },
-        7: { cellWidth: 28 },
+        4: { cellWidth: 54 },
+        5: { cellWidth: 55 },
       },
       didParseCell: (data) => {
-        if (data.column.index === 4 && data.section === 'body') {
+        if (data.column.index === 2 && data.section === 'body') {
           const cs = String(data.cell.raw || '')
-          if (cs === 'Full Match Clearance') { data.cell.styles.textColor = [22, 163, 74]; data.cell.styles.fontStyle = 'bold' }
-          else if (cs === 'In Rehab')        { data.cell.styles.textColor = [217, 119, 6] }
-          else if (cs === 'Restricted Training') { data.cell.styles.textColor = [37, 99, 235] }
+          if (cs.includes('Full Match Clearance')) { data.cell.styles.textColor = [22, 163, 74] }
+          else if (cs.includes('In Rehab'))        { data.cell.styles.textColor = [217, 119, 6] }
         }
       },
       tableLineColor: BORDER,
@@ -1188,19 +1157,25 @@ export default function ReportsPage() {
                   </div>
 
                   {/* Player select list */}
-                  <div style={{ border:'1px solid #E2E8F0', borderRadius:8, maxHeight:260, overflowY:'auto', background:'#F8FAFC' }}>
+                  <div style={{ border:'1px solid #E2E8F0', borderRadius:8, maxHeight:300, overflowY:'auto', background:'#F8FAFC' }}>
                     {filteredAthletes.length === 0 ? (
                       <div style={{ padding:16, textAlign:'center', color:'#94A3B8', fontSize:12 }}>No players found</div>
                     ) : (
                       filteredAthletes.map(a => {
                         const isSelected = selectedPlayer === a.id
                         const isInjured = a.status === 'Injured'
+                        const athRehabs = rehabNotes.filter(r => r.athlete_id === a.id)
+                        const athInjs = injuries.filter(i => i.athlete_id === a.id)
+                        const latestRehabDate = athRehabs[0]?.session_date
+                        const latestInjDate = athInjs[0]?.date_of_injury
+                        const mostRecentDate = latestRehabDate || latestInjDate
+
                         return (
                           <div
                             key={a.id}
                             onClick={() => setSelectedPlayer(a.id)}
                             style={{
-                              padding:'8px 10px',
+                              padding:'9px 10px',
                               display:'flex',
                               alignItems:'center',
                               justifyContent:'space-between',
@@ -1208,26 +1183,38 @@ export default function ReportsPage() {
                               cursor:'pointer',
                               borderBottom:'1px solid #F1F5F9',
                               background: isSelected ? '#EFF6FF' : 'transparent',
+                              borderLeft: isSelected ? '3px solid #0D9488' : '3px solid transparent',
                               transition:'background 0.15s ease',
                             }}
                           >
-                            <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0 }}>
+                            <div style={{ display:'flex', alignItems:'center', gap:8, minWidth:0, flex:1 }}>
                               {a.photo_url ? (
                                 <img
                                   src={a.photo_url}
                                   alt={a.name}
-                                  style={{ width:26, height:26, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'1px solid #CBD5E1' }}
+                                  style={{ width:30, height:30, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'1px solid #CBD5E1' }}
                                 />
                               ) : (
-                                <div style={{ width:26, height:26, borderRadius:'50%', background:'#E2E8F0', color:'#475569', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, flexShrink:0 }}>
+                                <div style={{ width:30, height:30, borderRadius:'50%', background:'#E2E8F0', color:'#475569', display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:700, flexShrink:0 }}>
                                   {a.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
                                 </div>
                               )}
-                              <div style={{ minWidth:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                                <div style={{ fontSize:12, fontWeight: isSelected ? 700 : 600, color: isSelected ? '#1D4ED8' : '#0F172A' }}>
-                                  {a.name} {a.back_number ? `#${a.back_number}` : ''}
+                              <div style={{ minWidth:0, overflow:'hidden', textOverflow:'ellipsis', flex:1 }}>
+                                <div style={{ fontSize:12, fontWeight: isSelected ? 700 : 600, color: isSelected ? '#0F766E' : '#0F172A', display:'flex', alignItems:'center', gap:4 }}>
+                                  <span>{a.name}</span>
+                                  {a.back_number && <span style={{ fontSize:10.5, color:'#64748B' }}>#{a.back_number}</span>}
                                 </div>
-                                <div style={{ fontSize:10, color:'#64748B' }}>{a.position || 'Player'}</div>
+                                <div style={{ fontSize:10.5, color:'#64748B', display:'flex', alignItems:'center', gap:5, marginTop:1, flexWrap:'wrap' }}>
+                                  <span>{a.position || 'Player'}</span>
+                                  {mostRecentDate && (
+                                    <>
+                                      <span>•</span>
+                                      <span style={{ color: isSelected ? '#0F766E' : '#0D9488', fontWeight:600 }}>
+                                        {latestRehabDate ? `Rehab: ${fmtDate(latestRehabDate)}` : `Injured: ${fmtDate(latestInjDate)}`}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <span style={{
@@ -1261,7 +1248,7 @@ export default function ReportsPage() {
 
                     {selectedAthleteObj ? (
                       <div>
-                        {/* Classy Dossier Header Banner Preview */}
+                        {/* Classy Dossier Header Banner Preview (Teal & Navy - No Red UI) */}
                         <div style={{
                           background:'linear-gradient(135deg, #0B132B 0%, #0F172A 100%)',
                           borderRadius:8,
@@ -1274,11 +1261,11 @@ export default function ReportsPage() {
                         }}>
                           <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2, background:'linear-gradient(90deg, #0D9488 0%, #2DD4BF 60%, #38BDF8 100%)' }} />
                           <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
-                            {/* Left: Red Badge & Club Info */}
+                            {/* Left: Classy Teal Badge & Club Info */}
                             <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                               <span style={{
-                                background:'#B91C1C',
-                                border:'1px solid #EF4444',
+                                background:'#0F766E',
+                                border:'1px solid #2DD4BF',
                                 color:'#FFFFFF',
                                 fontSize:9.5,
                                 fontWeight:800,
@@ -1286,14 +1273,14 @@ export default function ReportsPage() {
                                 borderRadius:6,
                                 letterSpacing:'0.04em',
                                 textTransform:'uppercase',
-                                boxShadow:'0 2px 6px rgba(185,28,28,0.4)',
+                                boxShadow:'0 2px 6px rgba(15,118,110,0.3)',
                                 whiteSpace:'nowrap'
                               }}>
                                 PLAYER CLINICAL DOSSIER
                               </span>
                             </div>
 
-                            {/* Right: Medical Report & Athlete Name (Classy Side) */}
+                            {/* Right: Medical Report & Athlete Name */}
                             <div style={{ textAlign:'right' }}>
                               <div style={{ fontSize:11, fontWeight:800, color:'#FFFFFF', letterSpacing:'0.02em' }}>
                                 MEDICAL &amp; REHABILITATION REPORT
@@ -1360,10 +1347,17 @@ export default function ReportsPage() {
                         </div>
 
                         {/* Entered Rehabilitation Plan Details */}
-                        <div style={{ background:'#FFFFFF', border:'1px solid #CBD5E1', borderRadius:8, padding:'10px 12px', marginBottom:14 }}>
-                          <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, display:'flex', alignItems:'center', gap:5 }}>
-                            <Activity size={13}/>
-                            Entered Rehabilitation Plan &amp; Protocol
+                        <div style={{ background:'#FFFFFF', border:'1px solid #CBD5E1', borderRadius:8, padding:'10px 12px', marginBottom:12 }}>
+                          <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                            <span style={{ display:'flex', alignItems:'center', gap:5 }}>
+                              <Activity size={13}/>
+                              Active Rehabilitation Plan &amp; Protocol
+                            </span>
+                            {latestPlayerRehab?.session_date && (
+                              <span style={{ fontSize:10.5, color:'#64748B', fontWeight:600 }}>
+                                Logged: {fmtDate(latestPlayerRehab.session_date)}
+                              </span>
+                            )}
                           </div>
                           {latestPlayerRehab ? (
                             <div style={{ fontSize:12, color:'#334155', lineHeight:1.45 }}>
@@ -1383,10 +1377,10 @@ export default function ReportsPage() {
                                   <strong style={{ color:'#0F172A' }}>Target Milestone:</strong> {latestPlayerRehab.target_milestone}
                                 </div>
                               )}
-                              <div style={{ display:'flex', gap:12, fontSize:11, color:'#64748B', marginTop:5, paddingTop:4, borderTop:'1px dashed #E2E8F0' }}>
+                              <div style={{ display:'flex', gap:12, fontSize:11, color:'#64748B', marginTop:5, paddingTop:4, borderTop:'1px dashed #E2E8F0', flexWrap:'wrap' }}>
                                 <span>Pain Scale: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.pain_level ?? 0} / 10</strong></span>
                                 <span>Status: <strong style={{ color: latestPlayerRehab.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>{latestPlayerRehab.clearance_status || 'In Rehab'}</strong></span>
-                                <span>Date: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.session_date || 'Recent'}</strong></span>
+                                <span>Session Date: <strong style={{ color:'#0F172A' }}>{fmtDate(latestPlayerRehab.session_date)}</strong></span>
                               </div>
                             </div>
                           ) : playerInjuryWithNotes ? (
@@ -1399,7 +1393,8 @@ export default function ReportsPage() {
                               </div>
                               <div style={{ display:'flex', gap:12, fontSize:11, color:'#64748B', marginTop:5, paddingTop:4, borderTop:'1px dashed #E2E8F0' }}>
                                 <span>Status: <strong style={{ color: playerInjuryWithNotes.status === 'Active' ? '#D97706' : '#16A34A' }}>{playerInjuryWithNotes.status}</strong></span>
-                                <span>Expected Return: <strong style={{ color:'#0F172A' }}>{playerInjuryWithNotes.expected_return || 'TBD'}</strong></span>
+                                <span>Date Injured: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.date_of_injury)}</strong></span>
+                                <span>Expected Return: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.expected_return)}</strong></span>
                               </div>
                             </div>
                           ) : (
@@ -1408,6 +1403,32 @@ export default function ReportsPage() {
                             </div>
                           )}
                         </div>
+
+                        {/* Recent History / Entry Dates Timeline */}
+                        {selectedPlayerRehabNotes.length > 0 && (
+                          <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:8, padding:'10px 12px', marginBottom:14 }}>
+                            <div style={{ fontSize:10.5, fontWeight:800, color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                              <span>Clinical Entries &amp; Dates ({selectedPlayerRehabNotes.length})</span>
+                              <span style={{ fontSize:10, color:'#0D9488', fontWeight:600 }}>Most Recent: {fmtDate(selectedPlayerRehabNotes[0]?.session_date)}</span>
+                            </div>
+                            <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:140, overflowY:'auto' }}>
+                              {selectedPlayerRehabNotes.map((rn, idx) => (
+                                <div key={rn.id || idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F8FAFC', padding:'6px 10px', borderRadius:6, border:'1px solid #F1F5F9', fontSize:11 }}>
+                                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                                    <span style={{ fontSize:9.5, background: idx === 0 ? '#CCFBF1' : '#E2E8F0', color: idx === 0 ? '#0F766E' : '#475569', padding:'1px 5px', borderRadius:4, fontWeight:700 }}>
+                                      {idx === 0 ? 'Latest' : `#${idx + 1}`}
+                                    </span>
+                                    <span style={{ fontWeight:700, color:'#0F172A' }}>{fmtDate(rn.session_date)}</span>
+                                    <span style={{ color:'#64748B' }}>· {rn.rehab_phase ? rn.rehab_phase.split('-')[0].trim() : 'Phase 1'}</span>
+                                  </div>
+                                  <span style={{ fontSize:10, fontWeight:700, color: rn.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>
+                                    {rn.clearance_status || 'In Rehab'} (Pain {rn.pain_level ?? 0}/10)
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                       </div>
                     ) : (

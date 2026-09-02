@@ -123,13 +123,23 @@ export async function POST(req) {
     ] = await Promise.all([athleteQuery, injuryQuery, rehabQuery])
 
     const allAthletes = athletesRaw || []
-    const allInjuries = (injuriesRaw || []).filter(i => isInPeriod(i.date_of_injury))
-    const allRehab    = (rehabRaw || []).filter(r => isInPeriod(r.session_date))
+    
+    // For single-player clinical dossier, include all historical or period injuries & notes
+    // For general squad report, include all injuries in period (both active and recovered)
+    const isSinglePlayer = reportScope === 'player' && athleteId
+    
+    const allInjuries = isSinglePlayer
+      ? (injuriesRaw || [])
+      : (injuriesRaw || []).filter(i => isInPeriod(i.date_of_injury) || isInPeriod(i.updated_at) || isInPeriod(i.expected_return))
+
+    const allRehab = isSinglePlayer
+      ? (rehabRaw || [])
+      : (rehabRaw || []).filter(r => isInPeriod(r.session_date) || isInPeriod(r.created_at))
 
     // ── 5. Summary KPIs ──────────────────────────────────────────────────────
-    const activeInjuries    = allInjuries.filter(i => i.status === 'Active').length
-    const recoveredInjuries = allInjuries.filter(i => i.status === 'Recovered').length
-    const severeCases       = allInjuries.filter(i => i.severity === 'Severe').length
+    const activeInjuriesList    = allInjuries.filter(i => i.status === 'Active')
+    const recoveredInjuriesList = allInjuries.filter(i => i.status === 'Recovered')
+    const severeCases           = allInjuries.filter(i => i.severity === 'Severe').length
     const avgPain = allRehab.length
       ? (allRehab.reduce((s, r) => s + (r.pain_level || 0), 0) / allRehab.length).toFixed(1)
       : '0.0'
@@ -137,6 +147,9 @@ export async function POST(req) {
 
     // Count unique injured athletes
     const uniqueInjuredAthletes = [...new Set(allInjuries.map(i => i.athlete_id))].length
+    const totalSquad = allAthletes.length
+    const fitSquadCount = Math.max(0, totalSquad - activeInjuriesList.length)
+    const squadFitnessRate = totalSquad > 0 ? Math.round((fitSquadCount / totalSquad) * 100) : 100
 
     const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
     const periodStr = isYearly ? `Year ${targetYear}` : `${MONTHS[targetMonth]} ${targetYear}`
@@ -150,22 +163,26 @@ export async function POST(req) {
         reportScope,
         reportType,
         generatedAt: new Date().toISOString(),
-        generatedBy: profile.full_name || 'Team Physio',
+        generatedBy: profile.full_name || (profile.role === 'physio' ? 'Team Physiotherapist' : 'Club Administrator'),
         generatedByRole: profile.role,
       },
       kpis: {
         totalInjuries: allInjuries.length,
-        activeInjuries,
-        recoveredInjuries,
+        activeInjuries: activeInjuriesList.length,
+        recoveredInjuries: recoveredInjuriesList.length,
         severeCases,
         avgPainLevel: avgPain,
         totalRehabSessions: allRehab.length,
         clearedPlayers,
         uniqueInjuredAthletes,
-        totalAthletesInScope: allAthletes.length,
+        totalAthletesInScope: totalSquad,
+        fitSquadCount,
+        squadFitnessRate,
       },
       athletes: allAthletes,
       injuries: allInjuries,
+      activeInjuries: activeInjuriesList,
+      recoveredInjuries: recoveredInjuriesList,
       rehabNotes: allRehab,
     })
   } catch (err) {

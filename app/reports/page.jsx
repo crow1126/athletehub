@@ -8,7 +8,7 @@ import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import {
   Users, HeartPulse, Trophy, CalendarDays, ShieldCheck,
   ClipboardList, FileSpreadsheet, FileText, User,
-  Stethoscope, Search, Download, CheckCircle2, AlertCircle, Activity
+  Stethoscope, Search, Download, CheckCircle2, AlertCircle, Activity, X
 } from 'lucide-react'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -915,6 +915,14 @@ export default function ReportsPage() {
     load()
   }, [])
 
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setSelectedPlayer('')
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
+
   // ── Determine roles ──────────────────────────────────────────────────────
   const userRole    = currentProfile?.role || 'staff'
   const isPhysio    = userRole === 'physio' ||
@@ -1260,184 +1268,6 @@ export default function ReportsPage() {
                 <div style={{ fontSize:11, color:'#64748B', marginTop:8 }}>
                   Showing {filteredAthletes.length} of {athletes.length} athletes · Click any athlete to open preview &amp; download
                 </div>
-
-                {/* ── Player Preview Modal Overlay ── */}
-                {selectedAthleteObj && (
-                  <div
-                    style={{
-                      position:'fixed', inset:0, zIndex:9999,
-                      background:'rgba(15,23,42,0.55)',
-                      backdropFilter:'blur(3px)',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                      padding:'20px',
-                      animation:'fadeIn 0.15s ease',
-                    }}
-                    onClick={e => { if (e.target === e.currentTarget) setSelectedPlayer('') }}
-                  >
-                    <div style={{
-                      background:'#FFFFFF',
-                      borderRadius:14,
-                      width:'100%',
-                      maxWidth:580,
-                      maxHeight:'90vh',
-                      overflowY:'auto',
-                      boxShadow:'0 24px 60px rgba(15,23,42,0.25)',
-                      border:'1px solid #E2E8F0',
-                    }}>
-
-                      {/* Modal Header Banner */}
-                      <div style={{
-                        background:'linear-gradient(135deg, #0B132B 0%, #0F172A 100%)',
-                        borderRadius:'14px 14px 0 0',
-                        padding:'16px 20px',
-                        position:'relative',
-                        overflow:'hidden',
-                      }}>
-                        <div style={{ position:'absolute', bottom:0, left:0, right:0, height:2.5, background:'linear-gradient(90deg, #0D9488 0%, #2DD4BF 60%, #38BDF8 100%)' }} />
-                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start' }}>
-                          <div>
-                            <span style={{ background:'#0F766E', border:'1px solid #2DD4BF', color:'#FFF', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:5, letterSpacing:'0.05em', textTransform:'uppercase' }}>
-                              PLAYER CLINICAL DOSSIER
-                            </span>
-                            <div style={{ fontSize:16, fontWeight:800, color:'#FFFFFF', marginTop:8 }}>{selectedAthleteObj.name}</div>
-                            <div style={{ fontSize:12, color:'#94A3B8', marginTop:2 }}>
-                              {selectedAthleteObj.position || 'Athlete'} · {selectedAthleteObj.back_number ? `Jersey #${selectedAthleteObj.back_number}` : ''} · {selectedAthleteObj.age ? `${selectedAthleteObj.age} yrs` : ''}
-                            </div>
-                          </div>
-                          <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                            <span style={{
-                              fontSize:11, fontWeight:700, padding:'4px 10px', borderRadius:6,
-                              background: selectedAthleteObj.status === 'Injured' ? '#FEF3C7' : '#DCFCE7',
-                              color: selectedAthleteObj.status === 'Injured' ? '#B45309' : '#15803D',
-                            }}>
-                              {selectedAthleteObj.status === 'Injured' ? 'In Rehab' : 'Match Fit'}
-                            </span>
-                            <button
-                              onClick={() => setSelectedPlayer('')}
-                              style={{ background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.2)', color:'#fff', borderRadius:6, padding:'4px 10px', fontSize:12, cursor:'pointer', fontWeight:700 }}
-                            >✕</button>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Modal Body */}
-                      <div style={{ padding:'18px 20px', display:'flex', flexDirection:'column', gap:14 }}>
-
-                        {/* Stat badges */}
-                        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10 }}>
-                          {[
-                            { label:'Injuries Logged', val: selectedPlayerInjuries.length, color:'#0F172A' },
-                            { label:'Active Cases',    val: selectedPlayerActiveInj.length, color: selectedPlayerActiveInj.length ? '#D97706' : '#16A34A' },
-                            { label:'Rehab Sessions',  val: selectedPlayerRehabNotes.length, color:'#0D9488' },
-                          ].map(s => (
-                            <div key={s.label} style={{ background:'#F8FAFC', padding:'10px', borderRadius:8, border:'1px solid #E2E8F0', textAlign:'center' }}>
-                              <div style={{ fontSize:9.5, color:'#64748B', fontWeight:700, textTransform:'uppercase', marginBottom:3 }}>{s.label}</div>
-                              <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.val}</div>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Active Rehab Plan */}
-                        <div style={{ background:'#F0FDFA', border:'1px solid #99F6E4', borderRadius:10, padding:'12px 14px' }}>
-                          <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8, display:'flex', justifyContent:'space-between' }}>
-                            <span style={{ display:'flex', alignItems:'center', gap:5 }}><Activity size={13}/>Active Rehabilitation Plan</span>
-                            {latestPlayerRehab?.session_date && (
-                              <span style={{ fontSize:11, color:'#475569', fontWeight:600 }}>Logged: {fmtDate(latestPlayerRehab.session_date)}</span>
-                            )}
-                          </div>
-                          {latestPlayerRehab ? (
-                            <div style={{ fontSize:12.5, color:'#334155', lineHeight:1.55, display:'flex', flexDirection:'column', gap:5 }}>
-                              <div><strong style={{ color:'#0F172A' }}>Phase:</strong> {latestPlayerRehab.rehab_phase || 'Phase 1 - Acute Protection'}</div>
-                              <div><strong style={{ color:'#0F172A' }}>Protocol:</strong> {latestPlayerRehab.treatment_summary || 'Ongoing clinical protocols'}</div>
-                              {latestPlayerRehab.clinical_notes && <div><strong style={{ color:'#0F172A' }}>Clinical Notes:</strong> {latestPlayerRehab.clinical_notes}</div>}
-                              {latestPlayerRehab.target_milestone && <div><strong style={{ color:'#0F172A' }}>Target:</strong> {latestPlayerRehab.target_milestone}</div>}
-                              <div style={{ display:'flex', gap:14, fontSize:11.5, color:'#64748B', marginTop:4, paddingTop:6, borderTop:'1px dashed #CCFBF1', flexWrap:'wrap' }}>
-                                <span>Pain: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.pain_level ?? 0}/10</strong></span>
-                                <span>Clearance: <strong style={{ color: latestPlayerRehab.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>{latestPlayerRehab.clearance_status || 'In Rehab'}</strong></span>
-                              </div>
-                            </div>
-                          ) : playerInjuryWithNotes ? (
-                            <div style={{ fontSize:12.5, color:'#334155', lineHeight:1.55, display:'flex', flexDirection:'column', gap:5 }}>
-                              <div><strong style={{ color:'#0F172A' }}>Diagnosis:</strong> {playerInjuryWithNotes.injury_type} ({playerInjuryWithNotes.severity})</div>
-                              <div><strong style={{ color:'#0F172A' }}>Protocol:</strong> {playerInjuryWithNotes.notes}</div>
-                              <div style={{ display:'flex', gap:14, fontSize:11.5, color:'#64748B', marginTop:4, paddingTop:6, borderTop:'1px dashed #CCFBF1', flexWrap:'wrap' }}>
-                                <span>Status: <strong style={{ color:'#D97706' }}>{playerInjuryWithNotes.status}</strong></span>
-                                <span>Injured: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.date_of_injury)}</strong></span>
-                                <span>Return: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.expected_return)}</strong></span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div style={{ fontSize:12, color:'#64748B', fontStyle:'italic' }}>No rehabilitation notes recorded yet. The PDF will include baseline clinical data.</div>
-                          )}
-                        </div>
-
-                        {/* Entry History Timeline */}
-                        {selectedPlayerRehabNotes.length > 0 && (
-                          <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:'12px 14px' }}>
-                            <div style={{ fontSize:11, fontWeight:800, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8, display:'flex', justifyContent:'space-between' }}>
-                              <span>Entry History ({selectedPlayerRehabNotes.length})</span>
-                              <span style={{ color:'#0D9488', fontWeight:600, fontSize:11 }}>Latest: {fmtDate(selectedPlayerRehabNotes[0]?.session_date)}</span>
-                            </div>
-                            <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:180, overflowY:'auto' }}>
-                              {selectedPlayerRehabNotes.map((rn, idx) => (
-                                <div key={rn.id || idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F8FAFC', padding:'7px 10px', borderRadius:7, border:'1px solid #F1F5F9', fontSize:11.5 }}>
-                                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                                    <span style={{ fontSize:9.5, background: idx === 0 ? '#CCFBF1' : '#E2E8F0', color: idx === 0 ? '#0F766E' : '#475569', padding:'2px 6px', borderRadius:4, fontWeight:700, flexShrink:0 }}>
-                                      {idx === 0 ? 'Latest' : `#${idx + 1}`}
-                                    </span>
-                                    <strong style={{ color:'#0F172A' }}>{fmtDate(rn.session_date)}</strong>
-                                    <span style={{ color:'#64748B' }}>· {rn.rehab_phase ? rn.rehab_phase.split('-')[0].trim() : 'Phase 1'}</span>
-                                  </div>
-                                  <span style={{ fontSize:10.5, fontWeight:700, color: rn.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706', flexShrink:0 }}>
-                                    {rn.clearance_status || 'In Rehab'} · Pain {rn.pain_level ?? 0}/10
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Download Button */}
-                        <button
-                          id="btn-physio-player-pdf"
-                          onClick={() => generateMedicalPDF('player')}
-                          disabled={generating === 'medical_player'}
-                          style={{
-                            width:'100%',
-                            padding:'13px 16px',
-                            background: generating === 'medical_player' ? '#E2E8F0' : 'linear-gradient(135deg, #0D9488, #0F766E)',
-                            color: generating === 'medical_player' ? '#94A3B8' : '#FFFFFF',
-                            border:'none',
-                            borderRadius:10,
-                            fontSize:14,
-                            fontWeight:700,
-                            cursor: generating === 'medical_player' ? 'not-allowed' : 'pointer',
-                            display:'flex',
-                            alignItems:'center',
-                            justifyContent:'center',
-                            gap:8,
-                            transition:'all 0.15s ease',
-                            boxShadow:'0 3px 10px rgba(13,148,136,0.3)',
-                          }}
-                        >
-                          {generating === 'medical_player' ? (
-                            <>
-                              <div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                              Generating Clinical Dossier PDF…
-                            </>
-                          ) : (
-                            <>
-                              <Download size={16}/>
-                              Download Player Clinical &amp; Rehab Dossier (PDF)
-                            </>
-                          )}
-                        </button>
-
-                      </div>
-                    </div>
-                  </div>
-                )}
-
             </div>
           </div>
         </div>
@@ -1646,6 +1476,216 @@ export default function ReportsPage() {
         )}
 
       </div>
+
+      {/* ── Player Preview Modal Overlay (Root-level, never clipped by parent card) ── */}
+      {selectedAthleteObj && (
+        <div
+          style={{
+            position:'fixed',
+            inset:0,
+            zIndex:99999,
+            background:'rgba(15,23,42,0.65)',
+            backdropFilter:'blur(4px)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            padding:'20px 16px',
+            animation:'fadeIn 0.15s ease',
+          }}
+          onClick={e => { if (e.target === e.currentTarget) setSelectedPlayer('') }}
+        >
+          <div style={{
+            background:'#FFFFFF',
+            borderRadius:16,
+            width:'100%',
+            maxWidth:600,
+            maxHeight:'90vh',
+            display:'flex',
+            flexDirection:'column',
+            boxShadow:'0 25px 60px rgba(15,23,42,0.35)',
+            border:'1px solid #CBD5E1',
+            overflow:'hidden',
+          }}>
+
+            {/* Modal Header Banner */}
+            <div style={{
+              background:'linear-gradient(135deg, #0B132B 0%, #0F172A 100%)',
+              padding:'16px 20px',
+              position:'relative',
+              flexShrink:0,
+              borderBottom:'2.5px solid #0D9488',
+            }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
+                  {selectedAthleteObj.photo_url ? (
+                    <img src={selectedAthleteObj.photo_url} alt={selectedAthleteObj.name} style={{ width:44, height:44, borderRadius:8, objectFit:'cover', border:'1.5px solid #2DD4BF', flexShrink:0 }} />
+                  ) : (
+                    <div style={{ width:44, height:44, borderRadius:8, background:'rgba(13,148,136,0.25)', border:'1.5px solid #2DD4BF', color:'#2DD4BF', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, flexShrink:0 }}>
+                      {selectedAthleteObj.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
+                    </div>
+                  )}
+                  <div style={{ minWidth:0 }}>
+                    <span style={{ background:'#0F766E', border:'1px solid #2DD4BF', color:'#FFF', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:5, letterSpacing:'0.05em', textTransform:'uppercase', display:'inline-block' }}>
+                      PLAYER CLINICAL DOSSIER
+                    </span>
+                    <div style={{ fontSize:16, fontWeight:800, color:'#FFFFFF', marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{selectedAthleteObj.name}</div>
+                    <div style={{ fontSize:12, color:'#94A3B8', marginTop:1 }}>
+                      {selectedAthleteObj.position || 'Athlete'} {selectedAthleteObj.back_number ? `· Jersey #${selectedAthleteObj.back_number}` : ''} {selectedAthleteObj.age ? `· ${selectedAthleteObj.age} yrs` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+                  <span style={{
+                    fontSize:11, fontWeight:700, padding:'4px 10px', borderRadius:6,
+                    background: selectedAthleteObj.status === 'Injured' ? '#FEF3C7' : '#DCFCE7',
+                    color: selectedAthleteObj.status === 'Injured' ? '#B45309' : '#15803D',
+                    border: `1px solid ${selectedAthleteObj.status === 'Injured' ? '#FDE68A' : '#BBF7D0'}`
+                  }}>
+                    {selectedAthleteObj.status === 'Injured' ? 'In Rehab' : 'Match Fit'}
+                  </span>
+                  <button
+                    onClick={() => setSelectedPlayer('')}
+                    title="Close"
+                    style={{
+                      background:'rgba(255,255,255,0.12)',
+                      border:'1px solid rgba(255,255,255,0.2)',
+                      color:'#fff',
+                      width:32,
+                      height:32,
+                      borderRadius:'50%',
+                      display:'flex',
+                      alignItems:'center',
+                      justifyContent:'center',
+                      cursor:'pointer',
+                      transition:'all 0.15s ease',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
+                  >
+                    <X size={16}/>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Body (Scrollable) */}
+            <div style={{ padding:'18px 20px', overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:14 }}>
+
+              {/* Stat badges */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10 }}>
+                {[
+                  { label:'Injuries Logged', val: selectedPlayerInjuries.length, color:'#0F172A' },
+                  { label:'Active Cases',    val: selectedPlayerActiveInj.length, color: selectedPlayerActiveInj.length ? '#D97706' : '#16A34A' },
+                  { label:'Rehab Sessions',  val: selectedPlayerRehabNotes.length, color:'#0D9488' },
+                ].map(s => (
+                  <div key={s.label} style={{ background:'#F8FAFC', padding:'10px', borderRadius:8, border:'1px solid #E2E8F0', textAlign:'center' }}>
+                    <div style={{ fontSize:9.5, color:'#64748B', fontWeight:700, textTransform:'uppercase', marginBottom:3 }}>{s.label}</div>
+                    <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Active Rehab Plan */}
+              <div style={{ background:'#F0FDFA', border:'1px solid #99F6E4', borderRadius:10, padding:'12px 14px' }}>
+                <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8, display:'flex', justifyContent:'space-between' }}>
+                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Activity size={13}/>Active Rehabilitation Plan</span>
+                  {latestPlayerRehab?.session_date && (
+                    <span style={{ fontSize:11, color:'#475569', fontWeight:600 }}>Logged: {fmtDate(latestPlayerRehab.session_date)}</span>
+                  )}
+                </div>
+                {latestPlayerRehab ? (
+                  <div style={{ fontSize:12.5, color:'#334155', lineHeight:1.55, display:'flex', flexDirection:'column', gap:5 }}>
+                    <div><strong style={{ color:'#0F172A' }}>Phase:</strong> {latestPlayerRehab.rehab_phase || 'Phase 1 - Acute Protection'}</div>
+                    <div><strong style={{ color:'#0F172A' }}>Protocol:</strong> {latestPlayerRehab.treatment_summary || 'Ongoing clinical protocols'}</div>
+                    {latestPlayerRehab.clinical_notes && <div><strong style={{ color:'#0F172A' }}>Clinical Notes:</strong> {latestPlayerRehab.clinical_notes}</div>}
+                    {latestPlayerRehab.target_milestone && <div><strong style={{ color:'#0F172A' }}>Target:</strong> {latestPlayerRehab.target_milestone}</div>}
+                    <div style={{ display:'flex', gap:14, fontSize:11.5, color:'#64748B', marginTop:4, paddingTop:6, borderTop:'1px dashed #CCFBF1', flexWrap:'wrap' }}>
+                      <span>Pain: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.pain_level ?? 0}/10</strong></span>
+                      <span>Clearance: <strong style={{ color: latestPlayerRehab.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>{latestPlayerRehab.clearance_status || 'In Rehab'}</strong></span>
+                    </div>
+                  </div>
+                ) : playerInjuryWithNotes ? (
+                  <div style={{ fontSize:12.5, color:'#334155', lineHeight:1.55, display:'flex', flexDirection:'column', gap:5 }}>
+                    <div><strong style={{ color:'#0F172A' }}>Diagnosis:</strong> {playerInjuryWithNotes.injury_type} ({playerInjuryWithNotes.severity})</div>
+                    <div><strong style={{ color:'#0F172A' }}>Protocol:</strong> {playerInjuryWithNotes.notes}</div>
+                    <div style={{ display:'flex', gap:14, fontSize:11.5, color:'#64748B', marginTop:4, paddingTop:6, borderTop:'1px dashed #CCFBF1', flexWrap:'wrap' }}>
+                      <span>Status: <strong style={{ color:'#D97706' }}>{playerInjuryWithNotes.status}</strong></span>
+                      <span>Injured: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.date_of_injury)}</strong></span>
+                      <span>Return: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.expected_return)}</strong></span>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize:12, color:'#64748B', fontStyle:'italic' }}>No rehabilitation notes recorded yet. The PDF will include baseline clinical data.</div>
+                )}
+              </div>
+
+              {/* Entry History Timeline */}
+              {selectedPlayerRehabNotes.length > 0 && (
+                <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:'12px 14px' }}>
+                  <div style={{ fontSize:11, fontWeight:800, color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8, display:'flex', justifyContent:'space-between' }}>
+                    <span>Entry History ({selectedPlayerRehabNotes.length})</span>
+                    <span style={{ color:'#0D9488', fontWeight:600, fontSize:11 }}>Latest: {fmtDate(selectedPlayerRehabNotes[0]?.session_date)}</span>
+                  </div>
+                  <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:180, overflowY:'auto' }}>
+                    {selectedPlayerRehabNotes.map((rn, idx) => (
+                      <div key={rn.id || idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F8FAFC', padding:'7px 10px', borderRadius:7, border:'1px solid #F1F5F9', fontSize:11.5 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <span style={{ fontSize:9.5, background: idx === 0 ? '#CCFBF1' : '#E2E8F0', color: idx === 0 ? '#0F766E' : '#475569', padding:'2px 6px', borderRadius:4, fontWeight:700, flexShrink:0 }}>
+                            {idx === 0 ? 'Latest' : `#${idx + 1}`}
+                          </span>
+                          <strong style={{ color:'#0F172A' }}>{fmtDate(rn.session_date)}</strong>
+                          <span style={{ color:'#64748B' }}>· {rn.rehab_phase ? rn.rehab_phase.split('-')[0].trim() : 'Phase 1'}</span>
+                        </div>
+                        <span style={{ fontSize:10.5, fontWeight:700, color: rn.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706', flexShrink:0 }}>
+                          {rn.clearance_status || 'In Rehab'} · Pain {rn.pain_level ?? 0}/10
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Download Button */}
+              <button
+                id="btn-physio-player-pdf"
+                onClick={() => generateMedicalPDF('player')}
+                disabled={generating === 'medical_player'}
+                style={{
+                  width:'100%',
+                  padding:'13px 16px',
+                  background: generating === 'medical_player' ? '#E2E8F0' : 'linear-gradient(135deg, #0D9488, #0F766E)',
+                  color: generating === 'medical_player' ? '#94A3B8' : '#FFFFFF',
+                  border:'none',
+                  borderRadius:10,
+                  fontSize:14,
+                  fontWeight:700,
+                  cursor: generating === 'medical_player' ? 'not-allowed' : 'pointer',
+                  display:'flex',
+                  alignItems:'center',
+                  justifyContent:'center',
+                  gap:8,
+                  transition:'all 0.15s ease',
+                  boxShadow:'0 3px 10px rgba(13,148,136,0.3)',
+                  marginTop:4,
+                }}
+              >
+                {generating === 'medical_player' ? (
+                  <>
+                    <div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                    Generating Clinical Dossier PDF…
+                  </>
+                ) : (
+                  <>
+                    <Download size={16}/>
+                    Download Player Clinical &amp; Rehab Dossier (PDF)
+                  </>
+                )}
+              </button>
+
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

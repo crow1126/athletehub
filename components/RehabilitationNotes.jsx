@@ -92,25 +92,31 @@ export default function RehabilitationNotes({
 
       const { data: dbNotes, error } = await query
 
-      if (!error && dbNotes) {
-        setNotes(dbNotes)
-      } else {
-        // Fallback to local storage cache if table is not yet migrated
-        try {
-          const cached = localStorage.getItem(`${LOCAL_STORAGE_KEY}_${teamId}`)
-          if (cached) {
-            let parsed = JSON.parse(cached)
-            if (athleteIdFilter) {
-              parsed = parsed.filter(n => n.athlete_id === athleteIdFilter)
-            }
-            setNotes(parsed)
-          } else {
-            setNotes([])
-          }
-        } catch {
-          setNotes([])
+      // Read local storage cache
+      let localNotes = []
+      try {
+        const raw1 = localStorage.getItem(`${LOCAL_STORAGE_KEY}_${teamId}`)
+        const raw2 = localStorage.getItem(LOCAL_STORAGE_KEY)
+        const parsed1 = raw1 ? JSON.parse(raw1) : []
+        const parsed2 = raw2 ? JSON.parse(raw2) : []
+        localNotes = [...parsed1, ...parsed2]
+        if (athleteIdFilter) {
+          localNotes = localNotes.filter(n => n.athlete_id === athleteIdFilter)
+        }
+      } catch {
+        localNotes = []
+      }
+
+      // Merge dbNotes and localNotes
+      const combined = [...(dbNotes || [])]
+      for (const ln of localNotes) {
+        if (!combined.some(cn => cn.id === ln.id || (cn.athlete_id === ln.athlete_id && cn.session_date === ln.session_date && cn.treatment_summary === ln.treatment_summary))) {
+          combined.push(ln)
         }
       }
+
+      combined.sort((a, b) => new Date(b.session_date || b.created_at || 0) - new Date(a.session_date || a.created_at || 0))
+      setNotes(combined)
     } catch (err) {
       console.error('Failed to load rehab notes:', err)
     } finally {

@@ -45,9 +45,19 @@ async function getBase64ImageFromUrl(imageUrl) {
   }
 }
 
+async function getApexTrackLogoBase64() {
+  let base64 = await getBase64ImageFromUrl('/logo.png')
+  if (!base64) {
+    base64 = await getBase64ImageFromUrl('/icons/icon-192.png')
+  }
+  return base64
+}
+
+const LOCAL_STORAGE_REHAB_KEY = 'apextrack_rehab_notes_fallback'
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. PLAYER-SPECIFIC CLINICAL & REHABILITATION DOSSIER (PDF)
-// Full medical detail: Profile + Photo, Team Logo, Web Logo, Rehabilitation Plan, Diagnostics, Logs
+// Full medical detail: Profile + Photo, Team Logo, ApexTrack GH Logo, Rehabilitation Plan, Diagnostics, Logs
 // ─────────────────────────────────────────────────────────────────────────────
 async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) {
   const { default: jsPDF } = await import('jspdf')
@@ -58,7 +68,7 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
 
   // 1. Preload Logos & Player Photo
   const [siteLogoBase64, teamLogoBase64, playerPhotoBase64] = await Promise.all([
-    getBase64ImageFromUrl('/logo.png'),
+    getApexTrackLogoBase64(),
     meta.clubLogoUrl ? getBase64ImageFromUrl(meta.clubLogoUrl) : null,
     ath.photo_url ? getBase64ImageFromUrl(ath.photo_url) : null,
   ])
@@ -86,28 +96,30 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
 
   let y = 0
 
-  // ── Top Header Banner (32mm) ──
+  // ── Top Header Banner (33mm) ──
   doc.setFillColor(...NAVY)
-  doc.rect(0, 0, PW, 32, 'F')
+  doc.rect(0, 0, PW, 33, 'F')
 
   // Dual Accent line at bottom of header
   doc.setFillColor(...TEAL)
-  doc.rect(0, 31, PW * 0.65, 1.0, 'F')
+  doc.rect(0, 32, PW * 0.65, 1.0, 'F')
   doc.setFillColor(45, 212, 191) // Teal-300 bright
-  doc.rect(PW * 0.65, 31, PW * 0.35, 1.0, 'F')
+  doc.rect(PW * 0.65, 32, PW * 0.35, 1.0, 'F')
 
   // ── Left Side: Team Logo & Classy Badge Pill ──
   let leftContentX = 12
   if (teamLogoBase64) {
     try {
-      doc.addImage(teamLogoBase64, 'PNG', 12, 5, 21, 21)
-      leftContentX = 36
+      doc.setFillColor(...WHITE)
+      doc.roundedRect(12, 5.2, 21, 21, 2, 2, 'F')
+      doc.addImage(teamLogoBase64, 'PNG', 13, 6.2, 19, 19)
+      leftContentX = 37
     } catch (_e) { /* fallback */ }
   }
 
   // Classy Crimson Capsule Badge: "PLAYER CLINICAL DOSSIER"
   const badgeW = 46
-  const badgeH = 5.8
+  const badgeH = 5.6
   doc.setFillColor(185, 28, 28) // Deep Crimson #B91C1C
   doc.roundedRect(leftContentX, 5.2, badgeW, badgeH, 1.4, 1.4, 'F')
   doc.setDrawColor(239, 68, 68)
@@ -117,7 +129,7 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
   doc.setTextColor(...WHITE)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(6.5)
-  doc.text('PLAYER CLINICAL DOSSIER', leftContentX + (badgeW / 2), 9.1, { align: 'center' })
+  doc.text('PLAYER CLINICAL DOSSIER', leftContentX + (badgeW / 2), 9.0, { align: 'center' })
 
   // Club Name
   doc.setFont('helvetica', 'bold')
@@ -131,26 +143,50 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
   doc.setTextColor(45, 212, 191) // Teal-300
   doc.text('SPORTS MEDICINE & PHYSIOTHERAPY UNIT', leftContentX, 23.5)
 
-  // ── Right Side: Classy Report Title & Athlete Name ──
+  // ── Right Side: Small Visible ApexTrack GH Logo + Report Title & Athlete Name ──
+  const logoBoxW = 15
+  const logoBoxH = 15
+  const logoBoxX = PW - 26
+  const logoBoxY = 5.2
+
+  if (siteLogoBase64) {
+    try {
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(logoBoxX, logoBoxY, logoBoxW, logoBoxH, 2, 2, 'F')
+      doc.setDrawColor(45, 212, 191)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(logoBoxX, logoBoxY, logoBoxW, logoBoxH, 2, 2, 'D')
+      doc.addImage(siteLogoBase64, 'PNG', logoBoxX + 1, logoBoxY + 1, logoBoxW - 2, logoBoxH - 2)
+
+      // Brand caption underneath logo
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(5.5)
+      doc.setTextColor(45, 212, 191) // Teal-300
+      doc.text('ApexTrack GH', logoBoxX + (logoBoxW / 2), logoBoxY + logoBoxH + 4.2, { align: 'center' })
+    } catch (_e) { /* fallback */ }
+  }
+
+  const rightTextX = siteLogoBase64 ? logoBoxX - 4 : PW - 12
+
   // Title
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
+  doc.setFontSize(10)
   doc.setTextColor(...WHITE)
-  doc.text('MEDICAL & REHABILITATION REPORT', PW - 12, 10.5, { align: 'right' })
+  doc.text('MEDICAL & REHABILITATION REPORT', rightTextX, 10.0, { align: 'right' })
 
   // Athlete Name (Distinguished high-contrast typography)
   doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11.5)
+  doc.setFontSize(11)
   doc.setTextColor(45, 212, 191) // Teal-300
-  doc.text((ath.name || 'ATHLETE').toUpperCase(), PW - 12, 17.5, { align: 'right' })
+  doc.text((ath.name || 'ATHLETE').toUpperCase(), rightTextX, 17.0, { align: 'right' })
 
   // Subtitle / Confidential stamp
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(6.8)
+  doc.setFontSize(6.5)
   doc.setTextColor(203, 213, 225) // Slate-300
-  doc.text(`CONFIDENTIAL MEDICAL RECORD  •  ${period}`, PW - 12, 24, { align: 'right' })
+  doc.text(`CONFIDENTIAL MEDICAL RECORD  •  ${period}`, rightTextX, 23.5, { align: 'right' })
 
-  y = 39
+  y = 40
 
   // ── 1. Athlete Clinical Baseline (With Player Photo) ──
   doc.setFont('helvetica', 'bold')
@@ -237,6 +273,8 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
 
   // Highlight Box: Latest Prescribed Rehabilitation Plan
   const latestRehab = rehabNotes[0]
+  const activeInjuryWithNotes = !latestRehab ? injuries.find(i => i.notes && i.notes.trim()) : null
+
   if (latestRehab) {
     const boxH = 26
     doc.setFillColor(240, 253, 250) // #F0FDFA light teal
@@ -291,15 +329,45 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
     }
 
     y += boxH + 5
+  } else if (activeInjuryWithNotes) {
+    const boxH = 22
+    doc.setFillColor(254, 243, 199) // #FEF3C7 amber light
+    doc.roundedRect(12, y, PW - 24, boxH, 2, 2, 'F')
+    doc.setDrawColor(...AMBER)
+    doc.setLineWidth(0.4)
+    doc.roundedRect(12, y, PW - 24, boxH, 2, 2, 'D')
+
+    doc.setFillColor(...AMBER)
+    doc.roundedRect(12, y, 3.5, boxH, 1.5, 1.5, 'F')
+    doc.rect(14, y, 1.5, boxH, 'F')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8)
+    doc.setTextColor(...NAVY)
+    doc.text(`INJURY TREATMENT PROTOCOL & CLINICAL NOTES: ${activeInjuryWithNotes.injury_type.toUpperCase()}`, 18, y + 5)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7.2)
+    doc.setTextColor(...TEXT)
+    const injPlanText = `Severity: ${activeInjuryWithNotes.severity || 'Mild'}  |  Status: ${activeInjuryWithNotes.status || 'Active'}  |  Expected Return: ${fmtDate(activeInjuryWithNotes.expected_return)}`
+    doc.text(injPlanText, 18, y + 10)
+
+    const notesSnippet = `Clinical Protocol: ${activeInjuryWithNotes.notes}`
+    const noteLines = doc.splitTextToSize(notesSnippet, PW - 44)
+    doc.text(noteLines, 18, y + 15)
+
+    y += boxH + 5
   }
 
   // Full Longitudinal Table of Rehab Sessions
   if (rehabNotes.length === 0) {
-    doc.setFont('helvetica', 'italic')
-    doc.setFontSize(7.8)
-    doc.setTextColor(...TEXT2)
-    doc.text('No rehabilitation session records logged for this athlete yet.', 12, y + 4)
-    y += 10
+    if (!activeInjuryWithNotes) {
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(7.8)
+      doc.setTextColor(...TEXT2)
+      doc.text('No rehabilitation session records logged for this athlete yet.', 12, y + 4)
+      y += 10
+    }
   } else {
     const rehabRows = rehabNotes.map((r, idx) => [
       idx + 1,
@@ -474,7 +542,7 @@ async function buildAdminGeneralMedicalPDF({ data, period }) {
   const { meta, kpis, activeInjuries = [], recoveredInjuries = [] } = data
 
   const [siteLogoBase64, teamLogoBase64] = await Promise.all([
-    getBase64ImageFromUrl('/logo.png'),
+    getApexTrackLogoBase64(),
     meta.clubLogoUrl ? getBase64ImageFromUrl(meta.clubLogoUrl) : null,
   ])
 
@@ -501,28 +569,30 @@ async function buildAdminGeneralMedicalPDF({ data, period }) {
 
   let y = 0
 
-  // ── Top Header Banner (32mm) ──
+  // ── Top Header Banner (33mm) ──
   doc.setFillColor(...NAVY)
-  doc.rect(0, 0, PW, 32, 'F')
+  doc.rect(0, 0, PW, 33, 'F')
 
   // Dual Accent line at bottom of header
   doc.setFillColor(...TEAL)
-  doc.rect(0, 31, PW * 0.65, 1.0, 'F')
+  doc.rect(0, 32, PW * 0.65, 1.0, 'F')
   doc.setFillColor(45, 212, 191)
-  doc.rect(PW * 0.65, 31, PW * 0.35, 1.0, 'F')
+  doc.rect(PW * 0.65, 32, PW * 0.35, 1.0, 'F')
 
   // ── Left Side: Team Logo & Classy Badge Pill ──
   let leftContentX = 12
   if (teamLogoBase64) {
     try {
-      doc.addImage(teamLogoBase64, 'PNG', 12, 5, 21, 21)
-      leftContentX = 36
+      doc.setFillColor(...WHITE)
+      doc.roundedRect(12, 5.2, 21, 21, 2, 2, 'F')
+      doc.addImage(teamLogoBase64, 'PNG', 13, 6.2, 19, 19)
+      leftContentX = 37
     } catch (_e) { /* fallback */ }
   }
 
   // Classy Squad Health Badge Pill
   const badgeW = 46
-  const badgeH = 5.8
+  const badgeH = 5.6
   doc.setFillColor(15, 118, 110) // Rich Teal-700
   doc.roundedRect(leftContentX, 5.2, badgeW, badgeH, 1.4, 1.4, 'F')
   doc.setDrawColor(45, 212, 191)
@@ -532,7 +602,7 @@ async function buildAdminGeneralMedicalPDF({ data, period }) {
   doc.setTextColor(...WHITE)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(6.5)
-  doc.text('EXECUTIVE SQUAD AUDIT', leftContentX + (badgeW / 2), 9.1, { align: 'center' })
+  doc.text('EXECUTIVE SQUAD AUDIT', leftContentX + (badgeW / 2), 9.0, { align: 'center' })
 
   // Club Name
   doc.setFont('helvetica', 'bold')
@@ -546,23 +616,47 @@ async function buildAdminGeneralMedicalPDF({ data, period }) {
   doc.setTextColor(45, 212, 191)
   doc.text('SPORTS MEDICINE & SQUAD RECOVERY UNIT', leftContentX, 23.5)
 
-  // ── Right Side: Classy Title & Period ──
+  // ── Right Side: Small Visible ApexTrack GH Logo + Title & Period ──
+  const logoBoxW = 15
+  const logoBoxH = 15
+  const logoBoxX = PW - 26
+  const logoBoxY = 5.2
+
+  if (siteLogoBase64) {
+    try {
+      doc.setFillColor(255, 255, 255)
+      doc.roundedRect(logoBoxX, logoBoxY, logoBoxW, logoBoxH, 2, 2, 'F')
+      doc.setDrawColor(45, 212, 191)
+      doc.setLineWidth(0.3)
+      doc.roundedRect(logoBoxX, logoBoxY, logoBoxW, logoBoxH, 2, 2, 'D')
+      doc.addImage(siteLogoBase64, 'PNG', logoBoxX + 1, logoBoxY + 1, logoBoxW - 2, logoBoxH - 2)
+
+      // Brand caption underneath logo
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(5.5)
+      doc.setTextColor(45, 212, 191)
+      doc.text('ApexTrack GH', logoBoxX + (logoBoxW / 2), logoBoxY + logoBoxH + 4.2, { align: 'center' })
+    } catch (_e) { /* fallback */ }
+  }
+
+  const rightTextX = siteLogoBase64 ? logoBoxX - 4 : PW - 12
+
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(10)
+  doc.setTextColor(...WHITE)
+  doc.text('MEDICAL & REHABILITATION REPORT', rightTextX, 10.0, { align: 'right' })
+
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(11)
-  doc.setTextColor(...WHITE)
-  doc.text('MEDICAL & REHABILITATION REPORT', PW - 12, 10.5, { align: 'right' })
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11.5)
   doc.setTextColor(45, 212, 191)
-  doc.text('EXECUTIVE SQUAD OVERVIEW', PW - 12, 17.5, { align: 'right' })
+  doc.text('EXECUTIVE SQUAD OVERVIEW', rightTextX, 17.0, { align: 'right' })
 
   doc.setFont('helvetica', 'normal')
-  doc.setFontSize(6.8)
+  doc.setFontSize(6.5)
   doc.setTextColor(203, 213, 225)
-  doc.text(`MONTHLY SQUAD AUDIT  •  ${period}`, PW - 12, 24, { align: 'right' })
+  doc.text(`MONTHLY SQUAD AUDIT  •  ${period}`, rightTextX, 23.5, { align: 'right' })
 
-  y = 39
+  y = 40
 
   // ── Executive KPIs ──
   doc.setFont('helvetica', 'bold')
@@ -798,13 +892,42 @@ export default function ReportsPage() {
           scopeTeam(supabase.from('coaches').select('*'), teamId),
           scopeTeam(supabase.from('contracts').select('*, athletes(name, position, club)'), teamId),
         ])
+
+        // Read local storage cache for rehab notes
+        let localRehab = []
+        try {
+          const raw1 = localStorage.getItem(`apextrack_rehab_notes_fallback_${teamId}`)
+          const raw2 = localStorage.getItem('apextrack_rehab_notes_fallback')
+          const parsed1 = raw1 ? JSON.parse(raw1) : []
+          const parsed2 = raw2 ? JSON.parse(raw2) : []
+          localRehab = [...parsed1, ...parsed2]
+        } catch {
+          localRehab = []
+        }
+
+        const combinedRehab = [...(r || [])]
+        for (const lr of localRehab) {
+          if (!combinedRehab.some(cr => cr.id === lr.id || (cr.athlete_id === lr.athlete_id && cr.session_date === lr.session_date && cr.treatment_summary === lr.treatment_summary))) {
+            combinedRehab.push(lr)
+          }
+        }
+        combinedRehab.sort((x, y) => new Date(y.session_date || y.created_at || 0) - new Date(x.session_date || x.created_at || 0))
+
         setAthletes(a   || [])
         setInjuries(i   || [])
-        setRehabNotes(r || [])
+        setRehabNotes(combinedRehab)
         setPerformance(p|| [])
         setSessions(s   || [])
         setCoaches(c    || [])
         setContracts(ct || [])
+
+        if (a && a.length > 0) {
+          setSelectedPlayer(prev => {
+            if (prev && a.some(ath => ath.id === prev)) return prev
+            const injuredAth = a.find(ath => ath.status === 'Injured')
+            return injuredAth ? injuredAth.id : a[0].id
+          })
+        }
       } catch (err) {
         setStatusMsg({ text: 'Failed to load data: ' + err.message, type: 'error' })
       }
@@ -885,6 +1008,7 @@ export default function ReportsPage() {
           month:      selMonth,
           year:       selYear,
           reportType,
+          clientRehabNotes: rehabNotes,
         }),
       })
 
@@ -902,6 +1026,16 @@ export default function ReportsPage() {
 
       if (reportScope === 'player') {
         const selectedAth = athletes.find(a => a.id === selectedPlayer) || data.athletes[0]
+        // Ensure data.rehabNotes incorporates any client-side / local notes for this player
+        const playerRehabs = rehabNotes.filter(r => r.athlete_id === selectedPlayer)
+        const combinedPlayerRehab = [...(data.rehabNotes || [])]
+        for (const pr of playerRehabs) {
+          if (!combinedPlayerRehab.some(dr => dr.id === pr.id)) {
+            combinedPlayerRehab.push(pr)
+          }
+        }
+        data.rehabNotes = combinedPlayerRehab
+
         doc = await buildPlayerClinicalDossierPDF({ data, selectedAthlete: selectedAth, period })
         const safeAthlete = (selectedAth?.name || 'Player').replace(/\s+/g, '_')
         const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
@@ -944,6 +1078,7 @@ export default function ReportsPage() {
   const selectedPlayerActiveInj = selectedPlayerInjuries.filter(i => i.status === 'Active')
   const selectedPlayerRehabNotes = selectedPlayer ? rehabNotes.filter(r => r.athlete_id === selectedPlayer) : []
   const latestPlayerRehab = selectedPlayerRehabNotes[0]
+  const playerInjuryWithNotes = !latestPlayerRehab ? selectedPlayerInjuries.find(i => i.notes && i.notes.trim()) : null
 
   return (
     <Layout>
@@ -1226,7 +1361,7 @@ export default function ReportsPage() {
 
                         {/* Entered Rehabilitation Plan Details */}
                         <div style={{ background:'#FFFFFF', border:'1px solid #CBD5E1', borderRadius:8, padding:'10px 12px', marginBottom:14 }}>
-                          <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:4, display:'flex', alignItems:'center', gap:5 }}>
+                          <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:6, display:'flex', alignItems:'center', gap:5 }}>
                             <Activity size={13}/>
                             Entered Rehabilitation Plan &amp; Protocol
                           </div>
@@ -1238,9 +1373,33 @@ export default function ReportsPage() {
                               <div style={{ marginBottom:3 }}>
                                 <strong style={{ color:'#0F172A' }}>Treatment Protocol:</strong> {latestPlayerRehab.treatment_summary || 'Ongoing clinical protocols'}
                               </div>
-                              <div style={{ display:'flex', gap:12, fontSize:11, color:'#64748B', marginTop:4 }}>
+                              {latestPlayerRehab.clinical_notes && (
+                                <div style={{ marginBottom:3, fontSize:11.5, color:'#475569' }}>
+                                  <strong style={{ color:'#0F172A' }}>Clinical Notes:</strong> {latestPlayerRehab.clinical_notes}
+                                </div>
+                              )}
+                              {latestPlayerRehab.target_milestone && (
+                                <div style={{ marginBottom:3, fontSize:11.5, color:'#0D9488' }}>
+                                  <strong style={{ color:'#0F172A' }}>Target Milestone:</strong> {latestPlayerRehab.target_milestone}
+                                </div>
+                              )}
+                              <div style={{ display:'flex', gap:12, fontSize:11, color:'#64748B', marginTop:5, paddingTop:4, borderTop:'1px dashed #E2E8F0' }}>
                                 <span>Pain Scale: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.pain_level ?? 0} / 10</strong></span>
-                                <span>Status: <strong style={{ color:'#0D9488' }}>{latestPlayerRehab.clearance_status || 'In Rehab'}</strong></span>
+                                <span>Status: <strong style={{ color: latestPlayerRehab.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>{latestPlayerRehab.clearance_status || 'In Rehab'}</strong></span>
+                                <span>Date: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.session_date || 'Recent'}</strong></span>
+                              </div>
+                            </div>
+                          ) : playerInjuryWithNotes ? (
+                            <div style={{ fontSize:12, color:'#334155', lineHeight:1.45 }}>
+                              <div style={{ marginBottom:3 }}>
+                                <strong style={{ color:'#0F172A' }}>Diagnosis:</strong> {playerInjuryWithNotes.injury_type} ({playerInjuryWithNotes.severity})
+                              </div>
+                              <div style={{ marginBottom:3 }}>
+                                <strong style={{ color:'#0F172A' }}>Prescribed Protocol &amp; Notes:</strong> {playerInjuryWithNotes.notes}
+                              </div>
+                              <div style={{ display:'flex', gap:12, fontSize:11, color:'#64748B', marginTop:5, paddingTop:4, borderTop:'1px dashed #E2E8F0' }}>
+                                <span>Status: <strong style={{ color: playerInjuryWithNotes.status === 'Active' ? '#D97706' : '#16A34A' }}>{playerInjuryWithNotes.status}</strong></span>
+                                <span>Expected Return: <strong style={{ color:'#0F172A' }}>{playerInjuryWithNotes.expected_return || 'TBD'}</strong></span>
                               </div>
                             </div>
                           ) : (

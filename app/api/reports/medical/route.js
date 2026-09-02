@@ -129,6 +129,20 @@ export async function POST(req) {
 
     const allAthletes = athletesRaw || []
     
+    // Merge any client-supplied rehab notes (fallback cache or unsynced notes)
+    const clientRehabList = Array.isArray(body.clientRehabNotes) ? body.clientRehabNotes : []
+    const combinedRehab = [...(rehabRaw || [])]
+    for (const cr of clientRehabList) {
+      if (!combinedRehab.some(r => r.id === cr.id || (r.athlete_id === cr.athlete_id && r.session_date === cr.session_date && r.created_at === cr.created_at))) {
+        if (!athleteId || cr.athlete_id === athleteId) {
+          combinedRehab.push(cr)
+        }
+      }
+    }
+
+    // Sort descending by session_date
+    combinedRehab.sort((a, b) => new Date(b.session_date || b.created_at || 0) - new Date(a.session_date || a.created_at || 0))
+
     // For single-player clinical dossier, include all historical or period injuries & notes
     // For general squad report, include all injuries in period (both active and recovered)
     const isSinglePlayer = reportScope === 'player' && athleteId
@@ -138,8 +152,8 @@ export async function POST(req) {
       : (injuriesRaw || []).filter(i => isInPeriod(i.date_of_injury) || isInPeriod(i.updated_at) || isInPeriod(i.expected_return))
 
     const allRehab = isSinglePlayer
-      ? (rehabRaw || [])
-      : (rehabRaw || []).filter(r => isInPeriod(r.session_date) || isInPeriod(r.created_at))
+      ? combinedRehab
+      : combinedRehab.filter(r => isInPeriod(r.session_date) || isInPeriod(r.created_at))
 
     // ── 5. Summary KPIs ──────────────────────────────────────────────────────
     const activeInjuriesList    = allInjuries.filter(i => i.status === 'Active')

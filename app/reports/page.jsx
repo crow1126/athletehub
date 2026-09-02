@@ -56,6 +56,15 @@ async function getApexTrackLogoBase64() {
 const LOCAL_STORAGE_REHAB_KEY = 'apextrack_rehab_notes_fallback'
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SHARED DATE FORMATTER — used in JSX previews AND PDF generators
+// ─────────────────────────────────────────────────────────────────────────────
+function fmtDate(d) {
+  if (!d) return '—'
+  try { return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) }
+  catch { return String(d) }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 1. PLAYER-SPECIFIC CLINICAL & REHABILITATION DOSSIER (PDF)
 // Full medical detail: Profile + Photo, Team Logo, ApexTrack GH Logo, Rehabilitation Plan, Diagnostics, Logs
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,11 +97,6 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
   const TEXT    = [15,  23,  42]    // #0F172A
   const TEXT2   = [100, 116, 139]   // #64748B
 
-  const fmtDate = (d) => {
-    if (!d) return '—'
-    try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) }
-    catch { return d }
-  }
 
   let y = 0
 
@@ -530,11 +534,6 @@ async function buildAdminGeneralMedicalPDF({ data, period }) {
   const TEXT    = [15,  23,  42]    // #0F172A
   const TEXT2   = [100, 116, 139]   // #64748B
 
-  const fmtDate = (d) => {
-    if (!d) return '—'
-    try { return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) }
-    catch { return d }
-  }
 
   let y = 0
 

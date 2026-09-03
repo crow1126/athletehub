@@ -371,17 +371,6 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* ── Rehabilitation Notes Hub (Physio Full Access & Admin Read-Only; Hidden from other staff) ── */}
-          {canViewRehab && (
-            <div className="fade-up">
-              <RehabilitationNotes
-                currentUser={profile}
-                teamId={teamId}
-                title={isPhysio ? 'Rehabilitation Hub & Clinical Notes' : 'Rehabilitation Notes (Physio Confidential — Read Only)'}
-              />
-            </div>
-          )}
-
           {/* Recent Athletes */}
           <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -414,38 +403,40 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Upcoming Sessions */}
-          <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700 }}>Upcoming Sessions</h2>
-              <Link href="/schedule" style={{ fontSize: 12, color: 'var(--plum)', fontWeight: 600, padding: '5px 12px', borderRadius: 8, background: 'var(--blue-light)', textDecoration: 'none' }}>Schedule</Link>
-            </div>
-            {upcoming.length === 0 ? (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
-                No sessions in next 7 days.
-                <Link href="/schedule" style={{ display: 'block', marginTop: 8, color: 'var(--plum)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>+ Add session</Link>
+          {/* Upcoming Sessions — only shown for admin/coach, physio sees it in right column */}
+          {!isPhysio && (
+            <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700 }}>Upcoming Sessions</h2>
+                <Link href="/schedule" style={{ fontSize: 12, color: 'var(--plum)', fontWeight: 600, padding: '5px 12px', borderRadius: 8, background: 'var(--blue-light)', textDecoration: 'none' }}>Schedule</Link>
               </div>
-            ) : upcoming.map(s => {
-              const isToday = s.date === todayStr
-              return (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--border)', transition: 'var(--transition)' }}
-                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                  onMouseLeave={e => e.currentTarget.style.background = ''}>
-                  <div className="dash-session-date" style={{ minWidth: 80, textAlign: 'center', padding: '7px 10px', borderRadius: 10, background: isToday ? 'var(--milk-muted)' : 'var(--surface2)', border: isToday ? '1px solid rgba(0,106,106,0.3)' : '1px solid var(--border)', flexShrink: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--plum)', lineHeight: 1.2 }}>{s.time}</div>
-                    <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? 'var(--plum)' : 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{isToday ? 'TODAY' : s.date}</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{s.title}</span>
-                      <span style={{ fontSize: 10, fontWeight: 700, background: (SESSION_COLORS[s.type] || '#006A6A') + '20', color: SESSION_COLORS[s.type] || '#006A6A', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap' }}>{s.type}</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5.518 1.5 3.5 3.518 3.5 6c0 3.5 4.5 9 4.5 9s4.5-5.5 4.5-9c0-2.482-2.018-4.5-4.5-4.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><circle cx="8" cy="6" r="1.5" fill="currentColor" /></svg> {s.venue} · {s.duration}min</div>
-                  </div>
+              {upcoming.length === 0 ? (
+                <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>
+                  No sessions in next 7 days.
+                  <Link href="/schedule" style={{ display: 'block', marginTop: 8, color: 'var(--plum)', fontWeight: 600, fontSize: 13, textDecoration: 'none' }}>+ Add session</Link>
                 </div>
-              )
-            })}
-          </div>
+              ) : upcoming.map(s => {
+                const isToday = s.date === todayStr
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderBottom: '1px solid var(--border)', transition: 'var(--transition)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}>
+                    <div className="dash-session-date" style={{ minWidth: 80, textAlign: 'center', padding: '7px 10px', borderRadius: 10, background: isToday ? 'var(--milk-muted)' : 'var(--surface2)', border: isToday ? '1px solid rgba(0,106,106,0.3)' : '1px solid var(--border)', flexShrink: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--plum)', lineHeight: 1.2 }}>{s.time}</div>
+                      <div style={{ fontSize: 10, fontWeight: 600, color: isToday ? 'var(--plum)' : 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{isToday ? 'TODAY' : s.date}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{s.title}</span>
+                        <span style={{ fontSize: 10, fontWeight: 700, background: (SESSION_COLORS[s.type] || '#006A6A') + '20', color: SESSION_COLORS[s.type] || '#006A6A', padding: '2px 7px', borderRadius: 6, whiteSpace: 'nowrap' }}>{s.type}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4 }}><svg width="11" height="11" viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5.518 1.5 3.5 3.518 3.5 6c0 3.5 4.5 9 4.5 9s4.5-5.5 4.5-9c0-2.482-2.018-4.5-4.5-4.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" /><circle cx="8" cy="6" r="1.5" fill="currentColor" /></svg> {s.venue} · {s.duration}min</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         {/* Right column */}
@@ -489,7 +480,36 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick Actions (Tailored for Physio / Admin) */}
+          {/* Upcoming Sessions — shown in right column for physio only */}
+          {isPhysio && (
+            <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h2 style={{ fontSize: 15, fontWeight: 700 }}>Upcoming Sessions</h2>
+                <Link href="/schedule" style={{ fontSize: 12, color: 'var(--plum)', fontWeight: 600, padding: '5px 12px', borderRadius: 8, background: 'var(--blue-light)', textDecoration: 'none' }}>Schedule</Link>
+              </div>
+              {upcoming.length === 0 ? (
+                <div style={{ padding: '20px 16px', textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No sessions in next 7 days.</div>
+              ) : upcoming.slice(0, 3).map(s => {
+                const isToday = s.date === todayStr
+                return (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderBottom: '1px solid var(--border)', transition: 'var(--transition)' }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = ''}>
+                    <div style={{ minWidth: 56, textAlign: 'center', padding: '6px 8px', borderRadius: 8, background: isToday ? 'var(--milk-muted)' : 'var(--surface2)', border: isToday ? '1px solid rgba(0,106,106,0.3)' : '1px solid var(--border)', flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--plum)' }}>{s.time}</div>
+                      <div style={{ fontSize: 9, fontWeight: 600, color: isToday ? 'var(--plum)' : 'var(--text3)', textTransform: 'uppercase' }}>{isToday ? 'TODAY' : s.date}</div>
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text3)' }}>{s.type}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Quick Actions */}
           {(isAdmin || isPhysio) && (
             <div className="card fade-up fade-up-2" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -501,7 +521,7 @@ export default function Dashboard() {
                   { icon: <HeartPulse size={17} strokeWidth={2} />, label: 'Log Injury', href: '/injuries', bg: '#FDEDEC', color: '#C0392B' },
                   { icon: <Activity size={17} strokeWidth={2} />, label: 'Medical Hub', href: '/injuries', bg: '#EFF8F5', color: '#0D6E5E' },
                   { icon: <Users size={17} strokeWidth={2} />, label: 'Athletes', href: '/athletes', bg: '#EBF4FF', color: '#1D4ED8' },
-                  { icon: <CalendarDays size={17} strokeWidth={2} />, label: 'Schedule', href: '/schedule', bg: '#EBF8EE', color: '#1B7A3E' },
+                  { icon: <BarChart3 size={17} strokeWidth={2} />, label: 'Reports', href: '/reports', bg: '#FEF6E0', color: '#B36200' },
                   { icon: <Settings size={17} strokeWidth={2} />, label: 'Settings', href: '/settings', bg: 'var(--surface2)', color: 'var(--plum)' },
                 ].map(({ icon, label, href, bg, color }) => (
                   <Link key={label} href={href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: bg, border: '1px solid var(--border)', textDecoration: 'none', transition: 'var(--transition)' }}
@@ -530,6 +550,18 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {/* ── Rehabilitation Hub — full-width below the grid (physio & admin only) ── */}
+      {canViewRehab && (
+        <div className="fade-up" style={{ maxWidth: 1280, margin: '20px auto 0', padding: '0 32px', boxSizing: 'border-box' }}>
+          <RehabilitationNotes
+            currentUser={profile}
+            teamId={teamId}
+            title={isPhysio ? 'Rehabilitation Hub & Clinical Notes' : 'Rehabilitation Notes (Physio Confidential — Read Only)'}
+          />
+        </div>
+      )}
+
       <div style={{ height: 40 }} />
     </Layout>
   )

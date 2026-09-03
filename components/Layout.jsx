@@ -368,7 +368,7 @@ export default function Layout({ children }) {
       }
 
       setCurrentUserId(session.user.id)
-      setProfile(p || { full_name: session.user.email, role: 'admin', email: session.user.email })
+      setProfile(p || { full_name: session.user.email, role: p?.role || 'staff', email: session.user.email })
 
       // Set logger context so all subsequent logs are tagged with this tenant
       if (p) {

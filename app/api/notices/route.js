@@ -232,7 +232,7 @@ export async function POST(req) {
           })
         }))
 
-        const smsRes = await sendBulkSMS(recipients)
+        const smsRes = await sendBulkSMS(recipients, { teamId })
         sent = smsRes.sent || 0
         failed = smsRes.failed || 0
         smsError = smsRes.error || null

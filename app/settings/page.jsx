@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const [profileForm,   setProfileForm]   = useState({ full_name:'', phone:'' })
 
   const [pwForm,        setPwForm]        = useState({ newPw:'', confirm:'' })
-  const [issueForm,     setIssueForm]     = useState({ coach_id:'', username:'', password:'', role:'physio', notes:'', full_name:'' })
+  const [issueForm,     setIssueForm]     = useState({ coach_id:'', username:'', password:'', role:'physio', notes:'', full_name:'', phone:'' })
   const [issueSaving,   setIssueSaving]   = useState(false)
   const [issueMsg,      setIssueMsg]      = useState({ text:'', type:'' })
   const [showIssueForm, setShowIssueForm] = useState(false)
@@ -85,7 +85,7 @@ export default function SettingsPage() {
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins },{ data:athletes }] = await Promise.all([
           scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
-          scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,is_active'), prof.team_id).order('name'),
+          scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('athletes').select('id,name,position,back_number'), prof.team_id).order('name'),
         ])
@@ -153,6 +153,7 @@ export default function SettingsPage() {
     try {
       const staff = allStaff.find(s => s.id === issueForm.coach_id)
       const fullName = staff?.name || issueForm.full_name?.trim() || username
+      const phoneToSend = issueForm.phone?.trim() || staff?.phone || null
       const res = await fetchWithAuth('/api/admin/create-user', { 
         method:'POST', 
         headers:{ 'Content-Type':'application/json' }, 
@@ -163,13 +164,17 @@ export default function SettingsPage() {
           role:issueForm.role, 
           coach_id:issueForm.coach_id || null, 
           team_id:profile.team_id, 
-          notes:issueForm.notes 
+          notes:issueForm.notes,
+          phone:phoneToSend
         }) 
       })
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
-      flashIssue(`Login created for ${fullName}!\nUsername: ${username}\nPassword: ${issueForm.password}\n\nShare these credentials securely.`, 'success')
-      setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'' })
+      const smsNote = data.sms_sent
+        ? `\n\n📲 Credentials sent via SMS to ${data.phone}!`
+        : (phoneToSend ? `\n\n(SMS gateway dispatch queued to ${phoneToSend})` : '')
+      flashIssue(`Login created for ${fullName}!\nUsername: ${username}\nPassword: ${issueForm.password}${smsNote}`, 'success')
+      setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'',phone:'' })
       setShowIssueForm(false); await loadAll()
     } catch(err) { flashIssue('Error: '+err.message,'error') }
     setIssueSaving(false)
@@ -480,11 +485,26 @@ export default function SettingsPage() {
                             else if (staff.staff_type === 'scout') autoRole = 'scout'
                             else autoRole = 'coach'
                           }
-                          setIssueForm(f => ({ ...f, coach_id: coachId, role: autoRole }))
+                          setIssueForm(f => ({ ...f, coach_id: coachId, role: autoRole, phone: staff?.phone || f.phone || '' }))
                         }} style={{ ...inp,background:'#fff' }}>
                           <option value="">{issueForm.role === 'accountant' ? '— No staff link (Accountant Only) —' : '— Select a staff member —'}</option>
                           {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
                         </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Phone Number (Receives Credentials via SMS)</label>
+                        <input
+                          type="text"
+                          value={issueForm.phone || ''}
+                          onChange={e => setIssueForm(f => ({ ...f, phone: e.target.value }))}
+                          style={{ ...inp, background: '#fff' }}
+                          placeholder="e.g. 0244123456 or +233244123456"
+                          onFocus={onFocus}
+                          onBlur={onBlur}
+                        />
+                        <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
+                          📲 Credentials (username &amp; password) will be sent to this phone number via SMS immediately.
+                        </div>
                       </div>
                       {issueForm.role === 'accountant' && !issueForm.coach_id && (
                         <div>

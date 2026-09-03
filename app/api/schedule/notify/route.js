@@ -87,7 +87,7 @@ export async function POST(req) {
     }))
 
     // Send bulk SMS
-    const { sent, failed, error: smsError } = await sendBulkSMS(recipients)
+    const { sent, failed, error: smsError } = await sendBulkSMS(recipients, { teamId: team_id })
 
     // Log the SMS audit event
     await supabase.from('notification_logs').insert({

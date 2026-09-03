@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
+import { sendSMS, buildStaffLoginSMS } from '@/lib/moolre'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -36,7 +37,7 @@ function getDb() {
 
 export async function POST(req) {
   try {
-    const { username, email: inputEmail, password, full_name, role, coach_id, team_id, notes } = await req.json()
+    const { username, email: inputEmail, password, full_name, role, coach_id, team_id, notes, phone } = await req.json()
 
     let email = inputEmail
     if (username) {
@@ -62,10 +63,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Your account is not linked to a club. Contact the system administrator.' }, { status: 403 })
     }
 
+    let coachPhone = null
     if (coach_id) {
       let coachQuery = db
         .from('coaches')
-        .select('team_id')
+        .select('team_id, phone, name')
         .eq('id', coach_id)
 
       if (resolvedTeamId) coachQuery = coachQuery.eq('team_id', resolvedTeamId)
@@ -75,7 +77,10 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Coach is not available for this team' }, { status: 403 })
       }
       resolvedTeamId = coach.team_id || null
+      coachPhone = coach.phone || null
     }
+
+    const recipientPhone = (phone || coachPhone)?.trim() || null
 
     if (!resolvedTeamId || !canManageTeam(requester.profile, resolvedTeamId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -146,6 +151,7 @@ export async function POST(req) {
           is_active: true,
           email,
           username: username || null,
+          phone: recipientPhone || null,
           club_name: teamName,
           club_logo_url: teamLogoUrl
         },
@@ -182,7 +188,44 @@ export async function POST(req) {
       }
     }
 
-    return NextResponse.json({ success: true, user_id: userId })
+    // Send login credentials via SMS to staff member's registered phone
+    let smsSent = false
+    let smsError = null
+    if (recipientPhone) {
+      try {
+        const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'apextrackgh.com'
+        const proto = req.headers.get('x-forwarded-proto') || 'https'
+        const loginUrl = `${proto}://${host}/login`
+
+        const smsMessage = buildStaffLoginSMS({
+          fullName: full_name,
+          username: username || email,
+          password,
+          role: safeRole,
+          clubName: teamName,
+          loginUrl
+        })
+
+        const smsRes = await sendSMS(recipientPhone, smsMessage, {
+          teamId: resolvedTeamId,
+          db
+        })
+        smsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
+        if (smsRes?.error) smsError = smsRes.error
+        console.log(`[create-user] Credentials SMS sent to ${recipientPhone}:`, smsRes)
+      } catch (err) {
+        console.error('[create-user] Failed to dispatch login credentials SMS:', err?.message)
+        smsError = err?.message
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      user_id: userId,
+      sms_sent: smsSent,
+      phone: recipientPhone || null,
+      sms_error: smsError
+    })
   } catch (err) {
     console.error('POST error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
@@ -214,7 +257,7 @@ export async function PATCH(req) {
     } else {
       const { data: profile } = await db
         .from('profiles')
-        .select('id,email,team_id')
+        .select('id,email,team_id,phone,full_name')
         .eq('id', user_id)
         .single()
 
@@ -288,6 +331,28 @@ export async function PATCH(req) {
       }
       if (login_id) {
         await db.from('staff_logins').update({ plain_password: new_password }).eq('id', login_id).eq('team_id', targetTeamId)
+      }
+
+      // Dispatch updated password via SMS if phone is available
+      let resetPhone = targetProfile?.phone || null
+      if (!resetPhone && login_id) {
+        const { data: sl } = await db.from('staff_logins').select('coach_id').eq('id', login_id).maybeSingle()
+        if (sl?.coach_id) {
+          const { data: c } = await db.from('coaches').select('phone').eq('id', sl.coach_id).maybeSingle()
+          if (c?.phone) resetPhone = c.phone
+        }
+      }
+
+      if (resetPhone) {
+        try {
+          const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'apextrackgh.com'
+          const proto = req.headers.get('x-forwarded-proto') || 'https'
+          const loginUrl = `${proto}://${host}/login`
+          const resetMsg = `ApexTrack: Your staff login password has been reset.\nNew Password: ${new_password}\nLogin: ${loginUrl}`
+          await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
+        } catch (smsErr) {
+          console.error('[create-user] Failed to send password reset SMS:', smsErr?.message)
+        }
       }
 
       return NextResponse.json({ success: true, message: 'Password reset successfully.' })

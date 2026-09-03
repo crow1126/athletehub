@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
+import { sendSMS, buildStaffLoginSMS } from '@/lib/moolre'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -140,6 +141,7 @@ export async function POST(req) {
           is_active: true,
           email,
           username: username.trim(),
+          phone: athlete.phone || null,
           club_name: teamName,
           club_logo_url: teamLogoUrl
         },
@@ -157,9 +159,39 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Failed to create player profile record.' }, { status: 500 })
     }
 
+    // Send player login credentials via SMS if athlete has phone
+    let smsSent = false
+    if (athlete?.phone) {
+      try {
+        const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'apextrackgh.com'
+        const proto = req.headers.get('x-forwarded-proto') || 'https'
+        const loginUrl = `${proto}://${host}/login`
+
+        const smsText = buildStaffLoginSMS({
+          fullName: athlete.name,
+          username: username.trim(),
+          password,
+          role: 'player',
+          clubName: teamName,
+          loginUrl
+        })
+
+        const smsRes = await sendSMS(athlete.phone, smsText, {
+          teamId: resolvedTeamId,
+          db
+        })
+        smsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
+        console.log(`[create-player] Credentials SMS sent to ${athlete.phone}:`, smsRes)
+      } catch (smsErr) {
+        console.error('[create-player] Error sending player credentials SMS:', smsErr?.message)
+      }
+    }
+
     return NextResponse.json({
       success: true,
       user_id: userId,
+      sms_sent: smsSent,
+      phone: athlete?.phone || null,
       credentials: {
         username: username.trim(),
         password

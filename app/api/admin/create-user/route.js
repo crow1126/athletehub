@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
 import { sendSMS, buildStaffLoginSMS, normalizeGhPhone } from '@/lib/moolre'
+import { userMgmtLimiter } from '@/lib/rateLimit'
+import { log } from '@/lib/logger'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -36,6 +38,10 @@ function getDb() {
 }
 
 export async function POST(req) {
+  // Rate-limit: 5 create-user calls per 10 minutes per IP
+  const rl = userMgmtLimiter(req)
+  if (!rl.ok) return rl.response
+
   try {
     const { username, email: inputEmail, password, full_name, role, coach_id, team_id, notes, phone } = await req.json()
 
@@ -46,6 +52,11 @@ export async function POST(req) {
 
     if (!email || !password) {
       return NextResponse.json({ error: 'username/email and password are required' }, { status: 400 })
+    }
+
+    // Server-side minimum: 12 characters (spec requirement)
+    if (password.length < 12) {
+      return NextResponse.json({ error: 'Password must be at least 12 characters.' }, { status: 400 })
     }
 
     const db = getDb()
@@ -201,7 +212,7 @@ export async function POST(req) {
           team_id: resolvedTeamId,
           is_active: true,
           notes: notes || null,
-          plain_password: password,
+          // plain_password intentionally omitted — never persist plaintext credentials
         }])
 
       if (loginError) {
@@ -209,6 +220,14 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Failed to create staff login record' }, { status: 500 })
       }
     }
+
+    // Audit log — action recorded without the password value
+    log.info('staff_login_created', {
+      admin_id: requester.profile.id,
+      target_email: email,
+      role: safeRole,
+      team_id: resolvedTeamId,
+    })
 
     // Send login credentials via SMS to staff member's registered phone
     let smsSent = false
@@ -234,7 +253,8 @@ export async function POST(req) {
         })
         smsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
         if (smsRes?.error) smsError = smsRes.error
-        console.log(`[create-user] Credentials SMS sent to ${recipientPhone}:`, smsRes)
+        // Log sent/failed counts only — never log message body (contains plaintext password)
+        log.info('[create-user] Credentials SMS dispatched', { phone: recipientPhone, sent: smsRes?.sent, failed: smsRes?.failed })
       } catch (err) {
         console.error('[create-user] Failed to dispatch login credentials SMS:', err?.message)
         smsError = err?.message
@@ -337,8 +357,12 @@ export async function PATCH(req) {
     }
 
     if (action === 'reset_password') {
-      if (!new_password || new_password.length < 8) {
-        return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
+      // Rate-limit resets the same as user creation
+      const rlReset = userMgmtLimiter(req)
+      if (!rlReset.ok) return rlReset.response
+
+      if (!new_password || new_password.length < 12) {
+        return NextResponse.json({ error: 'Password must be at least 12 characters.' }, { status: 400 })
       }
 
       await adminFetch(`users/${user_id}`, 'PUT', { password: new_password })
@@ -348,12 +372,13 @@ export async function PATCH(req) {
         console.warn('Logout warning:', error.message)
       }
 
-      if (targetProfile?.email) {
-        await db.from('staff_logins').update({ plain_password: new_password }).eq('email', targetProfile.email).eq('team_id', targetTeamId)
-      }
-      if (login_id) {
-        await db.from('staff_logins').update({ plain_password: new_password }).eq('id', login_id).eq('team_id', targetTeamId)
-      }
+      // Audit log — never log the new password value
+      log.info('password_reset_by_admin', {
+        admin_id: requester.profile.id,
+        target_user_id: user_id,
+        team_id: targetTeamId,
+      })
+      // plain_password column is not updated — plaintext passwords are never persisted
 
       // Dispatch updated password via SMS if phone is available
       let resetPhone = (phone || targetProfile?.phone)?.trim() || null
@@ -408,7 +433,8 @@ export async function PATCH(req) {
           const smsRes = await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
           resetSmsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
           if (smsRes?.error) resetSmsError = smsRes.error
-          console.log(`[create-user] Reset SMS dispatched to ${resetPhone} (sent=${resetSmsSent}):`, smsRes)
+          // Log counts only — never log smsRes body (contains plaintext password)
+          log.info('[create-user] Reset SMS dispatched', { phone: resetPhone, sent: resetSmsSent })
         } catch (smsErr) {
           console.error('[create-user] Failed to send password reset SMS:', smsErr?.message)
           resetSmsError = smsErr?.message

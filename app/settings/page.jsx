@@ -36,6 +36,24 @@ const lbl = { display:'block', fontSize:11, fontWeight:600, letterSpacing:'0.08e
 const onFocus = e => e.target.style.borderColor = '#0D9488'
 const onBlur  = e => e.target.style.borderColor = 'var(--border)'
 
+// Charset excludes visually ambiguous characters: 0/O, 1/l/I
+const PW_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#'
+
+/**
+ * Generate a cryptographically secure password.
+ * Format: PREFIX-9randomChars  e.g. KS-aB3#mNq2r  (always 12+ chars)
+ * Uses Web Crypto API (available in browser, Node >=15, and Next.js edge runtime).
+ * Never uses Math.random().
+ * @param {string} [prefix] - Club short name (e.g. "KS"). Falls back to "Apex".
+ */
+function makePassword(prefix) {
+  const p = (prefix || 'Apex').replace(/\s+/g, '').slice(0, 6).toUpperCase()
+  const arr = new Uint8Array(9)
+  crypto.getRandomValues(arr)
+  const body = Array.from(arr).map(b => PW_CHARSET[b % PW_CHARSET.length]).join('')
+  return `${p}-${body}`
+}
+
 export default function SettingsPage() {
   const [profile,       setProfile]       = useState(null)
   const [subPlan,       setSubPlan]       = useState('trial')
@@ -248,7 +266,7 @@ export default function SettingsPage() {
   }
 
   function openPlayerResetModal(athlete, login) {
-    const defaultPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+    const defaultPw = makePassword(profile?.teams?.short_name)
     setPlayerResetModal({
       open: true,
       userId: login.id,
@@ -637,7 +655,19 @@ export default function SettingsPage() {
                       )}
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                         <div><label style={lbl}>Username *</label><input type="text" value={issueForm.username} onChange={e=>setIssueForm(f=>({...f,username:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. coach_kwame" onFocus={onFocus} onBlur={onBlur}/></div>
-                        <div><label style={lbl}>Password *</label><input type="text" value={issueForm.password} onChange={e=>setIssueForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                            <label style={{ ...lbl, margin: 0 }}>Password *</label>
+                            <button
+                              type="button"
+                              onClick={() => setIssueForm(f => ({ ...f, password: makePassword(profile?.teams?.short_name) }))}
+                              style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                              Generate Password
+                            </button>
+                          </div>
+                          <input type="text" value={issueForm.password} onChange={e=>setIssueForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/>
+                        </div>
                       </div>
                       <div>
                         <label style={lbl}>System Role *</label>
@@ -754,7 +784,7 @@ export default function SettingsPage() {
                           const a = allAthletes.find(ath => ath.id === athId)
                           if (a) {
                             const autoUser = a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)
-                            const randomPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                            const randomPw = makePassword(profile?.teams?.short_name)
                             setPlayerForm(f => ({
                               ...f,
                               athlete_id: athId,
@@ -795,7 +825,7 @@ export default function SettingsPage() {
                             <label style={{ ...lbl, margin: 0 }}>Password *</label>
                             <button
                               type="button"
-                              onClick={() => setPlayerForm(f => ({ ...f, password: `Apex${Math.floor(100000 + Math.random() * 900000)}` }))}
+                              onClick={() => setPlayerForm(f => ({ ...f, password: makePassword(profile?.teams?.short_name) }))}
                               style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
                             >
                               Generate Password
@@ -868,7 +898,7 @@ export default function SettingsPage() {
                                 ) : (
                                   <button onClick={()=>{
                                     const autoUser = a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)
-                                    const randomPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                    const randomPw = makePassword(profile?.teams?.short_name)
                                     setPlayerForm({
                                       athlete_id: a.id,
                                       username: autoUser,
@@ -1046,7 +1076,7 @@ export default function SettingsPage() {
                               const uId = e.target.value
                               const u = allUsers.find(user => user.id === uId)
                               const a = allAthletes.find(ath => ath.id === u?.athlete_id)
-                              const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                              const genPw = makePassword(profile?.teams?.short_name)
                               setRecoverPlayerForm(f => ({
                                 ...f,
                                 user_id: uId,
@@ -1096,7 +1126,7 @@ export default function SettingsPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                  const genPw = makePassword(profile?.teams?.short_name)
                                   setRecoverPlayerForm(f => ({ ...f, new_password: genPw, confirm_password: genPw }))
                                 }}
                                 style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
@@ -1138,7 +1168,7 @@ export default function SettingsPage() {
                                 <div
                                   key={login.id}
                                   onClick={() => {
-                                    const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                    const genPw = makePassword(profile?.teams?.short_name)
                                     setRecoverPlayerForm({
                                       user_id: login.id,
                                       phone: phone,
@@ -1169,7 +1199,7 @@ export default function SettingsPage() {
                                         if (a) {
                                           openPlayerResetModal(a, login)
                                         } else {
-                                          const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                          const genPw = makePassword(profile?.teams?.short_name)
                                           setRecoverPlayerForm({
                                             user_id: login.id,
                                             phone: phone,
@@ -1352,7 +1382,7 @@ export default function SettingsPage() {
                   <label style={{ ...lbl, margin: 0 }}>New Password *</label>
                   <button
                     type="button"
-                    onClick={() => setPlayerResetModal(m => ({ ...m, newPassword: `Apex${Math.floor(100000 + Math.random() * 900000)}` }))}
+                    onClick={() => setPlayerResetModal(m => ({ ...m, newPassword: makePassword(profile?.teams?.short_name) }))}
                     style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
                   >
                     Generate Password

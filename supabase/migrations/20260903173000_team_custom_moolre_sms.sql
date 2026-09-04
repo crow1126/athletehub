@@ -9,7 +9,7 @@ alter table public.teams add column if not exists sms_sender_id text;
 update public.teams
 set 
   moolre_vas_key = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ2YXNpZCI6MTMxMjAsImV4cCI6MTk1NjUyNzk5OX0.woIRGPdPX01MihjwzGViTKijuJLhOgxjOtLyOGCw2q4',
-  sms_sender_id = 'Y APOSTLES'
+  sms_sender_id = 'YAFC'
 where id = '324cd849-5c62-4278-9594-97e606439402' or ilike(name, '%young apostle%');
 
 -- Seed custom SMS package for Kotoko SC

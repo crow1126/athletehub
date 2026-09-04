@@ -370,13 +370,19 @@ export async function PATCH(req) {
         if (c2?.phone) resetPhone = c2.phone
       }
 
+      if (!resetPhone && targetProfile?.athlete_id) {
+        const { data: ath } = await db.from('athletes').select('phone').eq('id', targetProfile.athlete_id).maybeSingle()
+        if (ath?.phone) resetPhone = ath.phone
+      }
+
       let resetSmsSent = false
       if (resetPhone) {
         try {
           const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
           const isLocal = !host || host.includes('localhost') || host.includes('127.0.0.1')
           const loginUrl = !isLocal ? `https://${host}/login` : 'https://apextrackgh.com/login'
-          const resetMsg = `ApexTrack: Your staff login password has been reset.\nNew Password: ${new_password}\nLogin: ${loginUrl}`
+          const roleTitle = targetProfile?.role === 'player' ? 'player' : 'staff'
+          const resetMsg = `ApexTrack: Your ${roleTitle} login password has been reset.\nNew Password: ${new_password}\nLogin: ${loginUrl}`
           const smsRes = await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
           resetSmsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
         } catch (smsErr) {

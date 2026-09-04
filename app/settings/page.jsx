@@ -60,7 +60,7 @@ export default function SettingsPage() {
   const [showPassword,  setShowPassword]  = useState({})
 
   const [allAthletes,    setAllAthletes]    = useState([])
-  const [playerForm,     setPlayerForm]     = useState({ athlete_id: '', username: '', password: '' })
+  const [playerForm,     setPlayerForm]     = useState({ athlete_id: '', username: '', password: '', phone: '' })
   const [playerSaving,   setPlayerSaving]   = useState(false)
   const [playerMsg,      setPlayerMsg]      = useState({ text: '', type: '' })
   const [showPlayerForm, setShowPlayerForm] = useState(false)
@@ -87,7 +87,7 @@ export default function SettingsPage() {
           scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
-          scopeTeam(supabase.from('athletes').select('id,name,position,back_number'), prof.team_id).order('name'),
+          scopeTeam(supabase.from('athletes').select('id,name,position,back_number,phone'), prof.team_id).order('name'),
         ])
         const enrichedUsers = (users||[]).map(u => {
           const login = (logins||[]).find(l => l.email?.toLowerCase() === u.email?.toLowerCase() || l.username?.toLowerCase() === u.username?.toLowerCase())
@@ -193,16 +193,24 @@ export default function SettingsPage() {
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
     if (!usernameRegex.test(username)) { flashPlayer('Username: 3-20 characters, alphanumeric and underscores only.', 'error'); return }
     if (playerForm.password.length < 8) { flashPlayer('Password: min 8 characters.', 'error'); return }
+    const athlete = allAthletes.find(a => a.id === playerForm.athlete_id)
+    const phoneToSend = playerForm.phone?.trim() || athlete?.phone || null
+
+    if (!phoneToSend) {
+      flashPlayer('Athlete phone number is required so login credentials can be sent via SMS.', 'error')
+      return
+    }
+
     setPlayerSaving(true); setPlayerMsg({ text: '', type: '' })
     try {
-      const athlete = allAthletes.find(a => a.id === playerForm.athlete_id)
       const res = await fetchWithAuth('/api/admin/create-player', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           athlete_id: playerForm.athlete_id,
           username: username,
-          password: playerForm.password
+          password: playerForm.password,
+          phone: phoneToSend
         })
       })
       const data = await res.json()
@@ -211,8 +219,11 @@ export default function SettingsPage() {
         setPlayerSaving(false)
         return
       }
-      flashPlayer(`Login created for ${athlete?.name}!\nUsername: ${username}\nPassword: ${playerForm.password}\n\nShare these credentials securely.`, 'success')
-      setPlayerForm({ athlete_id: '', username: '', password: '' })
+      const smsNote = data.sms_sent
+        ? `\n\n📲 Credentials sent via SMS to ${data.phone}!`
+        : (data.sms_error ? `\n\n⚠️ SMS warning: ${data.sms_error}` : `\n\n📲 SMS dispatched to ${data.phone || phoneToSend}`)
+      flashPlayer(`Login created for ${athlete?.name}!\nUsername: ${username}\nPassword: ${playerForm.password}${smsNote}`, 'success')
+      setPlayerForm({ athlete_id: '', username: '', password: '', phone: '' })
       setShowPlayerForm(false)
       await loadAll()
     } catch (err) {
@@ -250,7 +261,8 @@ export default function SettingsPage() {
         return
       }
       if (action === 'reset_password') {
-        flash(`Password reset successfully. New password: ${extra.new_password}`, 'success')
+        const smsNote = data.sms_sent ? `\n\n📲 Updated password sent via SMS to ${data.phone || 'registered phone'}!` : ''
+        flash(`Password reset successfully. New password: ${extra.new_password}${smsNote}`, 'success')
       } else {
         flash(`Action "${action}" completed successfully.`, 'success')
       }
@@ -632,13 +644,32 @@ export default function SettingsPage() {
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
                         <label style={lbl}>Athlete *</label>
-                        <select value={playerForm.athlete_id} onChange={e=>setPlayerForm(f=>({...f,athlete_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
+                        <select value={playerForm.athlete_id} onChange={e => {
+                          const athId = e.target.value
+                          const a = allAthletes.find(ath => ath.id === athId)
+                          setPlayerForm(f => ({ ...f, athlete_id: athId, phone: a?.phone || f.phone || '' }))
+                        }} style={{ ...inp,background:'#fff' }}>
                           <option value="">— Select an athlete —</option>
                           {allAthletes.length===0 ? <option disabled>No athletes found</option> : allAthletes.map(a=>{
                             const hasLogin = allUsers.some(u => u.athlete_id === a.id)
-                            return <option key={a.id} value={a.id} disabled={hasLogin}>{a.name} ({a.position || 'N/A'}) {hasLogin ? ' (Already has login)' : ''}</option>
+                            return <option key={a.id} value={a.id} disabled={hasLogin}>{a.name} ({a.position || 'N/A'}){a.phone ? ` · 📞 ${a.phone}` : ' · (No phone registered)'}{hasLogin ? ' (Already has login)' : ''}</option>
                           })}
                         </select>
+                      </div>
+                      <div>
+                        <label style={lbl}>Registered Phone Number (Credentials sent via SMS) *</label>
+                        <input
+                          type="text"
+                          value={playerForm.phone || ''}
+                          onChange={e => setPlayerForm(f => ({ ...f, phone: e.target.value }))}
+                          style={{ ...inp, background: '#fff' }}
+                          placeholder="e.g. 0244123456 or +233244123456"
+                          onFocus={onFocus}
+                          onBlur={onBlur}
+                        />
+                        <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
+                          📲 Credentials (username &amp; password) will be automatically sent to this phone number via SMS immediately.
+                        </div>
                       </div>
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                         <div><label style={lbl}>Username *</label><input type="text" value={playerForm.username} onChange={e=>setPlayerForm(f=>({...f,username:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. richard_agyen" onFocus={onFocus} onBlur={onBlur}/></div>

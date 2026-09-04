@@ -68,6 +68,7 @@ export default function Dashboard() {
   const [coaches, setCoaches] = useState([])
   const [sessions, setSessions] = useState([])
   const [notices, setNotices] = useState([])
+  const [performanceStats, setPerformanceStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
   const [teamId, setTeamId] = useState(null)
@@ -82,15 +83,19 @@ export default function Dashboard() {
       }
       setProfile(p)
       setTeamId(tid)
-      setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin' || p?.role === 'coach')
-      const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }] = await Promise.all([
+      const uRole = p?.role || 'staff'
+      const isAn = uRole === 'analyst' || p?.staff_type === 'analyst'
+      setIsAdmin((uRole === 'admin' || uRole === 'superadmin' || uRole === 'coach') && !isAn)
+
+      const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }, { data: ps }] = await Promise.all([
         scopeTeam(supabase.from('athletes').select('*'), tid).order('created_at', { ascending: false }),
         scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), tid),
         scopeTeam(supabase.from('coaches').select('*'), tid),
         scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), tid).order('date', { ascending: true }),
         scopeTeam(supabase.from('notices').select('*'), tid).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
+        scopeTeam(supabase.from('performance_stats').select('*,athletes(id,name,position,photo_url)'), tid).order('match_date', { ascending: false }).limit(50),
       ])
-      setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || [])
+      setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || []); setPerformanceStats(ps || [])
       setLoading(false)
     }
     load()
@@ -104,6 +109,24 @@ export default function Dashboard() {
   const todaySess = sessions.filter(s => s.date === todayStr)
   const upcoming = sessions.filter(s => s.date >= todayStr && new Date(s.date) <= next7).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).slice(0, 4)
   const greet = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening'
+
+  // Analyst metrics
+  const uniqueMatchesCount = new Set((performanceStats || []).map(s => `${s.opponent || ''}_${s.match_date || ''}`).filter(Boolean)).size || (performanceStats || []).length
+  const ratedStats = (performanceStats || []).filter(s => typeof s.rating === 'number' && !isNaN(s.rating))
+  const avgSquadRating = ratedStats.length > 0 
+    ? (ratedStats.reduce((sum, s) => sum + s.rating, 0) / ratedStats.length).toFixed(1)
+    : null
+  const totalGoals = (performanceStats || []).reduce((sum, s) => sum + (Number(s.goals) || 0), 0)
+  const totalAssists = (performanceStats || []).reduce((sum, s) => sum + (Number(s.assists) || 0), 0)
+  const totalGoalsAssists = totalGoals + totalAssists
+  const pendingReviews = (performanceStats || []).filter(s => s.notified === false || s.notified === null)
+  const pendingReviewsCount = pendingReviews.length
+
+  // Top Performers based on rating
+  const topPerformers = [...(performanceStats || [])]
+    .filter(s => s.athletes?.name && typeof s.rating === 'number')
+    .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+    .slice(0, 5)
 
   // Resolve club name and logo — prefer profiles fields, fall back to teams
   const clubName = profile?.club_name || profile?.teams?.name || null
@@ -123,6 +146,7 @@ export default function Dashboard() {
 
   const userRole = profile?.role || 'staff'
   const isPhysio = userRole === 'physio' || profile?.staff_type === 'physio' || profile?.staff_type === 'medical' || profile?.staff_type === 'sports_scientist'
+  const isAnalyst = userRole === 'analyst' || profile?.staff_type === 'analyst'
   const isFullAdmin = userRole === 'admin' || userRole === 'superadmin'
   const canViewRehab = isPhysio || isFullAdmin
 
@@ -133,6 +157,12 @@ export default function Dashboard() {
     { label: 'Recovered', value: injuries.filter(i => i.status === 'Recovered').length, note: 'cleared to play', icon: <ShieldCheck {...iconProps} />, accent: 'var(--success)' },
     { label: 'Upcoming Sessions', value: upcoming.length, note: 'next 7 days', icon: <CalendarDays {...iconProps} />, accent: '#4A90E2' },
     { label: 'Today', value: todaySess.length, note: 'sessions', icon: <Flame {...iconProps} />, accent: 'var(--warning)' },
+  ] : isAnalyst ? [
+    { label: 'Squad Tracked', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} active squad`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
+    { label: 'Matches Evaluated', value: uniqueMatchesCount, note: `${performanceStats.length} logged player stats`, icon: <BarChart3 {...iconProps} />, accent: '#3B82F6' },
+    { label: 'Squad Avg Rating', value: avgSquadRating ? `${avgSquadRating} / 10` : '—', note: 'recent match form', icon: <TrendingUp {...iconProps} />, accent: '#10B981' },
+    { label: 'Total G + A', value: totalGoalsAssists, note: `${totalGoals}G · ${totalAssists}A logged`, icon: <Flame {...iconProps} />, accent: '#F59E0B' },
+    { label: 'Unpublished Reviews', value: pendingReviewsCount, note: pendingReviewsCount > 0 ? 'drafts awaiting SMS' : 'all published', icon: <ClipboardList {...iconProps} />, accent: pendingReviewsCount > 0 ? 'var(--danger)' : 'var(--success)' },
   ] : [
     { label: labels.athletes || 'Athletes', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} active`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
     { label: labels.coaches || 'Staff', value: coaches.length, note: 'members', icon: <ShieldCheck {...iconProps} />, accent: '#4A90E2' },
@@ -237,22 +267,32 @@ export default function Dashboard() {
                 </div>
               )}
               <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : (isPhysio ? 'Team Physio' : 'Admin'))}</span>
+                Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : (isPhysio ? 'Team Physio' : isAnalyst ? 'Performance Analyst' : 'Admin'))}</span>
               </h1>
               {isPhysio && (
                 <div style={{ fontSize: 12, color: '#A7F3D0', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Activity size={14} /> Physiotherapy &amp; Medical Dashboard
                 </div>
               )}
+              {isAnalyst && (
+                <div style={{ fontSize: 12, color: '#A7F3D0', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <BarChart3 size={14} /> Performance &amp; Tactical Analysis Hub
+                </div>
+              )}
             </div>
           </div>
 
-          {todaySess.length > 0 && (
+          {isAnalyst ? (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(110,231,183,0.4)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+              <TrendingUp size={14} color="#34D399" />
+              <span style={{ fontSize: 12, color: '#F0FDF4', fontWeight: 700 }}>{performanceStats.length} Match logs · {uniqueMatchesCount} Fixture{uniqueMatchesCount === 1 ? '' : 's'} Evaluated</span>
+            </div>
+          ) : todaySess.length > 0 ? (
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(110,231,183,0.4)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
               <Flame size={14} color="#FFD700" />
               <span style={{ fontSize: 12, color: '#F0FDF4', fontWeight: 700 }}>{todaySess.length} session{todaySess.length > 1 ? 's' : ''} today</span>
             </div>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -371,6 +411,104 @@ export default function Dashboard() {
             )}
           </div>
 
+          {/* ── Top Match Performers Widget (Analyst Exclusive) ── */}
+          {isAnalyst && (
+            <div className="card fade-up" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #BAE6FD', background: '#FFFFFF', borderRadius: 16 }}>
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0F9FF, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0284C7', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <TrendingUp size={16} />
+                  </div>
+                  <div>
+                    <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', margin: 0 }}>Top Match Performers</h2>
+                    <div style={{ fontSize: 10, color: '#0284C7', fontWeight: 700 }}>Highest Rated Player Ratings &amp; Match Form</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Link href="/performance" style={{ fontSize: 12, color: '#0369A1', fontWeight: 700, padding: '5px 12px', borderRadius: 8, background: '#E0F2FE', textDecoration: 'none' }}>
+                    + Log Performance →
+                  </Link>
+                </div>
+              </div>
+
+              {topPerformers.length === 0 ? (
+                <div style={{ padding: '32px 18px', textAlign: 'center', color: '#64748B', fontSize: 13 }}>
+                  <div>No player match performance records logged yet.</div>
+                  <Link href="/performance" style={{ display: 'inline-block', marginTop: 8, color: '#0284C7', fontWeight: 700, fontSize: 12, textDecoration: 'none' }}>
+                    + Start logging player ratings &amp; match stats
+                  </Link>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {topPerformers.map((stat, idx) => {
+                    const r = stat.rating || 0
+                    const ratingColor = r >= 8.0 ? '#059669' : r >= 7.0 ? '#2563EB' : r >= 6.0 ? '#D97706' : '#DC2626'
+                    const ratingBg = r >= 8.0 ? '#ECFDF5' : r >= 7.0 ? '#EFF6FF' : r >= 6.0 ? '#FEF3C7' : '#FEE2E2'
+
+                    return (
+                      <div
+                        key={stat.id || idx}
+                        style={{
+                          padding: '12px 18px',
+                          borderBottom: idx < topPerformers.length - 1 ? '1px solid #F1F5F9' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
+                        onMouseLeave={e => e.currentTarget.style.background = '#FFFFFF'}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                          <div style={{ width: 22, fontSize: 12, fontWeight: 800, color: '#94A3B8', textAlign: 'center' }}>
+                            #{idx + 1}
+                          </div>
+                          <AthleteAvatar ath={stat.athletes} size={36} index={idx} />
+                          <div style={{ minWidth: 0 }}>
+                            <Link href={`/athletes/${stat.athlete_id}`} style={{ fontSize: 13, fontWeight: 800, color: '#0F172A', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {stat.athletes?.name}
+                            </Link>
+                            <div style={{ fontSize: 11, color: '#64748B', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+                              <span style={{ fontWeight: 600 }}>{stat.athletes?.position || 'Player'}</span>
+                              {stat.opponent && <span>vs {stat.opponent}</span>}
+                              {stat.match_date && <span>({new Date(stat.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })})</span>}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#334155' }}>
+                              {stat.goals ? `${stat.goals}G ` : ''}{stat.assists ? `${stat.assists}A ` : ''}{!stat.goals && !stat.assists ? `${stat.minutes_played || 90}m` : ''}
+                            </div>
+                            <div style={{ fontSize: 10, color: '#94A3B8' }}>
+                              {stat.passes ? `${stat.passes} passes` : stat.minutes_played ? `${stat.minutes_played} min` : 'Match rating'}
+                            </div>
+                          </div>
+
+                          <div style={{
+                            padding: '4px 10px',
+                            borderRadius: 8,
+                            background: ratingBg,
+                            color: ratingColor,
+                            fontWeight: 900,
+                            fontSize: 13,
+                            minWidth: 42,
+                            textAlign: 'center',
+                            border: `1px solid ${ratingColor}33`,
+                          }}>
+                            {typeof stat.rating === 'number' ? stat.rating.toFixed(1) : '—'}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Recent Athletes */}
           <div className="card fade-up" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -403,8 +541,8 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Upcoming Sessions — only shown for admin/coach, physio sees it in right column */}
-          {!isPhysio && (
+          {/* Upcoming Sessions — only shown for admin/coach (physio sees it in right column, analyst hides it) */}
+          {!isPhysio && !isAnalyst && (
             <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden' }}>
               <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <h2 style={{ fontSize: 15, fontWeight: 700 }}>Upcoming Sessions</h2>
@@ -458,27 +596,77 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Medical alerts */}
-          <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ background: 'linear-gradient(90deg,#0F766E,#0D9488)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: 14, fontWeight: 700, color: '#FFFCF6' }}>Medical Alerts</h3>
-              <Link href="/injuries" style={{ fontSize: 11, color: 'rgba(255,252,246,0.85)', fontWeight: 600, background: 'rgba(255,252,246,0.15)', padding: '3px 10px', borderRadius: 99, textDecoration: 'none' }}>View all</Link>
-            </div>
-            <div style={{ padding: '6px 0' }}>
-              {activeInj.length === 0 ? (
-                <p style={{ padding: '16px', color: 'var(--text3)', fontSize: 13, textAlign: 'center' }}>No active injuries</p>
-              ) : activeInj.slice(0, 4).map((inj, i) => (
-                <div key={inj.id} style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <AthleteAvatar ath={inj.athletes} size={32} index={i} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inj.athletes?.name}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>{inj.injury_type} · {inj.expected_return || 'TBD'}</div>
+          {/* Medical alerts — shown for physio and coach/admin */}
+          {!isAnalyst && (
+            <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden' }}>
+              <div style={{ background: 'linear-gradient(90deg,#0F766E,#0D9488)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, color: '#FFFCF6' }}>Medical Alerts</h3>
+                <Link href="/injuries" style={{ fontSize: 11, color: 'rgba(255,252,246,0.85)', fontWeight: 600, background: 'rgba(255,252,246,0.15)', padding: '3px 10px', borderRadius: 99, textDecoration: 'none' }}>View all</Link>
+              </div>
+              <div style={{ padding: '6px 0' }}>
+                {activeInj.length === 0 ? (
+                  <p style={{ padding: '16px', color: 'var(--text3)', fontSize: 13, textAlign: 'center' }}>No active injuries</p>
+                ) : activeInj.slice(0, 4).map((inj, i) => (
+                  <div key={inj.id} style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <AthleteAvatar ath={inj.athletes} size={32} index={i} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inj.athletes?.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>{inj.injury_type} · {inj.expected_return || 'TBD'}</div>
+                    </div>
+                    <Badge status={inj.severity} />
                   </div>
-                  <Badge status={inj.severity} />
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* ── Match Evaluations & Drafts Widget (Analyst Exclusive) ── */}
+          {isAnalyst && (
+            <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CBD5E1', background: '#FFFFFF', borderRadius: 16 }}>
+              <div style={{ background: 'linear-gradient(90deg, #1E293B, #334155)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <ClipboardList size={15} color="#38BDF8" />
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: '#FFFCF6', margin: 0 }}>Evaluations &amp; Drafts</h3>
+                </div>
+                <Link href="/performance" style={{ fontSize: 11, color: '#E2E8F0', fontWeight: 600, background: 'rgba(255,255,255,0.15)', padding: '3px 10px', borderRadius: 99, textDecoration: 'none' }}>
+                  Manage
+                </Link>
+              </div>
+              <div style={{ padding: '6px 0' }}>
+                {performanceStats.length === 0 ? (
+                  <p style={{ padding: '16px', color: 'var(--text3)', fontSize: 13, textAlign: 'center' }}>No match reviews logged yet</p>
+                ) : performanceStats.slice(0, 4).map((st, idx) => (
+                  <div key={st.id || idx} style={{ padding: '10px 14px', borderBottom: idx < 3 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {st.athletes?.name || 'Player'}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                        vs {st.opponent || 'Opponent'} · {st.match_date ? new Date(st.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'Recent'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        fontSize: 10,
+                        fontWeight: 800,
+                        padding: '2px 7px',
+                        borderRadius: 6,
+                        background: st.notified ? '#ECFDF5' : '#FEF3C7',
+                        color: st.notified ? '#059669' : '#B45309',
+                        border: `1px solid ${st.notified ? '#A7F3D0' : '#FDE68A'}`,
+                        whiteSpace: 'nowrap',
+                      }}>
+                        {st.notified ? 'Published' : 'Draft'}
+                      </span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>
+                        {typeof st.rating === 'number' ? `${st.rating.toFixed(1)}★` : '—'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Upcoming Sessions — shown in right column for physio only */}
           {isPhysio && (
@@ -510,10 +698,10 @@ export default function Dashboard() {
           )}
 
           {/* Quick Actions */}
-          {(isAdmin || isPhysio) && (
+          {(isAdmin || isPhysio || isAnalyst) && (
             <div className="card fade-up fade-up-2" style={{ padding: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700 }}>{isPhysio ? 'Physio Quick Actions' : 'Quick Actions'}</h3>
+                <h3 style={{ fontSize: 14, fontWeight: 700 }}>{isPhysio ? 'Physio Quick Actions' : isAnalyst ? 'Analyst Quick Actions' : 'Quick Actions'}</h3>
                 <TrendingUp size={14} color="var(--text3)" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -522,6 +710,19 @@ export default function Dashboard() {
                   { icon: <Activity size={17} strokeWidth={2} />, label: 'Medical Hub', href: '/injuries', bg: '#EFF8F5', color: '#0D6E5E' },
                   { icon: <Users size={17} strokeWidth={2} />, label: 'Athletes', href: '/athletes', bg: '#EBF4FF', color: '#1D4ED8' },
                   { icon: <BarChart3 size={17} strokeWidth={2} />, label: 'Reports', href: '/reports', bg: '#FEF6E0', color: '#B36200' },
+                  { icon: <Settings size={17} strokeWidth={2} />, label: 'Settings', href: '/settings', bg: 'var(--surface2)', color: 'var(--plum)' },
+                ].map(({ icon, label, href, bg, color }) => (
+                  <Link key={label} href={href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: bg, border: '1px solid var(--border)', textDecoration: 'none', transition: 'var(--transition)' }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateX(2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateX(0)'; e.currentTarget.style.boxShadow = 'none' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: 'rgba(255,255,255,0.7)', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', color, flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color, lineHeight: 1.2 }}>{label}</span>
+                  </Link>
+                )) : isAnalyst ? [
+                  { icon: <BarChart3 size={17} strokeWidth={2} />, label: 'Log Performance', href: '/performance', bg: '#EFF8F5', color: '#0D6E5E' },
+                  { icon: <TrendingUp size={17} strokeWidth={2} />, label: 'Analytics Reports', href: '/reports', bg: '#FEF6E0', color: '#B36200' },
+                  { icon: <Users size={17} strokeWidth={2} />, label: 'Squad Analytics', href: '/athletes', bg: '#EBF4FF', color: '#1D4ED8' },
+                  { icon: <Search size={17} strokeWidth={2} />, label: 'Transfer Radar', href: '/transfers', bg: '#F3E8FD', color: '#7C3AED' },
                   { icon: <Settings size={17} strokeWidth={2} />, label: 'Settings', href: '/settings', bg: 'var(--surface2)', color: 'var(--plum)' },
                 ].map(({ icon, label, href, bg, color }) => (
                   <Link key={label} href={href} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, background: bg, border: '1px solid var(--border)', textDecoration: 'none', transition: 'var(--transition)' }}

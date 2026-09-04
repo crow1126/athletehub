@@ -219,6 +219,15 @@ export async function POST(req) {
         console.error('Staff login log error:', loginError.message)
         return NextResponse.json({ error: 'Failed to create staff login record' }, { status: 500 })
       }
+
+      // Link user_id in coaches table so staff profile links back directly
+      if (coach_id) {
+        try {
+          await db.from('coaches').update({ user_id: userId }).eq('id', coach_id)
+        } catch (cErr) {
+          console.warn('[create-user] Failed to link coach user_id:', cErr?.message)
+        }
+      }
     }
 
     // Audit log — action recorded without the password value

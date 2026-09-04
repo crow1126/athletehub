@@ -149,11 +149,17 @@ export default function SettingsPage() {
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/
     if (!usernameRegex.test(username))  { flashIssue('Username: 3-20 characters, alphanumeric and underscores only.','error'); return }
     if (issueForm.password.length < 8)  { flashIssue('Password: min 8 characters.','error'); return }
+    const staff = allStaff.find(s => s.id === issueForm.coach_id)
+    const fullName = staff?.name || issueForm.full_name?.trim() || username
+    const phoneToSend = issueForm.phone?.trim() || staff?.phone || null
+
+    if (!phoneToSend) {
+      flashIssue('Staff member phone number is required so login credentials can be sent via SMS.', 'error')
+      return
+    }
+
     setIssueSaving(true); setIssueMsg({ text:'',type:'' })
     try {
-      const staff = allStaff.find(s => s.id === issueForm.coach_id)
-      const fullName = staff?.name || issueForm.full_name?.trim() || username
-      const phoneToSend = issueForm.phone?.trim() || staff?.phone || null
       const res = await fetchWithAuth('/api/admin/create-user', { 
         method:'POST', 
         headers:{ 'Content-Type':'application/json' }, 
@@ -172,7 +178,7 @@ export default function SettingsPage() {
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
       const smsNote = data.sms_sent
         ? `\n\n📲 Credentials sent via SMS to ${data.phone}!`
-        : (phoneToSend ? `\n\n(SMS gateway dispatch queued to ${phoneToSend})` : '')
+        : (data.sms_error ? `\n\n⚠️ SMS warning: ${data.sms_error}` : `\n\n📲 SMS dispatched to ${data.phone || phoneToSend}`)
       flashIssue(`Login created for ${fullName}!\nUsername: ${username}\nPassword: ${issueForm.password}${smsNote}`, 'success')
       setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'',phone:'' })
       setShowIssueForm(false); await loadAll()
@@ -271,8 +277,8 @@ export default function SettingsPage() {
       if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. Check Supabase Auth.`, 'error'); setRecoverSaving(false); return }
       const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
-      if (!res.ok) { flashRecover(data.error||'Reset failed.','error'); setRecoverSaving(false); return }
-      flashRecover(`Password reset for ${login.coaches?.name||login.email}!\nEmail: ${login.email}\n${recoverForm.new_password}`, 'success')
+      const smsNote = data.sms_sent ? `\n\n📲 Updated password sent via SMS to registered phone!` : ''
+      flashRecover(`Password reset for ${login.coaches?.name||login.email}!\nUser: ${login.username||login.email}\nNew Password: ${recoverForm.new_password}${smsNote}`, 'success')
       setRecoverForm({ login_id:'', new_password:'', confirm_password:'' }); await loadAll()
     } catch(err) { flashRecover('Error: '+err.message,'error') }
     setRecoverSaving(false)
@@ -488,11 +494,11 @@ export default function SettingsPage() {
                           setIssueForm(f => ({ ...f, coach_id: coachId, role: autoRole, phone: staff?.phone || f.phone || '' }))
                         }} style={{ ...inp,background:'#fff' }}>
                           <option value="">{issueForm.role === 'accountant' ? '— No staff link (Accountant Only) —' : '— Select a staff member —'}</option>
-                          {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')})</option>)}
+                          {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')}){s.phone ? ` · 📞 ${s.phone}` : ' · (No phone registered)'}</option>)}
                         </select>
                       </div>
                       <div>
-                        <label style={lbl}>Phone Number (Receives Credentials via SMS)</label>
+                        <label style={lbl}>Registered Phone Number (Credentials sent via SMS) *</label>
                         <input
                           type="text"
                           value={issueForm.phone || ''}
@@ -503,7 +509,7 @@ export default function SettingsPage() {
                           onBlur={onBlur}
                         />
                         <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
-                          📲 Credentials (username &amp; password) will be sent to this phone number via SMS immediately.
+                          📲 Credentials (username &amp; password) will be automatically sent to this phone number via SMS immediately.
                         </div>
                       </div>
                       {issueForm.role === 'accountant' && !issueForm.coach_id && (

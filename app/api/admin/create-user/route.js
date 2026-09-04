@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { canManageTeam, createServiceClient, getRequester } from '@/lib/serverAuth'
-import { sendSMS, buildStaffLoginSMS } from '@/lib/moolre'
+import { sendSMS, buildStaffLoginSMS, normalizeGhPhone } from '@/lib/moolre'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -81,6 +81,28 @@ export async function POST(req) {
     }
 
     const recipientPhone = (phone || coachPhone)?.trim() || null
+
+    if (!recipientPhone) {
+      return NextResponse.json({
+        error: 'A registered phone number is required to send login credentials to the staff member via SMS.'
+      }, { status: 400 })
+    }
+
+    const normalizedPhone = normalizeGhPhone(recipientPhone)
+    if (!normalizedPhone) {
+      return NextResponse.json({
+        error: 'Please enter a valid Ghanaian phone number (e.g. 0244123456 or +233244123456) to receive login credentials via SMS.'
+      }, { status: 400 })
+    }
+
+    // If staff member has a coach record and phone is updated or provided, sync back to coaches table
+    if (coach_id && recipientPhone) {
+      try {
+        await db.from('coaches').update({ phone: recipientPhone }).eq('id', coach_id)
+      } catch (cErr) {
+        console.warn('[create-user] Failed to sync coach phone:', cErr?.message)
+      }
+    }
 
     if (!resolvedTeamId || !canManageTeam(requester.profile, resolvedTeamId)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -193,9 +215,9 @@ export async function POST(req) {
     let smsError = null
     if (recipientPhone) {
       try {
-        const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'apextrackgh.com'
-        const proto = req.headers.get('x-forwarded-proto') || 'https'
-        const loginUrl = `${proto}://${host}/login`
+        const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
+        const isLocal = !host || host.includes('localhost') || host.includes('127.0.0.1')
+        const loginUrl = !isLocal ? `https://${host}/login` : 'https://apextrackgh.com/login'
 
         const smsMessage = buildStaffLoginSMS({
           fullName: full_name,
@@ -343,19 +365,26 @@ export async function PATCH(req) {
         }
       }
 
+      if (!resetPhone && targetProfile?.id) {
+        const { data: c2 } = await db.from('coaches').select('phone').or(`email.eq.${targetProfile.email},name.eq.${targetProfile.full_name}`).maybeSingle()
+        if (c2?.phone) resetPhone = c2.phone
+      }
+
+      let resetSmsSent = false
       if (resetPhone) {
         try {
-          const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'apextrackgh.com'
-          const proto = req.headers.get('x-forwarded-proto') || 'https'
-          const loginUrl = `${proto}://${host}/login`
+          const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
+          const isLocal = !host || host.includes('localhost') || host.includes('127.0.0.1')
+          const loginUrl = !isLocal ? `https://${host}/login` : 'https://apextrackgh.com/login'
           const resetMsg = `ApexTrack: Your staff login password has been reset.\nNew Password: ${new_password}\nLogin: ${loginUrl}`
-          await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
+          const smsRes = await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
+          resetSmsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
         } catch (smsErr) {
           console.error('[create-user] Failed to send password reset SMS:', smsErr?.message)
         }
       }
 
-      return NextResponse.json({ success: true, message: 'Password reset successfully.' })
+      return NextResponse.json({ success: true, message: 'Password reset successfully.', sms_sent: resetSmsSent, phone: resetPhone || null })
     }
 
     if (action === 'change_own_password') {

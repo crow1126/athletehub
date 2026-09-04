@@ -57,6 +57,11 @@ export default function SettingsPage() {
   const [recoverForm,   setRecoverForm]   = useState({ login_id:'', new_password:'', confirm_password:'' })
   const [recoverSaving, setRecoverSaving] = useState(false)
   const [recoverMsg,    setRecoverMsg]    = useState({ text:'', type:'' })
+  const [recoverType,   setRecoverType]   = useState('staff') // 'staff' | 'player'
+  const [recoverPlayerForm, setRecoverPlayerForm] = useState({ user_id: '', new_password: '', confirm_password: '', phone: '' })
+  const [recoverPlayerSaving, setRecoverPlayerSaving] = useState(false)
+  const [recoverPlayerMsg, setRecoverPlayerMsg] = useState({ text: '', type: '' })
+
   const [showPassword,  setShowPassword]  = useState({})
 
   const [allAthletes,    setAllAthletes]    = useState([])
@@ -64,6 +69,16 @@ export default function SettingsPage() {
   const [playerSaving,   setPlayerSaving]   = useState(false)
   const [playerMsg,      setPlayerMsg]      = useState({ text: '', type: '' })
   const [showPlayerForm, setShowPlayerForm] = useState(false)
+  const [playerResetModal, setPlayerResetModal] = useState({
+    open: false,
+    userId: '',
+    athleteName: '',
+    username: '',
+    phone: '',
+    newPassword: '',
+    saving: false,
+    msg: { text: '', type: '' }
+  })
 
   useEffect(() => { loadAll() }, [])
 
@@ -84,7 +99,7 @@ export default function SettingsPage() {
       }
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins },{ data:athletes }] = await Promise.all([
-          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('athletes').select('id,name,position,back_number,phone'), prof.team_id).order('name'),
@@ -232,16 +247,66 @@ export default function SettingsPage() {
     setPlayerSaving(false)
   }
 
+  function openPlayerResetModal(athlete, login) {
+    const defaultPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+    setPlayerResetModal({
+      open: true,
+      userId: login.id,
+      athleteName: athlete?.name || login.full_name || 'Athlete',
+      username: login.username || login.email || athlete?.name,
+      phone: login.phone || athlete?.phone || '',
+      newPassword: defaultPw,
+      saving: false,
+      msg: { text: '', type: '' }
+    })
+  }
+
+  async function submitPlayerResetPassword() {
+    if (!playerResetModal.newPassword || playerResetModal.newPassword.length < 8) {
+      setPlayerResetModal(m => ({ ...m, msg: { text: 'Password must be at least 8 characters.', type: 'error' } }))
+      return
+    }
+    const phoneToSend = playerResetModal.phone?.trim()
+    if (!phoneToSend) {
+      setPlayerResetModal(m => ({ ...m, msg: { text: 'Phone number is required to send the new password via SMS.', type: 'error' } }))
+      return
+    }
+
+    setPlayerResetModal(m => ({ ...m, saving: true, msg: { text: '', type: '' } }))
+    try {
+      const res = await fetchWithAuth('/api/admin/create-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: playerResetModal.userId,
+          action: 'reset_password',
+          new_password: playerResetModal.newPassword,
+          phone: phoneToSend
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setPlayerResetModal(m => ({ ...m, saving: false, msg: { text: data.error || 'Failed to reset password.', type: 'error' } }))
+        return
+      }
+
+      const smsNote = data.sms_sent
+        ? ` SMS dispatched to ${data.phone || phoneToSend}.`
+        : (data.sms_error ? ` SMS error: ${data.sms_error}` : ` SMS dispatched to ${data.phone || phoneToSend}.`)
+
+      flash(`Password reset for ${playerResetModal.athleteName}. New password: ${playerResetModal.newPassword}.${smsNote}`, 'success')
+      setPlayerResetModal(m => ({ ...m, open: false, saving: false }))
+      await loadAll()
+    } catch (err) {
+      setPlayerResetModal(m => ({ ...m, saving: false, msg: { text: 'Error: ' + err.message, type: 'error' } }))
+    }
+  }
+
   async function handlePlayerAction(userId, action, extra = {}) {
     let confirmMsg = ''
     if (action === 'revoke') confirmMsg = 'Revoke this player\'s login? They will be signed out immediately.'
     if (action === 'reactivate') confirmMsg = 'Reactivate this player\'s login?'
-    if (action === 'reset_password') {
-      const newPw = prompt('Enter new password for the player (min 8 characters):')
-      if (newPw === null) return
-      if (newPw.length < 8) { alert('Password must be at least 8 characters.'); return }
-      extra.new_password = newPw
-    } else if (confirmMsg && !confirm(confirmMsg)) {
+    if (confirmMsg && !confirm(confirmMsg)) {
       return
     }
 
@@ -260,12 +325,7 @@ export default function SettingsPage() {
         flash('Failed: ' + (data.error || 'Unknown error'), 'error')
         return
       }
-      if (action === 'reset_password') {
-        const smsNote = data.sms_sent ? `\n\nUpdated password sent via SMS to ${data.phone || 'registered phone'}.` : ''
-        flash(`Password reset successfully. New password: ${extra.new_password}${smsNote}`, 'success')
-      } else {
-        flash(`Action "${action}" completed successfully.`, 'success')
-      }
+      flash(`Action "${action}" completed successfully.`, 'success')
       await loadAll()
     } catch (err) {
       flash('Error: ' + err.message, 'error')
@@ -289,11 +349,56 @@ export default function SettingsPage() {
       if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. Check Supabase Auth.`, 'error'); setRecoverSaving(false); return }
       const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
-      const smsNote = data.sms_sent ? `\n\nUpdated password sent via SMS to registered phone.` : ''
+      const smsNote = data.sms_sent
+        ? `\n\nUpdated password sent via SMS to ${data.phone || 'registered phone'}.`
+        : (data.sms_error ? `\n\nSMS notice: ${data.sms_error}` : '')
       flashRecover(`Password reset for ${login.coaches?.name||login.email}!\nUser: ${login.username||login.email}\nNew Password: ${recoverForm.new_password}${smsNote}`, 'success')
       setRecoverForm({ login_id:'', new_password:'', confirm_password:'' }); await loadAll()
     } catch(err) { flashRecover('Error: '+err.message,'error') }
     setRecoverSaving(false)
+  }
+
+  async function recoverPlayerLogin() {
+    if (!recoverPlayerForm.user_id) { flashRecover('Select a player account.', 'error'); return }
+    if (!recoverPlayerForm.new_password) { flashRecover('New password is required.', 'error'); return }
+    if (recoverPlayerForm.new_password.length < 8) { flashRecover('Min 8 characters.', 'error'); return }
+    if (recoverPlayerForm.new_password !== recoverPlayerForm.confirm_password) { flashRecover('Passwords do not match.', 'error'); return }
+    const phoneToSend = recoverPlayerForm.phone?.trim()
+    if (!phoneToSend) { flashRecover('Registered phone number is required to send reset credentials via SMS.', 'error'); return }
+
+    setRecoverPlayerSaving(true); setRecoverMsg({ text: '', type: '' })
+    try {
+      const selectedUser = allUsers.find(u => u.id === recoverPlayerForm.user_id)
+      const selectedAthlete = allAthletes.find(a => a.id === selectedUser?.athlete_id)
+
+      const res = await fetchWithAuth('/api/admin/create-user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: recoverPlayerForm.user_id,
+          action: 'reset_password',
+          new_password: recoverPlayerForm.new_password,
+          phone: phoneToSend
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        flashRecover('Failed: ' + (data.error || 'Failed to reset password.'), 'error')
+        setRecoverPlayerSaving(false)
+        return
+      }
+
+      const smsNote = data.sms_sent
+        ? `\n\nUpdated password sent via SMS to ${data.phone || phoneToSend}.`
+        : (data.sms_error ? `\n\nSMS notice: ${data.sms_error}` : `\n\nSMS dispatched to ${data.phone || phoneToSend}.`)
+
+      flashRecover(`Password reset for ${selectedAthlete?.name || selectedUser?.full_name}!\nUsername: ${selectedUser?.username || selectedUser?.email}\nNew Password: ${recoverPlayerForm.new_password}${smsNote}`, 'success')
+      setRecoverPlayerForm({ user_id: '', new_password: '', confirm_password: '', phone: '' })
+      await loadAll()
+    } catch (err) {
+      flashRecover('Error: ' + err.message, 'error')
+    }
+    setRecoverPlayerSaving(false)
   }
 
   async function revokeLogin(loginId) {
@@ -634,7 +739,7 @@ export default function SettingsPage() {
                   </div>
                   <button onClick={()=>{ setShowPlayerForm(!showPlayerForm); setPlayerMsg({ text:'',type:'' }) }}
                     className={showPlayerForm ? 'gm-btn danger' : 'gm-btn outline'} style={{ flexShrink:0 }}>
-                    {showPlayerForm ? '✕ Cancel' : '+ Create Player Login'} {GM_ICON}
+                    {showPlayerForm ? 'Cancel' : '+ Create Player Login'} {GM_ICON}
                   </button>
                 </div>
 
@@ -647,7 +752,19 @@ export default function SettingsPage() {
                         <select value={playerForm.athlete_id} onChange={e => {
                           const athId = e.target.value
                           const a = allAthletes.find(ath => ath.id === athId)
-                          setPlayerForm(f => ({ ...f, athlete_id: athId, phone: a?.phone || f.phone || '' }))
+                          if (a) {
+                            const autoUser = a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)
+                            const randomPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                            setPlayerForm(f => ({
+                              ...f,
+                              athlete_id: athId,
+                              username: f.username || autoUser,
+                              phone: a.phone || f.phone || '',
+                              password: f.password || randomPw
+                            }))
+                          } else {
+                            setPlayerForm(f => ({ ...f, athlete_id: athId }))
+                          }
                         }} style={{ ...inp,background:'#fff' }}>
                           <option value="">— Select an athlete —</option>
                           {allAthletes.length===0 ? <option disabled>No athletes found</option> : allAthletes.map(a=>{
@@ -668,16 +785,28 @@ export default function SettingsPage() {
                           onBlur={onBlur}
                         />
                         <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
-                          Credentials (username and password) will be automatically sent to this phone number via SMS immediately.
+                          Credentials (username and password) will be automatically sent to this phone number via SMS immediately. If the athlete does not have a phone in the database, entering one here will automatically save it to their profile.
                         </div>
                       </div>
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                         <div><label style={lbl}>Username *</label><input type="text" value={playerForm.username} onChange={e=>setPlayerForm(f=>({...f,username:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. richard_agyen" onFocus={onFocus} onBlur={onBlur}/></div>
-                        <div><label style={lbl}>Password *</label><input type="text" value={playerForm.password} onChange={e=>setPlayerForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                            <label style={{ ...lbl, margin: 0 }}>Password *</label>
+                            <button
+                              type="button"
+                              onClick={() => setPlayerForm(f => ({ ...f, password: `Apex${Math.floor(100000 + Math.random() * 900000)}` }))}
+                              style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                            >
+                              Generate Password
+                            </button>
+                          </div>
+                          <input type="text" value={playerForm.password} onChange={e=>setPlayerForm(f=>({...f,password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/>
+                        </div>
                       </div>
                       <MsgBox m={playerMsg}/>
                       <button onClick={createPlayerLogin} disabled={playerSaving} className="gm-btn" style={{ width:'fit-content',opacity:playerSaving?0.7:1 }}>
-                        {playerSaving?'Creating…':'Create Login Now'} {!playerSaving&&GM_ICON}
+                        {playerSaving?'Creating and Sending SMS…':'Create Login Now'} {!playerSaving&&GM_ICON}
                       </button>
                     </div>
                   </div>
@@ -694,39 +823,42 @@ export default function SettingsPage() {
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
                     <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-                      <div style={{ minWidth:640 }}>
-                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                          {['Athlete','Username / Email','Role','Status','Actions'].map(h=>(
+                      <div style={{ minWidth:680 }}>
+                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.4fr 1.2fr 1.4fr 0.9fr 1.5fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                          {['Athlete','Phone (SMS)','Username / Email','Status','Actions'].map(h=>(
                             <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
                           ))}
                         </div>
                         {allAthletes.map(a => {
                           const login = allUsers.find(u => u.athlete_id === a.id)
+                          const phone = login?.phone || a.phone || ''
                           return (
-                            <div key={a.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.5fr 1fr 1fr 1.5fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:(!login || login.is_active) ? 1 : 0.6 }}
+                            <div key={a.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.4fr 1.2fr 1.4fr 0.9fr 1.5fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:(!login || login.is_active) ? 1 : 0.6 }}
                               onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                               onMouseLeave={e=>e.currentTarget.style.background=''}>
                               <div>
                                 <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{a.name}</div>
                                 <div style={{ fontSize:11,color:'var(--text3)' }}>{a.position || '—'} {a.back_number ? `· #${a.back_number}` : ''}</div>
                               </div>
+                              <div>
+                                {phone ? (
+                                  <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text2)' }}>{phone}</span>
+                                ) : (
+                                  <span style={{ fontSize:11,color:'var(--danger)',background:'var(--danger-light)',padding:'2px 7px',borderRadius:4,fontWeight:600 }}>No phone</span>
+                                )}
+                              </div>
                               <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>
                                 {login ? (login.username || login.email) : <span style={{ color:'var(--text3)',fontStyle:'italic' }}>— No Login —</span>}
                               </div>
                               <div>
                                 {login ? (
-                                  <span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS.player+'20',color:ROLE_COLORS.player,padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span>
-                                ) : '—'}
-                              </div>
-                              <div>
-                                {login ? (
                                   <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'Active':'Revoked'}</span>
-                                ) : '—'}
+                                ) : <span style={{ fontSize:11,color:'var(--text3)' }}>—</span>}
                               </div>
                               <div>
                                 {login ? (
                                   <div style={{ display:'flex',gap:6 }}>
-                                    <button onClick={()=>handlePlayerAction(login.id, 'reset_password')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Reset PW</button>
+                                    <button onClick={()=>openPlayerResetModal(a, login)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Reset PW</button>
                                     {login.is_active ? (
                                       <button onClick={()=>handlePlayerAction(login.id, 'revoke')} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke</button>
                                     ) : (
@@ -735,9 +867,17 @@ export default function SettingsPage() {
                                   </div>
                                 ) : (
                                   <button onClick={()=>{
-                                    setPlayerForm(f => ({ ...f, athlete_id: a.id, username: a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20) }))
+                                    const autoUser = a.name.toLowerCase().replace(/[^a-z0-9_]/g, '_').slice(0, 20)
+                                    const randomPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                    setPlayerForm({
+                                      athlete_id: a.id,
+                                      username: autoUser,
+                                      password: randomPw,
+                                      phone: a.phone || ''
+                                    })
                                     setShowPlayerForm(true)
                                     setPlayerMsg({ text: '', type: '' })
+                                    window.scrollTo({ top: 200, behavior: 'smooth' })
                                   }} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Create Login</button>
                                 )}
                               </div>
@@ -754,99 +894,306 @@ export default function SettingsPage() {
             {/* RECOVER LOGINS */}
             {tab === 'recover' && isAdmin && (
               <div>
-                <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Recover Staff Logins</h2>
-                <p style={{ fontSize:14,color:'var(--text3)',marginBottom:24 }}>Reset a staff member's forgotten password. See current stored passwords in the Issue Logins tab.</p>
-                <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
-                  <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>Set New Password for Staff</h3>
-                  <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
-                    <div>
-                      <label style={lbl}>Staff Member *</label>
-                      <select value={recoverForm.login_id} onChange={e=>setRecoverForm(f=>({...f,login_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
-                        <option value="">— Select a staff member —</option>
-                        {staffLogins.filter(l=>l.is_active).length===0
-                          ? <option disabled>No active logins found</option>
-                          : staffLogins.filter(l=>l.is_active).map(l=>(
-                            <option key={l.id} value={l.id}>{l.coaches?.name||'—'} · {l.username || l.email} · {l.role}</option>
-                          ))
-                        }
-                      </select>
-                      {recoverForm.login_id && (() => {
-                        const login = staffLogins.find(l=>l.id===recoverForm.login_id)
-                        if (!login) return null
-                        return (
-                          <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(0,106,106,0.15)' }}>
-                            <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
-                              <span style={{ fontSize:12,color:'#0D9488',display:'inline-flex',alignItems:'center',gap:4 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> <strong>{login.coaches?.name||'—'}</strong></span>
-                              <span style={{ fontSize:12,color:'#0D9488',display:'inline-flex',alignItems:'center',gap:4 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> {login.username || login.email}</span>
-                              <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>{login.role}</span>
-                            </div>
-                            {login.plain_password && (
-                              <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--floral-muted)',borderRadius:6,border:'1px solid var(--border)' }}>
-                                <span style={{ fontSize:11,fontWeight:700,color:'#0D9488' }}>Current password:</span>
-                                <span style={{ fontFamily:'monospace',fontSize:13,color:'var(--text)',fontWeight:600 }}>{showPassword['recover_'+login.id] ? login.plain_password : '••••••••'}</span>
-                                <button onClick={()=>setShowPassword(p=>({...p,['recover_'+login.id]:!p['recover_'+login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:2 }}>{showPassword['recover_'+login.id] ? 'Hide' : 'Show'}</button>
-                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
-                              </div>
-                            )}
-                            {!login.plain_password && <div style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>No stored password — set a new one below.</div>}
-                          </div>
-                        )
-                      })()}
-                    </div>
-                    <div className="recover-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
-                      <div><label style={lbl}>Set New Password *</label><input type="text" value={recoverForm.new_password} onChange={e=>setRecoverForm(f=>({...f,new_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
-                      <div><label style={lbl}>Confirm Password *</label><input type="text" value={recoverForm.confirm_password} onChange={e=>setRecoverForm(f=>({...f,confirm_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Repeat password" onFocus={onFocus} onBlur={onBlur}/></div>
-                    </div>
-                    <MsgBox m={recoverMsg}/>
-                    <button onClick={recoverLogin} disabled={recoverSaving} className="gm-btn" style={{ width:'fit-content',opacity:recoverSaving?0.7:1 }}>
-                      {recoverSaving?'Resetting…':'Reset Password Now'} {!recoverSaving&&GM_ICON}
-                    </button>
-                  </div>
+                <h2 style={{ fontSize:20,fontWeight:700,marginBottom:8 }}>Recover Logins</h2>
+                <p style={{ fontSize:14,color:'var(--text3)',marginBottom:20 }}>Reset forgotten passwords for staff members or player accounts. Credentials and reset notifications are dispatched via SMS.</p>
+
+                {/* Staff / Player Selector */}
+                <div style={{ display:'inline-flex',background:'var(--surface2)',padding:4,borderRadius:'var(--r-md)',border:'1px solid var(--border)',marginBottom:22,gap:4 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setRecoverType('staff'); setRecoverMsg({ text:'', type:'' }) }}
+                    style={{
+                      padding: '7px 18px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: 'none',
+                      borderRadius: 'var(--r-sm)',
+                      cursor: 'pointer',
+                      background: recoverType === 'staff' ? '#fff' : 'transparent',
+                      color: recoverType === 'staff' ? '#0D9488' : 'var(--text3)',
+                      boxShadow: recoverType === 'staff' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Staff Logins ({staffLogins.filter(l => l.is_active).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRecoverType('player'); setRecoverMsg({ text:'', type:'' }) }}
+                    style={{
+                      padding: '7px 18px',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      border: 'none',
+                      borderRadius: 'var(--r-sm)',
+                      cursor: 'pointer',
+                      background: recoverType === 'player' ? '#fff' : 'transparent',
+                      color: recoverType === 'player' ? '#0D9488' : 'var(--text3)',
+                      boxShadow: recoverType === 'player' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    Player Accounts ({allUsers.filter(u => u.role === 'player' && u.is_active !== false).length})
+                  </button>
                 </div>
 
-                <h3 style={{ fontSize:16,fontWeight:700,marginBottom:12 }}>All Active Logins</h3>
-                {staffLogins.filter(l=>l.is_active).length===0 ? (
-                  <div style={{ padding:'24px',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:13,fontStyle:'italic',border:'1px solid var(--border)',textAlign:'center' }}>No active staff logins.</div>
-                ) : (
-                  <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden' }}>
-                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-                      <div style={{ minWidth:580 }}>
-                        <div style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,padding:'10px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                          {['Staff','Username','Password','Role','Issued'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
-                        </div>
-                        {staffLogins.filter(l=>l.is_active).map((login,i)=>{
-                          const selected = recoverForm.login_id === login.id
-                          return (
-                            <div key={login.id} onClick={()=>setRecoverForm(f=>({...f,login_id:login.id}))}
-                              style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'#F0FDFA':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
-                              onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
-                              onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
-                              <div style={{ display:'flex',alignItems:'center',gap:7 }}>
-                                {selected && <span style={{ fontSize:14 }}></span>}
-                                <div>
-                                  <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
-                                  <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
+                {recoverType === 'staff' && (
+                  <div>
+                    <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
+                      <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>Set New Password for Staff</h3>
+                      <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
+                        <div>
+                          <label style={lbl}>Staff Member *</label>
+                          <select value={recoverForm.login_id} onChange={e=>setRecoverForm(f=>({...f,login_id:e.target.value}))} style={{ ...inp,background:'#fff' }}>
+                            <option value="">— Select a staff member —</option>
+                            {staffLogins.filter(l=>l.is_active).length===0
+                              ? <option disabled>No active logins found</option>
+                              : staffLogins.filter(l=>l.is_active).map(l=>(
+                                <option key={l.id} value={l.id}>{l.coaches?.name||'—'} · {l.username || l.email} · {l.role}</option>
+                              ))
+                            }
+                          </select>
+                          {recoverForm.login_id && (() => {
+                            const login = staffLogins.find(l=>l.id===recoverForm.login_id)
+                            if (!login) return null
+                            return (
+                              <div style={{ marginTop:10,padding:'12px 16px',background:'rgba(255,255,255,0.8)',borderRadius:'var(--r-md)',border:'1px solid rgba(0,106,106,0.15)' }}>
+                                <div style={{ display:'flex',gap:20,flexWrap:'wrap',marginBottom:login.plain_password?10:0 }}>
+                                  <span style={{ fontSize:12,color:'#0D9488',display:'inline-flex',alignItems:'center',gap:4 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> <strong>{login.coaches?.name||'—'}</strong></span>
+                                  <span style={{ fontSize:12,color:'#0D9488',display:'inline-flex',alignItems:'center',gap:4 }}><svg width="12" height="12" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="5" r="3" stroke="currentColor" strokeWidth="1.5"/><path d="M2 14c0-3.314 2.686-5 6-5s6 1.686 6 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg> {login.username || login.email}</span>
+                                  <span style={{ fontSize:12,color:'#0D9488',textTransform:'capitalize' }}>{login.role}</span>
                                 </div>
+                                {login.plain_password && (
+                                  <div style={{ display:'flex',alignItems:'center',gap:8,padding:'8px 12px',background:'var(--floral-muted)',borderRadius:6,border:'1px solid var(--border)' }}>
+                                    <span style={{ fontSize:11,fontWeight:700,color:'#0D9488' }}>Current password:</span>
+                                    <span style={{ fontFamily:'monospace',fontSize:13,color:'var(--text)',fontWeight:600 }}>{showPassword['recover_'+login.id] ? login.plain_password : '••••••••'}</span>
+                                    <button onClick={()=>setShowPassword(p=>({...p,['recover_'+login.id]:!p['recover_'+login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:16,padding:2 }}>{showPassword['recover_'+login.id] ? 'Hide' : 'Show'}</button>
+                                    <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 8px',fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
+                                  </div>
+                                )}
+                                {!login.plain_password && <div style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>No stored password — set a new one below.</div>}
                               </div>
-                              <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
-                              <div style={{ display:'flex',alignItems:'center',gap:5 }}>
-                                {login.plain_password ? (
-                                  <>
-                                    <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text)' }}>{showPassword['tbl_'+login.id] ? login.plain_password : '••••••••'}</span>
-                                    <button onClick={e=>{e.stopPropagation();setShowPassword(p=>({...p,['tbl_'+login.id]:!p['tbl_'+login.id]}))}} style={{ background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0 }}>{showPassword['tbl_'+login.id]?'Hide':'Show'}</button>
-                                  </>
-                                ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>—</span>}
-                              </div>
-                              <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
-                              <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
-                            </div>
-                          )
-                        })}
+                            )
+                          })()}
+                        </div>
+                        <div className="recover-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                          <div><label style={lbl}>Set New Password *</label><input type="text" value={recoverForm.new_password} onChange={e=>setRecoverForm(f=>({...f,new_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/></div>
+                          <div><label style={lbl}>Confirm Password *</label><input type="text" value={recoverForm.confirm_password} onChange={e=>setRecoverForm(f=>({...f,confirm_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Repeat password" onFocus={onFocus} onBlur={onBlur}/></div>
+                        </div>
+                        <MsgBox m={recoverMsg}/>
+                        <button onClick={recoverLogin} disabled={recoverSaving} className="gm-btn" style={{ width:'fit-content',opacity:recoverSaving?0.7:1 }}>
+                          {recoverSaving?'Resetting…':'Reset Password Now'} {!recoverSaving&&GM_ICON}
+                        </button>
                       </div>
                     </div>
+
+                    <h3 style={{ fontSize:16,fontWeight:700,marginBottom:12 }}>All Active Staff Logins</h3>
+                    {staffLogins.filter(l=>l.is_active).length===0 ? (
+                      <div style={{ padding:'24px',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:13,fontStyle:'italic',border:'1px solid var(--border)',textAlign:'center' }}>No active staff logins.</div>
+                    ) : (
+                      <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden' }}>
+                        <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                          <div style={{ minWidth:580 }}>
+                            <div style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,padding:'10px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                              {['Staff','Username','Password','Role','Issued'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
+                            </div>
+                            {staffLogins.filter(l=>l.is_active).map((login,i)=>{
+                              const selected = recoverForm.login_id === login.id
+                              return (
+                                <div key={login.id} onClick={()=>setRecoverForm(f=>({...f,login_id:login.id}))}
+                                  style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.6fr 0.8fr 0.7fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'#F0FDFA':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
+                                  onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
+                                  onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
+                                  <div style={{ display:'flex',alignItems:'center',gap:7 }}>
+                                    {selected && <span style={{ fontSize:14 }}></span>}
+                                    <div>
+                                      <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{login.coaches?.name||'—'}</div>
+                                      <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>{(login.coaches?.staff_type||'').replace(/_/g,' ')}</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
+                                  <div style={{ display:'flex',alignItems:'center',gap:5 }}>
+                                    {login.plain_password ? (
+                                      <>
+                                        <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text)' }}>{showPassword['tbl_'+login.id] ? login.plain_password : '••••••••'}</span>
+                                        <button onClick={e=>{e.stopPropagation();setShowPassword(p=>({...p,['tbl_'+login.id]:!p['tbl_'+login.id]}))}} style={{ background:'none',border:'none',cursor:'pointer',fontSize:13,padding:0 }}>{showPassword['tbl_'+login.id]?'Hide':'Show'}</button>
+                                      </>
+                                    ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>—</span>}
+                                  </div>
+                                  <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
+                                  <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <p style={{ fontSize:11,color:'var(--text3)',marginTop:10 }}>Click any row to pre-select · Show to reveal password · to copy</p>
                   </div>
                 )}
-                <p style={{ fontSize:11,color:'var(--text3)',marginTop:10 }}>Click any row to pre-select · Show to reveal password · to copy</p>
+
+                {recoverType === 'player' && (
+                  <div>
+                    <div style={{ background:'#F0FDFA',border:'1px solid rgba(0,106,106,0.2)',borderRadius:'var(--r-lg)',padding:26,marginBottom:28 }}>
+                      <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>Set New Password for Player</h3>
+                      <div style={{ display:'flex',flexDirection:'column',gap:16 }}>
+                        <div>
+                          <label style={lbl}>Player Account *</label>
+                          <select
+                            value={recoverPlayerForm.user_id}
+                            onChange={e => {
+                              const uId = e.target.value
+                              const u = allUsers.find(user => user.id === uId)
+                              const a = allAthletes.find(ath => ath.id === u?.athlete_id)
+                              const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                              setRecoverPlayerForm(f => ({
+                                ...f,
+                                user_id: uId,
+                                phone: u?.phone || a?.phone || f.phone || '',
+                                new_password: f.new_password || genPw,
+                                confirm_password: f.confirm_password || f.new_password || genPw
+                              }))
+                            }}
+                            style={{ ...inp, background: '#fff' }}
+                          >
+                            <option value="">— Select a player account —</option>
+                            {allUsers.filter(u => u.role === 'player' && u.is_active !== false).length === 0
+                              ? <option disabled>No active player accounts found</option>
+                              : allUsers.filter(u => u.role === 'player' && u.is_active !== false).map(u => {
+                                  const a = allAthletes.find(ath => ath.id === u.athlete_id)
+                                  const displayName = a ? `${a.name} (${a.position || 'N/A'}${a.back_number ? ` · #${a.back_number}` : ''})` : (u.full_name || u.email)
+                                  return (
+                                    <option key={u.id} value={u.id}>
+                                      {displayName} · {u.username || u.email}
+                                    </option>
+                                  )
+                                })
+                            }
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={lbl}>Registered Phone Number (Credentials sent via SMS) *</label>
+                          <input
+                            type="text"
+                            value={recoverPlayerForm.phone || ''}
+                            onChange={e => setRecoverPlayerForm(f => ({ ...f, phone: e.target.value }))}
+                            style={{ ...inp, background: '#fff' }}
+                            placeholder="e.g. 0244123456 or +233244123456"
+                            onFocus={onFocus}
+                            onBlur={onBlur}
+                          />
+                          <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
+                            Credentials (username and updated password) will be automatically sent to this phone number via SMS immediately.
+                          </div>
+                        </div>
+
+                        <div className="recover-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                              <label style={{ ...lbl, margin: 0 }}>Set New Password *</label>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                  setRecoverPlayerForm(f => ({ ...f, new_password: genPw, confirm_password: genPw }))
+                                }}
+                                style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                              >
+                                Generate Password
+                              </button>
+                            </div>
+                            <input type="text" value={recoverPlayerForm.new_password} onChange={e=>setRecoverPlayerForm(f=>({...f,new_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Min 8 characters" onFocus={onFocus} onBlur={onBlur}/>
+                          </div>
+                          <div>
+                            <label style={lbl}>Confirm Password *</label>
+                            <input type="text" value={recoverPlayerForm.confirm_password} onChange={e=>setRecoverPlayerForm(f=>({...f,confirm_password:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="Repeat password" onFocus={onFocus} onBlur={onBlur}/>
+                          </div>
+                        </div>
+
+                        <MsgBox m={recoverMsg}/>
+
+                        <button onClick={recoverPlayerLogin} disabled={recoverPlayerSaving} className="gm-btn" style={{ width:'fit-content',opacity:recoverPlayerSaving?0.7:1 }}>
+                          {recoverPlayerSaving ? 'Resetting and Sending SMS...' : 'Reset Password & Send SMS'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <h3 style={{ fontSize:16,fontWeight:700,marginBottom:12 }}>Active Player Accounts</h3>
+                    {allUsers.filter(u => u.role === 'player' && u.is_active !== false).length === 0 ? (
+                      <div style={{ padding:'24px',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:13,fontStyle:'italic',border:'1px solid var(--border)',textAlign:'center' }}>No active player accounts found.</div>
+                    ) : (
+                      <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden' }}>
+                        <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                          <div style={{ minWidth:580 }}>
+                            <div style={{ display:'grid',gridTemplateColumns:'1.5fr 1.3fr 1.5fr 1fr',gap:8,padding:'10px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                              {['Athlete','Phone (SMS)','Username / Login','Actions'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
+                            </div>
+                            {allUsers.filter(u => u.role === 'player' && u.is_active !== false).map((login, i) => {
+                              const a = allAthletes.find(ath => ath.id === login.athlete_id)
+                              const phone = login.phone || a?.phone || ''
+                              const selected = recoverPlayerForm.user_id === login.id
+                              return (
+                                <div
+                                  key={login.id}
+                                  onClick={() => {
+                                    const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                    setRecoverPlayerForm({
+                                      user_id: login.id,
+                                      phone: phone,
+                                      new_password: genPw,
+                                      confirm_password: genPw
+                                    })
+                                  }}
+                                  style={{ display:'grid',gridTemplateColumns:'1.5fr 1.3fr 1.5fr 1fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',cursor:'pointer',background:selected?'#F0FDFA':i%2===0?'#fff':'var(--surface2)',transition:'var(--transition)' }}
+                                  onMouseEnter={e=>{ if(!selected) e.currentTarget.style.background='var(--surface2)' }}
+                                  onMouseLeave={e=>{ if(!selected) e.currentTarget.style.background=i%2===0?'#fff':'var(--surface2)' }}>
+                                  <div>
+                                    <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>{a?.name || login.full_name || '—'}</div>
+                                    <div style={{ fontSize:11,color:'var(--text3)' }}>{a?.position || 'Player'} {a?.back_number ? `· #${a.back_number}` : ''}</div>
+                                  </div>
+                                  <div>
+                                    {phone ? (
+                                      <span style={{ fontSize:12,fontFamily:'monospace',color:'var(--text2)' }}>{phone}</span>
+                                    ) : (
+                                      <span style={{ fontSize:11,color:'var(--danger)',background:'var(--danger-light)',padding:'2px 7px',borderRadius:4,fontWeight:600 }}>No phone</span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize:12,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
+                                  <div>
+                                    <button
+                                      type="button"
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        if (a) {
+                                          openPlayerResetModal(a, login)
+                                        } else {
+                                          const genPw = `Apex${Math.floor(100000 + Math.random() * 900000)}`
+                                          setRecoverPlayerForm({
+                                            user_id: login.id,
+                                            phone: phone,
+                                            new_password: genPw,
+                                            confirm_password: genPw
+                                          })
+                                        }
+                                      }}
+                                      className="gm-btn outline"
+                                      style={{ padding:'5px 10px',fontSize:11 }}
+                                    >
+                                      Reset PW
+                                    </button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <p style={{ fontSize:11,color:'var(--text3)',marginTop:10 }}>Click any row to pre-select for recovery · SMS will be dispatched upon resetting.</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -944,6 +1291,110 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* PLAYER RESET PASSWORD MODAL */}
+      {playerResetModal.open && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 16
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 'var(--r-lg)',
+            maxWidth: 480,
+            width: '100%',
+            padding: 26,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Reset Player Password</h3>
+                <p style={{ fontSize: 12, color: 'var(--text3)', margin: '4px 0 0' }}>
+                  Athlete: <strong>{playerResetModal.athleteName}</strong> ({playerResetModal.username})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlayerResetModal(m => ({ ...m, open: false }))}
+                style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--text3)', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={lbl}>Registered Phone Number (SMS destination) *</label>
+                <input
+                  type="text"
+                  value={playerResetModal.phone || ''}
+                  onChange={e => setPlayerResetModal(m => ({ ...m, phone: e.target.value }))}
+                  style={{ ...inp, background: 'var(--surface2)' }}
+                  placeholder="e.g. 0244123456 or +233244123456"
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
+                <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
+                  ApexTrack will dispatch an SMS containing the new credentials to this phone number.
+                </div>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <label style={{ ...lbl, margin: 0 }}>New Password *</label>
+                  <button
+                    type="button"
+                    onClick={() => setPlayerResetModal(m => ({ ...m, newPassword: `Apex${Math.floor(100000 + Math.random() * 900000)}` }))}
+                    style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Generate Password
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={playerResetModal.newPassword}
+                  onChange={e => setPlayerResetModal(m => ({ ...m, newPassword: e.target.value }))}
+                  style={{ ...inp, background: 'var(--surface2)' }}
+                  placeholder="Min 8 characters"
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
+              </div>
+
+              <MsgBox m={playerResetModal.msg} />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setPlayerResetModal(m => ({ ...m, open: false }))}
+                  className="gm-btn outline"
+                  style={{ padding: '8px 16px', fontSize: 13 }}
+                  disabled={playerResetModal.saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitPlayerResetPassword}
+                  disabled={playerResetModal.saving}
+                  className="gm-btn"
+                  style={{ padding: '8px 18px', fontSize: 13, opacity: playerResetModal.saving ? 0.7 : 1 }}
+                >
+                  {playerResetModal.saving ? 'Resetting and Sending SMS...' : 'Reset & Send SMS'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

@@ -258,7 +258,7 @@ export async function PATCH(req) {
   try {
     const db = getDb()
     const body = await req.json()
-    const { user_id, login_id, action, new_password } = body
+    const { user_id, login_id, action, new_password, phone } = body
 
     if (!user_id) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
@@ -279,7 +279,7 @@ export async function PATCH(req) {
     } else {
       const { data: profile } = await db
         .from('profiles')
-        .select('id,email,team_id,phone,full_name')
+        .select('id,email,team_id,phone,full_name,athlete_id,role,username')
         .eq('id', user_id)
         .single()
 
@@ -356,7 +356,8 @@ export async function PATCH(req) {
       }
 
       // Dispatch updated password via SMS if phone is available
-      let resetPhone = targetProfile?.phone || null
+      let resetPhone = (phone || targetProfile?.phone)?.trim() || null
+
       if (!resetPhone && login_id) {
         const { data: sl } = await db.from('staff_logins').select('coach_id').eq('id', login_id).maybeSingle()
         if (sl?.coach_id) {
@@ -375,22 +376,54 @@ export async function PATCH(req) {
         if (ath?.phone) resetPhone = ath.phone
       }
 
+      if (!resetPhone && targetProfile?.id) {
+        const { data: ath2 } = await db.from('athletes').select('phone').or(`name.eq.${targetProfile.full_name},id.eq.${user_id}`).maybeSingle()
+        if (ath2?.phone) resetPhone = ath2.phone
+      }
+
       let resetSmsSent = false
+      let resetSmsError = null
+
       if (resetPhone) {
+        const norm = normalizeGhPhone(resetPhone)
+        if (norm) resetPhone = norm
+
+        // Sync back to profiles and athletes table if athlete_id exists
+        try {
+          await db.from('profiles').update({ phone: resetPhone }).eq('id', user_id)
+          if (targetProfile?.athlete_id) {
+            await db.from('athletes').update({ phone: resetPhone }).eq('id', targetProfile.athlete_id)
+          }
+        } catch (syncErr) {
+          console.warn('[create-user] Failed to sync phone on reset:', syncErr?.message)
+        }
+
         try {
           const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || ''
           const isLocal = !host || host.includes('localhost') || host.includes('127.0.0.1')
           const loginUrl = !isLocal ? `https://${host}/login` : 'https://apextrackgh.com/login'
-          const roleTitle = targetProfile?.role === 'player' ? 'player' : 'staff'
-          const resetMsg = `ApexTrack: Your ${roleTitle} login password has been reset.\nNew Password: ${new_password}\nLogin: ${loginUrl}`
+          const roleTitle = targetProfile?.role === 'player' ? 'player' : (targetProfile?.role || 'staff')
+          const loginIdentifier = targetProfile?.username || targetProfile?.email || 'your account'
+          const resetMsg = `ApexTrack: Your ${roleTitle} login password has been reset.\nUsername: ${loginIdentifier}\nNew Password: ${new_password}\nLogin: ${loginUrl}`
           const smsRes = await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
           resetSmsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
+          if (smsRes?.error) resetSmsError = smsRes.error
+          console.log(`[create-user] Reset SMS dispatched to ${resetPhone} (sent=${resetSmsSent}):`, smsRes)
         } catch (smsErr) {
           console.error('[create-user] Failed to send password reset SMS:', smsErr?.message)
+          resetSmsError = smsErr?.message
         }
+      } else {
+        console.warn(`[create-user] No registered phone found for user ${user_id} during password reset.`)
       }
 
-      return NextResponse.json({ success: true, message: 'Password reset successfully.', sms_sent: resetSmsSent, phone: resetPhone || null })
+      return NextResponse.json({
+        success: true,
+        message: 'Password reset successfully.',
+        sms_sent: resetSmsSent,
+        phone: resetPhone || null,
+        sms_error: resetSmsError
+      })
     }
 
     if (action === 'change_own_password') {

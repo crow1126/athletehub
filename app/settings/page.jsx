@@ -177,8 +177,8 @@ export default function SettingsPage() {
       const data = await res.json()
       if (!res.ok) { flashIssue(data.error||'Failed.','error'); setIssueSaving(false); return }
       const smsNote = data.sms_sent
-        ? `\n\n📲 Credentials sent via SMS to ${data.phone}!`
-        : (data.sms_error ? `\n\n⚠️ SMS warning: ${data.sms_error}` : `\n\n📲 SMS dispatched to ${data.phone || phoneToSend}`)
+        ? `\n\nCredentials sent via SMS to ${data.phone}.`
+        : (data.sms_error ? `\n\nSMS notice: ${data.sms_error}` : `\n\nSMS dispatched to ${data.phone || phoneToSend}.`)
       flashIssue(`Login created for ${fullName}!\nUsername: ${username}\nPassword: ${issueForm.password}${smsNote}`, 'success')
       setIssueForm({ coach_id:'',username:'',password:'',role:'physio',notes:'',full_name:'',phone:'' })
       setShowIssueForm(false); await loadAll()
@@ -220,8 +220,8 @@ export default function SettingsPage() {
         return
       }
       const smsNote = data.sms_sent
-        ? `\n\n📲 Credentials sent via SMS to ${data.phone}!`
-        : (data.sms_error ? `\n\n⚠️ SMS warning: ${data.sms_error}` : `\n\n📲 SMS dispatched to ${data.phone || phoneToSend}`)
+        ? `\n\nCredentials sent via SMS to ${data.phone}.`
+        : (data.sms_error ? `\n\nSMS notice: ${data.sms_error}` : `\n\nSMS dispatched to ${data.phone || phoneToSend}.`)
       flashPlayer(`Login created for ${athlete?.name}!\nUsername: ${username}\nPassword: ${playerForm.password}${smsNote}`, 'success')
       setPlayerForm({ athlete_id: '', username: '', password: '', phone: '' })
       setShowPlayerForm(false)
@@ -261,7 +261,7 @@ export default function SettingsPage() {
         return
       }
       if (action === 'reset_password') {
-        const smsNote = data.sms_sent ? `\n\n📲 Updated password sent via SMS to ${data.phone || 'registered phone'}!` : ''
+        const smsNote = data.sms_sent ? `\n\nUpdated password sent via SMS to ${data.phone || 'registered phone'}.` : ''
         flash(`Password reset successfully. New password: ${extra.new_password}${smsNote}`, 'success')
       } else {
         flash(`Action "${action}" completed successfully.`, 'success')
@@ -289,7 +289,7 @@ export default function SettingsPage() {
       if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. Check Supabase Auth.`, 'error'); setRecoverSaving(false); return }
       const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
-      const smsNote = data.sms_sent ? `\n\n📲 Updated password sent via SMS to registered phone!` : ''
+      const smsNote = data.sms_sent ? `\n\nUpdated password sent via SMS to registered phone.` : ''
       flashRecover(`Password reset for ${login.coaches?.name||login.email}!\nUser: ${login.username||login.email}\nNew Password: ${recoverForm.new_password}${smsNote}`, 'success')
       setRecoverForm({ login_id:'', new_password:'', confirm_password:'' }); await loadAll()
     } catch(err) { flashRecover('Error: '+err.message,'error') }
@@ -506,7 +506,7 @@ export default function SettingsPage() {
                           setIssueForm(f => ({ ...f, coach_id: coachId, role: autoRole, phone: staff?.phone || f.phone || '' }))
                         }} style={{ ...inp,background:'#fff' }}>
                           <option value="">{issueForm.role === 'accountant' ? '— No staff link (Accountant Only) —' : '— Select a staff member —'}</option>
-                          {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')}){s.phone ? ` · 📞 ${s.phone}` : ' · (No phone registered)'}</option>)}
+                          {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')}){s.phone ? ` · (${s.phone})` : ' · (No phone registered)'}</option>)}
                         </select>
                       </div>
                       <div>
@@ -521,7 +521,7 @@ export default function SettingsPage() {
                           onBlur={onBlur}
                         />
                         <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
-                          📲 Credentials (username &amp; password) will be automatically sent to this phone number via SMS immediately.
+                          Credentials (username and password) will be automatically sent to this phone number via SMS immediately.
                         </div>
                       </div>
                       {issueForm.role === 'accountant' && !issueForm.coach_id && (
@@ -652,7 +652,7 @@ export default function SettingsPage() {
                           <option value="">— Select an athlete —</option>
                           {allAthletes.length===0 ? <option disabled>No athletes found</option> : allAthletes.map(a=>{
                             const hasLogin = allUsers.some(u => u.athlete_id === a.id)
-                            return <option key={a.id} value={a.id} disabled={hasLogin}>{a.name} ({a.position || 'N/A'}){a.phone ? ` · 📞 ${a.phone}` : ' · (No phone registered)'}{hasLogin ? ' (Already has login)' : ''}</option>
+                            return <option key={a.id} value={a.id} disabled={hasLogin}>{a.name} ({a.position || 'N/A'}){a.phone ? ` · (${a.phone})` : ' · (No phone registered)'}{hasLogin ? ' (Already has login)' : ''}</option>
                           })}
                         </select>
                       </div>
@@ -668,7 +668,7 @@ export default function SettingsPage() {
                           onBlur={onBlur}
                         />
                         <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
-                          📲 Credentials (username &amp; password) will be automatically sent to this phone number via SMS immediately.
+                          Credentials (username and password) will be automatically sent to this phone number via SMS immediately.
                         </div>
                       </div>
                       <div className="issue-grid" style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>

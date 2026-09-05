@@ -1,10 +1,16 @@
 @import "tailwindcss";
 
-/* ── ELECTRON APP ZERO-FLASH RULE ── */
+/* ── ELECTRON & NATIVE APP ZERO-FLASH RULE ── */
 html.is-electron .electron-hide,
+html.is-native-app .electron-hide,
 html.is-electron [data-nav="Download"],
+html.is-native-app [data-nav="Download"],
 html.is-electron #download,
-html.is-electron a[href*="ApexTrack-Setup.exe"] {
+html.is-native-app #download,
+html.is-electron a[href*="ApexTrack-Setup.exe"],
+html.is-native-app a[href*="ApexTrack-Setup.exe"],
+html.is-electron a[href*="/download/android"],
+html.is-native-app a[href*="/download/android"] {
   display: none !important;
 }
 

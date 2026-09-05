@@ -141,26 +141,38 @@ export default function LandingPage() {
   const [activeFaq, setActiveFaq] = useState(null)
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
-      const ua = navigator.userAgent
-      // Capacitor Android WebView: Android + wv (WebView) in UA
-      const isCapacitor = ua.includes('Android') && ua.includes('wv')
-      const isStandalone =
-        window.navigator?.standalone === true ||
-        window.matchMedia?.('(display-mode: standalone)')?.matches ||
-        window.electronAPI?.isElectron ||
-        ua.includes('Electron') ||
-        ua.includes('ApexTrackDesktop') ||
-        isCapacitor
       const hasAuthCookie = document.cookie.includes('sb-') || document.cookie.includes('auth')
-      return isStandalone || hasAuthCookie
+      const hasAuthBackup = !!localStorage.getItem('sb-session-backup')
+      return hasAuthCookie || hasAuthBackup
     }
     return false
   })
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        try {
+    async function checkAuthSession() {
+      try {
+        let session = null
+        const { data } = await supabase.auth.getSession()
+        session = data?.session
+
+        // If no session from cookies, try restoring from localStorage backup (resists Android OS RAM clear)
+        if (!session && typeof window !== 'undefined') {
+          try {
+            const raw = localStorage.getItem('sb-session-backup')
+            if (raw) {
+              const parsed = JSON.parse(raw)
+              if (parsed?.access_token && parsed?.refresh_token) {
+                const restored = await supabase.auth.setSession({
+                  access_token: parsed.access_token,
+                  refresh_token: parsed.refresh_token,
+                })
+                session = restored.data?.session
+              }
+            }
+          } catch (_e) {}
+        }
+
+        if (session?.user) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('is_active, role')
@@ -177,29 +189,14 @@ export default function LandingPage() {
             }
             return
           }
-        } catch (_e) {}
-      }
-
-      if (typeof window !== 'undefined') {
-        const ua = navigator.userAgent
-        const isCapacitor = ua.includes('Android') && ua.includes('wv')
-        const isNativeApp =
-          window.navigator?.standalone === true ||
-          window.matchMedia?.('(display-mode: standalone)')?.matches ||
-          window.electronAPI?.isElectron ||
-          ua.includes('Electron') ||
-          ua.includes('ApexTrackDesktop') ||
-          isCapacitor
-
-        if (isNativeApp) {
-          router.replace('/login')
-          return
         }
-      }
+      } catch (_e) {}
+
+      // If unauthenticated, show the landing page (don't force kick to /login)
       setShowSplash(false)
-    }).catch(() => {
-      setShowSplash(false)
-    })
+    }
+
+    checkAuthSession()
   }, [router])
   const [demoModalOpen, setDemoModalOpen] = useState(false)
   const [demoSubmitted, setDemoSubmitted] = useState(false)
@@ -285,15 +282,18 @@ export default function LandingPage() {
     return mailtoUrl
   }
   // isElectron also covers Capacitor Android WebView — both are "native app" contexts
-  // where the landing page, download buttons, and landing nav should be hidden.
+  // where the download buttons and download section should be hidden.
   const [isElectron, setIsElectron] = useState(() => {
     if (typeof window !== 'undefined') {
       const ua = navigator.userAgent
       return (
         !!window.electronAPI?.isElectron ||
+        !!window.Capacitor?.isNativePlatform?.() ||
         ua.includes('Electron') ||
         ua.includes('ApexTrackDesktop') ||
-        (ua.includes('Android') && ua.includes('wv'))
+        (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor'))) ||
+        document.documentElement.classList.contains('is-electron') ||
+        document.documentElement.classList.contains('is-native-app')
       )
     }
     return false
@@ -305,9 +305,12 @@ export default function LandingPage() {
     const ua = navigator.userAgent
     if (
       window.electronAPI?.isElectron ||
+      window.Capacitor?.isNativePlatform?.() ||
       ua.includes('Electron') ||
       ua.includes('ApexTrackDesktop') ||
-      (ua.includes('Android') && ua.includes('wv'))
+      (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor'))) ||
+      document.documentElement.classList.contains('is-electron') ||
+      document.documentElement.classList.contains('is-native-app')
     ) {
       setIsElectron(true)
     }
@@ -1320,9 +1323,14 @@ export default function LandingPage() {
               {l}
             </a>
           ))}
-          <Link href="/login" className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>
-            Get Started
-          </Link>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, marginTop: 16 }}>
+            <Link href="/login" className="btn-primary" style={{ justifyContent: 'center', padding: '14px 28px', fontSize: 16 }}>
+              Sign In
+            </Link>
+            <Link href="/login?tab=signup" className="btn-outline" style={{ justifyContent: 'center', padding: '12px 28px', fontSize: 15, background: '#FFFFFF' }}>
+              Create Account
+            </Link>
+          </div>
         </div>
       )}
 
@@ -1411,7 +1419,7 @@ export default function LandingPage() {
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
                 <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              Windows App
+              <span>Download App</span>
             </a>
           )}
           <Link href="/login?tab=signup" className="btn-primary">
@@ -1746,7 +1754,9 @@ export default function LandingPage() {
                         <div className="dl-mockup-list">
                           <div className="dl-mockup-item">
                             <div className="dl-mockup-item-icon" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2DD4BF' }}>
-                              ⚡
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                              </svg>
                             </div>
                             <div>
                               <div className="dl-mockup-item-title">Dedicated Desktop Workspace</div>
@@ -1756,7 +1766,9 @@ export default function LandingPage() {
 
                           <div className="dl-mockup-item">
                             <div className="dl-mockup-item-icon" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34D399' }}>
-                              🔄
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                              </svg>
                             </div>
                             <div>
                               <div className="dl-mockup-item-title">Real-Time Cloud Synchronization</div>
@@ -1766,7 +1778,10 @@ export default function LandingPage() {
 
                           <div className="dl-mockup-item">
                             <div className="dl-mockup-item-icon" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60A5FA' }}>
-                              🔒
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                              </svg>
                             </div>
                             <div>
                               <div className="dl-mockup-item-title">Strict Postgres RLS Security</div>
@@ -1828,7 +1843,7 @@ export default function LandingPage() {
 
                       <div className="dl-ios-notice">
                         <p>
-                          <strong>🍎 Apple iOS / iPhone Notice:</strong> Apple restricts direct APK installs. To run ApexTrack on iPhone or iPad, open <strong>apextrackgh.com</strong> in Safari and tap <em>Share → Add to Home Screen</em> for full mobile web app experience.
+                          <strong>Apple iOS / iPhone Notice:</strong> Apple restricts direct APK installs. To run ApexTrack on iPhone or iPad, open <strong>apextrackgh.com</strong> in Safari and tap <em>Share → Add to Home Screen</em> for full mobile web app experience.
                         </p>
                       </div>
                     </div>
@@ -1847,7 +1862,15 @@ export default function LandingPage() {
                         <div className="dl-mockup-list">
                           <div className="dl-mockup-item">
                             <div className="dl-mockup-item-icon" style={{ background: 'rgba(5, 150, 105, 0.2)', color: '#34D399' }}>
-                              ⚽
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10" />
+                                <polygon points="12 7 15.5 9.5 14 14.5 10 14.5 8.5 9.5" strokeWidth="1.5" />
+                                <line x1="12" y1="2" x2="12" y2="7" />
+                                <line x1="21.5" y1="9" x2="15.5" y2="9.5" />
+                                <line x1="18" y1="20" x2="14" y2="14.5" />
+                                <line x1="6" y1="20" x2="10" y2="14.5" />
+                                <line x1="2.5" y1="9" x2="8.5" y2="9.5" />
+                              </svg>
                             </div>
                             <div>
                               <div className="dl-mockup-item-title">Pitchside Matchday Lineups</div>
@@ -1857,7 +1880,9 @@ export default function LandingPage() {
 
                           <div className="dl-mockup-item">
                             <div className="dl-mockup-item-icon" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2DD4BF' }}>
-                              🩺
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                              </svg>
                             </div>
                             <div>
                               <div className="dl-mockup-item-title">Athlete Wellness Check-Ins</div>
@@ -1867,7 +1892,10 @@ export default function LandingPage() {
 
                           <div className="dl-mockup-item">
                             <div className="dl-mockup-item-icon" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24' }}>
-                              🔔
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                              </svg>
                             </div>
                             <div>
                               <div className="dl-mockup-item-title">Instant Squad Push Alerts</div>
@@ -2010,8 +2038,10 @@ export default function LandingPage() {
 
             {demoSubmitted ? (
               <div style={{ textAlign: 'center', padding: '24px 12px' }}>
-                <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#F0FDFA', border: '2px solid #0D9488', color: '#0D9488', fontSize: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                  ✓
+                <div style={{ width: 52, height: 52, borderRadius: '50%', background: '#F0FDFA', border: '2px solid #0D9488', color: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0D9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
                 </div>
                 <h4 style={{ fontSize: 19, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>
                   Request Ready to Send

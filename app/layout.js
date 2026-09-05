@@ -42,7 +42,19 @@ export default function RootLayout({ children }) {
       <head>
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var isStandalone=window.navigator.standalone===true||(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||(typeof navigator!=='undefined'&&(navigator.userAgent.includes('Electron')||navigator.userAgent.includes('ApexTrackDesktop')))||window.electronAPI?.isElectron;if(isStandalone){document.documentElement.classList.add('is-standalone');}if(typeof navigator!=='undefined'&&(navigator.userAgent.includes('Electron')||navigator.userAgent.includes('ApexTrackDesktop')||window.electronAPI?.isElectron)){document.documentElement.classList.add('is-electron');}}catch(e){}})()`,
+            __html: `(function(){try{
+              var ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+              var isCapacitor = (typeof window !== 'undefined' && (window.Capacitor?.isNativePlatform?.() || window.Capacitor != null)) || (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')));
+              var isElectron = (typeof window !== 'undefined' && window.electronAPI?.isElectron) || ua.includes('Electron') || ua.includes('ApexTrackDesktop');
+              var isNative = isElectron || isCapacitor;
+              var isStandalone = window.navigator?.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || isNative;
+              if(isStandalone){document.documentElement.classList.add('is-standalone');}
+              if(isElectron){document.documentElement.classList.add('is-electron');}
+              if(isNative){
+                document.documentElement.classList.add('is-native-app');
+                document.documentElement.classList.add('is-electron');
+              }
+            }catch(e){}})()`,
           }}
         />
       </head>

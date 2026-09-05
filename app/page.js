@@ -207,6 +207,7 @@ export default function LandingPage() {
     interest: 'Full System Walkthrough',
     notes: ''
   })
+  const [downloadPlatform, setDownloadPlatform] = useState('windows')
 
   function triggerWhatsAppBooking(form = demoForm, shouldOpen = true) {
     const lines = [
@@ -360,6 +361,24 @@ export default function LandingPage() {
     )
   }
 
+  function scrollTo(id) {
+    const target = id.toLowerCase()
+    const el = document.getElementById(target)
+    if (el) {
+      const nav = document.querySelector('.lp-nav')
+      const navHeight = nav ? nav.offsetHeight : 72
+      const elTop = el.getBoundingClientRect().top + window.pageYOffset
+      window.scrollTo({
+        top: Math.max(0, elTop - navHeight - 16),
+        behavior: 'smooth'
+      })
+      if (window.history && window.history.pushState) {
+        window.history.pushState(null, '', `#${target}`)
+      }
+    }
+    setMenuOpen(false)
+  }
+
   return (
     <>
       <style>{`
@@ -367,6 +386,9 @@ export default function LandingPage() {
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
+        #features, #pricing, #download, #faq, #support {
+          scroll-margin-top: 88px;
+        }
 
         body {
           font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
@@ -394,7 +416,7 @@ export default function LandingPage() {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
           display: flex; align-items: center; justify-content: space-between;
           padding: 0 48px; height: 72px;
-          background: rgba(255, 255, 255, 0.82);
+          background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(16px);
           border-bottom: 1px solid rgba(0, 0, 0, 0.06);
           transition: box-shadow 0.3s, height 0.3s;
@@ -417,18 +439,21 @@ export default function LandingPage() {
         .nav-brand-name span { color: #0D9488; }
 
         .nav-links-center {
-          display: flex; align-items: center; gap: 28px;
+          display: flex; align-items: center; gap: 6px;
           position: absolute; left: 50%; transform: translateX(-50%);
         }
         .nav-link {
           font-size: 14px; font-weight: 600; color: #475569;
-          text-decoration: none; background: none; border: none;
+          text-decoration: none; background: transparent; border: none;
           cursor: pointer; font-family: inherit;
-          transition: color 0.2s;
-          display: flex; align-items: center; gap: 4px;
+          padding: 8px 16px; border-radius: 99px;
+          transition: all 0.2s ease;
+          display: inline-flex; align-items: center;
         }
-        .nav-link:hover { color: #0F172A; }
-        .nav-link-arrow { font-size: 10px; opacity: 0.5; }
+        .nav-link:hover {
+          color: #0F172A;
+          background: rgba(15, 23, 42, 0.06);
+        }
 
         .nav-right { display: flex; align-items: center; gap: 12px; }
         .nav-pricing-btn {
@@ -697,21 +722,96 @@ export default function LandingPage() {
         .faq-content { padding: 0 24px 24px; font-size: 14px; color: #64748B; line-height: 1.65; display: none; }
         .faq-item.active .faq-content { display: block; animation: fadeIn 0.3s ease; }
 
-        /* ── DOWNLOAD SECTION (EDITORIAL ART STYLE) ── */
+        /* ── DOWNLOAD SECTION ── */
         .download-section {
-          padding: 96px 48px;
+          padding: 80px 32px 100px;
           background: transparent;
           position: relative;
         }
+
+        /* ── PLATFORM SEGMENTED TOGGLE (CENTERED & PROMINENT) ── */
+        .dl-platform-toggle-wrapper {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 32px auto 40px;
+        }
+        .dl-platform-toggle {
+          display: inline-flex;
+          align-items: center;
+          background: #F1F5F9;
+          padding: 6px;
+          border-radius: 999px;
+          border: 1.5px solid #E2E8F0;
+          box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+          gap: 6px;
+        }
+        .dl-toggle-option {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 26px;
+          border-radius: 999px;
+          border: none;
+          background: transparent;
+          color: #64748B;
+          font-family: inherit;
+          cursor: pointer;
+          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          text-align: left;
+        }
+        .dl-toggle-option:hover {
+          color: #1E293B;
+        }
+        .dl-toggle-option.active-windows {
+          background: #0D9488;
+          color: #FFFFFF;
+          box-shadow: 0 4px 18px rgba(13, 148, 136, 0.35);
+        }
+        .dl-toggle-option.active-android {
+          background: #059669;
+          color: #FFFFFF;
+          box-shadow: 0 4px 18px rgba(5, 150, 105, 0.35);
+        }
+        .dl-toggle-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          flex-shrink: 0;
+        }
+        .dl-toggle-option:not(.active-windows):not(.active-android) .dl-toggle-icon {
+          background: #E2E8F0;
+          color: #475569;
+        }
+        .dl-toggle-label {
+          display: flex;
+          flex-direction: column;
+        }
+        .dl-toggle-label strong {
+          font-size: 14px;
+          font-weight: 800;
+          line-height: 1.2;
+        }
+        .dl-toggle-label small {
+          font-size: 11px;
+          font-weight: 500;
+          opacity: 0.85;
+        }
+
+        /* ── HERO DOWNLOAD CARD ── */
         .dl-hero-card {
-          max-width: 1100px; margin: 0 auto;
-          background: linear-gradient(135deg, #F2FAF1 0%, #E2F4E1 35%, #ECF8EA 70%, #F8FCF8 100%);
-          border-radius: 36px;
-          border: 1px solid rgba(13, 148, 136, 0.2);
-          padding: 0;
+          max-width: 1100px;
+          margin: 0 auto;
+          background: #FFFFFF;
+          border: 1.5px solid rgba(13, 148, 136, 0.18);
+          border-radius: 32px;
           overflow: hidden;
           position: relative;
-          box-shadow: 0 32px 90px rgba(13, 148, 136, 0.08), 0 4px 20px rgba(0, 0, 0, 0.02);
+          box-shadow: 0 24px 60px rgba(15, 23, 42, 0.06), 0 4px 18px rgba(13, 148, 136, 0.04);
         }
         .dl-hero-card::before {
           content: '';
@@ -721,217 +821,273 @@ export default function LandingPage() {
           background-size: 200% 100%;
           animation: shimmer 3s ease-in-out infinite;
         }
-        .dl-top-bar {
-          display: flex; justify-content: space-between; align-items: center;
-          padding: 32px 48px 0;
+        .dl-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 28px 44px 0;
+          flex-wrap: wrap;
+          gap: 12px;
         }
-        .dl-top-brand {
-          font-size: 13px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;
-          display: flex; align-items: center; gap: 8px;
+        .dl-card-brand {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 14px;
+          font-weight: 800;
+          color: #0F172A;
         }
-        .dl-top-brand span { color: #0D9488; }
-        .dl-top-badge {
-          background: #E0F2FE; border: 1px solid #BAE6FD;
-          color: #0369A1; font-size: 11px; font-weight: 700;
-          padding: 4px 12px; border-radius: 99px; text-transform: uppercase; letter-spacing: 0.06em;
+        .dl-card-status-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: #F0FDF4;
+          border: 1px solid #BBF7D0;
+          color: #166534;
+          font-size: 11px;
+          font-weight: 700;
+          padding: 5px 14px;
+          border-radius: 99px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
         }
-
         .dl-inner {
-          position: relative; z-index: 1;
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 0;
-          min-height: 480px;
+          grid-template-columns: 1.15fr 0.85fr;
+          gap: 36px;
+          padding: 36px 44px 44px;
+          min-height: 420px;
         }
         .dl-left {
-          padding: 40px 48px 48px;
-          display: flex; flex-direction: column; justify-content: center;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
         }
-        .dl-greeting {
-          font-size: 14px; font-weight: 700; color: #0F172A; margin-bottom: 8px;
-          display: flex; align-items: center; gap: 8px;
+        .dl-platform-indicator {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          margin-bottom: 12px;
         }
-        .dl-greeting-dot {
-          width: 8px; height: 8px; border-radius: 50%; background: #10B981;
-          box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+        .dl-headline {
+          font-size: clamp(28px, 3.2vw, 42px);
+          font-weight: 900;
+          color: #0F172A;
+          letter-spacing: -0.03em;
+          line-height: 1.12;
+          margin-bottom: 14px;
         }
-        .dl-headline-editorial {
-          font-size: clamp(34px, 3.8vw, 52px);
-          font-weight: 900; color: #0F172A;
-          letter-spacing: -0.035em; line-height: 1.05;
-          margin-bottom: 16px;
-        }
-        .dl-headline-editorial span.highlight-dot {
-          color: #0D9488;
-        }
-        .dl-sub-editorial {
-          font-size: 15px; color: #475569;
-          line-height: 1.6; margin-bottom: 32px; max-width: 440px;
+        .dl-desc {
+          font-size: 15px;
+          color: #475569;
+          line-height: 1.6;
+          margin-bottom: 24px;
           font-weight: 500;
+          max-width: 520px;
         }
-        .dl-cta-row {
-          display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        .dl-action-box {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          flex-wrap: wrap;
+          margin-bottom: 24px;
         }
-        .dl-btn-primary {
-          background: #0D9488; color: #FFFFFF;
-          border: none; border-radius: 10px;
-          padding: 16px 36px; font-size: 15px; font-weight: 800;
-          cursor: pointer; font-family: inherit;
-          text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
-          transition: all 0.22s ease;
-          box-shadow: 0 10px 28px rgba(13, 148, 136, 0.25);
-          width: fit-content;
+        .dl-main-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          padding: 16px 32px;
+          border-radius: 14px;
+          font-size: 16px;
+          font-weight: 800;
+          text-decoration: none;
+          color: #FFFFFF;
+          transition: all 0.2s ease;
+          box-shadow: 0 10px 28px rgba(13, 148, 136, 0.28);
         }
-        .dl-btn-primary:hover {
-          background: #0F766E;
+        .dl-main-btn.windows-btn {
+          background: linear-gradient(135deg, #0D9488, #0F766E);
+        }
+        .dl-main-btn.windows-btn:hover {
+          background: linear-gradient(135deg, #0F766E, #115E59);
           transform: translateY(-2px);
-          box-shadow: 0 14px 36px rgba(13, 148, 136, 0.35);
+          box-shadow: 0 14px 34px rgba(13, 148, 136, 0.38);
         }
-        .dl-btn-android {
-          background: #059669;
+        .dl-main-btn.android-btn {
+          background: linear-gradient(135deg, #059669, #047857);
           box-shadow: 0 10px 28px rgba(5, 150, 105, 0.28);
         }
-        .dl-btn-android:hover {
-          background: #047857;
-          box-shadow: 0 14px 36px rgba(5, 150, 105, 0.38);
+        .dl-main-btn.android-btn:hover {
+          background: linear-gradient(135deg, #047857, #065F46);
+          transform: translateY(-2px);
+          box-shadow: 0 14px 34px rgba(5, 150, 105, 0.38);
         }
-        .dl-col-right {
-          border-left: 1px solid rgba(13,148,136,0.15);
-          background: linear-gradient(135deg,rgba(13,148,136,0.04) 0%,rgba(16,185,129,0.03) 100%);
+        .dl-compat-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+        .dl-compat-chip {
+          font-size: 12px;
+          font-weight: 600;
+          color: #475569;
+          background: #F8FAFC;
+          border: 1px solid #E2E8F0;
+          padding: 5px 12px;
+          border-radius: 99px;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .dl-compat-chip.active {
+          border-color: #A7F3D0;
+          background: #F0FDF4;
+          color: #065F46;
+          font-weight: 700;
+        }
+        .dl-ios-notice {
+          margin-top: 20px;
+          padding: 14px 18px;
+          background: #F0FDF4;
+          border: 1px solid #BBF7D0;
+          border-radius: 14px;
+          max-width: 520px;
+        }
+        .dl-ios-notice p {
+          font-size: 12px;
+          color: #166534;
+          line-height: 1.6;
+          margin: 0;
+        }
+        .dl-ios-notice strong {
+          color: #14532D;
         }
 
-        .dl-platforms-minimal {
-          display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap;
-        }
-        .dl-platform-pill {
-          display: flex; align-items: center; gap: 6px;
-          font-size: 12px; font-weight: 700; color: #475569;
-          background: rgba(255, 255, 255, 0.85);
-          padding: 6px 14px; border-radius: 99px; border: 1px solid rgba(13, 148, 136, 0.15);
-        }
-        .dl-platform-pill.active {
-          color: #0F172A; border-color: #0D9488; background: #FFFFFF;
-          box-shadow: 0 2px 8px rgba(13, 148, 136, 0.1);
-        }
-        .dl-platform-pill.disabled { opacity: 0.55; }
-
-        /* RIGHT EDITORIAL ART PIECE */
-        .dl-right-art {
+        /* ── PREVIEW CARD RIGHT COLUMN ── */
+        .dl-preview-col {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
           position: relative;
-          padding: 28px 40px;
-          display: flex; align-items: center; justify-content: center;
+        }
+        .dl-mockup-card {
+          background: linear-gradient(145deg, #0F172A, #1E293B);
+          border-radius: 24px;
+          padding: 24px;
+          color: #FFFFFF;
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          position: relative;
           overflow: hidden;
         }
-        .dl-art-giant-logo {
-          position: absolute;
-          width: 320px; height: auto;
-          max-height: 320px; object-fit: contain;
-          z-index: 0;
-          right: -20px; bottom: -20px;
-          opacity: 0.1;
-          filter: drop-shadow(0 12px 36px rgba(13, 148, 136, 0.2));
-          pointer-events: none;
-          user-select: none;
+        .dl-mockup-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+          padding-bottom: 14px;
+          margin-bottom: 18px;
         }
-        .dl-art-pastel-shape {
-          position: absolute;
-          width: 240px; height: 300px;
-          background: linear-gradient(135deg, rgba(153, 246, 228, 0.5), rgba(167, 243, 208, 0.3));
-          transform: rotate(-8deg);
-          border-radius: 36px;
-          z-index: 0;
-          bottom: 20px; right: 30px;
-          filter: blur(12px);
+        .dl-mockup-dots {
+          display: flex;
+          gap: 6px;
         }
-        .dl-art-green-shape {
-          position: absolute;
-          width: 200px; height: 200px;
-          background: #99F6E4;
+        .dl-mockup-dot {
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
-          z-index: 0;
-          top: 20px; left: 20px;
-          opacity: 0.5;
-          filter: blur(40px);
         }
-        .dl-art-vertical-text {
-          position: absolute;
-          top: 50%; right: 12px;
-          transform: translateY(-50%) rotate(90deg);
-          transform-origin: center right;
-          font-size: 10px; font-weight: 800;
-          letter-spacing: 0.2em; text-transform: uppercase;
-          color: #0D9488; opacity: 0.45;
-          white-space: nowrap; z-index: 3;
+        .dl-mockup-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
         }
-
-        /* BRAND SHOWCASE CARD (NO PHOTO) */
-        .dl-brand-showcase-card {
-          position: relative; z-index: 2;
-          width: 100%; max-width: 360px;
-          background: rgba(255, 255, 255, 0.78);
-          backdrop-filter: blur(16px);
-          border: 1.5px solid rgba(13, 148, 136, 0.2);
-          border-radius: 28px;
-          padding: 44px 32px;
-          display: flex; flex-direction: column; align-items: center; text-align: center;
-          box-shadow: 0 24px 60px rgba(13, 148, 136, 0.12), 0 4px 16px rgba(0, 0, 0, 0.02);
-          transition: all 0.3s ease;
+        .dl-mockup-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          background: rgba(255, 255, 255, 0.05);
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 1px solid rgba(255, 255, 255, 0.06);
         }
-        .dl-brand-showcase-card:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 32px 70px rgba(13, 148, 136, 0.18);
+        .dl-mockup-item-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
         }
-        .dl-showcase-logo {
-          height: 84px; width: auto; object-fit: contain;
-          margin-bottom: 20px; border-radius: 20px;
-          filter: drop-shadow(0 12px 24px rgba(13, 148, 136, 0.22));
+        .dl-mockup-item-title {
+          font-size: 13px;
+          font-weight: 700;
+          color: #F8FAFC;
         }
-        .dl-showcase-brandname {
-          font-size: 26px; font-weight: 900; color: #0F172A; letter-spacing: -0.03em;
-          margin-bottom: 6px;
-        }
-        .dl-showcase-brandname span { color: #0D9488; }
-        .dl-showcase-sub {
-          font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 24px;
-        }
-        .dl-showcase-badge {
-          display: inline-flex; align-items: center; gap: 8px;
-          background: #F0FDFA; border: 1px solid #CCFBF1;
-          color: #0D9488; font-size: 12px; font-weight: 700;
-          padding: 6px 16px; border-radius: 99px;
-        }
-        .dl-art-badge-dot {
-          width: 7px; height: 7px; border-radius: 50%; background: #10B981;
-          box-shadow: 0 0 8px #10B981; flex-shrink: 0;
+        .dl-mockup-item-sub {
+          font-size: 11px;
+          color: #94A3B8;
         }
 
-        /* BOTTOM EDITORIAL FOOTER ROW */
-        .dl-bottom-row {
-          display: grid; grid-template-columns: repeat(3, 1fr);
-          padding: 24px 48px;
-          border-top: 1px solid rgba(13, 148, 136, 0.15);
-          background: rgba(255, 255, 255, 0.55);
-          backdrop-filter: blur(8px);
+        /* ── BOTTOM SPECIFICATION BAR ── */
+        .dl-bottom-bar {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          background: #F8FAFC;
+          border-top: 1px solid #E2E8F0;
+          padding: 20px 44px;
+          gap: 16px;
         }
-        .dl-bottom-col {
-          padding: 0 24px;
-        }
-        .dl-bottom-col:first-child { padding-left: 0; }
-        .dl-bottom-col:last-child { padding-right: 0; }
-        .dl-bottom-col + .dl-bottom-col {
-          border-left: 1px solid rgba(13, 148, 136, 0.15);
+        .dl-bottom-item {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
         }
         .dl-bottom-label {
-          font-size: 12px; font-weight: 800; color: #0F172A; margin-bottom: 4px;
-          letter-spacing: -0.01em;
+          font-size: 11px;
+          font-weight: 700;
+          color: #94A3B8;
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
         }
         .dl-bottom-val {
-          font-size: 13px; color: #64748B; font-weight: 600;
+          font-size: 13px;
+          font-weight: 700;
+          color: #1E293B;
         }
-        .dl-check-icon {
-          width: 18px; height: 18px; border-radius: 50%;
-          background: rgba(13,148,136,0.15); border: 1px solid rgba(13,148,136,0.3);
-          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+
+        @media (max-width: 900px) {
+          .download-section {
+            padding: 60px 20px 80px;
+          }
+          .dl-platform-toggle {
+            flex-direction: column;
+            width: 100%;
+            border-radius: 20px;
+          }
+          .dl-toggle-option {
+            width: 100%;
+            border-radius: 14px;
+            justify-content: center;
+          }
+          .dl-card-header {
+            padding: 20px 20px 0;
+          }
+          .dl-inner {
+            grid-template-columns: 1fr;
+            padding: 24px 20px;
+            gap: 28px;
+          }
+          .dl-bottom-bar {
+            grid-template-columns: 1fr;
+            padding: 20px;
+          }
         }
 
         /* ── SUPPORT / CTA SECTION ── */
@@ -1139,7 +1295,17 @@ export default function LandingPage() {
         <div className="mobile-menu">
           <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>×</button>
           {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
-            <button key={l} className={`mobile-menu-link${l === 'Download' ? ' electron-hide' : ''}`} onClick={() => scrollTo(l)}>{l}</button>
+            <a
+              key={l}
+              href={`#${l.toLowerCase()}`}
+              className={`mobile-menu-link${l === 'Download' ? ' electron-hide' : ''}`}
+              onClick={(e) => {
+                e.preventDefault()
+                scrollTo(l)
+              }}
+            >
+              {l}
+            </a>
           ))}
           <Link href="/login" className="btn-primary" style={{ padding: '14px 36px', fontSize: 16 }}>
             Get Started
@@ -1156,9 +1322,18 @@ export default function LandingPage() {
 
         <div className="nav-links-center">
           {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
-            <button key={l} className={`nav-link${l === 'Download' ? ' electron-hide' : ''}`} data-nav={l} onClick={() => scrollTo(l)}>
-              {l} <span className="nav-link-arrow">▾</span>
-            </button>
+            <a
+              key={l}
+              href={`#${l.toLowerCase()}`}
+              className={`nav-link${l === 'Download' ? ' electron-hide' : ''}`}
+              data-nav={l}
+              onClick={(e) => {
+                e.preventDefault()
+                scrollTo(l)
+              }}
+            >
+              {l}
+            </a>
           ))}
         </div>
 
@@ -1420,147 +1595,298 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── DOWNLOAD SECTION (EDITORIAL ART STYLE) ── */}
+      {/* ── DOWNLOAD SECTION ── */}
       {!isElectron && (
         <section className="download-section electron-hide" id="download">
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-            <div className="section-eyebrow">
+          <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
+            <div className="section-eyebrow" style={{ justifyContent: 'center' }}>
               <div className="eyebrow-line" />
-              <span className="eyebrow-text">Desktop App</span>
+              <span className="eyebrow-text">App Download</span>
+              <div className="eyebrow-line" />
             </div>
             <h2 className="section-title">Download ApexTrack</h2>
-            <p className="section-sub">Install the dedicated desktop or mobile app for fast, focused club management — wherever you are.</p>
+            <p className="section-sub" style={{ margin: '0 auto', maxWidth: 640 }}>
+              Install the official native desktop or mobile application for high-speed club operations, offline reliability, and focused management.
+            </p>
           </div>
 
-          <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
+          {/* PROMINENT CENTERED PLATFORM SEGMENTED TOGGLE */}
+          <div className="dl-platform-toggle-wrapper">
+            <div className="dl-platform-toggle" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={downloadPlatform === 'windows'}
+                className={`dl-toggle-option ${downloadPlatform === 'windows' ? 'active-windows' : ''}`}
+                onClick={() => setDownloadPlatform('windows')}
+              >
+                <span className="dl-toggle-icon">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M2 3.555L10.373 2.4v9.062H2V3.555zm0 16.89L10.373 21.6v-9.062H2v8.907zm9.479 1.349L22 23.3V12.538H11.479V21.794zm0-19.588V11.462H22V.706L11.479 2.206z"/>
+                  </svg>
+                </span>
+                <span className="dl-toggle-label">
+                  <strong>Windows Desktop</strong>
+                  <small>PC Installer (.exe)</small>
+                </span>
+              </button>
+
+              <button
+                type="button"
+                role="tab"
+                aria-selected={downloadPlatform === 'android'}
+                className={`dl-toggle-option ${downloadPlatform === 'android' ? 'active-android' : ''}`}
+                onClick={() => setDownloadPlatform('android')}
+              >
+                <span className="dl-toggle-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993s-.4482.9997-.9993.9997m11.4045-6.02l1.996-3.4572c.1558-.2701.0632-.615-.2069-.7708-.2706-.1562-.615-.0636-.7708.2065l-2.0223 3.5029c-1.4699-.672-3.1118-1.0505-4.8775-1.0505-1.7657 0-3.4076.3785-4.8775 1.0505L5.097 5.2999c-.1558-.2701-.5002-.3627-.7708-.2065-.2701.1558-.3627.5007-.2069.7708l1.996 3.4572C2.6847 11.238 0 14.887 0 19.1672h24c0-4.2802-2.6847-7.9292-6.1185-9.8458"/>
+                  </svg>
+                </span>
+                <span className="dl-toggle-label">
+                  <strong>Android Mobile</strong>
+                  <small>Direct APK (.apk)</small>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
             <div className="dl-hero-card">
               
-              {/* TOP BRAND & STATUS STRIP (Editorial Style) */}
-              <div className="dl-top-bar">
-                <div className="dl-top-brand">
-                  <img src="/logo.png" alt="ApexTrack" style={{ height: 24, width: 'auto', borderRadius: 4 }} />
-                  ApexTrack <span>Desktop &amp; Mobile</span>
+              {/* TOP BRAND & STATUS STRIP */}
+              <div className="dl-card-header">
+                <div className="dl-card-brand">
+                  <img src="/logo.png" alt="ApexTrack" style={{ height: 26, width: 'auto', borderRadius: 6 }} />
+                  <span>ApexTrack {downloadPlatform === 'windows' ? 'for Desktop' : 'for Mobile'}</span>
                 </div>
-                <div className="dl-top-badge">
-                  v1.0.5 · Latest Release
+
+                <div className="dl-card-status-badge">
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+                  <span>v1.0.5 · Verified Release</span>
                 </div>
               </div>
 
               <div className="dl-inner">
-                {/* LEFT — WINDOWS */}
-                <div className="dl-left">
-                  <div className="dl-greeting">
-                    <div className="dl-greeting-dot" />
-                    Windows Desktop
-                  </div>
+                {downloadPlatform === 'windows' ? (
+                  <>
+                    {/* LEFT COLUMN — WINDOWS */}
+                    <div className="dl-left">
+                      <div className="dl-platform-indicator" style={{ color: '#0D9488' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0D9488', display: 'inline-block' }} />
+                        Windows 10 / 11 · 64-Bit Desktop Workstation
+                      </div>
 
-                  <h3 className="dl-headline-editorial">
-                    ApexTrack <span className="highlight-dot">for Windows</span>
-                  </h3>
-                  
-                  <p className="dl-sub-editorial">
-                    The dedicated desktop application for football clubs. Fast, secure, and seamlessly connected to your club database.
-                  </p>
+                      <h3 className="dl-headline">
+                        ApexTrack for Windows
+                      </h3>
+                      
+                      <p className="dl-desc">
+                        The dedicated desktop application built for football club administrators, technical directors, and coaches. Fast, secure, and always synchronized with your club cloud database.
+                      </p>
 
-                  <div className="dl-cta-row">
-                    <a
-                      href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="dl-btn-primary"
-                    >
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                      Download for Windows
-                    </a>
-                  </div>
+                      <div className="dl-action-box">
+                        <a
+                          href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="dl-main-btn windows-btn"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                          Download for Windows (.exe)
+                        </a>
+                      </div>
 
-                  <div className="dl-platforms-minimal">
-                    <div className="dl-platform-pill active">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                        <rect x="2" y="2" width="9" height="9" rx="1" fill="#0D9488"/>
-                        <rect x="13" y="2" width="9" height="9" rx="1" fill="#0D9488"/>
-                        <rect x="2" y="13" width="9" height="9" rx="1" fill="#0D9488"/>
-                        <rect x="13" y="13" width="9" height="9" rx="1" fill="#0D9488"/>
-                      </svg>
-                      Windows (Active)
+                      <div className="dl-compat-row">
+                        <div className="dl-compat-chip active">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="2" y="2" width="9" height="9" rx="1"/>
+                            <rect x="13" y="2" width="9" height="9" rx="1"/>
+                            <rect x="2" y="13" width="9" height="9" rx="1"/>
+                            <rect x="13" y="13" width="9" height="9" rx="1"/>
+                          </svg>
+                          Windows 10 / 11 (Active)
+                        </div>
+                        <div className="dl-compat-chip" style={{ opacity: 0.6 }}>
+                          macOS (Apple Silicon Coming Soon)
+                        </div>
+                        <div className="dl-compat-chip" style={{ opacity: 0.6 }}>
+                          Linux (Coming Soon)
+                        </div>
+                      </div>
                     </div>
-                    <div className="dl-platform-pill disabled">
-                      macOS (Soon)
+
+                    {/* RIGHT COLUMN — WINDOWS SHOWCASE */}
+                    <div className="dl-preview-col">
+                      <div className="dl-mockup-card">
+                        <div className="dl-mockup-bar">
+                          <div className="dl-mockup-dots">
+                            <div className="dl-mockup-dot" style={{ background: '#EF4444' }} />
+                            <div className="dl-mockup-dot" style={{ background: '#F59E0B' }} />
+                            <div className="dl-mockup-dot" style={{ background: '#10B981' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.04em' }}>ApexTrack Desktop Hub</span>
+                        </div>
+
+                        <div className="dl-mockup-list">
+                          <div className="dl-mockup-item">
+                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2DD4BF' }}>
+                              ⚡
+                            </div>
+                            <div>
+                              <div className="dl-mockup-item-title">Dedicated Desktop Workspace</div>
+                              <div className="dl-mockup-item-sub">Zero browser distractions or unintended tab reloads</div>
+                            </div>
+                          </div>
+
+                          <div className="dl-mockup-item">
+                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34D399' }}>
+                              🔄
+                            </div>
+                            <div>
+                              <div className="dl-mockup-item-title">Real-Time Cloud Synchronization</div>
+                              <div className="dl-mockup-item-sub">Instant updates across coaching, medical, and scouting staff</div>
+                            </div>
+                          </div>
+
+                          <div className="dl-mockup-item">
+                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60A5FA' }}>
+                              🔒
+                            </div>
+                            <div>
+                              <div className="dl-mockup-item-title">Strict Postgres RLS Security</div>
+                              <div className="dl-mockup-item-sub">Enterprise-grade multi-tenant data isolation</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="dl-platform-pill disabled">
-                      Linux (Soon)
+                  </>
+                ) : (
+                  <>
+                    {/* LEFT COLUMN — ANDROID */}
+                    <div className="dl-left">
+                      <div className="dl-platform-indicator" style={{ color: '#059669' }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669', display: 'inline-block' }} />
+                        Android 8.0+ · Official APK Mobile Release
+                      </div>
+
+                      <h3 className="dl-headline">
+                        ApexTrack for Android
+                      </h3>
+                      
+                      <p className="dl-desc">
+                        Bring your club roster and matchday operations directly to players and staff. View tactical lineups, log daily wellness checks, and receive match alerts instantly on your phone.
+                      </p>
+
+                      <div className="dl-action-box">
+                        <a
+                          href="/download/android"
+                          className="dl-main-btn android-btn"
+                        >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                            <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="white"/>
+                            <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                            <circle cx="9" cy="7" r="0.8" fill="white"/>
+                            <circle cx="15" cy="7" r="0.8" fill="white"/>
+                            <path d="M4 13h-.5a1 1 0 000 2H4M20 13h.5a1 1 0 010 2H20" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                          Download Android APK (.apk)
+                        </a>
+                      </div>
+
+                      <div className="dl-compat-row">
+                        <div className="dl-compat-chip active">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z"/>
+                            <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                          </svg>
+                          Android 8.0+ (Active)
+                        </div>
+                        <div className="dl-compat-chip" style={{ opacity: 0.7 }}>
+                          ARM64 &amp; x86_64 Compatible
+                        </div>
+                        <div className="dl-compat-chip" style={{ opacity: 0.7 }}>
+                          Direct Install
+                        </div>
+                      </div>
+
+                      <div className="dl-ios-notice">
+                        <p>
+                          <strong>🍎 Apple iOS / iPhone Notice:</strong> Apple restricts direct APK installs. To run ApexTrack on iPhone or iPad, open <strong>apextrackgh.com</strong> in Safari and tap <em>Share → Add to Home Screen</em> for full mobile web app experience.
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* RIGHT — ANDROID */}
-                <div className="dl-left dl-col-right">
-                  <div className="dl-greeting">
-                    <div className="dl-greeting-dot" style={{ background: '#10B981' }} />
-                    Android Mobile
-                  </div>
+                    {/* RIGHT COLUMN — ANDROID SHOWCASE */}
+                    <div className="dl-preview-col">
+                      <div className="dl-mockup-card">
+                        <div className="dl-mockup-bar">
+                          <div className="dl-mockup-dots">
+                            <div className="dl-mockup-dot" style={{ background: '#10B981' }} />
+                            <div className="dl-mockup-dot" style={{ background: '#34D399' }} />
+                          </div>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.04em' }}>ApexTrack Mobile Squad Hub</span>
+                        </div>
 
-                  <h3 className="dl-headline-editorial">
-                    ApexTrack <span className="highlight-dot">for Android</span>
-                  </h3>
-                  
-                  <p className="dl-sub-editorial">
-                    Manage your squad on the go. The Android app gives players and staff full access to the platform right from their phone.
-                  </p>
+                        <div className="dl-mockup-list">
+                          <div className="dl-mockup-item">
+                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(5, 150, 105, 0.2)', color: '#34D399' }}>
+                              ⚽
+                            </div>
+                            <div>
+                              <div className="dl-mockup-item-title">Pitchside Matchday Lineups</div>
+                              <div className="dl-mockup-item-sub">Access visual 4-3-3 tactical sheets and call-ups on the pitch</div>
+                            </div>
+                          </div>
 
-                  <div className="dl-cta-row">
-                    <a
-                      href="/download/android"
-                      className="dl-btn-primary dl-btn-android"
-                    >
-                      {/* Android robot icon */}
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="white"/>
-                        <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                        <circle cx="9" cy="7" r="0.8" fill="white"/>
-                        <circle cx="15" cy="7" r="0.8" fill="white"/>
-                        <path d="M4 13h-.5a1 1 0 000 2H4M20 13h.5a1 1 0 010 2H20" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                      Download APK (.apk)
-                    </a>
-                  </div>
+                          <div className="dl-mockup-item">
+                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2DD4BF' }}>
+                              🩺
+                            </div>
+                            <div>
+                              <div className="dl-mockup-item-title">Athlete Wellness Check-Ins</div>
+                              <div className="dl-mockup-item-sub">Players submit daily soreness, sleep, and recovery logs</div>
+                            </div>
+                          </div>
 
-                  <div className="dl-platforms-minimal">
-                    <div className="dl-platform-pill active" style={{ borderColor: '#10B981', color: '#065F46' }}>
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#10B981"/>
-                        <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="#10B981" strokeWidth="2" strokeLinecap="round"/>
-                      </svg>
-                      Android (Active)
+                          <div className="dl-mockup-item">
+                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24' }}>
+                              🔔
+                            </div>
+                            <div>
+                              <div className="dl-mockup-item-title">Instant Squad Push Alerts</div>
+                              <div className="dl-mockup-item-sub">Receive match scheduling, bus departure, and team notices</div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="dl-platform-pill disabled">
-                      iOS (Not Available)
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 20, padding: '10px 14px', background: 'rgba(13,148,136,0.07)', borderRadius: 10, border: '1px solid rgba(13,148,136,0.15)' }}>
-                    <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.6, margin: 0 }}>
-                      <strong style={{ color: '#0D9488' }}>iOS users:</strong> Apple does not allow direct APK installs. Please use the web app at <strong>apextrackgh.com</strong> from Safari — it is fully mobile-optimised.
-                    </p>
-                  </div>
-                </div>
+                  </>
+                )}
               </div>
 
-              {/* BOTTOM EDITORIAL INFO BAR */}
-              <div className="dl-bottom-row">
-                <div className="dl-bottom-col">
-                  <div className="dl-bottom-label">Windows Package</div>
-                  <div className="dl-bottom-val">ApexTrack-Setup.exe (~145 MB)</div>
+              {/* BOTTOM METADATA BAR */}
+              <div className="dl-bottom-bar">
+                <div className="dl-bottom-item">
+                  <span className="dl-bottom-label">
+                    {downloadPlatform === 'windows' ? 'Windows Package' : 'Android Package'}
+                  </span>
+                  <span className="dl-bottom-val">
+                    {downloadPlatform === 'windows' ? 'ApexTrack-Setup.exe (~145 MB)' : 'ApexTrack.apk (Official Release)'}
+                  </span>
                 </div>
-                <div className="dl-bottom-col">
-                  <div className="dl-bottom-label">Android Package</div>
-                  <div className="dl-bottom-val">ApexTrack.apk · Android 8.0+</div>
+                <div className="dl-bottom-item">
+                  <span className="dl-bottom-label">Compatibility</span>
+                  <span className="dl-bottom-val">
+                    {downloadPlatform === 'windows' ? 'Windows 10 & 11 (64-bit Edition)' : 'Android 8.0 (Oreo) or Higher'}
+                  </span>
                 </div>
-                <div className="dl-bottom-col">
-                  <div className="dl-bottom-label">Security &amp; Support</div>
-                  <div className="dl-bottom-val">Signed &amp; Verified · admin@apextrackgh.com</div>
+                <div className="dl-bottom-item">
+                  <span className="dl-bottom-label">Security &amp; Support</span>
+                  <span className="dl-bottom-val">Verified TLS · admin@apextrackgh.com</span>
                 </div>
               </div>
 

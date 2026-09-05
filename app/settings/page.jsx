@@ -98,6 +98,15 @@ export default function SettingsPage() {
     msg: { text: '', type: '' }
   })
 
+  const [deleteModal, setDeleteModal] = useState({
+    open: false,
+    userId: null,
+    loginId: null,
+    targetName: '',
+    saving: false,
+    error: ''
+  })
+
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
@@ -481,23 +490,33 @@ export default function SettingsPage() {
     flash(current ? 'User disabled.' : 'User enabled.'); await loadAll()
   }
 
-  async function deleteCredentials(userId, loginId, targetName = 'this user') {
-    if (!confirm(`Are you sure you want to PERMANENTLY delete credentials for ${targetName}?\n\nThis will completely remove their user login account and sign them out immediately. This action cannot be undone.`)) return
+  function openDeleteModal(userId, loginId, targetName = 'this user') {
+    setDeleteModal({ open: true, userId, loginId, targetName, saving: false, error: '' })
+  }
+
+  async function confirmDeleteCredentials() {
+    setDeleteModal(m => ({ ...m, saving: true, error: '' }))
     try {
+      // Use PATCH with action='delete' — more reliable than DELETE+body in Next.js
       const res = await fetchWithAuth('/api/admin/create-user', {
-        method: 'DELETE',
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: userId, login_id: loginId })
+        body: JSON.stringify({
+          action: 'delete',
+          user_id: deleteModal.userId,
+          login_id: deleteModal.loginId
+        })
       })
       const data = await res.json()
       if (!res.ok) {
-        flash(data.error || 'Failed to delete credentials.', 'error')
+        setDeleteModal(m => ({ ...m, saving: false, error: data.error || 'Failed to delete credentials.' }))
         return
       }
+      setDeleteModal(m => ({ ...m, open: false, saving: false }))
       flash(data.message || 'Credentials permanently deleted.', 'success')
       await loadAll()
     } catch (err) {
-      flash('Error: ' + err.message, 'error')
+      setDeleteModal(m => ({ ...m, saving: false, error: 'Error: ' + err.message }))
     }
   }
 
@@ -787,13 +806,14 @@ export default function SettingsPage() {
                               <button
                                 onClick={() => {
                                   const user = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase() || (login.username && u.username?.toLowerCase() === login.username.toLowerCase()))
-                                  deleteCredentials(user?.id || null, login.id, login.username || login.coaches?.name || login.email)
+                                  openDeleteModal(user?.id || null, login.id, login.coaches?.name || login.username || login.email)
                                 }}
-                                className="gm-btn danger"
-                                style={{ padding:'5px 8px',fontSize:11,background:'#7F1D1D',borderColor:'#991B1B' }}
+                                style={{ padding:'5px 8px',fontSize:11,background:'none',border:'1px solid #991B1B',borderRadius:'var(--r-md)',color:'#DC2626',cursor:'pointer',fontWeight:700,fontFamily:'var(--font)',display:'flex',alignItems:'center',gap:4,transition:'all 0.15s' }}
+                                onMouseEnter={e=>{ e.currentTarget.style.background='#FEF2F2' }}
+                                onMouseLeave={e=>{ e.currentTarget.style.background='none' }}
                                 title="Permanently delete credentials"
                               >
-                                Delete
+                                🗑 Delete
                               </button>
                             </div>
                           </div>
@@ -941,12 +961,13 @@ export default function SettingsPage() {
                                       <button onClick={()=>handlePlayerAction(login.id, 'reactivate')} className="gm-btn outline" style={{ padding:'5px 8px',fontSize:11 }}>Restore</button>
                                     )}
                                     <button
-                                      onClick={() => deleteCredentials(login.id, null, a.name)}
-                                      className="gm-btn danger"
-                                      style={{ padding:'5px 8px',fontSize:11,background:'#7F1D1D',borderColor:'#991B1B' }}
+                                      onClick={() => openDeleteModal(login.id, null, a.name)}
+                                      style={{ padding:'5px 8px',fontSize:11,background:'none',border:'1px solid #991B1B',borderRadius:'var(--r-md)',color:'#DC2626',cursor:'pointer',fontWeight:700,fontFamily:'var(--font)',display:'flex',alignItems:'center',gap:4,transition:'all 0.15s' }}
+                                      onMouseEnter={e=>{ e.currentTarget.style.background='#FEF2F2' }}
+                                      onMouseLeave={e=>{ e.currentTarget.style.background='none' }}
                                       title="Permanently delete player credentials"
                                     >
-                                      Delete
+                                      🗑 Delete
                                     </button>
                                   </div>
                                 ) : (
@@ -1329,12 +1350,13 @@ export default function SettingsPage() {
                               }
                               {u.id !== profile?.id && (
                                 <button
-                                  onClick={() => deleteCredentials(u.id, null, u.full_name || u.email)}
-                                  className="gm-btn danger"
-                                  style={{ padding:'5px 8px',fontSize:11,background:'#7F1D1D',borderColor:'#991B1B' }}
+                                  onClick={() => openDeleteModal(u.id, null, u.full_name || u.email)}
+                                  style={{ padding:'5px 8px',fontSize:11,background:'none',border:'1px solid #991B1B',borderRadius:'var(--r-md)',color:'#DC2626',cursor:'pointer',fontWeight:700,fontFamily:'var(--font)',display:'flex',alignItems:'center',gap:4,transition:'all 0.15s' }}
+                                  onMouseEnter={e=>{ e.currentTarget.style.background='#FEF2F2' }}
+                                  onMouseLeave={e=>{ e.currentTarget.style.background='none' }}
                                   title="Permanently delete user account and credentials"
                                 >
-                                  Delete
+                                  🗑 Delete
                                 </button>
                               )}
                             </div>
@@ -1385,6 +1407,72 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteModal.open && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(6px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: 16
+        }}>
+          <div style={{
+            background: 'var(--surface)',
+            borderRadius: 'var(--r-lg)',
+            maxWidth: 440,
+            width: '100%',
+            padding: 28,
+            boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
+            border: '1px solid #FECACA'
+          }}>
+            <div style={{ display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:16 }}>
+              <div style={{ width:56,height:56,borderRadius:'50%',background:'#FEF2F2',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,border:'2px solid #FECACA' }}>🗑</div>
+              <div>
+                <h3 style={{ fontSize:18,fontWeight:800,color:'#DC2626',margin:'0 0 8px' }}>Delete Credentials</h3>
+                <p style={{ fontSize:14,color:'var(--text2)',lineHeight:1.6,margin:0 }}>
+                  You are about to <strong>permanently delete</strong> the login account for:
+                </p>
+                <div style={{ margin:'12px 0',padding:'10px 16px',background:'#FEF2F2',borderRadius:'var(--r-md)',border:'1px solid #FECACA',fontSize:15,fontWeight:700,color:'#991B1B' }}>
+                  {deleteModal.targetName}
+                </div>
+                <p style={{ fontSize:13,color:'var(--text3)',lineHeight:1.6,margin:0 }}>
+                  This will remove their Supabase auth account, profile, and all login records. <strong>This cannot be undone.</strong>
+                </p>
+              </div>
+              {deleteModal.error && (
+                <div style={{ width:'100%',padding:'10px 14px',background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:'var(--r-md)',fontSize:13,color:'#DC2626',fontWeight:600 }}>
+                  {deleteModal.error}
+                </div>
+              )}
+              <div style={{ display:'flex',gap:10,width:'100%',marginTop:4 }}>
+                <button
+                  type="button"
+                  onClick={() => setDeleteModal(m => ({ ...m, open: false }))}
+                  disabled={deleteModal.saving}
+                  style={{ flex:1,padding:'10px',fontSize:14,fontWeight:700,border:'1px solid var(--border)',borderRadius:'var(--r-md)',background:'var(--surface2)',color:'var(--text)',cursor:'pointer',fontFamily:'var(--font)',opacity:deleteModal.saving?0.5:1 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmDeleteCredentials}
+                  disabled={deleteModal.saving}
+                  style={{ flex:1,padding:'10px',fontSize:14,fontWeight:700,border:'none',borderRadius:'var(--r-md)',background:deleteModal.saving?'#991B1B':'#DC2626',color:'#fff',cursor:'pointer',fontFamily:'var(--font)',opacity:deleteModal.saving?0.8:1,transition:'all 0.15s' }}
+                  onMouseEnter={e=>{ if(!deleteModal.saving) e.currentTarget.style.background='#B91C1C' }}
+                  onMouseLeave={e=>{ if(!deleteModal.saving) e.currentTarget.style.background='#DC2626' }}
+                >
+                  {deleteModal.saving ? 'Deleting…' : 'Yes, Delete Permanently'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* PLAYER RESET PASSWORD MODAL */}
       {playerResetModal.open && (

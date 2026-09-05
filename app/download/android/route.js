@@ -8,10 +8,13 @@ export async function GET() {
       method: 'HEAD',
       redirect: 'follow',
       cache: 'no-store',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      },
     })
 
-    // Only redirect if the target file actually exists and returns HTTP 200
-    if (probe.ok && probe.status === 200) {
+    // Only redirect if the target file actually exists and returns HTTP 200/302
+    if (probe.ok && (probe.status === 200 || probe.status === 302)) {
       return NextResponse.redirect(APK_URL, 302)
     }
   } catch (err) {

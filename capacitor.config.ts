@@ -5,14 +5,18 @@ const config: CapacitorConfig = {
   appName: 'ApexTrack GH',
   webDir: 'public',
   server: {
-    // Points directly to the live production deployment so Vercel remains
-    // the single source of truth without requiring native rebuilds for web changes.
-    url: 'https://apextrackgh.com',
+    // Points directly to the live canonical URL so no 307 redirect occurs
+    url: 'https://www.apextrackgh.com',
     cleartext: true,
     androidScheme: 'https',
     // Keep all navigation within the WebView — prevents Chrome from intercepting
-    // links to the same domain and opening them in the browser instead of the app.
-    allowNavigation: ['apextrackgh.com', '*.apextrackgh.com'],
+    // links and opening them in the browser instead of the app.
+    allowNavigation: [
+      'www.apextrackgh.com',
+      'apextrackgh.com',
+      '*.apextrackgh.com',
+      '*.supabase.co',
+    ],
   },
   plugins: {
     SplashScreen: {

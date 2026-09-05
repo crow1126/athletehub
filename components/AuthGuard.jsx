@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { canAccess } from '@/lib/auth'
 import { canAccessModule } from '@/lib/subscription'
 
-const PUBLIC_ROUTES  = ['/', '/login', '/auth/confirm', '/auth/reset-password', '/forgot-password', '/privacy', '/terms', '/security', '/download']
+const PUBLIC_ROUTES  = ['/', '/login', '/auth/confirm', '/auth/reset-password', '/forgot-password', '/privacy', '/terms', '/security', '/download', '/download/android']
 const BILLING_BYPASS = ['/billing', '/login', '/pay']
 
 function pathToModule(path) {
@@ -39,7 +39,7 @@ export default function AuthGuard({ children }) {
     if (!path) return
     const pathWithoutQuery = path.split('?')[0]
     const cleanPath = pathWithoutQuery.length > 1 ? pathWithoutQuery.replace(/\/$/, '') : pathWithoutQuery
-    if (PUBLIC_ROUTES.includes(cleanPath)) return
+    if (PUBLIC_ROUTES.includes(cleanPath) || cleanPath.startsWith('/download')) return
     try {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }

@@ -370,8 +370,11 @@ export async function PATCH(req) {
       const rlReset = userMgmtLimiter(req)
       if (!rlReset.ok) return rlReset.response
 
-      if (!new_password || new_password.length < 12) {
-        return NextResponse.json({ error: 'Password must be at least 12 characters.' }, { status: 400 })
+      // Players use 8-char minimum; all staff accounts require 12
+      const isPlayer = targetProfile?.role === 'player'
+      const minLength = isPlayer ? 8 : 12
+      if (!new_password || new_password.length < minLength) {
+        return NextResponse.json({ error: `Password must be at least ${minLength} characters.` }, { status: 400 })
       }
 
       await adminFetch(`users/${user_id}`, 'PUT', { password: new_password })

@@ -418,6 +418,30 @@ export default function PlayerLayout({ children }) {
               panelRef={notifPanelRef}
               onMarkRead={handleMarkAllRead}
             />
+            <a
+              href="/download/android"
+              className="electron-hide"
+              title="Download Android App (.apk)"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 5,
+                background: 'rgba(5, 150, 105, 0.1)',
+                border: '1px solid rgba(5, 150, 105, 0.28)',
+                borderRadius: 8,
+                padding: '5px 9px',
+                color: '#047857',
+                fontSize: 11,
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#059669"/>
+                <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="#059669" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span>Get APK</span>
+            </a>
             <button onClick={handleSignOut} title="Sign Out"
               style={{ background: 'transparent', border: 'none', color: '#EF4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 6 }}>
               <LogOut size={20} />
@@ -496,6 +520,35 @@ export default function PlayerLayout({ children }) {
               <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.04em', marginTop: 2 }}>Player</div>
             </div>
           </div>
+          <a
+            href="/download/android"
+            className="electron-hide"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: 'rgba(5, 150, 105, 0.08)',
+              border: '1px solid rgba(5, 150, 105, 0.25)',
+              borderRadius: 10,
+              padding: '9px 12px',
+              color: '#047857',
+              fontSize: 12,
+              fontWeight: 700,
+              textDecoration: 'none',
+              marginBottom: 10,
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(5, 150, 105, 0.15)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5, 150, 105, 0.08)' }}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#059669"/>
+              <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="#059669" strokeWidth="2" strokeLinecap="round"/>
+              <circle cx="9" cy="7" r="0.8" fill="#059669"/>
+              <circle cx="15" cy="7" r="0.8" fill="#059669"/>
+            </svg>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Android App (.apk)</span>
+          </a>
           <button onClick={handleSignOut}
             style={{ width: '100%', background: 'transparent', color: C.text3, border: `1px solid ${C.border}`, borderRadius: 10, padding: '10px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
             onMouseEnter={e => { e.currentTarget.style.background = '#FEE2E2'; e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.borderColor = '#FCA5A5' }}

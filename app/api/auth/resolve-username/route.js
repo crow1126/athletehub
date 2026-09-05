@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { rateLimit } from '@/lib/rateLimit'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+// 10 lookups per minute per IP — prevents automated username enumeration
+const resolveLimiter = rateLimit({ windowMs: 60_000, max: 10, keyPrefix: 'resolve-username' })
 
 function getDb() {
   return createClient(SUPABASE_URL, SERVICE_KEY, {
@@ -17,6 +21,9 @@ function getDb() {
  * and returns it. Publicly accessible from the client side login screen.
  */
 export async function GET(req) {
+  const rl = resolveLimiter(req)
+  if (!rl.ok) return rl.response
+
   try {
     const { searchParams } = new URL(req.url)
     const username = searchParams.get('username')
@@ -30,7 +37,7 @@ export async function GET(req) {
     // 1. Look up by username in profiles table
     const { data: profile, error } = await db
       .from('profiles')
-      .select('email')
+      .select('email, is_active')
       .ilike('username', username.trim())
       .maybeSingle()
 
@@ -39,7 +46,8 @@ export async function GET(req) {
       return NextResponse.json({ error: 'Database lookup error' }, { status: 500 })
     }
 
-    if (!profile || !profile.email) {
+    // Return 404 for missing OR inactive accounts — don't reveal disabled status
+    if (!profile || !profile.email || profile.is_active === false) {
       return NextResponse.json({ error: 'Username not found' }, { status: 404 })
     }
 

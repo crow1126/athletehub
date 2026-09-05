@@ -14,6 +14,11 @@ const nextConfig = {
         destination: 'https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe',
         permanent: false,
       },
+      {
+        source: '/download/android',
+        destination: 'https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk',
+        permanent: false,
+      },
     ]
   },
 

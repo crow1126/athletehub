@@ -787,6 +787,18 @@ export default function LandingPage() {
           transform: translateY(-2px);
           box-shadow: 0 14px 36px rgba(13, 148, 136, 0.35);
         }
+        .dl-btn-android {
+          background: #059669;
+          box-shadow: 0 10px 28px rgba(5, 150, 105, 0.28);
+        }
+        .dl-btn-android:hover {
+          background: #047857;
+          box-shadow: 0 14px 36px rgba(5, 150, 105, 0.38);
+        }
+        .dl-col-right {
+          border-left: 1px solid rgba(13,148,136,0.15);
+          background: linear-gradient(135deg,rgba(13,148,136,0.04) 0%,rgba(16,185,129,0.03) 100%);
+        }
 
         .dl-platforms-minimal {
           display: flex; align-items: center; gap: 12px; margin-top: 32px; flex-wrap: wrap;
@@ -1087,6 +1099,7 @@ export default function LandingPage() {
           .stat-col + .stat-col { border-left: none; }
           .stat-col:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.1); }
           .dl-inner { grid-template-columns: 1fr; }
+          .dl-col-right { border-left: none !important; border-top: 1px solid rgba(13, 148, 136, 0.15); }
           .dl-left { padding: 40px 28px; }
           .dl-right-art { padding: 32px 24px; min-height: 320px; }
           .dl-bottom-row { grid-template-columns: 1fr; gap: 16px; padding: 24px; }
@@ -1416,7 +1429,7 @@ export default function LandingPage() {
               <span className="eyebrow-text">Desktop App</span>
             </div>
             <h2 className="section-title">Download ApexTrack</h2>
-            <p className="section-sub">Install the dedicated Windows desktop client for fast, focused club management.</p>
+            <p className="section-sub">Install the dedicated desktop or mobile app for fast, focused club management — wherever you are.</p>
           </div>
 
           <div style={{ maxWidth: 1100, margin: '32px auto 0' }}>
@@ -1426,7 +1439,7 @@ export default function LandingPage() {
               <div className="dl-top-bar">
                 <div className="dl-top-brand">
                   <img src="/logo.png" alt="ApexTrack" style={{ height: 24, width: 'auto', borderRadius: 4 }} />
-                  ApexTrack <span>Desktop</span>
+                  ApexTrack <span>Desktop &amp; Mobile</span>
                 </div>
                 <div className="dl-top-badge">
                   v1.0.5 · Latest Release
@@ -1434,7 +1447,7 @@ export default function LandingPage() {
               </div>
 
               <div className="dl-inner">
-                {/* LEFT EDITORIAL COLUMN */}
+                {/* LEFT — WINDOWS */}
                 <div className="dl-left">
                   <div className="dl-greeting">
                     <div className="dl-greeting-dot" />
@@ -1482,52 +1495,68 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* RIGHT EDITORIAL ARTWORK COLUMN (Image 1 Style) */}
-                <div className="dl-right-art">
-                  {/* Decorative Elements */}
-                  <div className="dl-art-green-shape" />
-                  <div className="dl-art-pastel-shape" />
-                  <img src="/logo.png" alt="ApexTrack Logo" className="dl-art-giant-logo" />
+                {/* RIGHT — ANDROID */}
+                <div className="dl-left dl-col-right">
+                  <div className="dl-greeting">
+                    <div className="dl-greeting-dot" style={{ background: '#10B981' }} />
+                    Android Mobile
+                  </div>
+
+                  <h3 className="dl-headline-editorial">
+                    ApexTrack <span className="highlight-dot">for Android</span>
+                  </h3>
                   
-                  {/* Vertical Rotated Text (matching Image 1) */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Dedicated desktop workspace — no browser distractions</span>
+                  <p className="dl-sub-editorial">
+                    Manage your squad on the go. The Android app gives players and staff full access to the platform right from their phone.
+                  </p>
+
+                  <div className="dl-cta-row">
+                    <a
+                      href="/download/android"
+                      className="dl-btn-primary dl-btn-android"
+                    >
+                      {/* Android robot icon */}
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="white"/>
+                        <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                        <circle cx="9" cy="7" r="0.8" fill="white"/>
+                        <circle cx="15" cy="7" r="0.8" fill="white"/>
+                        <path d="M4 13h-.5a1 1 0 000 2H4M20 13h.5a1 1 0 010 2H20" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                      Download APK (.apk)
+                    </a>
+                  </div>
+
+                  <div className="dl-platforms-minimal">
+                    <div className="dl-platform-pill active" style={{ borderColor: '#10B981', color: '#065F46' }}>
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
+                        <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#10B981"/>
+                        <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="#10B981" strokeWidth="2" strokeLinecap="round"/>
+                      </svg>
+                      Android (Active)
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Real-time sync with club cloud database</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#0D9488', marginTop: 7, flexShrink: 0 }} />
-                      <span style={{ fontSize: 13, color: '#475569', fontWeight: 500, lineHeight: 1.5 }}>Strict Postgres RLS data isolation &amp; security</span>
+                    <div className="dl-platform-pill disabled">
+                      iOS (Not Available)
                     </div>
                   </div>
 
-                  {/* Brand Showcase Emblem Card (No Photo) */}
-                  <div className="dl-brand-showcase-card">
-                    <img src="/logo.png" alt="ApexTrack Logo" className="dl-showcase-logo" />
-                    <div className="dl-showcase-brandname">Apex<span>Track</span></div>
-                    <div className="dl-showcase-sub">Windows Desktop Application</div>
-                    
-                    <div className="dl-showcase-badge">
-                      <div className="dl-art-badge-dot" />
-                      <span>v1.0.5 · Official Release</span>
-                    </div>
+                  <div style={{ marginTop: 20, padding: '10px 14px', background: 'rgba(13,148,136,0.07)', borderRadius: 10, border: '1px solid rgba(13,148,136,0.15)' }}>
+                    <p style={{ fontSize: 12, color: '#475569', lineHeight: 1.6, margin: 0 }}>
+                      <strong style={{ color: '#0D9488' }}>iOS users:</strong> Apple does not allow direct APK installs. Please use the web app at <strong>apextrackgh.com</strong> from Safari — it is fully mobile-optimised.
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* BOTTOM EDITORIAL INFO BAR (Matching Image 1's Email / Phone / Location bar) */}
+              {/* BOTTOM EDITORIAL INFO BAR */}
               <div className="dl-bottom-row">
                 <div className="dl-bottom-col">
-                  <div className="dl-bottom-label">Installer Package</div>
+                  <div className="dl-bottom-label">Windows Package</div>
                   <div className="dl-bottom-val">ApexTrack-Setup.exe (~145 MB)</div>
                 </div>
                 <div className="dl-bottom-col">
-                  <div className="dl-bottom-label">System Requirement</div>
-                  <div className="dl-bottom-val">Windows 10 / 11 (64-bit Edition)</div>
+                  <div className="dl-bottom-label">Android Package</div>
+                  <div className="dl-bottom-val">ApexTrack.apk · Android 8.0+</div>
                 </div>
                 <div className="dl-bottom-col">
                   <div className="dl-bottom-label">Security &amp; Support</div>
@@ -1603,7 +1632,10 @@ export default function LandingPage() {
           <div className="footer-brand">Apex<span>Track</span></div>
           <div className="footer-links">
             {!isElectron && (
-              <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link electron-hide">Download Windows App (.exe)</a>
+              <>
+                <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link electron-hide">Download Windows (.exe)</a>
+                <a href="/download/android" className="footer-link electron-hide">Download Android (.apk)</a>
+              </>
             )}
             <Link href="/privacy" className="footer-link">Privacy Policy</Link>
             <Link href="/terms" className="footer-link">Terms of Service</Link>

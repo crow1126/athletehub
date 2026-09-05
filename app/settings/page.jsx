@@ -353,20 +353,21 @@ export default function SettingsPage() {
   async function recoverLogin() {
     if (!recoverForm.login_id)                                     { flashRecover('Select a staff member.','error'); return }
     if (!recoverForm.new_password)                                 { flashRecover('New password is required.','error'); return }
-    if (recoverForm.new_password.length < 8)                       { flashRecover('Min 8 characters.','error'); return }
+    if (recoverForm.new_password.length < 12)                      { flashRecover('Min 12 characters for staff accounts.','error'); return }
     if (recoverForm.new_password !== recoverForm.confirm_password) { flashRecover('Passwords do not match.','error'); return }
     setRecoverSaving(true); setRecoverMsg({ text:'',type:'' })
     try {
       const login = staffLogins.find(l => l.id === recoverForm.login_id)
       if (!login) { flashRecover('Login record not found.','error'); setRecoverSaving(false); return }
       let userId = null
+      // Resolve by email only — name matching can resolve the wrong user
       const { data: byEmail } = await scopeTeam(supabase.from('profiles').select('id').ilike('email', login.email), profile?.team_id).maybeSingle()
       if (byEmail?.id) userId = byEmail.id
       if (!userId) { const u = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase()); if (u?.id) userId = u.id }
-      if (!userId && login.coaches?.name) { const u = allUsers.find(u => u.full_name?.toLowerCase() === login.coaches.name.toLowerCase()); if (u?.id) userId = u.id }
-      if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. Check Supabase Auth.`, 'error'); setRecoverSaving(false); return }
+      if (!userId) { flashRecover(`Cannot find account for ${login.coaches?.name||login.email}. The staff member may need to be re-created.`, 'error'); setRecoverSaving(false); return }
       const res = await fetchWithAuth('/api/admin/create-user', { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:userId, login_id:recoverForm.login_id, action:'reset_password', new_password:recoverForm.new_password }) })
       const data = await res.json()
+      if (!res.ok) { flashRecover('Failed: '+(data.error||'Unknown error'), 'error'); setRecoverSaving(false); return }
       const smsNote = data.sms_sent
         ? `\n\nUpdated password sent via SMS to ${data.phone || 'registered phone'}.`
         : (data.sms_error ? `\n\nSMS notice: ${data.sms_error}` : '')
@@ -422,8 +423,14 @@ export default function SettingsPage() {
   async function revokeLogin(loginId) {
     if (!confirm('Revoke this login? The user will be signed out immediately.')) return
     const login = staffLogins.find(l => l.id === loginId)
-    const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase() || u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase())
-    if (!user?.id) { await scopeTeam(supabase.from('staff_logins').update({ is_active:false }).eq('id',loginId), profile?.team_id); flash('Login revoked in records.'); await loadAll(); return }
+    const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase())
+    if (!user?.id) {
+      // No matching auth user found — update records only and notify admin
+      await scopeTeam(supabase.from('staff_logins').update({ is_active: false }).eq('id', loginId), profile?.team_id)
+      flash('Login revoked in records (no linked account found to sign out).', 'success')
+      await loadAll()
+      return
+    }
     const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'revoke' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
@@ -433,8 +440,13 @@ export default function SettingsPage() {
   async function reactivateLogin(loginId) {
     if (!confirm('Reactivate this login?')) return
     const login = staffLogins.find(l => l.id === loginId)
-    const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase() || u.full_name?.toLowerCase() === login?.coaches?.name?.toLowerCase())
-    if (!user?.id) { await scopeTeam(supabase.from('staff_logins').update({ is_active:true }).eq('id',loginId), profile?.team_id); flash('Login reactivated.'); await loadAll(); return }
+    const user  = allUsers.find(u => u.email?.toLowerCase() === login?.email?.toLowerCase())
+    if (!user?.id) {
+      await scopeTeam(supabase.from('staff_logins').update({ is_active: true }).eq('id', loginId), profile?.team_id)
+      flash('Login reactivated in records (no linked account found).', 'success')
+      await loadAll()
+      return
+    }
     const res  = await fetchWithAuth('/api/admin/create-user',{ method:'PATCH', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ user_id:user.id, login_id:loginId, action:'reactivate' }) })
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }

@@ -628,6 +628,33 @@ export default function Layout({ children }) {
                     <div style={{ fontSize:12, color: C.text3 }}>{profile?.email}</div>
                   </div>
                 </div>
+                <a
+                  href="/download/android"
+                  className="electron-hide"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    background: 'linear-gradient(135deg, #059669, #0D9488)',
+                    color: '#fff',
+                    borderRadius: 10,
+                    padding: '11px 16px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                    marginBottom: 12,
+                    boxShadow: '0 2px 8px rgba(5,150,105,0.25)',
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="white"/>
+                    <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
+                    <circle cx="9" cy="7" r="0.8" fill="white"/>
+                    <circle cx="15" cy="7" r="0.8" fill="white"/>
+                  </svg>
+                  <span>Download Android App (.apk)</span>
+                </a>
                 <button onClick={handleSignOut}
                   style={{ width:'100%', background:'transparent', color: C.text3, border:`1px solid ${C.border}`, borderRadius:10, padding:'12px', fontSize:14, fontWeight:600, cursor:'pointer', fontFamily:'inherit' }}>
                   Sign Out
@@ -750,6 +777,35 @@ export default function Layout({ children }) {
                   <div style={{ fontSize:11, color: C.text3, textTransform:'capitalize', marginTop:2 }}>{ROLE_DISPLAY_LABELS[role] || role}</div>
                 </div>
               </div>
+              <a
+                href="/download/android"
+                className="electron-hide"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: 'rgba(5, 150, 105, 0.08)',
+                  border: '1px solid rgba(5, 150, 105, 0.25)',
+                  borderRadius: 10,
+                  padding: '9px 12px',
+                  color: '#047857',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  textDecoration: 'none',
+                  marginBottom: 10,
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(5, 150, 105, 0.15)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5, 150, 105, 0.08)' }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                  <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#059669"/>
+                  <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="#059669" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="9" cy="7" r="0.8" fill="#059669"/>
+                  <circle cx="15" cy="7" r="0.8" fill="#059669"/>
+                </svg>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Android App (.apk)</span>
+              </a>
               <button onClick={handleSignOut}
                 style={{ width:'100%', background:'transparent', color: C.text3, border:`1px solid ${C.border}`, borderRadius:10, padding:'10px', fontSize:13, fontWeight:600, cursor:'pointer', fontFamily:'inherit', transition:'all 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                 onMouseEnter={e => { e.currentTarget.style.background = C.floralMuted; e.currentTarget.style.color = C.text }}
@@ -758,7 +814,33 @@ export default function Layout({ children }) {
               </button>
             </div>
           ) : (
-            <div style={{ display:'flex', justifyContent:'center' }}>
+            <div style={{ display:'flex', flexDirection: 'column', alignItems:'center', gap: 6 }}>
+              <a
+                href="/download/android"
+                className="electron-hide"
+                title="Download Android App (.apk)"
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'rgba(5, 150, 105, 0.08)',
+                  border: '1px solid rgba(5, 150, 105, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textDecoration: 'none',
+                  transition: 'all 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(5, 150, 105, 0.18)' }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(5, 150, 105, 0.08)' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="#059669"/>
+                  <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="#059669" strokeWidth="2" strokeLinecap="round"/>
+                  <circle cx="9" cy="7" r="0.8" fill="#059669"/>
+                  <circle cx="15" cy="7" r="0.8" fill="#059669"/>
+                </svg>
+              </a>
               <button onClick={handleSignOut} title={`${profile?.full_name || 'Admin'} · Sign Out`}
                 style={{ width:40, height:40, borderRadius:'50%', background: C.floralMuted, border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', fontSize:13, fontWeight:700, color: C.text2, transition:'all 0.15s' }}
                 onMouseEnter={e => e.currentTarget.style.background = C.border}

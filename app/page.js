@@ -1814,11 +1814,6 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section className="hero">
-        <div className="hero-eyebrow">
-          <span className="hero-eyebrow-dot" />
-          <span className="hero-eyebrow-text">Built for Modern Football Clubs</span>
-        </div>
-
         <h1 className="hero-h1">
           Run Your Football Club Smarter{' '}
           <span className="hero-h1-accent">From Pitch to Payroll</span>
@@ -1866,10 +1861,6 @@ export default function LandingPage() {
             <img src="/hero-football.png" alt="Football player in action" className="hero-img" />
             <div className="hero-img-overlay" />
             <div className="hero-img-accent" />
-            <div className="hero-floating-badge">
-              <span className="hero-badge-dot" />
-              <span>⚽ Trusted by 60+ Football Clubs</span>
-            </div>
           </div>
         </div>
       </section>

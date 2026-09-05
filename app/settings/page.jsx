@@ -173,9 +173,10 @@ export default function SettingsPage() {
   }
 
   async function issueLogin() {
-    if (!issueForm.coach_id && issueForm.role !== 'accountant') { flashIssue('Select a staff member.','error'); return }
-    if (issueForm.role === 'accountant' && !issueForm.coach_id && !issueForm.full_name?.trim()) {
-      flashIssue('Full Name is required for accountant.','error'); return
+    const isDirectRole = issueForm.role === 'accountant' || issueForm.role === 'admin'
+    if (!issueForm.coach_id && !isDirectRole) { flashIssue('Select a staff member.','error'); return }
+    if (isDirectRole && !issueForm.coach_id && !issueForm.full_name?.trim()) {
+      flashIssue('Full Name is required when not selecting a staff member.','error'); return
     }
     const username = issueForm.username.trim().toLowerCase()
     if (!username)                      { flashIssue('Username is required.','error'); return }
@@ -454,7 +455,7 @@ export default function SettingsPage() {
   }
 
   async function updateUserRole(userId, role) {
-    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player']
+    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'analyst', 'scout', 'player', 'accountant']
     const dbRole = allowedDbRoles.includes(role) ? role : 'coach'
     
     const { error } = await scopeTeam(supabase.from('profiles').update({ role: dbRole }).eq('id', userId), profile?.team_id)
@@ -478,6 +479,26 @@ export default function SettingsPage() {
     const data = await res.json()
     if (!res.ok) { flash('Failed: '+data.error,'error'); return }
     flash(current ? 'User disabled.' : 'User enabled.'); await loadAll()
+  }
+
+  async function deleteCredentials(userId, loginId, targetName = 'this user') {
+    if (!confirm(`Are you sure you want to PERMANENTLY delete credentials for ${targetName}?\n\nThis will completely remove their user login account and sign them out immediately. This action cannot be undone.`)) return
+    try {
+      const res = await fetchWithAuth('/api/admin/create-user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, login_id: loginId })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        flash(data.error || 'Failed to delete credentials.', 'error')
+        return
+      }
+      flash(data.message || 'Credentials permanently deleted.', 'success')
+      await loadAll()
+    } catch (err) {
+      flash('Error: ' + err.message, 'error')
+    }
   }
 
   const TABS = [
@@ -626,13 +647,14 @@ export default function SettingsPage() {
                     <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>New Login Credentials</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
-                        <label style={lbl}>Staff Member {issueForm.role !== 'accountant' && '*'}</label>
+                        <label style={lbl}>Staff Member {issueForm.role !== 'accountant' && issueForm.role !== 'admin' && '*'}</label>
                         <select value={issueForm.coach_id} onChange={e => {
                           const coachId = e.target.value
                           const staff = allStaff.find(s => s.id === coachId)
                           let autoRole = issueForm.role
                           if (staff) {
-                            if (staff.staff_type === 'accountant') autoRole = 'accountant'
+                            if (staff.staff_type === 'admin') autoRole = 'admin'
+                            else if (staff.staff_type === 'accountant') autoRole = 'accountant'
                             else if (staff.staff_type === 'physio') autoRole = 'physio'
                             else if (staff.staff_type === 'analyst') autoRole = 'analyst'
                             else if (staff.staff_type === 'scout') autoRole = 'scout'
@@ -640,7 +662,7 @@ export default function SettingsPage() {
                           }
                           setIssueForm(f => ({ ...f, coach_id: coachId, role: autoRole, phone: staff?.phone || f.phone || '' }))
                         }} style={{ ...inp,background:'#fff' }}>
-                          <option value="">{issueForm.role === 'accountant' ? '— No staff link (Accountant Only) —' : '— Select a staff member —'}</option>
+                          <option value="">{issueForm.role === 'accountant' || issueForm.role === 'admin' ? '— No staff link (Direct Account) —' : '— Select a staff member —'}</option>
                           {allStaff.length===0 ? <option disabled>No staff found</option> : allStaff.map(s=><option key={s.id} value={s.id}>{s.name} ({(s.staff_type||'').replace(/_/g,' ')}){s.phone ? ` · (${s.phone})` : ' · (No phone registered)'}</option>)}
                         </select>
                       </div>
@@ -659,7 +681,7 @@ export default function SettingsPage() {
                           Credentials (username and password) will be automatically sent to this phone number via SMS immediately.
                         </div>
                       </div>
-                      {issueForm.role === 'accountant' && !issueForm.coach_id && (
+                      {(issueForm.role === 'accountant' || issueForm.role === 'admin') && !issueForm.coach_id && (
                         <div>
                           <label style={lbl}>Full Name *</label>
                           <input type="text" value={issueForm.full_name || ''} onChange={e=>setIssueForm(f=>({...f,full_name:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Kwame Asante" onFocus={onFocus} onBlur={onBlur}/>
@@ -684,8 +706,9 @@ export default function SettingsPage() {
                       <div>
                         <label style={lbl}>System Role *</label>
                         <select value={issueForm.role} onChange={e=>setIssueForm(f=>({...f,role:e.target.value}))} style={{ ...inp,background:'#fff' }}>
+                          <option value="admin">admin — Full Club Management &amp; Settings</option>
+                          <option value="coach">coach — Training &amp; Athletes</option>
                           <option value="physio">physio — Medical Hub access</option>
-                          <option value="coach">coach — Training & Athletes</option>
                           {(subPlan === 'starting_xi' || subPlan === 'starter') ? (
                             <>
                               <option value="analyst" disabled>analyst — Locked (Upgrade to Captain)</option>
@@ -693,7 +716,7 @@ export default function SettingsPage() {
                             </>
                           ) : (
                             <>
-                              <option value="analyst">analyst — Performance & Reports</option>
+                              <option value="analyst">analyst — Performance &amp; Reports</option>
                               <option value="scout">scout — Scouting module</option>
                             </>
                           )}
@@ -723,13 +746,13 @@ export default function SettingsPage() {
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
                     <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
                       <div style={{ minWidth:720 }}>
-                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.5fr 1.6fr 0.8fr 0.8fr 0.7fr 1.6fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
                           {['Staff','Username','Password','Role','Issued','Status','Action'].map(h=>(
                             <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
                           ))}
                         </div>
                         {staffLogins.map(login => (
-                          <div key={login.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.6fr 1.8fr 0.8fr 0.8fr 0.7fr 1.2fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
+                          <div key={login.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.5fr 1.6fr 0.8fr 0.8fr 0.7fr 1.6fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
                             onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                             onMouseLeave={e=>e.currentTarget.style.background=''}>
                             <div>
@@ -737,7 +760,7 @@ export default function SettingsPage() {
                                 {login.coaches?.name || allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase())?.full_name || login.email || '—'}
                               </div>
                               <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>
-                                {login.coaches?.staff_type ? (login.coaches.staff_type||'').replace(/_/g,' ') : (login.role === 'accountant' ? 'ApexPay Accountant' : '')}
+                                {login.coaches?.staff_type ? (login.coaches.staff_type||'').replace(/_/g,' ') : (login.role === 'accountant' ? 'ApexPay Accountant' : (login.role === 'admin' ? 'Club Admin' : ''))}
                               </div>
                             </div>
                             <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
@@ -756,11 +779,22 @@ export default function SettingsPage() {
                             <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
                             <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
                             <div><span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'● Active':'○ Revoked'}</span></div>
-                            <div>
+                            <div style={{ display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' }}>
                               {login.is_active
                                 ? <button onClick={()=>revokeLogin(login.id)} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke {GM_ICON}</button>
                                 : <button onClick={()=>reactivateLogin(login.id)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore {GM_ICON}</button>
                               }
+                              <button
+                                onClick={() => {
+                                  const user = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase() || (login.username && u.username?.toLowerCase() === login.username.toLowerCase()))
+                                  deleteCredentials(user?.id || null, login.id, login.username || login.coaches?.name || login.email)
+                                }}
+                                className="gm-btn danger"
+                                style={{ padding:'5px 8px',fontSize:11,background:'#7F1D1D',borderColor:'#991B1B' }}
+                                title="Permanently delete credentials"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
                         ))}
@@ -899,13 +933,21 @@ export default function SettingsPage() {
                               </div>
                               <div>
                                 {login ? (
-                                  <div style={{ display:'flex',gap:6 }}>
-                                    <button onClick={()=>openPlayerResetModal(a, login)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Reset PW</button>
+                                  <div style={{ display:'flex',gap:6,flexWrap:'wrap' }}>
+                                    <button onClick={()=>openPlayerResetModal(a, login)} className="gm-btn outline" style={{ padding:'5px 8px',fontSize:11 }}>Reset PW</button>
                                     {login.is_active ? (
-                                      <button onClick={()=>handlePlayerAction(login.id, 'revoke')} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke</button>
+                                      <button onClick={()=>handlePlayerAction(login.id, 'revoke')} className="gm-btn danger" style={{ padding:'5px 8px',fontSize:11 }}>Revoke</button>
                                     ) : (
-                                      <button onClick={()=>handlePlayerAction(login.id, 'reactivate')} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore</button>
+                                      <button onClick={()=>handlePlayerAction(login.id, 'reactivate')} className="gm-btn outline" style={{ padding:'5px 8px',fontSize:11 }}>Restore</button>
                                     )}
+                                    <button
+                                      onClick={() => deleteCredentials(login.id, null, a.name)}
+                                      className="gm-btn danger"
+                                      style={{ padding:'5px 8px',fontSize:11,background:'#7F1D1D',borderColor:'#991B1B' }}
+                                      title="Permanently delete player credentials"
+                                    >
+                                      Delete
+                                    </button>
                                   </div>
                                 ) : (
                                   <button onClick={()=>{
@@ -1251,11 +1293,11 @@ export default function SettingsPage() {
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:msg.text?12:0 }}>
                     <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
                       <div style={{ minWidth:580 }}>
-                        <div className="users-table-header" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
+                        <div className="users-table-header" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.7fr 1.1fr 0.8fr 1.4fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
                           {['Name','Email','Role','Status','Action'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
                         </div>
                         {allUsers.map(u=>(
-                          <div key={u.id} className="users-table-row" style={{ display:'grid',gridTemplateColumns:'1.6fr 1.8fr 1.1fr 0.9fr 1.1fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:u.is_active!==false?1:0.6 }}
+                          <div key={u.id} className="users-table-row" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.7fr 1.1fr 0.8fr 1.4fr',gap:8,alignItems:'center',padding:'12px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:u.is_active!==false?1:0.6 }}
                             onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
                             onMouseLeave={e=>e.currentTarget.style.background=''}>
                             <div style={{ display:'flex',alignItems:'center',gap:9 }}>
@@ -1280,11 +1322,21 @@ export default function SettingsPage() {
                               </select>
                             </div>
                             <div><span style={{ fontSize:10,fontWeight:700,background:u.is_active!==false?'var(--success-light)':'var(--danger-light)',color:u.is_active!==false?'var(--success)':'var(--danger)',padding:'3px 10px',borderRadius:99,whiteSpace:'nowrap' }}>{u.is_active!==false?'Active':'Disabled'}</span></div>
-                            <div style={{ whiteSpace:'nowrap' }}>
+                            <div style={{ display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' }}>
                               {u.is_active!==false
                                 ? <button onClick={()=>toggleUserActive(u.id,true)}  className="gm-btn danger"  style={{ padding:'5px 10px',fontSize:11 }}>Disable {GM_ICON}</button>
                                 : <button onClick={()=>toggleUserActive(u.id,false)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Enable {GM_ICON}</button>
                               }
+                              {u.id !== profile?.id && (
+                                <button
+                                  onClick={() => deleteCredentials(u.id, null, u.full_name || u.email)}
+                                  className="gm-btn danger"
+                                  style={{ padding:'5px 8px',fontSize:11,background:'#7F1D1D',borderColor:'#991B1B' }}
+                                  title="Permanently delete user account and credentials"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </div>
                           </div>
                         ))}

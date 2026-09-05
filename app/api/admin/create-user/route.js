@@ -201,7 +201,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
     }
 
-    if (coach_id || safeRole === 'accountant') {
+    if (coach_id || safeRole === 'accountant' || safeRole === 'admin') {
       const { error: loginError } = await db
         .from('staff_logins')
         .insert([{
@@ -479,9 +479,157 @@ export async function PATCH(req) {
       return NextResponse.json({ success: true, message: 'Password changed successfully.' })
     }
 
+    if (action === 'delete') {
+      const result = await deleteUserCredentials({ db, requester, user_id, login_id })
+      if (result.error) {
+        return NextResponse.json({ error: result.error }, { status: result.status || 400 })
+      }
+      return NextResponse.json(result)
+    }
+
     return NextResponse.json({ error: 'Unknown action: ' + action }, { status: 400 })
   } catch (err) {
     console.error('PATCH error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
+async function deleteUserCredentials({ db, requester, user_id, login_id }) {
+  if (!user_id && !login_id) {
+    return { error: 'user_id or login_id is required', status: 400 }
+  }
+
+  let resolvedUserId = user_id
+  let targetTeamId = null
+  let targetEmail = null
+  let targetUsername = null
+
+  if (login_id) {
+    const { data: login } = await db
+      .from('staff_logins')
+      .select('id, team_id, email, username')
+      .eq('id', login_id)
+      .maybeSingle()
+
+    if (login) {
+      targetTeamId = login.team_id
+      targetEmail = login.email
+      targetUsername = login.username
+
+      if (!resolvedUserId) {
+        if (login.email) {
+          const { data: p } = await db.from('profiles').select('id, team_id').eq('email', login.email).maybeSingle()
+          resolvedUserId = p?.id || null
+        }
+        if (!resolvedUserId && login.username) {
+          const { data: p2 } = await db.from('profiles').select('id, team_id').eq('username', login.username).maybeSingle()
+          resolvedUserId = p2?.id || null
+        }
+      }
+    }
+  }
+
+  if (resolvedUserId) {
+    // Prevent self-deletion
+    if (requester.profile.id === resolvedUserId) {
+      return { error: 'You cannot delete your own admin account.', status: 400 }
+    }
+
+    const { data: profile } = await db
+      .from('profiles')
+      .select('id, email, username, team_id, role, athlete_id')
+      .eq('id', resolvedUserId)
+      .maybeSingle()
+
+    if (profile) {
+      targetTeamId = profile.team_id
+      targetEmail = profile.email || targetEmail
+      targetUsername = profile.username || targetUsername
+
+      if (profile.role === 'superadmin') {
+        return { error: 'Superadmin accounts cannot be deleted.', status: 403 }
+      }
+
+      if (targetTeamId && !canManageTeam(requester.profile, targetTeamId)) {
+        return { error: 'Forbidden', status: 403 }
+      }
+
+      // 1. Delete from Supabase Auth
+      try {
+        await adminFetch(`users/${resolvedUserId}`, 'DELETE')
+      } catch (authErr) {
+        console.warn('[create-user] Auth user delete warning:', authErr?.message)
+      }
+
+      // 2. Delete from profiles
+      await db.from('profiles').delete().eq('id', resolvedUserId)
+
+      // 3. Unlink from coaches
+      await db.from('coaches').update({ user_id: null }).eq('user_id', resolvedUserId)
+
+      // 4. Unlink from athletes
+      if (profile.athlete_id) {
+        await db.from('athletes').update({ user_id: null }).eq('id', profile.athlete_id)
+      }
+      await db.from('athletes').update({ user_id: null }).eq('user_id', resolvedUserId)
+    }
+  }
+
+  if (targetTeamId && !canManageTeam(requester.profile, targetTeamId)) {
+    return { error: 'Forbidden', status: 403 }
+  }
+
+  // Delete from staff_logins
+  if (login_id) {
+    await db.from('staff_logins').delete().eq('id', login_id)
+  }
+  if (targetEmail && targetTeamId) {
+    await db.from('staff_logins').delete().eq('email', targetEmail).eq('team_id', targetTeamId)
+  }
+  if (targetUsername && targetTeamId) {
+    await db.from('staff_logins').delete().eq('username', targetUsername).eq('team_id', targetTeamId)
+  }
+
+  log.info('user_deleted_by_admin', {
+    admin_id: requester.profile.id,
+    target_user_id: resolvedUserId,
+    target_email: targetEmail,
+    team_id: targetTeamId,
+  })
+
+  return { success: true, message: 'User credentials and account permanently deleted.' }
+}
+
+export async function DELETE(req) {
+  try {
+    const db = getDb()
+    const requester = await getRequester(req, db)
+    if (requester.error) {
+      return NextResponse.json({ error: requester.error }, { status: requester.status })
+    }
+
+    let user_id = null
+    let login_id = null
+
+    const { searchParams } = new URL(req.url)
+    user_id = searchParams.get('user_id')
+    login_id = searchParams.get('login_id')
+
+    if (!user_id && !login_id) {
+      try {
+        const body = await req.json()
+        user_id = body.user_id
+        login_id = body.login_id
+      } catch {}
+    }
+
+    const result = await deleteUserCredentials({ db, requester, user_id, login_id })
+    if (result.error) {
+      return NextResponse.json({ error: result.error }, { status: result.status || 400 })
+    }
+    return NextResponse.json(result)
+  } catch (err) {
+    console.error('DELETE error:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }

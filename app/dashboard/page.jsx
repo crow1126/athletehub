@@ -225,6 +225,7 @@ export default function Dashboard() {
         .dash-grid { grid-template-columns:minmax(0, 1.8fr) minmax(0, 1.2fr); width:100%; }
         .dash-athletes-cols { grid-template-columns:minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
         .dash-athletes-header { display:grid !important; }
+        .dash-rehab-wrap { padding: 0 32px; }
         @media(max-width:1100px) {
           .dash-stats-row { grid-template-columns:repeat(3,1fr) !important; }
           .dash-grid { grid-template-columns:1fr !important; }
@@ -232,6 +233,7 @@ export default function Dashboard() {
         @media(max-width:768px) {
           .dash-hero { padding:18px 16px 16px !important; }
           .dash-stats-wrap { padding:14px 12px 0 !important; }
+          .dash-rehab-wrap { padding: 0 12px !important; }
           .dash-stats-row { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
           .dash-grid { gap:14px !important; padding:14px 12px 0 !important; }
           .dash-athletes-cols { grid-template-columns:1fr auto !important; }
@@ -754,7 +756,7 @@ export default function Dashboard() {
 
       {/* ── Rehabilitation Hub — full-width below the grid (physio & admin only) ── */}
       {canViewRehab && (
-        <div className="fade-up" style={{ maxWidth: 1280, margin: '20px auto 0', padding: '0 32px', boxSizing: 'border-box' }}>
+        <div className="fade-up dash-rehab-wrap" style={{ maxWidth: 1280, margin: '20px auto 0', boxSizing: 'border-box' }}>
           <RehabilitationNotes
             currentUser={profile}
             teamId={teamId}

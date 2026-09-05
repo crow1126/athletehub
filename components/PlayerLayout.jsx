@@ -412,7 +412,7 @@ export default function PlayerLayout({ children }) {
   if (isMobile) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: C.floral, fontFamily: 'var(--font)' }}>
-        <header style={{ height: 60, background: C.floralDark, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: '0 16px', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
+        <header style={{ background: C.floralDark, borderBottom: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', padding: `env(safe-area-inset-top, 0px) 16px 0`, paddingBottom: 0, justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, minHeight: `calc(60px + env(safe-area-inset-top, 0px))` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <ClubLogo size={32} />
             <div>
@@ -465,9 +465,9 @@ export default function PlayerLayout({ children }) {
           </div>
         </header>
 
-        <main style={{ flex: 1, paddingBottom: 72, minWidth: 0, overflowX: 'hidden' }}>{children}</main>
+        <main style={{ flex: 1, paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', minWidth: 0, overflowX: 'hidden' }}>{children}</main>
 
-        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 64, background: C.floralDark, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 100, paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
+        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box', background: C.floralDark, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 100, paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
           {NAV_ITEMS.map(({ href, label, icon }) => {
             const active = path === href
             const shortLabel = href === '/player-hub' ? 'Profile' : href.includes('performance') ? 'Stats' : href.includes('schedule') ? 'Schedule' : 'Notices'

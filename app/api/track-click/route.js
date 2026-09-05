@@ -5,8 +5,13 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY
 
 export async function POST(req) {
-  try {
-    const { url, referrer } = await req.json()
+    let body = {}
+    try {
+      body = await req.json()
+    } catch {
+      return NextResponse.json({ success: false, error: 'Invalid JSON' }, { status: 400 })
+    }
+    const { url, referrer } = body
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }

@@ -20,8 +20,8 @@ export default function CapacitorProvider() {
           // Initialize Status Bar
           const { StatusBar, Style } = await import('@capacitor/status-bar')
           try {
-            await StatusBar.setStyle({ style: Style.Dark })
-            await StatusBar.setBackgroundColor({ color: '#0D9488' })
+            await StatusBar.setStyle({ style: Style.Light })
+            await StatusBar.setBackgroundColor({ color: '#FFFFFF' })
           } catch (sbErr) {
             console.warn('Capacitor StatusBar init warning:', sbErr)
           }

@@ -487,10 +487,8 @@ body {
    Capacitor Native Safe Area Inset Support (Notch & Home Bar)
    ============================================================ */
 body {
-  padding-top: env(safe-area-inset-top, 0px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  padding-left: env(safe-area-inset-left, 0px);
-  padding-right: env(safe-area-inset-right, 0px);
+  padding: 0;
+  margin: 0;
 }
 
 .safe-top {

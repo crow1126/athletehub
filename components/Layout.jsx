@@ -555,7 +555,7 @@ export default function Layout({ children }) {
     return (
       <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh', background: C.floral, fontFamily:'var(--font)' }}>
 
-        <header style={{ height:60, background: C.floralDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:'0 16px', justifyContent:'space-between', position:'sticky', top:0, zIndex:200 }}>
+        <header style={{ background: C.floralDark, borderBottom:`1px solid ${C.border}`, display:'flex', alignItems:'center', padding:`env(safe-area-inset-top, 0px) 16px 0`, paddingBottom:0, justifyContent:'space-between', position:'sticky', top:0, zIndex:200, minHeight:`calc(60px + env(safe-area-inset-top, 0px))` }}>
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ClubLogo size={32} />
             <div>
@@ -599,7 +599,7 @@ export default function Layout({ children }) {
         </header>
 
         {mobileMenu && (
-          <div style={{ position:'fixed', top:60, left:0, right:0, bottom:0, zIndex:150, background:'rgba(15, 23, 42, 0.4)', backdropFilter:'blur(4px)' }} onClick={() => setMobileMenu(false)}>
+          <div style={{ position:'fixed', top:`calc(60px + env(safe-area-inset-top, 0px))`, left:0, right:0, bottom:0, zIndex:150, background:'rgba(15, 23, 42, 0.4)', backdropFilter:'blur(4px)' }} onClick={() => setMobileMenu(false)}>
             <div style={{ background: C.floralDark, borderBottom:`1px solid ${C.border}`, padding:'12px 0', maxHeight:'80vh', overflowY:'auto' }}
               onClick={e => e.stopPropagation()}>
               {navLinks.map(({ href, label, page }) => {
@@ -680,9 +680,9 @@ export default function Layout({ children }) {
           </div>
         )}
 
-        <main style={{ flex:1, paddingBottom:72, minWidth:0, overflowX:'hidden' }}>{children}</main>
+        <main style={{ flex:1, paddingBottom:'calc(80px + env(safe-area-inset-bottom, 0px))', minWidth:0, overflowX:'hidden' }}>{children}</main>
 
-        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:64, background: C.floralDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom)', paddingLeft:'env(safe-area-inset-left)', paddingRight:'env(safe-area-inset-right)' }}>
+        <nav style={{ position:'fixed', bottom:0, left:0, right:0, height:'calc(64px + env(safe-area-inset-bottom, 0px))', boxSizing:'border-box', background: C.floralDark, borderTop:`1px solid ${C.border}`, display:'flex', alignItems:'center', justifyContent:'space-around', zIndex:100, paddingBottom:'env(safe-area-inset-bottom, 0px)', paddingLeft:'env(safe-area-inset-left, 0px)', paddingRight:'env(safe-area-inset-right, 0px)' }}>
           {mobileNav.map(({ href, label, page }) => {
             const active = path === href || path.startsWith(href + '/')
             const navLabel = MOBILE_NAV_LABELS[page] || label

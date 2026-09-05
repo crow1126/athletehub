@@ -228,18 +228,32 @@ export default function PlayerDashboard() {
         }
         @media(max-width: 640px) {
           .player-dashboard {
-            padding: 16px;
+            padding: 14px 12px;
+            gap: 16px;
           }
           .hero-card {
             flex-direction: column;
             align-items: flex-start;
-            gap: 20px;
-            padding: 24px;
+            gap: 16px;
+            padding: 20px 16px;
           }
           .hero-profile {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
+            flex-direction: row;
+            align-items: center;
+            gap: 14px;
+          }
+          .hero-photo-placeholder, .hero-photo-img {
+            width: 64px;
+            height: 64px;
+            border-radius: 12px;
+            font-size: 22px;
+          }
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+          }
+          .section-card {
+            padding: 16px 14px;
           }
         }
       `}</style>

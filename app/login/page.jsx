@@ -416,10 +416,35 @@ export default function LoginPage() {
           .auth-card { justify-self: center; }
         }
         @media(max-width:768px) {
-          .lp-nav { padding: 0 20px; }
-          .auth-container { padding: 88px 20px 24px; }
-          .footer { padding-top: 16px; }
-          .footer-inner { flex-direction: column; align-items: center; }
+          .lp-nav {
+            padding: 0 16px;
+            padding-top: env(safe-area-inset-top, 0px);
+            height: calc(60px + env(safe-area-inset-top, 0px));
+            display: flex;
+            align-items: center;
+          }
+          .nav-brand-img { height: 32px; }
+          .nav-brand-name { font-size: 17px; }
+          .auth-container {
+            padding: calc(64px + env(safe-area-inset-top, 0px) + 20px) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+          }
+          .auth-card {
+            border-radius: 18px;
+          }
+          .auth-form {
+            padding: 24px 18px 20px;
+          }
+          .auth-trust {
+            padding: 14px 18px;
+          }
+          .footer {
+            padding-top: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+          }
+          .footer-inner {
+            flex-direction: column;
+            align-items: center;
+          }
         }
       `}</style>
 

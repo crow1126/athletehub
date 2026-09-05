@@ -30,8 +30,8 @@ const config: CapacitorConfig = {
       splashImmersive: true,
     },
     StatusBar: {
-      style: 'DARK',
-      backgroundColor: '#0D9488',
+      style: 'LIGHT',
+      backgroundColor: '#FFFFFF',
       overlaysWebView: false,
     },
   },

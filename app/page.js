@@ -493,23 +493,78 @@ export default function LandingPage() {
           cursor: pointer; color: #0F172A; font-size: 22px; padding: 4px;
         }
 
-        /* ── MOBILE MENU ── */
+        /* ── MOBILE MENU (PREMIUM DRAWER) ── */
         .mobile-menu {
           position: fixed; inset: 0; z-index: 200;
-          background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(16px);
+          background: rgba(255, 255, 255, 0.98);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
           display: flex; flex-direction: column;
-          align-items: center; justify-content: center; gap: 32px;
-          animation: fadeIn 0.2s ease;
+          padding: max(16px, env(safe-area-inset-top, 16px)) 20px calc(24px + env(safe-area-inset-bottom, 24px));
+          animation: fadeIn 0.25s ease;
+          overflow-y: auto;
+          box-sizing: border-box;
+        }
+        .mobile-menu-header {
+          display: flex; align-items: center; justify-content: space-between;
+          width: 100%; padding-bottom: 16px;
+          border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+          margin-bottom: 24px;
         }
         .mobile-menu-close {
-          position: absolute; top: 20px; right: 20px;
-          background: none; border: none; font-size: 28px;
+          width: 40px; height: 40px; border-radius: 50%;
+          background: #F1F5F9; border: 1px solid #E2E8F0;
           cursor: pointer; color: #0F172A;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s;
         }
-        .mobile-menu-link {
-          font-size: 24px; font-weight: 700; color: #0F172A;
-          text-decoration: none; background: none; border: none;
+        .mobile-menu-close:active {
+          background: #E2E8F0; transform: scale(0.95);
+        }
+        .mobile-menu-links {
+          display: flex; flex-direction: column; gap: 8px;
+          width: 100%; margin-bottom: 28px;
+        }
+        .mobile-menu-item {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 14px 18px;
+          border-radius: 14px;
+          background: #F8FAFC;
+          border: 1px solid #F1F5F9;
+          font-size: 16px; font-weight: 700; color: #0F172A;
+          text-decoration: none; cursor: pointer; font-family: inherit;
+          transition: all 0.15s ease;
+        }
+        .mobile-menu-item:active {
+          background: #F0FDFA; border-color: #CCFBF1; color: #0D9488;
+        }
+        .mobile-menu-actions {
+          display: flex; flex-direction: column; gap: 10px;
+          width: 100%; margin-top: auto;
+        }
+        .mobile-menu-btn {
+          width: 100%; height: 50px; justify-content: center;
+          font-size: 15px; font-weight: 700; border-radius: 999px;
+          box-sizing: border-box;
+        }
+        .btn-demo-menu {
+          width: 100%; height: 48px; border-radius: 999px;
+          background: #F0FDFA; border: 1.5px solid #0D9488;
+          color: #0D9488; font-size: 14px; font-weight: 700;
           cursor: pointer; font-family: inherit;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          transition: all 0.2s; box-sizing: border-box;
+        }
+        .btn-demo-menu:active {
+          background: #CCFBF1;
+        }
+        .mobile-menu-footer {
+          margin-top: 24px; text-align: center;
+          font-size: 12px; color: #64748B;
+          display: flex; flex-direction: column; gap: 4px;
+        }
+        .mobile-menu-footer a {
+          color: #0D9488; font-weight: 700; text-decoration: none;
         }
 
         /* ── HERO ── */
@@ -519,6 +574,39 @@ export default function LandingPage() {
           background: transparent;
           position: relative;
           overflow: hidden;
+        }
+        .hero-h1-accent {
+          background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .hero-floating-badge {
+          position: absolute;
+          bottom: 18px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          border-radius: 999px;
+          background: rgba(15, 23, 42, 0.82);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          color: #FFFFFF;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          white-space: nowrap;
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+          z-index: 3;
+        }
+        .hero-badge-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          background: #14B8A6;
+          box-shadow: 0 0 8px #14B8A6;
+          animation: float0 1.5s ease-in-out infinite;
         }
         .hero-eyebrow {
           display: inline-flex; align-items: center; gap: 8px;
@@ -1283,6 +1371,7 @@ export default function LandingPage() {
         }
         .cta-title { font-size: clamp(28px,3.5vw,40px); font-weight: 800; color: #0F172A; letter-spacing: -0.025em; margin-bottom: 14px; }
         .cta-sub   { font-size: 15px; color: #64748B; line-height: 1.7; margin-bottom: 32px; max-width: 580px; margin-left: auto; margin-right: auto; }
+        .cta-btns  { display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; margin-bottom: 0; }
         
         .support-details {
           margin-top: 36px; padding-top: 32px; border-top: 1px solid rgba(13,148,136,0.1);
@@ -1440,58 +1529,239 @@ export default function LandingPage() {
           .dl-bottom-col + .dl-bottom-col { border-left: none; border-top: 1px solid rgba(13, 148, 136, 0.15); padding-top: 16px; padding-left: 0; }
         }
         @media (max-width: 640px) {
-          .lp-nav { padding: 0 20px; }
-          .hero { padding: 120px 20px 0; }
-          .hero-h1 { font-size: clamp(32px, 8vw, 48px); line-height: 1.1; }
-          .hero-visual { margin: 36px 16px 0; }
-          .hero-img-wrapper { border-radius: 18px; }
-          .hero-img { height: 360px; }
-          .hero-img-overlay { border-radius: 18px; }
+          .lp-nav,
+          .lp-nav.scrolled {
+            padding: 0 16px;
+            padding-top: env(safe-area-inset-top, 0px);
+            height: calc(60px + env(safe-area-inset-top, 0px));
+            min-height: calc(60px + env(safe-area-inset-top, 0px));
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-sizing: border-box;
+          }
+          .lp-nav > * { margin-bottom: 0; }
+          .nav-brand-img { height: 32px; }
+          .nav-brand-name { font-size: 17px; }
+          .nav-hamburger {
+            display: flex !important;
+            align-items: center; justify-content: center;
+            width: 40px; height: 40px; border-radius: 10px;
+            background: #F8FAFC; border: 1px solid #E2E8F0;
+            color: #0F172A;
+          }
+          .nav-hamburger:active { background: #E2E8F0; transform: scale(0.95); }
 
-          .features-section { padding: 64px 20px; }
-          .features-grid { grid-template-columns: 1fr; }
-          .pricing-section { padding: 64px 20px; }
-          .download-section { padding: 64px 20px; }
-          .dl-top-bar { padding: 24px 20px 0; }
-          .dl-left { padding: 28px 20px; }
-          .dl-right-art { padding: 24px 20px; }
-          .dl-right { padding: 32px 24px; }
+          #features, #pricing, #download, #faq, #support {
+            scroll-margin-top: calc(72px + env(safe-area-inset-top, 0px));
+          }
+
+          .hero {
+            padding: calc(60px + env(safe-area-inset-top, 0px) + 20px) 16px 0;
+          }
+          .hero-eyebrow {
+            margin-bottom: 14px;
+            padding: 5px 12px 5px 8px;
+          }
+          .hero-eyebrow-text {
+            font-size: 11px;
+          }
+          .hero-h1 {
+            font-size: clamp(28px, 7.5vw, 36px);
+            line-height: 1.15;
+            letter-spacing: -0.03em;
+            margin-bottom: 12px;
+            text-wrap: balance;
+          }
+          .hero-h1-accent {
+            display: block;
+            margin-top: 2px;
+          }
+          .hero-sub {
+            font-size: 14px;
+            line-height: 1.55;
+            color: #64748B;
+            max-width: 360px;
+            margin: 0 auto 22px;
+            padding: 0 4px;
+          }
+          .hero-btns {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+            gap: 10px;
+            align-items: stretch;
+          }
+          .hero-btns .btn-primary,
+          .hero-btns .btn-outline {
+            width: 100%;
+            height: 48px;
+            padding: 0 20px;
+            font-size: 15px;
+            font-weight: 700;
+            border-radius: 999px;
+            justify-content: center;
+            text-align: center;
+            box-sizing: border-box;
+          }
+          .hero-btns .btn-primary:active,
+          .hero-btns .btn-outline:active {
+            transform: scale(0.98);
+          }
+          .hero-visual {
+            margin: 24px auto 0;
+            max-width: 100%;
+          }
+          .hero-img-wrapper {
+            border-radius: 18px;
+          }
+          .hero-img {
+            height: 240px;
+            object-position: center 25%;
+          }
+          .hero-img-overlay {
+            border-radius: 18px;
+          }
+          .hero-floating-badge {
+            font-size: 11px;
+            padding: 6px 12px;
+            bottom: 12px;
+          }
+
+          .features-section { padding: 48px 16px; }
+          .section-title { font-size: 25px; line-height: 1.2; margin-bottom: 8px; }
+          .section-sub { font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+          .features-grid { grid-template-columns: 1fr; gap: 14px; }
+          .feat-card { padding: 20px 18px; border-radius: 16px; }
+          .feat-icon { width: 42px; height: 42px; border-radius: 11px; margin-bottom: 14px; }
+
+          .pricing-section { padding: 48px 16px; }
+          .price-card { padding: 28px 18px; border-radius: 20px; }
+          .price-amount { font-size: 34px; margin-bottom: 20px; }
+          .price-features { gap: 11px; margin-bottom: 24px; }
+          .price-btn { padding: 13px; font-size: 14px; }
+
+          .download-section { padding: 48px 16px; }
+          .dl-platform-toggle-wrapper { margin: 20px auto 24px; }
+          .dl-platform-toggle { width: 100%; max-width: 320px; justify-content: center; padding: 4px; }
+          .dl-toggle-option { padding: 8px 14px; font-size: 12px; gap: 6px; }
+          .dl-pill-btn { padding: 14px 16px; border-radius: 14px; }
+          .dl-pill-icon { width: 32px; height: 32px; }
+          .dl-pill-label strong { font-size: 15px; }
+          .dl-top-bar { padding: 20px 16px 0; }
+          .dl-left { padding: 24px 16px; }
+          .dl-right-art { padding: 20px 16px; }
+          .dl-right { padding: 24px 16px; }
           .dl-sysreq-grid { grid-template-columns: 1fr; }
           .dl-platform-row { flex-direction: column; }
-          .faq-section { padding: 64px 20px; }
-          .faq-trigger { padding: 20px; font-size: 15px; }
-          .stats-band { padding: 52px 20px; }
-          .cta-section { padding: 64px 20px; }
-          .cta-box { padding: 48px 24px; }
-          .footer { padding: 36px 20px 24px; }
-          .footer-inner { flex-direction: column; align-items: flex-start; }
+
+          .faq-section { padding: 48px 16px; }
+          .faq-trigger { padding: 18px 16px; font-size: 14px; min-height: 56px; }
+          .faq-content { padding: 0 16px 18px; font-size: 13px; }
+
+          .stats-band { padding: 40px 16px; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 28px 0; }
+          .stat-col { padding: 0 12px; }
+          .stat-col + .stat-col { border-left: none; }
+          .stat-col:nth-child(odd) { border-right: 1px solid rgba(255,255,255,0.1); }
+          .stat-col:nth-child(3),
+          .stat-col:nth-child(4) { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 28px; }
+          .stat-val { font-size: 32px; margin-bottom: 4px; }
+          .stat-lbl { font-size: 11px; }
+
+          .cta-section { padding: 48px 16px; }
+          .cta-box { padding: 36px 18px; border-radius: 20px; }
+          .cta-btns { flex-direction: column; width: 100%; max-width: 320px; margin: 0 auto; }
+          .cta-btns .btn-primary, .cta-btns .btn-outline { width: 100%; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; }
+          .footer { padding: 36px 16px calc(24px + env(safe-area-inset-bottom, 0px)); }
+          .footer-inner { flex-direction: column; align-items: flex-start; gap: 16px; }
+          .footer-links { gap: 14px; flex-wrap: wrap; }
+
+          .demo-section { padding: 48px 16px; }
+          .demo-card { padding: 24px 16px; border-radius: 20px; }
+          .demo-grid { grid-template-columns: 1fr; gap: 28px; }
+          .demo-info-title { font-size: 22px; }
+          .demo-info-sub { font-size: 13px; }
+          .demo-feature-list { gap: 10px; margin-bottom: 20px; }
+          .demo-contact-strip { padding: 14px; }
+
+          .demo-modal-overlay { padding: 12px; }
+          .demo-modal-container {
+            padding: 24px 16px;
+            border-radius: 20px;
+            max-height: 88vh;
+            max-width: 100%;
+          }
+          .demo-modal-close { top: 12px; right: 12px; width: 32px; height: 32px; }
+          .demo-form-row { grid-template-columns: 1fr; gap: 10px; }
+          .demo-actions { grid-template-columns: 1fr; gap: 10px; }
+          .demo-input, .demo-select, .demo-textarea { font-size: 15px; padding: 10px 12px; }
         }
       `}</style>
 
       {/* ── MOBILE MENU ── */}
       {menuOpen && (
         <div className="mobile-menu">
-          <button className="mobile-menu-close" onClick={() => setMenuOpen(false)}>×</button>
-          {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
-            <a
-              key={l}
-              href={`#${l.toLowerCase()}`}
-              className={`mobile-menu-link${l === 'Download' ? ' electron-hide' : ''}`}
-              onClick={(e) => {
-                e.preventDefault()
-                scrollTo(l)
-              }}
-            >
-              {l}
-            </a>
-          ))}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280, marginTop: 16 }}>
-            <Link href="/login" className="btn-primary" style={{ justifyContent: 'center', padding: '14px 28px', fontSize: 16 }}>
+          <div className="mobile-menu-header">
+            <Link className="nav-brand" href="/" onClick={() => setMenuOpen(false)}>
+              <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
+              <span className="nav-brand-name">Apex<span>Track</span></span>
+            </Link>
+            <button className="mobile-menu-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          <div className="mobile-menu-links">
+            {(isElectron ? NAV_LINKS.filter(l => l !== 'Download') : NAV_LINKS).map(l => (
+              <a
+                key={l}
+                href={`#${l.toLowerCase()}`}
+                className={`mobile-menu-item${l === 'Download' ? ' electron-hide' : ''}`}
+                onClick={(e) => {
+                  e.preventDefault()
+                  setMenuOpen(false)
+                  scrollTo(l)
+                }}
+              >
+                <span>{l}</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </a>
+            ))}
+          </div>
+
+          <div className="mobile-menu-actions">
+            <Link href="/login?tab=signup" className="btn-primary mobile-menu-btn" onClick={() => setMenuOpen(false)}>
+              Get Started — Free
+            </Link>
+            <Link href="/login" className="btn-outline mobile-menu-btn" onClick={() => setMenuOpen(false)}>
               Sign In
             </Link>
-            <Link href="/login?tab=signup" className="btn-outline" style={{ justifyContent: 'center', padding: '12px 28px', fontSize: 15, background: '#FFFFFF' }}>
-              Create Account
-            </Link>
+            <button 
+              type="button" 
+              className="btn-demo-menu" 
+              onClick={() => { setMenuOpen(false); setDemoModalOpen(true); }}
+            >
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/>
+                <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Book 1-on-1 Demo
+            </button>
+          </div>
+
+          <div className="mobile-menu-footer">
+            <span>Need direct assistance?</span>
+            <a href="https://wa.me/233554074984" target="_blank" rel="noopener noreferrer">
+              WhatsApp: +233 55 407 4984
+            </a>
           </div>
         </div>
       )}
@@ -1544,13 +1814,14 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section className="hero">
-        {/* Headline */}
+        <div className="hero-eyebrow">
+          <span className="hero-eyebrow-dot" />
+          <span className="hero-eyebrow-text">Built for Modern Football Clubs</span>
+        </div>
 
-        {/* Headline */}
         <h1 className="hero-h1">
-          Run Your Football<br />
-          Club Smarter — From<br />
-          Pitch to Payroll
+          Run Your Football Club Smarter{' '}
+          <span className="hero-h1-accent">From Pitch to Payroll</span>
         </h1>
 
         {/* Subtext */}
@@ -1560,6 +1831,9 @@ export default function LandingPage() {
 
         {/* CTA Buttons */}
         <div className="hero-btns">
+          <Link href="/login?tab=signup" className="btn-primary">
+            Get Started — Free
+          </Link>
           <button 
             onClick={() => setDemoModalOpen(true)}
             className="btn-primary" 
@@ -1584,9 +1858,6 @@ export default function LandingPage() {
               <span>Download App</span>
             </a>
           )}
-          <Link href="/login?tab=signup" className="btn-primary">
-            Get Started — Free
-          </Link>
         </div>
 
         {/* Hero visual */}
@@ -1595,6 +1866,10 @@ export default function LandingPage() {
             <img src="/hero-football.png" alt="Football player in action" className="hero-img" />
             <div className="hero-img-overlay" />
             <div className="hero-img-accent" />
+            <div className="hero-floating-badge">
+              <span className="hero-badge-dot" />
+              <span>⚽ Trusted by 60+ Football Clubs</span>
+            </div>
           </div>
         </div>
       </section>

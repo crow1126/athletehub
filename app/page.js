@@ -740,9 +740,171 @@ export default function LandingPage() {
 
         /* ── DOWNLOAD SECTION ── */
         .download-section {
-          padding: 80px 32px 100px;
+          padding: 100px 32px 120px;
           background: transparent;
           position: relative;
+        }
+
+        /* ── DOWNLOAD PILL BUTTONS ── */
+        .dl-pill-group {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 18px;
+          margin: 44px auto 0;
+          max-width: 560px;
+        }
+        .dl-pill-btn {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 20px;
+          width: 100%;
+          padding: 22px 36px;
+          background: #0F172A;
+          color: #FFFFFF;
+          border-radius: 20px;
+          text-decoration: none;
+          font-size: 22px;
+          font-weight: 800;
+          letter-spacing: -0.02em;
+          transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+          box-shadow: 0 8px 32px rgba(15,23,42,0.18), 0 2px 8px rgba(15,23,42,0.1);
+          position: relative;
+          overflow: hidden;
+        }
+        .dl-pill-btn::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, transparent 60%);
+          pointer-events: none;
+        }
+        .dl-pill-btn:hover {
+          background: #1E293B;
+          transform: translateY(-3px) scale(1.01);
+          box-shadow: 0 18px 48px rgba(15,23,42,0.26), 0 4px 14px rgba(15,23,42,0.12);
+        }
+        .dl-pill-btn:active {
+          transform: translateY(-1px) scale(1.005);
+        }
+        .dl-pill-left {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+        }
+        .dl-pill-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.12);
+          flex-shrink: 0;
+        }
+        .dl-pill-label {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .dl-pill-label strong {
+          font-size: 21px;
+          font-weight: 800;
+          line-height: 1;
+          letter-spacing: -0.025em;
+        }
+        .dl-pill-label small {
+          font-size: 12px;
+          font-weight: 500;
+          opacity: 0.55;
+          letter-spacing: 0.01em;
+        }
+        .dl-pill-arrow {
+          font-size: 26px;
+          font-weight: 300;
+          opacity: 0.7;
+          transition: transform 0.22s ease, opacity 0.22s;
+          flex-shrink: 0;
+        }
+        .dl-pill-btn:hover .dl-pill-arrow {
+          transform: translateX(4px);
+          opacity: 1;
+        }
+
+        /* ── INSTALL STEPS CARD ── */
+        .dl-install-card {
+          max-width: 560px;
+          margin: 36px auto 0;
+          background: #FFFFFF;
+          border: 1.5px solid #E2E8F0;
+          border-radius: 22px;
+          padding: 28px 32px;
+          box-shadow: 0 6px 30px rgba(15,23,42,0.05);
+        }
+        .dl-install-title {
+          font-size: 14px;
+          font-weight: 800;
+          color: #0F172A;
+          letter-spacing: -0.01em;
+          margin-bottom: 18px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .dl-install-steps {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+        }
+        .dl-install-step {
+          display: flex;
+          align-items: flex-start;
+          gap: 14px;
+        }
+        .dl-step-num {
+          width: 26px;
+          height: 26px;
+          border-radius: 50%;
+          background: #0F172A;
+          color: #FFFFFF;
+          font-size: 12px;
+          font-weight: 800;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          margin-top: 1px;
+        }
+        .dl-step-text {
+          font-size: 13px;
+          color: #475569;
+          line-height: 1.55;
+          font-weight: 500;
+        }
+        .dl-step-text strong {
+          color: #0F172A;
+          font-weight: 700;
+        }
+        .dl-ios-strip {
+          margin-top: 20px;
+          padding-top: 18px;
+          border-top: 1px solid #F1F5F9;
+          font-size: 12px;
+          color: #94A3B8;
+          line-height: 1.6;
+        }
+        .dl-ios-strip strong { color: #64748B; }
+
+        @media (max-width: 640px) {
+          .dl-pill-btn {
+            padding: 18px 22px;
+            border-radius: 16px;
+          }
+          .dl-pill-label strong { font-size: 17px; }
+          .dl-pill-icon { width: 38px; height: 38px; }
+          .dl-pill-arrow { font-size: 22px; }
+          .dl-install-card { padding: 22px 20px; }
         }
 
         /* ── PLATFORM SEGMENTED TOGGLE (CENTERED & PROMINENT) ── */
@@ -1619,323 +1781,100 @@ export default function LandingPage() {
       {/* ── DOWNLOAD SECTION ── */}
       {!isElectron && (
         <section className="download-section electron-hide" id="download">
-          <div style={{ maxWidth: 1100, margin: '0 auto', textAlign: 'center' }}>
+          <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
             <div className="section-eyebrow" style={{ justifyContent: 'center' }}>
               <div className="eyebrow-line" />
               <span className="eyebrow-text">App Download</span>
               <div className="eyebrow-line" />
             </div>
             <h2 className="section-title">Download ApexTrack</h2>
-            <p className="section-sub" style={{ margin: '0 auto', maxWidth: 640 }}>
-              Install the official native desktop or mobile application for high-speed club operations, offline reliability, and focused management.
+            <p className="section-sub" style={{ margin: '0 auto', maxWidth: 480 }}>
+              Install the official native app for a fast, focused football management experience on desktop and mobile.
             </p>
           </div>
 
-          {/* PROMINENT CENTERED PLATFORM SEGMENTED TOGGLE */}
-          <div className="dl-platform-toggle-wrapper">
-            <div className="dl-platform-toggle" role="tablist">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={downloadPlatform === 'windows'}
-                className={`dl-toggle-option ${downloadPlatform === 'windows' ? 'active-windows' : ''}`}
-                onClick={() => setDownloadPlatform('windows')}
-              >
-                <span className="dl-toggle-icon">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          {/* ── PILL DOWNLOAD BUTTONS ── */}
+          <div className="dl-pill-group">
+            {/* Windows Button */}
+            <a
+              href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="dl-pill-btn"
+              id="dl-btn-windows"
+            >
+              <span className="dl-pill-left">
+                <span className="dl-pill-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M2 3.555L10.373 2.4v9.062H2V3.555zm0 16.89L10.373 21.6v-9.062H2v8.907zm9.479 1.349L22 23.3V12.538H11.479V21.794zm0-19.588V11.462H22V.706L11.479 2.206z"/>
                   </svg>
                 </span>
-                <span className="dl-toggle-label">
-                  <strong>Windows Desktop</strong>
-                  <small>PC Installer (.exe)</small>
+                <span className="dl-pill-label">
+                  <strong>Download for Windows</strong>
+                  <small>PC Desktop Installer · .exe · ~145 MB</small>
                 </span>
-              </button>
+              </span>
+              <span className="dl-pill-arrow">→</span>
+            </a>
 
-              <button
-                type="button"
-                role="tab"
-                aria-selected={downloadPlatform === 'android'}
-                className={`dl-toggle-option ${downloadPlatform === 'android' ? 'active-android' : ''}`}
-                onClick={() => setDownloadPlatform('android')}
-              >
-                <span className="dl-toggle-icon">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            {/* Android Button */}
+            <a
+              href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              download="ApexTrack.apk"
+              className="dl-pill-btn"
+              id="dl-btn-android"
+            >
+              <span className="dl-pill-left">
+                <span className="dl-pill-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993s-.4482.9997-.9993.9997m11.4045-6.02l1.996-3.4572c.1558-.2701.0632-.615-.2069-.7708-.2706-.1562-.615-.0636-.7708.2065l-2.0223 3.5029c-1.4699-.672-3.1118-1.0505-4.8775-1.0505-1.7657 0-3.4076.3785-4.8775 1.0505L5.097 5.2999c-.1558-.2701-.5002-.3627-.7708-.2065-.2701.1558-.3627.5007-.2069.7708l1.996 3.4572C2.6847 11.238 0 14.887 0 19.1672h24c0-4.2802-2.6847-7.9292-6.1185-9.8458"/>
                   </svg>
                 </span>
-                <span className="dl-toggle-label">
-                  <strong>Android Mobile</strong>
-                  <small>Direct APK (.apk)</small>
+                <span className="dl-pill-label">
+                  <strong>Download for Android</strong>
+                  <small>Direct APK Install · Android 8.0+</small>
                 </span>
-              </button>
+              </span>
+              <span className="dl-pill-arrow">→</span>
+            </a>
+          </div>
+
+          {/* ── INSTALL STEPS CARD ── */}
+          <div className="dl-install-card">
+            <div className="dl-install-title">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" stroke="#0F172A" strokeWidth="2"/>
+                <path d="M12 8v5M12 16h.01" stroke="#0F172A" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              Android Install Guide
+            </div>
+            <div className="dl-install-steps">
+              <div className="dl-install-step">
+                <div className="dl-step-num">1</div>
+                <div className="dl-step-text">
+                  <strong>Download the APK</strong> — tap the Android button above and save the file.
+                </div>
+              </div>
+              <div className="dl-install-step">
+                <div className="dl-step-num">2</div>
+                <div className="dl-step-text">
+                  <strong>Allow unknown sources</strong> — go to Settings → Apps → Special Access → Install Unknown Apps and enable your browser or file manager.
+                </div>
+              </div>
+              <div className="dl-install-step">
+                <div className="dl-step-num">3</div>
+                <div className="dl-step-text">
+                  <strong>Open the APK</strong> — tap the downloaded file and press Install. ApexTrack will appear on your home screen.
+                </div>
+              </div>
+            </div>
+            <div className="dl-ios-strip">
+              <strong>iPhone / iPad?</strong> Apple restricts direct APK installs. Open <strong>apextrackgh.com</strong> in Safari and tap Share → Add to Home Screen for a full PWA experience.
             </div>
           </div>
 
-          <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-            <div className="dl-hero-card">
-              
-              {/* TOP BRAND & STATUS STRIP */}
-              <div className="dl-card-header">
-                <div className="dl-card-brand">
-                  <img src="/logo.png" alt="ApexTrack" style={{ height: 26, width: 'auto', borderRadius: 6 }} />
-                  <span>ApexTrack {downloadPlatform === 'windows' ? 'for Desktop' : 'for Mobile'}</span>
-                </div>
-
-                <div className="dl-card-status-badge">
-                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
-                  <span>v1.0.5 · Verified Release</span>
-                </div>
-              </div>
-
-              <div className="dl-inner">
-                {downloadPlatform === 'windows' ? (
-                  <>
-                    {/* LEFT COLUMN — WINDOWS */}
-                    <div className="dl-left">
-                      <div className="dl-platform-indicator" style={{ color: '#0D9488' }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#0D9488', display: 'inline-block' }} />
-                        Windows 10 / 11 · 64-Bit Desktop Workstation
-                      </div>
-
-                      <h3 className="dl-headline">
-                        ApexTrack for Windows
-                      </h3>
-                      
-                      <p className="dl-desc">
-                        The dedicated desktop application built for football club administrators, technical directors, and coaches. Fast, secure, and always synchronized with your club cloud database.
-                      </p>
-
-                      <div className="dl-action-box">
-                        <a
-                          href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="dl-main-btn windows-btn"
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M12 4v12M8 12l4 4 4-4" stroke="white" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Download for Windows (.exe)
-                        </a>
-                      </div>
-
-                      <div className="dl-compat-row">
-                        <div className="dl-compat-chip active">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="2" y="2" width="9" height="9" rx="1"/>
-                            <rect x="13" y="2" width="9" height="9" rx="1"/>
-                            <rect x="2" y="13" width="9" height="9" rx="1"/>
-                            <rect x="13" y="13" width="9" height="9" rx="1"/>
-                          </svg>
-                          Windows 10 / 11 (Active)
-                        </div>
-                        <div className="dl-compat-chip" style={{ opacity: 0.6 }}>
-                          macOS (Apple Silicon Coming Soon)
-                        </div>
-                        <div className="dl-compat-chip" style={{ opacity: 0.6 }}>
-                          Linux (Coming Soon)
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* RIGHT COLUMN — WINDOWS SHOWCASE */}
-                    <div className="dl-preview-col">
-                      <div className="dl-mockup-card">
-                        <div className="dl-mockup-bar">
-                          <div className="dl-mockup-dots">
-                            <div className="dl-mockup-dot" style={{ background: '#EF4444' }} />
-                            <div className="dl-mockup-dot" style={{ background: '#F59E0B' }} />
-                            <div className="dl-mockup-dot" style={{ background: '#10B981' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.04em' }}>ApexTrack Desktop Hub</span>
-                        </div>
-
-                        <div className="dl-mockup-list">
-                          <div className="dl-mockup-item">
-                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2DD4BF' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="dl-mockup-item-title">Dedicated Desktop Workspace</div>
-                              <div className="dl-mockup-item-sub">Zero browser distractions or unintended tab reloads</div>
-                            </div>
-                          </div>
-
-                          <div className="dl-mockup-item">
-                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#34D399' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="dl-mockup-item-title">Real-Time Cloud Synchronization</div>
-                              <div className="dl-mockup-item-sub">Instant updates across coaching, medical, and scouting staff</div>
-                            </div>
-                          </div>
-
-                          <div className="dl-mockup-item">
-                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#60A5FA' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="dl-mockup-item-title">Strict Postgres RLS Security</div>
-                              <div className="dl-mockup-item-sub">Enterprise-grade multi-tenant data isolation</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    {/* LEFT COLUMN — ANDROID */}
-                    <div className="dl-left">
-                      <div className="dl-platform-indicator" style={{ color: '#059669' }}>
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#059669', display: 'inline-block' }} />
-                        Android 8.0+ · Official APK Mobile Release
-                      </div>
-
-                      <h3 className="dl-headline">
-                        ApexTrack for Android
-                      </h3>
-                      
-                      <p className="dl-desc">
-                        Bring your club roster and matchday operations directly to players and staff. View tactical lineups, log daily wellness checks, and receive match alerts instantly on your phone.
-                      </p>
-
-                      <div className="dl-action-box">
-                        <a
-                          href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download="ApexTrack.apk"
-                          className="dl-main-btn android-btn"
-                        >
-                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                            <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z" fill="white"/>
-                            <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="white" strokeWidth="2" strokeLinecap="round"/>
-                            <circle cx="9" cy="7" r="0.8" fill="white"/>
-                            <circle cx="15" cy="7" r="0.8" fill="white"/>
-                            <path d="M4 13h-.5a1 1 0 000 2H4M20 13h.5a1 1 0 010 2H20" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
-                          </svg>
-                          Download Android APK (.apk)
-                        </a>
-                      </div>
-
-                      <div className="dl-compat-row">
-                        <div className="dl-compat-chip active">
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 18V10h12v8a2 2 0 01-2 2H8a2 2 0 01-2-2z"/>
-                            <path d="M4 10h16M8 10V7a4 4 0 018 0v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                          </svg>
-                          Android 8.0+ (Active)
-                        </div>
-                        <div className="dl-compat-chip" style={{ opacity: 0.7 }}>
-                          ARM64 &amp; x86_64 Compatible
-                        </div>
-                        <div className="dl-compat-chip" style={{ opacity: 0.7 }}>
-                          Direct Install
-                        </div>
-                      </div>
-
-                      <div className="dl-ios-notice">
-                        <p>
-                          <strong>Apple iOS / iPhone Notice:</strong> Apple restricts direct APK installs. To run ApexTrack on iPhone or iPad, open <strong>apextrackgh.com</strong> in Safari and tap <em>Share → Add to Home Screen</em> for full mobile web app experience.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* RIGHT COLUMN — ANDROID SHOWCASE */}
-                    <div className="dl-preview-col">
-                      <div className="dl-mockup-card">
-                        <div className="dl-mockup-bar">
-                          <div className="dl-mockup-dots">
-                            <div className="dl-mockup-dot" style={{ background: '#10B981' }} />
-                            <div className="dl-mockup-dot" style={{ background: '#34D399' }} />
-                          </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: '#94A3B8', letterSpacing: '0.04em' }}>ApexTrack Mobile Squad Hub</span>
-                        </div>
-
-                        <div className="dl-mockup-list">
-                          <div className="dl-mockup-item">
-                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(5, 150, 105, 0.2)', color: '#34D399' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10" />
-                                <polygon points="12 7 15.5 9.5 14 14.5 10 14.5 8.5 9.5" strokeWidth="1.5" />
-                                <line x1="12" y1="2" x2="12" y2="7" />
-                                <line x1="21.5" y1="9" x2="15.5" y2="9.5" />
-                                <line x1="18" y1="20" x2="14" y2="14.5" />
-                                <line x1="6" y1="20" x2="10" y2="14.5" />
-                                <line x1="2.5" y1="9" x2="8.5" y2="9.5" />
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="dl-mockup-item-title">Pitchside Matchday Lineups</div>
-                              <div className="dl-mockup-item-sub">Access visual 4-3-3 tactical sheets and call-ups on the pitch</div>
-                            </div>
-                          </div>
-
-                          <div className="dl-mockup-item">
-                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(13, 148, 136, 0.2)', color: '#2DD4BF' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="dl-mockup-item-title">Athlete Wellness Check-Ins</div>
-                              <div className="dl-mockup-item-sub">Players submit daily soreness, sleep, and recovery logs</div>
-                            </div>
-                          </div>
-
-                          <div className="dl-mockup-item">
-                            <div className="dl-mockup-item-icon" style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#FBBF24' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                              </svg>
-                            </div>
-                            <div>
-                              <div className="dl-mockup-item-title">Instant Squad Push Alerts</div>
-                              <div className="dl-mockup-item-sub">Receive match scheduling, bus departure, and team notices</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* BOTTOM METADATA BAR */}
-              <div className="dl-bottom-bar">
-                <div className="dl-bottom-item">
-                  <span className="dl-bottom-label">
-                    {downloadPlatform === 'windows' ? 'Windows Package' : 'Android Package'}
-                  </span>
-                  <span className="dl-bottom-val">
-                    {downloadPlatform === 'windows' ? 'ApexTrack-Setup.exe (~145 MB)' : 'ApexTrack.apk (Official Release)'}
-                  </span>
-                </div>
-                <div className="dl-bottom-item">
-                  <span className="dl-bottom-label">Compatibility</span>
-                  <span className="dl-bottom-val">
-                    {downloadPlatform === 'windows' ? 'Windows 10 & 11 (64-bit Edition)' : 'Android 8.0 (Oreo) or Higher'}
-                  </span>
-                </div>
-                <div className="dl-bottom-item">
-                  <span className="dl-bottom-label">Security &amp; Support</span>
-                  <span className="dl-bottom-val">Verified TLS · admin@apextrackgh.com</span>
-                </div>
-              </div>
-
-            </div>
-          </div>
         </section>
       )}
 

@@ -48,7 +48,7 @@ export default function AuthGuard({ children }) {
       let error = null
       for (let attempt = 0; attempt < 3; attempt++) {
         const res = await supabase
-          .from('profiles').select('is_active, role, team_id').eq('id', session.user.id).single()
+          .from('profiles').select('is_active, role, team_id, username, email').eq('id', session.user.id).single()
         profile = res.data
         error = res.error
         if (profile) break
@@ -67,6 +67,40 @@ export default function AuthGuard({ children }) {
         return
       }
       if (profile.is_active === false) { await supabase.auth.signOut(); router.replace('/login?reason=disabled'); return }
+
+      // Resolve specialized staff role (analyst, scout, physio) if stored as coach
+      if (profile.role === 'coach') {
+        try {
+          const userEmail = (session.user.email || profile.email || '').toLowerCase()
+          const { data: coachRec } = await supabase
+            .from('coaches')
+            .select('staff_type')
+            .or(`user_id.eq.${session.user.id}${userEmail ? `,email.eq.${userEmail}` : ''}`)
+            .maybeSingle()
+          if (coachRec?.staff_type) {
+            const st = coachRec.staff_type.toLowerCase()
+            if (['analyst', 'scout', 'physio'].includes(st)) profile.role = st
+          }
+          if (profile.role === 'coach') {
+            const filters = []
+            if (userEmail) filters.push(`email.eq.${userEmail}`)
+            if (profile.username) filters.push(`username.eq.${profile.username}`)
+            if (filters.length > 0) {
+              const { data: slRec } = await supabase
+                .from('staff_logins')
+                .select('role')
+                .or(filters.join(','))
+                .maybeSingle()
+              if (slRec?.role) {
+                const sr = slRec.role.toLowerCase()
+                if (['analyst', 'scout', 'physio'].includes(sr)) profile.role = sr
+              }
+            }
+          }
+        } catch {
+          // preserve coach role
+        }
+      }
 
       // ApexPay: Restricted to all roles (Coming Soon)
       if (path === '/pay' || path.startsWith('/pay/')) {

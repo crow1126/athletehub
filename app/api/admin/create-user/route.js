@@ -170,7 +170,7 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
-    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant']
+    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant', 'analyst', 'scout']
     const profileDbRole = allowedDbRoles.includes(safeRole) ? safeRole : 'coach'
 
     const { error: profileError } = await db
@@ -201,7 +201,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
     }
 
-    if (coach_id || safeRole === 'accountant' || safeRole === 'admin') {
+    if (coach_id || ['admin', 'accountant', 'analyst', 'scout', 'physio', 'coach'].includes(safeRole)) {
       const { error: loginError } = await db
         .from('staff_logins')
         .insert([{
@@ -212,7 +212,7 @@ export async function POST(req) {
           team_id: resolvedTeamId,
           is_active: true,
           notes: notes || null,
-          // plain_password intentionally omitted — never persist plaintext credentials
+          plain_password: password,
         }])
 
       if (loginError) {
@@ -390,7 +390,20 @@ export async function PATCH(req) {
         target_user_id: user_id,
         team_id: targetTeamId,
       })
-      // plain_password column is not updated — plaintext passwords are never persisted
+
+      // Update plain_password in staff_logins so admin can view/copy it in dashboard
+      try {
+        if (login_id) {
+          await db.from('staff_logins').update({ plain_password: new_password }).eq('id', login_id)
+        } else if (targetProfile?.email || targetProfile?.username) {
+          const matchFilters = []
+          if (targetProfile?.email) matchFilters.push(`email.eq.${targetProfile.email}`)
+          if (targetProfile?.username) matchFilters.push(`username.eq.${targetProfile.username}`)
+          await db.from('staff_logins').update({ plain_password: new_password }).or(matchFilters.join(','))
+        }
+      } catch (pwUpErr) {
+        console.warn('[create-user] Failed to sync plain_password:', pwUpErr?.message)
+      }
 
       // Dispatch updated password via SMS if phone is available
       let resetPhone = (phone || targetProfile?.phone)?.trim() || null

@@ -132,14 +132,16 @@ export default function LoginPage() {
     try {
       let loginEmail = email.trim().toLowerCase()
       if (!loginEmail.includes('@')) {
-        const resolveRes = await fetch(`/api/auth/resolve-username?username=${encodeURIComponent(loginEmail)}`)
-        const resolveData = await resolveRes.json()
-        if (resolveRes.ok && resolveData.email) {
-          loginEmail = resolveData.email
-        } else {
-          setError(resolveData.error || 'Username not found.')
-          setLoading(false)
-          return
+        try {
+          const resolveRes = await fetch(`/api/auth/resolve-username?username=${encodeURIComponent(loginEmail)}`)
+          const resolveData = await resolveRes.json()
+          if (resolveRes.ok && resolveData.email) {
+            loginEmail = resolveData.email
+          } else {
+            loginEmail = `${loginEmail}@apex.local`
+          }
+        } catch {
+          loginEmail = `${loginEmail}@apex.local`
         }
       }
 

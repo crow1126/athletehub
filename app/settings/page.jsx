@@ -783,17 +783,26 @@ export default function SettingsPage() {
                               </div>
                             </div>
                             <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
-                            <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+                            <div style={{ display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' }}>
                               {login.plain_password ? (
                                 <>
                                   <span style={{ fontSize:11,fontFamily:'monospace',background:'var(--surface2)',padding:'2px 8px',borderRadius:4,border:'1px solid var(--border)',color:'var(--text)' }}>
                                     {showPassword[login.id] ? login.plain_password : '••••••••'}
                                   </span>
-                                  <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:14,padding:2,color:'var(--text3)' }}>
+                                  <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:12,padding:'2px 4px',color:'var(--text2)',fontWeight:600 }}>
                                     {showPassword[login.id] ? 'Hide' : 'Show'}
                                   </button>
+                                  <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} title="Copy password" style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 6px',fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
                                 </>
-                              ) : <span style={{ fontSize:11,color:'var(--text3)',fontStyle:'italic' }}>Not stored</span>}
+                              ) : (
+                                <button
+                                  onClick={() => openRecoverDrawer(login)}
+                                  title="Set a password to reveal and copy"
+                                  style={{ background:'rgba(217,119,6,0.1)',border:'1px solid rgba(217,119,6,0.25)',color:'#D97706',borderRadius:4,padding:'2px 8px',fontSize:10.5,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}
+                                >
+                                  Set / Reveal
+                                </button>
+                              )}
                             </div>
                             <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
                             <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>

@@ -35,7 +35,7 @@ export async function GET(req) {
     const db = getDb()
 
     // 1. Look up by username in profiles table
-    const { data: profile, error } = await db
+    let { data: profile, error } = await db
       .from('profiles')
       .select('email, is_active')
       .ilike('username', username.trim())
@@ -44,6 +44,19 @@ export async function GET(req) {
     if (error) {
       console.error('Resolve username DB error:', error.message)
       return NextResponse.json({ error: 'Database lookup error' }, { status: 500 })
+    }
+
+    // 2. Fallback: check staff_logins table
+    if (!profile?.email) {
+      const { data: staffLogin } = await db
+        .from('staff_logins')
+        .select('email, is_active')
+        .ilike('username', username.trim())
+        .maybeSingle()
+
+      if (staffLogin?.email) {
+        profile = staffLogin
+      }
     }
 
     // Return 404 for missing OR inactive accounts — don't reveal disabled status

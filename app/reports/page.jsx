@@ -8,7 +8,8 @@ import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import {
   Users, HeartPulse, Trophy, CalendarDays, ShieldCheck,
   ClipboardList, FileSpreadsheet, FileText, User,
-  Stethoscope, Search, Download, CheckCircle2, AlertCircle, Activity, X
+  Stethoscope, Search, Download, CheckCircle2, AlertCircle, Activity, X,
+  TrendingUp, Star
 } from 'lucide-react'
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -22,6 +23,12 @@ const ADMIN_REPORT_CARDS = [
   { id:'coaches',     icon:<ShieldCheck {...iconProps} color="#D97706"/>, title:'Staff Report',            desc:'Technical, medical, analytics and scouting staff roster with roles',                    color:'#D97706', sheets:'1 sheet'  },
   { id:'contracts',   icon:<ClipboardList {...iconProps} color="#047857"/>, title:'Contracts & Finance',     desc:'Player contracts, wages, bonuses and automatic wage bill summary sheet',                color:'#047857', sheets:'2 sheets' },
   { id:'summary',     icon:<FileSpreadsheet {...iconProps} color="#0F172A"/>, title:'Full Summary Report',     desc:'Everything in one workbook — all 6 modules combined with an overview cover sheet',      color:'#0F172A', sheets:'7 sheets', featured: true },
+]
+
+const ANALYST_REPORT_CARDS = [
+  { id:'performance', icon:<Trophy {...iconProps} color="#7C3AED"/>, title:'Performance Report',      desc:'Match stats per athlete — goals, assists, xG, xA, pass accuracy, distance, ratings',   color:'#7C3AED', sheets:'1 sheet', featured: true },
+  { id:'athletes',    icon:<Users {...iconProps} color="#2563EB"/>, title:'Squad Roster & Profiles',  desc:'Full squad roster — positions, clubs, regions, coaches, and squad status',              color:'#2563EB', sheets:'1 sheet'  },
+  { id:'sessions',    icon:<CalendarDays {...iconProps} color="#059669"/>, title:'Training & Load Register', desc:'All scheduled squad training sessions with venue, coach, type and duration',          color:'#059669', sheets:'1 sheet'  },
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -521,7 +528,254 @@ async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) 
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2. ADMIN GENERAL SQUAD MEDICAL & RECOVERY REPORT (PDF)
+// 2. PLAYER PERFORMANCE & MATCH ANALYTICS DOSSIER (PDF)
+// Full technical detail: Profile + Photo, Team Logo, ApexTrack Logo, Seasonal Stats, Match Log, Ratings
+// ─────────────────────────────────────────────────────────────────────────────
+async function buildPlayerPerformanceDossierPDF({ athlete, athleteStats, meta, period }) {
+  const { default: jsPDF } = await import('jspdf')
+  const { default: autoTable } = await import('jspdf-autotable')
+
+  const [siteLogoBase64, teamLogoBase64, playerPhotoBase64] = await Promise.all([
+    getApexTrackLogoBase64(),
+    meta.clubLogoUrl ? getBase64ImageFromUrl(meta.clubLogoUrl) : null,
+    athlete.photo_url ? getBase64ImageFromUrl(athlete.photo_url) : null,
+  ])
+
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
+  const PW = doc.internal.pageSize.getWidth()  // 210
+  const PH = doc.internal.pageSize.getHeight() // 297
+
+  const NAVY    = [15, 23, 42]     // #0F172A
+  const PURPLE  = [124, 58, 237]   // #7C3AED
+  const TEAL    = [13, 148, 136]   // #0D9488
+  const SLATE   = [51, 65, 85]     // #334155
+  const LIGHT   = [248, 250, 252]  // #F8FAFC
+  const BORDER  = [226, 232, 240]  // #E2E8F0
+  const WHITE   = [255, 255, 255]
+
+  // Top Header Banner
+  doc.setFillColor(...NAVY)
+  doc.rect(0, 0, PW, 33, 'F')
+
+  // Dual Accent line
+  doc.setFillColor(...PURPLE)
+  doc.rect(0, 32, PW * 0.65, 1.0, 'F')
+  doc.setFillColor(...TEAL)
+  doc.rect(PW * 0.65, 32, PW * 0.35, 1.0, 'F')
+
+  // Team Logo
+  let leftContentX = 12
+  if (teamLogoBase64) {
+    try {
+      doc.setFillColor(...WHITE)
+      doc.roundedRect(12, 5.2, 21, 21, 2, 2, 'F')
+      doc.addImage(teamLogoBase64, 'PNG', 13, 6.2, 19, 19)
+      leftContentX = 37
+    } catch (_e) { /* fallback */ }
+  }
+
+  // Purple Capsule Badge: "PLAYER PERFORMANCE DOSSIER"
+  doc.setFillColor(109, 40, 217)
+  doc.roundedRect(leftContentX, 5.2, 54, 5.6, 1.4, 1.4, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(7.5)
+  doc.setTextColor(...WHITE)
+  doc.text('PLAYER PERFORMANCE DOSSIER', leftContentX + 3.5, 9.1)
+
+  // Club Name
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(13.5)
+  doc.setTextColor(...WHITE)
+  doc.text(cleanPdfText(meta.clubName || 'ApexTrack Football Club').toUpperCase(), leftContentX, 17.5)
+
+  // Scope & Window
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(8.5)
+  doc.setTextColor(203, 213, 225)
+  doc.text(`Performance & Analytics Department · Window: ${period}`, leftContentX, 23)
+
+  // Right: ApexTrack logo
+  if (siteLogoBase64) {
+    try {
+      doc.addImage(siteLogoBase64, 'PNG', PW - 26, 6, 16, 16)
+    } catch (_e) { /* fallback */ }
+  }
+
+  let curY = 38
+
+  // Player Bio Card
+  doc.setFillColor(...LIGHT)
+  doc.setDrawColor(...BORDER)
+  doc.roundedRect(12, curY, PW - 24, 34, 3, 3, 'FD')
+
+  // Player Photo
+  const photoX = 16
+  const photoY = curY + 3.5
+  if (playerPhotoBase64) {
+    try {
+      doc.addImage(playerPhotoBase64, 'JPEG', photoX, photoY, 27, 27)
+    } catch (_e) {
+      doc.setFillColor(203, 213, 225)
+      doc.rect(photoX, photoY, 27, 27, 'F')
+    }
+  } else {
+    doc.setFillColor(241, 245, 249)
+    doc.rect(photoX, photoY, 27, 27, 'F')
+    doc.setFontSize(12)
+    doc.setTextColor(...SLATE)
+    doc.text((athlete.name || 'P').slice(0, 2).toUpperCase(), photoX + 8, photoY + 16)
+  }
+
+  // Bio Text
+  const bioX = photoX + 32
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(14)
+  doc.setTextColor(...NAVY)
+  doc.text(cleanPdfText(athlete.name || 'Athlete Name'), bioX, curY + 10)
+
+  doc.setFont('helvetica', 'normal')
+  doc.setFontSize(9)
+  doc.setTextColor(100, 116, 139)
+  const posText = `Position: ${athlete.position || 'Player'}   |   Squad No: #${athlete.back_number || '—'}   |   Club: ${athlete.club || meta.clubName || '—'}`
+  doc.text(cleanPdfText(posText), bioX, curY + 16)
+
+  const footText = `Preferred Foot: ${athlete.preferred_foot || '—'}   |   Status: ${athlete.status || 'Active'}   |   Generated: ${fmtDate(new Date())}`
+  doc.text(cleanPdfText(footText), bioX, curY + 22)
+
+  curY += 40
+
+  // Summary KPI Cards (Matches, Goals, Assists, Minutes, Rating, xG)
+  const statsList = athleteStats || []
+  const matches = statsList.length
+  const goals = statsList.reduce((s, p) => s + (parseInt(p.goals) || 0), 0)
+  const assists = statsList.reduce((s, p) => s + (parseInt(p.assists) || 0), 0)
+  const mins = statsList.reduce((s, p) => s + (parseInt(p.minutes_played) || 0), 0)
+  const avgR = matches > 0
+    ? (statsList.reduce((s, p) => s + (parseFloat(p.rating) || 0), 0) / matches).toFixed(1)
+    : '—'
+  const xg = statsList.reduce((s, p) => s + (parseFloat(p.xg) || 0), 0).toFixed(2)
+
+  const kpiCols = [
+    { label: 'MATCHES', val: String(matches) },
+    { label: 'GOALS', val: String(goals) },
+    { label: 'ASSISTS', val: String(assists) },
+    { label: 'MINUTES', val: `${mins}'` },
+    { label: 'AVG RATING', val: String(avgR) },
+    { label: 'TOTAL xG', val: String(xg) },
+  ]
+
+  const cardW = (PW - 24 - (kpiCols.length - 1) * 3) / kpiCols.length
+  kpiCols.forEach((kpi, idx) => {
+    const cx = 12 + idx * (cardW + 3)
+    doc.setFillColor(...WHITE)
+    doc.setDrawColor(...BORDER)
+    doc.roundedRect(cx, curY, cardW, 16, 2, 2, 'FD')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(7)
+    doc.setTextColor(100, 116, 139)
+    doc.text(kpi.label, cx + cardW / 2, curY + 5.5, { align: 'center' })
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(...PURPLE)
+    doc.text(kpi.val, cx + cardW / 2, curY + 12.5, { align: 'center' })
+  })
+
+  curY += 22
+
+  // Match Performance Table Section Header
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(11)
+  doc.setTextColor(...NAVY)
+  doc.text('MATCH-BY-MATCH PERFORMANCE RECORD', 12, curY)
+  curY += 4
+
+  const tableRows = statsList.map(st => [
+    fmtDate(st.match_date),
+    cleanPdfText(st.opponent || '—'),
+    String(st.minutes_played || 0) + "'",
+    String(st.goals || 0),
+    String(st.assists || 0),
+    `${st.shots || 0} (${st.shots_on_target || 0})`,
+    `${st.passes || 0} (${st.pass_accuracy || 0}%)`,
+    st.xg !== undefined && st.xg !== null ? String(st.xg) : '—',
+    st.rating ? `${st.rating}/10` : '—',
+  ])
+
+  if (tableRows.length === 0) {
+    tableRows.push(['—', 'No match performance entries for this period', '—', '—', '—', '—', '—', '—', '—'])
+  }
+
+  autoTable(doc, {
+    startY: curY,
+    margin: { left: 12, right: 12 },
+    head: [['Date', 'Opponent', 'Mins', 'Goals', 'Assists', 'Shots (OT)', 'Passes (Acc)', 'xG', 'Rating']],
+    body: tableRows,
+    theme: 'grid',
+    headStyles: {
+      fillColor: NAVY,
+      textColor: WHITE,
+      fontStyle: 'bold',
+      fontSize: 8,
+      halign: 'center',
+    },
+    bodyStyles: {
+      fontSize: 8,
+      halign: 'center',
+      textColor: SLATE,
+    },
+    columnStyles: {
+      0: { halign: 'left', cellWidth: 26 },
+      1: { halign: 'left', cellWidth: 38 },
+    },
+    alternateRowStyles: { fillColor: LIGHT },
+  })
+
+  curY = doc.lastAutoTable.finalY + 10
+
+  // Technical Assessment / Analyst Observations Box
+  if (curY < PH - 45) {
+    doc.setFillColor(...LIGHT)
+    doc.setDrawColor(...BORDER)
+    doc.roundedRect(12, curY, PW - 24, 28, 2, 2, 'FD')
+
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(8.5)
+    doc.setTextColor(...NAVY)
+    doc.text('ANALYST PERFORMANCE SUMMARY & TACTICAL EVALUATION', 16, curY + 6.5)
+
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(8)
+    doc.setTextColor(...SLATE)
+    const evalText = statsList.length > 0 && statsList[0].notes
+      ? cleanPdfText(statsList[0].notes)
+      : `Player demonstrated consistent match engagement with ${matches} appearance(s) totaling ${mins} minutes played in this window. Overall impact: ${goals} goal(s), ${assists} assist(s), average performance rating of ${avgR}/10. Approved for tactical review and coaching staff briefing.`
+
+    doc.text(doc.splitTextToSize(evalText, PW - 32), 16, curY + 13)
+  }
+
+  // Running footer
+  const totalPages = doc.getNumberOfPages()
+  for (let pg = 1; pg <= totalPages; pg++) {
+    doc.setPage(pg)
+    const ph = doc.internal.pageSize.getHeight()
+    doc.setFillColor(...NAVY)
+    doc.rect(0, ph - 11, PW, 11, 'F')
+    doc.setTextColor(...WHITE)
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(7)
+    doc.text(
+      `${(meta.clubName || 'CLUB').toUpperCase()}  •  PERFORMANCE DOSSIER: ${(athlete.name || 'ATHLETE').toUpperCase()}  •  ${period}  •  Page ${pg} of ${totalPages}`,
+      PW / 2, ph - 4.5, { align: 'center' }
+    )
+  }
+
+  return doc
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. ADMIN GENERAL SQUAD MEDICAL & RECOVERY REPORT (PDF)
 // ─────────────────────────────────────────────────────────────────────────────
 async function buildAdminGeneralMedicalPDF({ data, period }) {
   const { default: jsPDF } = await import('jspdf')
@@ -849,6 +1103,8 @@ export default function ReportsPage() {
   const [currentProfile, setCurrentProfile] = useState(null)
   const [selectedPlayer, setSelectedPlayer] = useState('')
   const [searchTerm,     setSearchTerm]     = useState('')
+  const [selectedPerfPlayer, setSelectedPerfPlayer] = useState('')
+  const [perfSearchTerm,     setPerfSearchTerm]     = useState('')
 
   const [reportType, setReportType] = useState('monthly')
   const [selMonth,   setSelMonth]   = useState(new Date().getMonth())
@@ -906,6 +1162,7 @@ export default function ReportsPage() {
 
         if (a && a.length > 0) {
           setSelectedPlayer(prev => (prev && a.some(ath => ath.id === prev) ? prev : ''))
+          setSelectedPerfPlayer(prev => (prev && a.some(ath => ath.id === prev) ? prev : a[0].id))
         }
       } catch (err) {
         setStatusMsg({ text: 'Failed to load data: ' + err.message, type: 'error' })
@@ -924,14 +1181,50 @@ export default function ReportsPage() {
   }, [])
 
   // ── Determine roles ──────────────────────────────────────────────────────
-  const userRole    = currentProfile?.role || 'staff'
-  const isPhysio    = userRole === 'physio' ||
-                      currentProfile?.staff_type === 'physio' ||
-                      currentProfile?.staff_type === 'medical' ||
-                      currentProfile?.staff_type === 'sports_scientist'
-  const isAdmin     = userRole === 'admin' || userRole === 'superadmin'
+  const userRole     = currentProfile?.role || 'staff'
+  const isPhysio     = userRole === 'physio' ||
+                       currentProfile?.staff_type === 'physio' ||
+                       currentProfile?.staff_type === 'medical' ||
+                       currentProfile?.staff_type === 'sports_scientist'
+  const isAnalyst    = userRole === 'analyst' ||
+                       currentProfile?.staff_type === 'analyst' ||
+                       userRole === 'scout' ||
+                       currentProfile?.staff_type === 'scout'
+  const isAdmin      = userRole === 'admin' || userRole === 'superadmin'
 
-  const isPurePhysio = isPhysio && !isAdmin
+  const isPurePhysio  = isPhysio && !isAdmin
+  const isPureAnalyst = isAnalyst && !isAdmin
+
+  // ── Performance PDF generator for Analysts / Admins ─────────────────────
+  async function generatePerformancePDF(athleteId) {
+    const targetId = athleteId || selectedPerfPlayer
+    const athlete = athletes.find(a => a.id === targetId)
+    if (!athlete) {
+      setStatusMsg({ text: 'Please select an athlete first.', type: 'error' })
+      return
+    }
+    const jobKey = `perf_${targetId}`
+    setGenerating(jobKey)
+    setStatusMsg({ text: '', type: '' })
+    try {
+      const athleteStats = performance.filter(p => p.athlete_id === targetId)
+      const period = reportType === 'yearly' ? `Year ${selYear}` : `${MONTHS[selMonth]} ${selYear}`
+      const meta = {
+        clubName: currentProfile?.club_name || currentProfile?.teams?.name || 'Club',
+        clubLogoUrl: currentProfile?.club_logo_url || currentProfile?.teams?.logo_url || null,
+      }
+      const doc = await buildPlayerPerformanceDossierPDF({ athlete, athleteStats, meta, period })
+      const safeAthlete = (athlete.name || 'Player').replace(/\s+/g, '_')
+      const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
+      const filename = `${safeAthlete}_Performance_Dossier_${safePeriod}.pdf`
+      doc.save(filename)
+      setStatusMsg({ text: `Performance Dossier downloaded as "${filename}"`, type: 'success' })
+      setTimeout(() => setStatusMsg({ text: '', type: '' }), 6000)
+    } catch (err) {
+      setStatusMsg({ text: 'PDF generation failed: ' + err.message, type: 'error' })
+    }
+    setGenerating(null)
+  }
 
   // ── Excel report generator for Admins ────────────────────────────────────
   async function generateExcelReport(reportId) {
@@ -1060,6 +1353,13 @@ export default function ReportsPage() {
     return (a.name || '').toLowerCase().includes(q) || (a.position || '').toLowerCase().includes(q)
   })
 
+  // Filter athletes for performance selector
+  const filteredPerfAthletes = athletes.filter(a => {
+    if (!perfSearchTerm) return true
+    const q = perfSearchTerm.toLowerCase()
+    return (a.name || '').toLowerCase().includes(q) || (a.position || '').toLowerCase().includes(q)
+  })
+
   const selectedAthleteObj = athletes.find(a => a.id === selectedPlayer)
   const selectedPlayerInjuries = selectedPlayer ? injuries.filter(i => i.athlete_id === selectedPlayer) : []
   const selectedPlayerActiveInj = selectedPlayerInjuries.filter(i => i.status === 'Active')
@@ -1067,16 +1367,32 @@ export default function ReportsPage() {
   const latestPlayerRehab = selectedPlayerRehabNotes[0]
   const playerInjuryWithNotes = !latestPlayerRehab ? selectedPlayerInjuries.find(i => i.notes && i.notes.trim()) : null
 
+  const selectedPerfAthleteObj = athletes.find(a => a.id === selectedPerfPlayer) || athletes[0]
+  const selectedPlayerStats = selectedPerfAthleteObj
+    ? performance.filter(p => p.athlete_id === selectedPerfAthleteObj.id)
+    : []
+
+  const perfMatchesCount = selectedPlayerStats.length
+  const perfGoalsCount   = selectedPlayerStats.reduce((s, p) => s + (parseInt(p.goals) || 0), 0)
+  const perfAssistsCount = selectedPlayerStats.reduce((s, p) => s + (parseInt(p.assists) || 0), 0)
+  const perfMinsCount    = selectedPlayerStats.reduce((s, p) => s + (parseInt(p.minutes_played) || 0), 0)
+  const perfAvgRating    = perfMatchesCount > 0
+    ? (selectedPlayerStats.reduce((s, p) => s + (parseFloat(p.rating) || 0), 0) / perfMatchesCount).toFixed(1)
+    : '—'
+  const perfTotalXg      = selectedPlayerStats.reduce((s, p) => s + (parseFloat(p.xg) || 0), 0).toFixed(2)
+
   return (
     <Layout>
       <div className="page-outer-wide">
         
         {/* Header */}
         <PageHeader
-          label={isPurePhysio ? 'Medical & Physiotherapy' : 'Reports & Analytics'}
-          title={isPurePhysio ? 'Player Clinical & Rehab Reports' : 'Club Reports'}
+          label={isPurePhysio ? 'Medical & Physiotherapy' : (isPureAnalyst ? 'Performance & Analytics' : 'Reports & Analytics')}
+          title={isPurePhysio ? 'Player Clinical & Rehab Reports' : (isPureAnalyst ? 'Performance & Analytics Reports' : 'Club Reports')}
           subtitle={isPurePhysio
             ? 'Generate official clinical dossiers with team logo, player photo, entered rehabilitation plan, and return-to-play status.'
+            : isPureAnalyst
+            ? 'Export match performance metrics, player performance dossiers, and squad technical analytics.'
             : 'Generate executive squad health overviews, player clinical dossiers, and exportable club data.'}
         />
 
@@ -1134,129 +1450,306 @@ export default function ReportsPage() {
             PHYSIO / CLINICAL DOSSIER SECTION (CLEAN THEME)
             Displays Player Photo, Team Logo, Website Logo & Entered Rehab Plan
         ══════════════════════════════════════════════════════════════════ */}
-        <div className="fade-up" style={{ marginBottom:28 }}>
-          <div className="card" style={{ padding:0, overflow:'hidden', border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:14, boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
-            
-            {/* Header Banner - Clean Dark Navy & Teal (NO harsh red) */}
-            <div style={{ background:'linear-gradient(135deg, #0F172A, #1E293B)', padding:'16px 22px', color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10, borderBottom:'2px solid #0D9488' }}>
-              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                <div style={{ width:36, height:36, borderRadius:8, background:'rgba(13,148,136,0.2)', border:'1px solid rgba(45,212,191,0.3)', display:'flex', alignItems:'center', justifyContent:'center', color:'#2DD4BF' }}>
-                  <Stethoscope size={20}/>
+        {!isPureAnalyst && (
+          <div className="fade-up" style={{ marginBottom:28 }}>
+            <div className="card" style={{ padding:0, overflow:'hidden', border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:14, boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
+              
+              {/* Header Banner - Clean Dark Navy & Teal (NO harsh red) */}
+              <div style={{ background:'linear-gradient(135deg, #0F172A, #1E293B)', padding:'16px 22px', color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10, borderBottom:'2px solid #0D9488' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:36, height:36, borderRadius:8, background:'rgba(13,148,136,0.2)', border:'1px solid rgba(45,212,191,0.3)', display:'flex', alignItems:'center', justifyContent:'center', color:'#2DD4BF' }}>
+                    <Stethoscope size={20}/>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:800, letterSpacing:'-0.01em' }}>Player Clinical &amp; Rehabilitation Dossier</div>
+                    <div style={{ fontSize:11, color:'#94A3B8', fontWeight:500 }}>Comprehensive dossier featuring team &amp; website logos, player picture, entered rehabilitation plan, and RTP progression</div>
+                  </div>
                 </div>
-                <div>
-                  <div style={{ fontSize:15, fontWeight:800, letterSpacing:'-0.01em' }}>Player Clinical &amp; Rehabilitation Dossier</div>
-                  <div style={{ fontSize:11, color:'#94A3B8', fontWeight:500 }}>Comprehensive dossier featuring team &amp; website logos, player picture, entered rehabilitation plan, and RTP progression</div>
-                </div>
+                <span style={{ fontSize:11, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', padding:'4px 10px', borderRadius:99, fontWeight:600, color:'#CBD5E1' }}>
+                  Medical Department
+                </span>
               </div>
-              <span style={{ fontSize:11, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', padding:'4px 10px', borderRadius:99, fontWeight:600, color:'#CBD5E1' }}>
-                Medical Department
-              </span>
+
+              <div style={{ padding:'20px 22px' }}>
+
+                  {/* Full-width athlete list */}
+                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
+                    Select Athlete — click to preview &amp; generate dossier
+                  </label>
+
+                  {/* Search box */}
+                  <div style={{ position:'relative', marginBottom:10 }}>
+                    <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94A3B8' }} />
+                    <input
+                      type="text"
+                      placeholder="Search by name or position…"
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      style={{ width:'100%', padding:'9px 10px 9px 32px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13, outline:'none', background:'#F8FAFC', color:'#0F172A', boxSizing:'border-box' }}
+                    />
+                  </div>
+
+                  {/* Player grid list */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:10 }}>
+                    {filteredAthletes.length === 0 ? (
+                      <div style={{ gridColumn:'1/-1', padding:20, textAlign:'center', color:'#94A3B8', fontSize:13 }}>No players found</div>
+                    ) : (
+                      filteredAthletes.map(a => {
+                        const isSelected = selectedPlayer === a.id
+                        const isInjured = a.status === 'Injured'
+                        const athRehabs = rehabNotes.filter(r => r.athlete_id === a.id)
+                        const athInjs = injuries.filter(i => i.athlete_id === a.id)
+                        const latestRehabDate = athRehabs[0]?.session_date
+                        const latestInjDate = athInjs[0]?.date_of_injury
+                        return (
+                          <div
+                            key={a.id}
+                            onClick={() => setSelectedPlayer(a.id)}
+                            style={{
+                              display:'flex',
+                              alignItems:'center',
+                              gap:12,
+                              padding:'12px 14px',
+                              background: isSelected ? '#F0FDFA' : '#FFFFFF',
+                              border: isSelected ? '1.5px solid #0D9488' : '1px solid #E2E8F0',
+                              borderRadius:10,
+                              cursor:'pointer',
+                              transition:'all 0.15s ease',
+                              boxShadow: isSelected ? '0 0 0 3px rgba(13,148,136,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
+                            }}
+                            onMouseEnter={e => {
+                              if (!isSelected) {
+                                e.currentTarget.style.borderColor = '#0D9488'
+                                e.currentTarget.style.transform = 'translateY(-1px)'
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.12)'
+                              }
+                            }}
+                            onMouseLeave={e => {
+                              if (!isSelected) {
+                                e.currentTarget.style.borderColor = '#E2E8F0'
+                                e.currentTarget.style.transform = 'none'
+                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'
+                              }
+                            }}
+                          >
+                            {a.photo_url ? (
+                              <img src={a.photo_url} alt={a.name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', flexShrink:0, border: isSelected ? '2px solid #0D9488' : '1.5px solid #E2E8F0' }} />
+                            ) : (
+                              <div style={{ width:42, height:42, borderRadius:'50%', background: isSelected ? '#CCFBF1' : '#E2E8F0', color: isSelected ? '#0F766E' : '#475569', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, flexShrink:0 }}>
+                                {a.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
+                              </div>
+                            )}
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:700, color: isSelected ? '#0F766E' : '#0F172A', display:'flex', alignItems:'center', gap:5 }}>
+                                <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</span>
+                                {a.back_number && <span style={{ fontSize:11, color:'#64748B', fontWeight:600 }}>#{a.back_number}</span>}
+                              </div>
+                              <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>
+                                {a.position || 'Player'}
+                              </div>
+                              <div style={{ marginTop:4 }}>
+                                {latestRehabDate ? (
+                                  <span style={{ fontSize:10.5, color:'#0F766E', fontWeight:700, background:'#CCFBF1', border:'1px solid #99F6E4', padding:'1px 6px', borderRadius:4, display:'inline-block' }}>
+                                    Rehab: {fmtDate(latestRehabDate)}
+                                  </span>
+                                ) : latestInjDate ? (
+                                  <span style={{ fontSize:10.5, color:'#B45309', fontWeight:700, background:'#FEF3C7', border:'1px solid #FDE68A', padding:'1px 6px', borderRadius:4, display:'inline-block' }}>
+                                    Injured: {fmtDate(latestInjDate)}
+                                  </span>
+                                ) : (
+                                  <span style={{ fontSize:10, color:'#94A3B8' }}>
+                                    No clinical entries
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
+                              <span style={{
+                                fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:4,
+                                background: isInjured ? '#FEF3C7' : '#DCFCE7',
+                                color: isInjured ? '#B45309' : '#15803D',
+                                border: isInjured ? '1px solid #FDE68A' : '1px solid #BBF7D0',
+                              }}>
+                                {isInjured ? 'Injured' : 'Fit'}
+                              </span>
+                              {athRehabs.length > 0 && (
+                                <span style={{ fontSize:9.5, color:'#0D9488', fontWeight:700 }}>{athRehabs.length} note{athRehabs.length > 1 ? 's' : ''}</span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+
+                  <div style={{ fontSize:11, color:'#64748B', marginTop:8 }}>
+                    Showing {filteredAthletes.length} of {athletes.length} athletes · Click any athlete to open preview &amp; download
+                  </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════════════
+            PERFORMANCE & MATCH ANALYTICS REPORT CENTER (ANALYST / ADMIN)
+        ══════════════════════════════════════════════════════════════════ */}
+        {(isAnalyst || isAdmin) && (
+          <div className="fade-up" style={{ marginBottom: 28 }}>
+            
+            {/* ── Section Title & Header ── */}
+            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:12 }}>
+              <div style={{ width:32, height:32, borderRadius:8, background:'#F5F3FF', border:'1px solid #DDD6FE', display:'flex', alignItems:'center', justifyContent:'center', color:'#7C3AED', flexShrink:0 }}>
+                <TrendingUp size={18} strokeWidth={2.2}/>
+              </div>
+              <div>
+                <h2 style={{ fontSize:15, fontWeight:800, color:'var(--text)', margin:0 }}>
+                  Performance &amp; Match Analytics Reports
+                </h2>
+                <p style={{ fontSize:12, color:'var(--text3)', margin:0 }}>
+                  Export official squad match performance metrics, player dossiers, and training session logs.
+                </p>
+              </div>
             </div>
 
-            <div style={{ padding:'20px 22px' }}>
+            {/* ── Analyst Downloadable Report Cards ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:14, marginBottom:20 }} className="card-grid-auto">
+              {ANALYST_REPORT_CARDS.map(card => (
+                <div key={card.id} className="card" style={{ padding:0, overflow:'hidden', border:'1px solid var(--border)', background:'var(--surface)', borderRadius:12, display:'flex', flexDirection:'column', boxShadow:'0 1px 3px rgba(0,0,0,0.04)' }}>
+                  <div style={{ padding:'16px 18px', flex:1, display:'flex', gap:12 }}>
+                    <div style={{ width:42, height:42, borderRadius:10, background:`${card.color}15`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${card.color}30` }}>
+                      {card.icon}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6, marginBottom:4 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>{card.title}</div>
+                        <span style={{ fontSize:10, fontWeight:700, color:card.color, background:`${card.color}15`, padding:'2px 7px', borderRadius:99 }}>{card.sheets}</span>
+                      </div>
+                      <div style={{ fontSize:11.5, color:'var(--text3)', lineHeight:1.45 }}>
+                        {card.desc}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding:'10px 18px 14px', borderTop:'1px solid var(--border)', background:'var(--surface2)', display:'flex', alignItems:'center', justifyContent:'flex-end' }}>
+                    <button
+                      onClick={() => generateExcelReport(card.id)}
+                      disabled={generating === card.id}
+                      style={{
+                        padding:'7px 14px',
+                        background: card.color,
+                        color:'#fff',
+                        border:'none',
+                        borderRadius:8,
+                        fontSize:12,
+                        fontWeight:700,
+                        cursor: generating === card.id ? 'not-allowed' : 'pointer',
+                        display:'inline-flex',
+                        alignItems:'center',
+                        gap:6,
+                        opacity: generating === card.id ? 0.7 : 1,
+                        transition:'var(--transition)',
+                        fontFamily:'var(--font)'
+                      }}
+                    >
+                      {generating === card.id ? (
+                        <>
+                          <div style={{ width:12, height:12, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                          Exporting…
+                        </>
+                      ) : (
+                        <>
+                          <Download size={14}/>
+                          Download Excel
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                {/* Full-width athlete list */}
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>
-                  Select Athlete — click to preview &amp; generate dossier
-                </label>
+            {/* ── Player Performance Dossier Explorer ── */}
+            <div className="card" style={{ padding:0, overflow:'hidden', border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:14, boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
+              
+              {/* Card Banner */}
+              <div style={{ background:'linear-gradient(135deg, #0F172A, #1E1B4B)', padding:'16px 22px', color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10, borderBottom:'2px solid #7C3AED' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:36, height:36, borderRadius:8, background:'rgba(124,58,237,0.2)', border:'1px solid rgba(167,139,250,0.3)', display:'flex', alignItems:'center', justifyContent:'center', color:'#A78BFA' }}>
+                    <Trophy size={20}/>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:800, letterSpacing:'-0.01em' }}>Player Performance Dossier &amp; Match Analytics</div>
+                    <div style={{ fontSize:11, color:'#94A3B8', fontWeight:500 }}>Generate comprehensive performance dossiers with seasonal KPI analytics, match-by-match logs, and technical scouting ratings</div>
+                  </div>
+                </div>
+                <span style={{ fontSize:11, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.15)', padding:'4px 10px', borderRadius:99, fontWeight:600, color:'#CBD5E1' }}>
+                  Analytics Department
+                </span>
+              </div>
 
+              <div style={{ padding:'20px 22px' }}>
                 {/* Search box */}
-                <div style={{ position:'relative', marginBottom:10 }}>
+                <div style={{ position:'relative', marginBottom:12 }}>
                   <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94A3B8' }} />
                   <input
                     type="text"
-                    placeholder="Search by name or position…"
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
+                    placeholder="Search player by name or position to view analytics…"
+                    value={perfSearchTerm}
+                    onChange={e => setPerfSearchTerm(e.target.value)}
                     style={{ width:'100%', padding:'9px 10px 9px 32px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13, outline:'none', background:'#F8FAFC', color:'#0F172A', boxSizing:'border-box' }}
                   />
                 </div>
 
-                {/* Player grid list */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:10 }}>
-                  {filteredAthletes.length === 0 ? (
+                {/* Player Selection Horizontal / Grid List */}
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:10, maxHeight: 220, overflowY: 'auto', paddingBottom: 4, marginBottom: 18 }}>
+                  {filteredPerfAthletes.length === 0 ? (
                     <div style={{ gridColumn:'1/-1', padding:20, textAlign:'center', color:'#94A3B8', fontSize:13 }}>No players found</div>
                   ) : (
-                    filteredAthletes.map(a => {
-                      const isSelected = selectedPlayer === a.id
-                      const isInjured = a.status === 'Injured'
-                      const athRehabs = rehabNotes.filter(r => r.athlete_id === a.id)
-                      const athInjs = injuries.filter(i => i.athlete_id === a.id)
-                      const latestRehabDate = athRehabs[0]?.session_date
-                      const latestInjDate = athInjs[0]?.date_of_injury
+                    filteredPerfAthletes.map(a => {
+                      const isSelected = (selectedPerfAthleteObj?.id === a.id)
+                      const athStats = performance.filter(p => p.athlete_id === a.id)
+                      const aGoals = athStats.reduce((s, p) => s + (parseInt(p.goals) || 0), 0)
+                      const aAssists = athStats.reduce((s, p) => s + (parseInt(p.assists) || 0), 0)
+                      const aAvgRating = athStats.length > 0
+                        ? (athStats.reduce((s, p) => s + (parseFloat(p.rating) || 0), 0) / athStats.length).toFixed(1)
+                        : null
                       return (
                         <div
                           key={a.id}
-                          onClick={() => setSelectedPlayer(a.id)}
+                          onClick={() => setSelectedPerfPlayer(a.id)}
                           style={{
                             display:'flex',
                             alignItems:'center',
-                            gap:12,
-                            padding:'12px 14px',
-                            background: isSelected ? '#F0FDFA' : '#FFFFFF',
-                            border: isSelected ? '1.5px solid #0D9488' : '1px solid #E2E8F0',
+                            gap:10,
+                            padding:'10px 12px',
+                            background: isSelected ? '#F5F3FF' : '#FFFFFF',
+                            border: isSelected ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
                             borderRadius:10,
                             cursor:'pointer',
                             transition:'all 0.15s ease',
-                            boxShadow: isSelected ? '0 0 0 3px rgba(13,148,136,0.12)' : '0 1px 3px rgba(0,0,0,0.04)',
-                          }}
-                          onMouseEnter={e => {
-                            if (!isSelected) {
-                              e.currentTarget.style.borderColor = '#0D9488'
-                              e.currentTarget.style.transform = 'translateY(-1px)'
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(13,148,136,0.12)'
-                            }
-                          }}
-                          onMouseLeave={e => {
-                            if (!isSelected) {
-                              e.currentTarget.style.borderColor = '#E2E8F0'
-                              e.currentTarget.style.transform = 'none'
-                              e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04)'
-                            }
+                            boxShadow: isSelected ? '0 0 0 3px rgba(124,58,237,0.12)' : '0 1px 3px rgba(0,0,0,0.03)',
                           }}
                         >
                           {a.photo_url ? (
-                            <img src={a.photo_url} alt={a.name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', flexShrink:0, border: isSelected ? '2px solid #0D9488' : '1.5px solid #E2E8F0' }} />
+                            <img src={a.photo_url} alt={a.name} style={{ width:38, height:38, borderRadius:'50%', objectFit:'cover', flexShrink:0, border: isSelected ? '2px solid #7C3AED' : '1.5px solid #E2E8F0' }} />
                           ) : (
-                            <div style={{ width:42, height:42, borderRadius:'50%', background: isSelected ? '#CCFBF1' : '#E2E8F0', color: isSelected ? '#0F766E' : '#475569', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800, flexShrink:0 }}>
+                            <div style={{ width:38, height:38, borderRadius:'50%', background: isSelected ? '#EDE9FE' : '#E2E8F0', color: isSelected ? '#6D28D9' : '#475569', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, flexShrink:0 }}>
                               {a.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
                             </div>
                           )}
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontSize:13, fontWeight:700, color: isSelected ? '#0F766E' : '#0F172A', display:'flex', alignItems:'center', gap:5 }}>
-                              <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.name}</span>
-                              {a.back_number && <span style={{ fontSize:11, color:'#64748B', fontWeight:600 }}>#{a.back_number}</span>}
+                            <div style={{ fontSize:12.5, fontWeight:700, color: isSelected ? '#6D28D9' : '#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              {a.name} {a.back_number ? `(#${a.back_number})` : ''}
                             </div>
-                            <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>
-                              {a.position || 'Player'}
-                            </div>
-                            <div style={{ marginTop:4 }}>
-                              {latestRehabDate ? (
-                                <span style={{ fontSize:10.5, color:'#0F766E', fontWeight:700, background:'#CCFBF1', border:'1px solid #99F6E4', padding:'1px 6px', borderRadius:4, display:'inline-block' }}>
-                                  Rehab: {fmtDate(latestRehabDate)}
-                                </span>
-                              ) : latestInjDate ? (
-                                <span style={{ fontSize:10.5, color:'#B45309', fontWeight:700, background:'#FEF3C7', border:'1px solid #FDE68A', padding:'1px 6px', borderRadius:4, display:'inline-block' }}>
-                                  Injured: {fmtDate(latestInjDate)}
-                                </span>
-                              ) : (
-                                <span style={{ fontSize:10, color:'#94A3B8' }}>
-                                  No clinical entries
-                                </span>
-                              )}
+                            <div style={{ fontSize:11, color:'#64748B' }}>
+                              {a.position || 'Player'} · {athStats.length} apps
                             </div>
                           </div>
-                          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:4, flexShrink:0 }}>
-                            <span style={{
-                              fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:4,
-                              background: isInjured ? '#FEF3C7' : '#DCFCE7',
-                              color: isInjured ? '#B45309' : '#15803D',
-                              border: isInjured ? '1px solid #FDE68A' : '1px solid #BBF7D0',
-                            }}>
-                              {isInjured ? 'Injured' : 'Fit'}
+                          <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:3, flexShrink:0 }}>
+                            <span style={{ fontSize:10, fontWeight:700, padding:'1px 6px', borderRadius:4, background:'#EDE9FE', color:'#6D28D9', border:'1px solid #DDD6FE' }}>
+                              {aGoals}G · {aAssists}A
                             </span>
-                            {athRehabs.length > 0 && (
-                              <span style={{ fontSize:9.5, color:'#0D9488', fontWeight:700 }}>{athRehabs.length} note{athRehabs.length > 1 ? 's' : ''}</span>
+                            {aAvgRating && (
+                              <span style={{ fontSize:10, fontWeight:700, color:'#B45309' }}>★ {aAvgRating}</span>
                             )}
                           </div>
                         </div>
@@ -1265,12 +1758,150 @@ export default function ReportsPage() {
                   )}
                 </div>
 
-                <div style={{ fontSize:11, color:'#64748B', marginTop:8 }}>
-                  Showing {filteredAthletes.length} of {athletes.length} athletes · Click any athlete to open preview &amp; download
-                </div>
+                {/* Selected Athlete Analytics Panel */}
+                {selectedPerfAthleteObj ? (
+                  <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:12, padding:'18px 20px' }}>
+                    
+                    {/* Athlete Header Row */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12, marginBottom:16, borderBottom:'1px solid #E2E8F0', paddingBottom:14 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        {selectedPerfAthleteObj.photo_url ? (
+                          <img src={selectedPerfAthleteObj.photo_url} alt={selectedPerfAthleteObj.name} style={{ width:48, height:48, borderRadius:10, objectFit:'cover', border:'2px solid #7C3AED' }} />
+                        ) : (
+                          <div style={{ width:48, height:48, borderRadius:10, background:'#EDE9FE', color:'#6D28D9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:800 }}>
+                            {selectedPerfAthleteObj.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                            <div style={{ fontSize:16, fontWeight:800, color:'#0F172A' }}>{selectedPerfAthleteObj.name}</div>
+                            {selectedPerfAthleteObj.back_number && (
+                              <span style={{ fontSize:12, fontWeight:700, background:'#0F172A', color:'#fff', padding:'2px 7px', borderRadius:6 }}>
+                                #{selectedPerfAthleteObj.back_number}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize:12, color:'#64748B', marginTop:2 }}>
+                            {selectedPerfAthleteObj.position || 'Player'} · {selectedPerfAthleteObj.club || currentProfile?.club_name || 'Squad'} · {selectedPerfAthleteObj.status || 'Active'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Download Dossier Action Button */}
+                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                        <button
+                          onClick={() => generatePerformancePDF(selectedPerfAthleteObj.id)}
+                          disabled={generating === `perf_${selectedPerfAthleteObj.id}`}
+                          style={{
+                            padding:'9px 16px',
+                            background: generating === `perf_${selectedPerfAthleteObj.id}` ? '#E2E8F0' : 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                            color: generating === `perf_${selectedPerfAthleteObj.id}` ? '#94A3B8' : '#fff',
+                            border:'none',
+                            borderRadius:8,
+                            fontSize:13,
+                            fontWeight:700,
+                            cursor: generating === `perf_${selectedPerfAthleteObj.id}` ? 'not-allowed' : 'pointer',
+                            display:'inline-flex',
+                            alignItems:'center',
+                            gap:8,
+                            boxShadow:'0 2px 8px rgba(124,58,237,0.25)',
+                            fontFamily:'var(--font)'
+                          }}
+                        >
+                          {generating === `perf_${selectedPerfAthleteObj.id}` ? (
+                            <>
+                              <div style={{ width:13, height:13, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                              Generating PDF…
+                            </>
+                          ) : (
+                            <>
+                              <Download size={15}/>
+                              Download Player Performance Dossier (PDF)
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* KPI Tiles (Matches, Goals, Assists, Minutes, Rating, xG) */}
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(130px, 1fr))', gap:10, marginBottom:16 }}>
+                      {[
+                        { label:'Appearances', val: perfMatchesCount, color:'#0F172A' },
+                        { label:'Goals', val: perfGoalsCount, color:'#7C3AED' },
+                        { label:'Assists', val: perfAssistsCount, color:'#2563EB' },
+                        { label:'Total Minutes', val: `${perfMinsCount}'`, color:'#0D9488' },
+                        { label:'Avg Rating', val: perfAvgRating, color:'#D97706' },
+                        { label:'Total xG', val: perfTotalXg, color:'#059669' },
+                      ].map((k, i) => (
+                        <div key={i} style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:8, padding:'10px 14px', textAlign:'center', boxShadow:'0 1px 2px rgba(0,0,0,0.02)' }}>
+                          <div style={{ fontSize:10.5, fontWeight:700, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.04em' }}>{k.label}</div>
+                          <div style={{ fontSize:18, fontWeight:800, color: k.color, marginTop:4 }}>{k.val}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Match Performance Table */}
+                    <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, overflow:'hidden' }}>
+                      <div style={{ padding:'10px 14px', background:'#F1F5F9', borderBottom:'1px solid #E2E8F0', fontSize:12, fontWeight:700, color:'#334155' }}>
+                        Match Log ({selectedPlayerStats.length} match entries in {period})
+                      </div>
+                      {selectedPlayerStats.length === 0 ? (
+                        <div style={{ padding:24, textAlign:'center', color:'#94A3B8', fontSize:13 }}>
+                          No performance entries recorded for {selectedPerfAthleteObj.name} in this period.
+                        </div>
+                      ) : (
+                        <div style={{ overflowX:'auto' }}>
+                          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+                            <thead>
+                              <tr style={{ background:'#F8FAFC', borderBottom:'1px solid #E2E8F0', color:'#64748B', textAlign:'left' }}>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Date</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Opponent</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Mins</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Goals</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Assists</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Pass Acc</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Rating</th>
+                                <th style={{ padding:'8px 12px', fontWeight:700 }}>Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {selectedPlayerStats.map(st => (
+                                <tr key={st.id} style={{ borderBottom:'1px solid #F1F5F9' }}>
+                                  <td style={{ padding:'8px 12px', color:'#0F172A', fontWeight:600 }}>{fmtDate(st.match_date)}</td>
+                                  <td style={{ padding:'8px 12px', color:'#334155' }}>{st.opponent || '—'}</td>
+                                  <td style={{ padding:'8px 12px', color:'#64748B' }}>{st.minutes_played || 0}&apos;</td>
+                                  <td style={{ padding:'8px 12px', color:'#7C3AED', fontWeight:700 }}>{st.goals || 0}</td>
+                                  <td style={{ padding:'8px 12px', color:'#2563EB', fontWeight:700 }}>{st.assists || 0}</td>
+                                  <td style={{ padding:'8px 12px', color:'#64748B' }}>{st.pass_accuracy ? `${st.pass_accuracy}%` : '—'}</td>
+                                  <td style={{ padding:'8px 12px' }}>
+                                    {st.rating ? (
+                                      <span style={{ fontWeight:700, color: st.rating >= 7 ? '#15803D' : '#B45309' }}>
+                                        ★ {st.rating}
+                                      </span>
+                                    ) : '—'}
+                                  </td>
+                                  <td style={{ padding:'8px 12px', color:'#64748B', maxWidth: 180, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                                    {st.notes || '—'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                  </div>
+                ) : (
+                  <div style={{ padding:30, textAlign:'center', color:'#94A3B8', fontSize:13 }}>
+                    Select an athlete from above to inspect performance analytics.
+                  </div>
+                )}
+              </div>
             </div>
+
           </div>
-        </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════════
             ADMIN DASHBOARD VIEW (ADMIN / SUPERADMIN)
@@ -1478,7 +2109,7 @@ export default function ReportsPage() {
       </div>
 
       {/* ── Player Preview Modal Overlay (Root-level, never clipped by parent card) ── */}
-      {selectedAthleteObj && (
+      {selectedPlayer && selectedAthleteObj && !isPureAnalyst && (
         <div
           style={{
             position:'fixed',

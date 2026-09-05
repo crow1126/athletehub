@@ -38,6 +38,29 @@ jobs:
       - name: Sync Capacitor Android
         run: npx cap sync android
 
+      - name: Inject ApexTrack App Icons
+        run: |
+          # ImageMagick is pre-installed on ubuntu-latest
+          SRC="public/icons/app-icon-source.jpg"
+          RES="android/app/src/main/res"
+          # Standard Android mipmap sizes (px): mdpi=48, hdpi=72, xhdpi=96, xxhdpi=144, xxxhdpi=192
+          convert "$SRC" -resize 48x48!   "$RES/mipmap-mdpi/ic_launcher.png"
+          convert "$SRC" -resize 48x48!   "$RES/mipmap-mdpi/ic_launcher_round.png"
+          convert "$SRC" -resize 48x48!   "$RES/mipmap-mdpi/ic_launcher_foreground.png"
+          convert "$SRC" -resize 72x72!   "$RES/mipmap-hdpi/ic_launcher.png"
+          convert "$SRC" -resize 72x72!   "$RES/mipmap-hdpi/ic_launcher_round.png"
+          convert "$SRC" -resize 72x72!   "$RES/mipmap-hdpi/ic_launcher_foreground.png"
+          convert "$SRC" -resize 96x96!   "$RES/mipmap-xhdpi/ic_launcher.png"
+          convert "$SRC" -resize 96x96!   "$RES/mipmap-xhdpi/ic_launcher_round.png"
+          convert "$SRC" -resize 96x96!   "$RES/mipmap-xhdpi/ic_launcher_foreground.png"
+          convert "$SRC" -resize 144x144! "$RES/mipmap-xxhdpi/ic_launcher.png"
+          convert "$SRC" -resize 144x144! "$RES/mipmap-xxhdpi/ic_launcher_round.png"
+          convert "$SRC" -resize 144x144! "$RES/mipmap-xxhdpi/ic_launcher_foreground.png"
+          convert "$SRC" -resize 192x192! "$RES/mipmap-xxxhdpi/ic_launcher.png"
+          convert "$SRC" -resize 192x192! "$RES/mipmap-xxxhdpi/ic_launcher_round.png"
+          convert "$SRC" -resize 192x192! "$RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+          echo "Icons injected successfully"
+
       - name: Build Android Debug APK
         run: |
           cd android

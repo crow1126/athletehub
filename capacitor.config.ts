@@ -10,6 +10,9 @@ const config: CapacitorConfig = {
     url: 'https://apextrackgh.com',
     cleartext: true,
     androidScheme: 'https',
+    // Keep all navigation within the WebView — prevents Chrome from intercepting
+    // links to the same domain and opening them in the browser instead of the app.
+    allowNavigation: ['apextrackgh.com', '*.apextrackgh.com'],
   },
   plugins: {
     SplashScreen: {

@@ -431,7 +431,10 @@ export default function PlayerLayout({ children }) {
             />
             {!isNativeApp && (
               <a
-                href="/download/android"
+                href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk"
+                target="_blank"
+                rel="noopener noreferrer"
+                download="ApexTrack.apk"
                 className="electron-hide"
                 title="Download Android App (.apk)"
                 style={{
@@ -535,7 +538,10 @@ export default function PlayerLayout({ children }) {
           </div>
           {!isNativeApp && (
             <a
-              href="/download/android"
+              href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              download="ApexTrack.apk"
               className="electron-hide"
               style={{
                 display: 'flex',

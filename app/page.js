@@ -1811,7 +1811,10 @@ export default function LandingPage() {
 
                       <div className="dl-action-box">
                         <a
-                          href="/download/android"
+                          href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download="ApexTrack.apk"
                           className="dl-main-btn android-btn"
                         >
                           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -2001,7 +2004,7 @@ export default function LandingPage() {
             {!isElectron && (
               <>
                 <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link electron-hide">Download Windows (.exe)</a>
-                <a href="/download/android" className="footer-link electron-hide">Download Android (.apk)</a>
+                <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk" target="_blank" rel="noopener noreferrer" download="ApexTrack.apk" className="footer-link electron-hide">Download Android (.apk)</a>
               </>
             )}
             <Link href="/privacy" className="footer-link">Privacy Policy</Link>

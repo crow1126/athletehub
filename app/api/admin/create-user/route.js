@@ -504,6 +504,7 @@ async function deleteUserCredentials({ db, requester, user_id, login_id }) {
   let targetEmail = null
   let targetUsername = null
 
+  // --- Step 1: Resolve login record if login_id provided ---
   if (login_id) {
     const { data: login } = await db
       .from('staff_logins')
@@ -516,19 +517,26 @@ async function deleteUserCredentials({ db, requester, user_id, login_id }) {
       targetEmail = login.email
       targetUsername = login.username
 
+      // Try to find profile via email or username if user_id not supplied
       if (!resolvedUserId) {
         if (login.email) {
           const { data: p } = await db.from('profiles').select('id, team_id').eq('email', login.email).maybeSingle()
-          resolvedUserId = p?.id || null
+          if (p?.id) resolvedUserId = p.id
         }
         if (!resolvedUserId && login.username) {
-          const { data: p2 } = await db.from('profiles').select('id, team_id').eq('username', login.username).maybeSingle()
-          resolvedUserId = p2?.id || null
+          const { data: p2 } = await db.from('profiles').select('id, team_id').ilike('username', login.username).maybeSingle()
+          if (p2?.id) resolvedUserId = p2.id
         }
       }
     }
   }
 
+  // --- Step 2: Validate requester can manage this team ---
+  if (targetTeamId && !canManageTeam(requester.profile, targetTeamId)) {
+    return { error: 'Forbidden', status: 403 }
+  }
+
+  // --- Step 3: Auth user + profile cleanup ---
   if (resolvedUserId) {
     // Prevent self-deletion
     if (requester.profile.id === resolvedUserId) {
@@ -542,16 +550,17 @@ async function deleteUserCredentials({ db, requester, user_id, login_id }) {
       .maybeSingle()
 
     if (profile) {
-      targetTeamId = profile.team_id
+      // Override team check with real profile team
+      const realTeamId = profile.team_id || targetTeamId
+      if (realTeamId && !canManageTeam(requester.profile, realTeamId)) {
+        return { error: 'Forbidden', status: 403 }
+      }
+      targetTeamId = realTeamId || targetTeamId
       targetEmail = profile.email || targetEmail
       targetUsername = profile.username || targetUsername
 
       if (profile.role === 'superadmin') {
         return { error: 'Superadmin accounts cannot be deleted.', status: 403 }
-      }
-
-      if (targetTeamId && !canManageTeam(requester.profile, targetTeamId)) {
-        return { error: 'Forbidden', status: 403 }
       }
 
       // 1. Delete from Supabase Auth
@@ -572,14 +581,17 @@ async function deleteUserCredentials({ db, requester, user_id, login_id }) {
         await db.from('athletes').update({ user_id: null }).eq('id', profile.athlete_id)
       }
       await db.from('athletes').update({ user_id: null }).eq('user_id', resolvedUserId)
+    } else {
+      // Profile not found — auth user may still exist (orphaned), attempt delete
+      try {
+        await adminFetch(`users/${resolvedUserId}`, 'DELETE')
+      } catch (authErr) {
+        console.warn('[create-user] Orphaned auth user delete warning:', authErr?.message)
+      }
     }
   }
 
-  if (targetTeamId && !canManageTeam(requester.profile, targetTeamId)) {
-    return { error: 'Forbidden', status: 403 }
-  }
-
-  // Delete from staff_logins
+  // --- Step 4: Always clean up staff_logins ---
   if (login_id) {
     await db.from('staff_logins').delete().eq('id', login_id)
   }

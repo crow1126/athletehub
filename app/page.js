@@ -141,12 +141,16 @@ export default function LandingPage() {
   const [activeFaq, setActiveFaq] = useState(null)
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent
+      // Capacitor Android WebView: Android + wv (WebView) in UA
+      const isCapacitor = ua.includes('Android') && ua.includes('wv')
       const isStandalone =
         window.navigator?.standalone === true ||
         window.matchMedia?.('(display-mode: standalone)')?.matches ||
         window.electronAPI?.isElectron ||
-        navigator.userAgent.includes('Electron') ||
-        navigator.userAgent.includes('ApexTrackDesktop')
+        ua.includes('Electron') ||
+        ua.includes('ApexTrackDesktop') ||
+        isCapacitor
       const hasAuthCookie = document.cookie.includes('sb-') || document.cookie.includes('auth')
       return isStandalone || hasAuthCookie
     }
@@ -177,14 +181,17 @@ export default function LandingPage() {
       }
 
       if (typeof window !== 'undefined') {
-        const isStandalone =
+        const ua = navigator.userAgent
+        const isCapacitor = ua.includes('Android') && ua.includes('wv')
+        const isNativeApp =
           window.navigator?.standalone === true ||
           window.matchMedia?.('(display-mode: standalone)')?.matches ||
           window.electronAPI?.isElectron ||
-          navigator.userAgent.includes('Electron') ||
-          navigator.userAgent.includes('ApexTrackDesktop')
+          ua.includes('Electron') ||
+          ua.includes('ApexTrackDesktop') ||
+          isCapacitor
 
-        if (isStandalone) {
+        if (isNativeApp) {
           router.replace('/login')
           return
         }
@@ -277,24 +284,30 @@ export default function LandingPage() {
 
     return mailtoUrl
   }
+  // isElectron also covers Capacitor Android WebView — both are "native app" contexts
+  // where the landing page, download buttons, and landing nav should be hidden.
   const [isElectron, setIsElectron] = useState(() => {
     if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent
       return (
         !!window.electronAPI?.isElectron ||
-        navigator.userAgent.includes('Electron') ||
-        navigator.userAgent.includes('ApexTrackDesktop')
+        ua.includes('Electron') ||
+        ua.includes('ApexTrackDesktop') ||
+        (ua.includes('Android') && ua.includes('wv'))
       )
     }
     return false
   })
 
-  // Detect Electron synchronously before first paint to avoid the
+  // Detect native app synchronously before first paint to avoid the
   // flash where the Download tab briefly appears then disappears.
   useLayoutEffect(() => {
+    const ua = navigator.userAgent
     if (
       window.electronAPI?.isElectron ||
-      navigator.userAgent.includes('Electron') ||
-      navigator.userAgent.includes('ApexTrackDesktop')
+      ua.includes('Electron') ||
+      ua.includes('ApexTrackDesktop') ||
+      (ua.includes('Android') && ua.includes('wv'))
     ) {
       setIsElectron(true)
     }

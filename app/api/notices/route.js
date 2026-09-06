@@ -4,6 +4,7 @@ import { NextResponse }                      from 'next/server'
 import { createServiceClient, getRequester } from '@/lib/serverAuth'
 import { sendBulkSMS, buildNoticeSMS }       from '@/lib/moolre'
 import { payLimiter }                        from '@/lib/rateLimit'
+import { dispatchPushToTeam }                 from '@/lib/serverPush'
 
 const supabase = createServiceClient()
 
@@ -268,6 +269,14 @@ export async function POST(req) {
         body: `${content.trim()}${sent > 0 ? ` (${sent} players notified via SMS)` : ''}`,
         sent_count: sent,
       })
+
+      // Dispatch Web Push / Native Push to all subscribed iOS/Android devices
+      dispatchPushToTeam(teamId, {
+        title: `${catLabel} ${title.trim()}`,
+        body: content.trim().slice(0, 180),
+        url: '/notices',
+        tag: `notice-${noticeData?.id || Date.now()}`,
+      }).catch((pErr) => console.warn('[notices POST] Push dispatch error:', pErr?.message))
     } catch (nErr) {
       console.warn('[notices POST] bell notification insert error:', nErr.message)
     }

@@ -52,11 +52,13 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icon.png',
-    badge: '/icon.png',
-    data: { url: data.url },
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    data: { url: data.url || '/dashboard' },
+    tag: data.tag || `apextrack-${Date.now()}`,
+    renotify: true,
     vibrate: [100, 50, 150],
   }
 
-  event.waitUntil(self.registration.showNotification(data.title, options))
+  event.waitUntil(self.registration.showNotification(data.title || 'ApexTrack Alert', options))
 })

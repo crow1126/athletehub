@@ -1,6 +1,6 @@
 'use client'
 import { useEffect } from 'react'
-import { initAudioUnlock } from '@/lib/notifications'
+import { initAudioUnlock, subscribeToPushNotifications } from '@/lib/notifications'
 
 export default function PWAProvider() {
   useEffect(() => {
@@ -19,7 +19,13 @@ export default function PWAProvider() {
       if ('serviceWorker' in navigator) {
         const registerSW = () => {
           navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('[PWA] Registered Service Worker scope:', reg.scope))
+            .then((reg) => {
+              console.log('[PWA] Registered Service Worker scope:', reg.scope)
+              // If notification permission was granted, sync push subscription
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                subscribeToPushNotifications().catch(() => {})
+              }
+            })
             .catch((err) => console.error('[PWA] SW Error:', err))
         }
 
@@ -28,6 +34,11 @@ export default function PWAProvider() {
         } else {
           window.addEventListener('load', registerSW, { once: true })
         }
+      }
+
+      // 4. Capacitor Android native push auto-register
+      if (window.Capacitor?.isNativePlatform?.()) {
+        subscribeToPushNotifications().catch(() => {})
       }
     }
   }, [])

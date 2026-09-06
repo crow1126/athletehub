@@ -760,75 +760,111 @@ export default function SettingsPage() {
                 <MsgBox m={msg}/>
 
                 {staffLogins.length === 0 ? (
-                  <div style={{ padding:'28px',textAlign:'center',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:14,fontStyle:'italic',border:'1px solid var(--border)',marginTop:12 }}>No logins issued yet.</div>
+                  <div style={{ padding:'36px',textAlign:'center',background:'#F8FAFC',borderRadius:16,color:'#64748B',fontSize:14,border:'1px dashed #CBD5E1',marginTop:12 }}>
+                    <div style={{ fontSize:32,marginBottom:8 }}>🔑</div>
+                    No logins issued yet. Use the button above to issue your first staff login.
+                  </div>
                 ) : (
-                  <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
-                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-                      <div style={{ minWidth:720 }}>
-                        <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.5fr 1.6fr 0.8fr 0.8fr 0.7fr 1.6fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
-                          {['Staff','Username','Password','Role','Issued','Status','Action'].map(h=>(
-                            <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
-                          ))}
-                        </div>
-                        {staffLogins.map(login => (
-                          <div key={login.id} className="logins-table-row" style={{ display:'grid',gridTemplateColumns:'1.3fr 1.5fr 1.6fr 0.8fr 0.8fr 0.7fr 1.6fr',gap:8,alignItems:'center',padding:'13px 18px',borderBottom:'1px solid var(--border)',transition:'var(--transition)',opacity:login.is_active?1:0.6 }}
-                            onMouseEnter={e=>e.currentTarget.style.background='var(--surface2)'}
-                            onMouseLeave={e=>e.currentTarget.style.background=''}>
-                            <div>
-                              <div style={{ fontSize:13,fontWeight:700,color:'var(--text)' }}>
-                                {login.coaches?.name || allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase())?.full_name || login.email || '—'}
-                              </div>
-                              <div style={{ fontSize:11,color:'var(--text3)',textTransform:'capitalize' }}>
-                                {login.coaches?.staff_type ? (login.coaches.staff_type||'').replace(/_/g,' ') : (login.role === 'accountant' ? 'ApexPay Accountant' : (login.role === 'admin' ? 'Club Admin' : ''))}
-                              </div>
-                            </div>
-                            <div style={{ fontSize:11,color:'var(--text2)',wordBreak:'break-all' }}>{login.username || login.email}</div>
-                            <div style={{ display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' }}>
-                              {login.plain_password ? (
-                                <>
-                                  <span style={{ fontSize:11,fontFamily:'monospace',background:'var(--surface2)',padding:'2px 8px',borderRadius:4,border:'1px solid var(--border)',color:'var(--text)' }}>
-                                    {showPassword[login.id] ? login.plain_password : '••••••••'}
-                                  </span>
-                                  <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:12,padding:'2px 4px',color:'var(--text2)',fontWeight:600 }}>
-                                    {showPassword[login.id] ? 'Hide' : 'Show'}
-                                  </button>
-                                  <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} title="Copy password" style={{ background:'rgba(0,106,106,0.1)',border:'1px solid rgba(0,106,106,0.2)',color:'#0D9488',borderRadius:4,padding:'2px 6px',fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={() => openRecoverDrawer(login)}
-                                  title="Set a password to reveal and copy"
-                                  style={{ background:'rgba(217,119,6,0.1)',border:'1px solid rgba(217,119,6,0.25)',color:'#D97706',borderRadius:4,padding:'2px 8px',fontSize:10.5,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}
-                                >
-                                  Set / Reveal
-                                </button>
-                              )}
-                            </div>
-                            <div><span style={{ fontSize:10,fontWeight:700,background:ROLE_COLORS[login.role]+'20',color:ROLE_COLORS[login.role],padding:'2px 8px',borderRadius:99,textTransform:'uppercase' }}>{login.role}</span></div>
-                            <div style={{ fontSize:11,color:'var(--text3)' }}>{new Date(login.created_at).toLocaleDateString('en-GB')}</div>
-                            <div><span style={{ fontSize:10,fontWeight:700,background:login.is_active?'var(--success-light)':'var(--danger-light)',color:login.is_active?'var(--success)':'var(--danger)',padding:'2px 8px',borderRadius:99 }}>{login.is_active?'● Active':'○ Revoked'}</span></div>
-                            <div style={{ display:'flex',alignItems:'center',gap:6,flexWrap:'wrap' }}>
-                              {login.is_active
-                                ? <button onClick={()=>revokeLogin(login.id)} className="gm-btn danger" style={{ padding:'5px 10px',fontSize:11 }}>Revoke {GM_ICON}</button>
-                                : <button onClick={()=>reactivateLogin(login.id)} className="gm-btn outline" style={{ padding:'5px 10px',fontSize:11 }}>Restore {GM_ICON}</button>
-                              }
-                              <button
-                                onClick={() => {
-                                  const user = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase() || (login.username && u.username?.toLowerCase() === login.username.toLowerCase()))
-                                  openDeleteModal(user?.id || null, login.id, login.coaches?.name || login.username || login.email)
-                                }}
-                                style={{ padding:'5px 8px',fontSize:11,background:'none',border:'1px solid #991B1B',borderRadius:'var(--r-md)',color:'#DC2626',cursor:'pointer',fontWeight:700,fontFamily:'var(--font)',display:'flex',alignItems:'center',gap:4,transition:'all 0.15s' }}
-                                onMouseEnter={e=>{ e.currentTarget.style.background='#FEF2F2' }}
-                                onMouseLeave={e=>{ e.currentTarget.style.background='none' }}
-                                title="Permanently delete credentials"
-                              >
-                                🗑 Delete
-                              </button>
-                            </div>
+                  <div style={{ display:'flex',flexDirection:'column',gap:10,marginTop:12 }}>
+                    {staffLogins.map(login => {
+                      const name = login.coaches?.name || allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase())?.full_name || login.email || '—'
+                      const subtitle = login.coaches?.staff_type ? (login.coaches.staff_type||'').replace(/_/g,' ') : (login.role === 'accountant' ? 'ApexPay Accountant' : login.role === 'admin' ? 'Club Admin' : login.role)
+                      const initChar = (name[0]||'?').toUpperCase()
+                      const roleColor = ROLE_COLORS[login.role] || '#0D9488'
+                      return (
+                        <div key={login.id} style={{ background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:14,padding:'16px 20px',display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',opacity:login.is_active?1:0.65,transition:'box-shadow 0.15s,border-color 0.15s',boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}
+                          onMouseEnter={e=>{ e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,0.09)'; e.currentTarget.style.borderColor='#CBD5E1' }}
+                          onMouseLeave={e=>{ e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor='#E2E8F0' }}
+                        >
+                          {/* Avatar */}
+                          <div style={{ width:44,height:44,borderRadius:'50%',background:roleColor+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,fontWeight:800,color:roleColor,flexShrink:0,border:`1.5px solid ${roleColor}30` }}>
+                            {initChar}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+
+                          {/* Name + role */}
+                          <div style={{ flex:'1 1 140px',minWidth:0 }}>
+                            <div style={{ fontSize:14,fontWeight:700,color:'#0F172A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{name}</div>
+                            <div style={{ fontSize:12,color:'#64748B',textTransform:'capitalize',marginTop:1 }}>{subtitle}</div>
+                          </div>
+
+                          {/* Username */}
+                          <div style={{ flex:'1 1 120px',minWidth:0 }}>
+                            <div style={{ fontSize:10,fontWeight:700,color:'#94A3B8',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:2 }}>Username</div>
+                            <div style={{ fontSize:12,fontFamily:'monospace',color:'#1E293B',fontWeight:600,wordBreak:'break-all' }}>{login.username || login.email}</div>
+                          </div>
+
+                          {/* Password */}
+                          <div style={{ flex:'1 1 140px',minWidth:0 }}>
+                            <div style={{ fontSize:10,fontWeight:700,color:'#94A3B8',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:4 }}>Password</div>
+                            {login.plain_password ? (
+                              <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+                                <span style={{ fontSize:12,fontFamily:'monospace',background:'#F1F5F9',padding:'3px 10px',borderRadius:6,border:'1px solid #E2E8F0',color:'#0F172A',fontWeight:600,letterSpacing:'0.05em' }}>
+                                  {showPassword[login.id] ? login.plain_password : '••••••••'}
+                                </span>
+                                <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#0D9488',fontWeight:700,padding:'2px 4px',fontFamily:'var(--font)' }}>
+                                  {showPassword[login.id] ? 'Hide' : 'Show'}
+                                </button>
+                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} title="Copy" style={{ background:'#F0FDFA',border:'1px solid #99F6E4',color:'#0D9488',borderRadius:6,padding:'3px 8px',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => openRecoverDrawer(login)}
+                                style={{ background:'#FFFBEB',border:'1px solid #FDE68A',color:'#B45309',borderRadius:7,padding:'4px 12px',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}
+                              >
+                                Set / Reveal
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Role badge */}
+                          <div style={{ flexShrink:0 }}>
+                            <span style={{ fontSize:10,fontWeight:800,background:roleColor+'18',color:roleColor,padding:'4px 12px',borderRadius:99,textTransform:'uppercase',letterSpacing:'0.07em',border:`1px solid ${roleColor}30` }}>{login.role}</span>
+                          </div>
+
+                          {/* Date */}
+                          <div style={{ flexShrink:0,textAlign:'center' }}>
+                            <div style={{ fontSize:10,fontWeight:700,color:'#94A3B8',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:2 }}>Issued</div>
+                            <div style={{ fontSize:12,color:'#475569',fontWeight:600 }}>{new Date(login.created_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'2-digit'})}</div>
+                          </div>
+
+                          {/* Status */}
+                          <div style={{ flexShrink:0 }}>
+                            <span style={{ fontSize:10,fontWeight:700,background:login.is_active?'#DCFCE7':'#FEE2E2',color:login.is_active?'#15803D':'#DC2626',padding:'4px 12px',borderRadius:99,display:'flex',alignItems:'center',gap:4,whiteSpace:'nowrap' }}>
+                              <span style={{ width:6,height:6,borderRadius:'50%',background:login.is_active?'#16A34A':'#DC2626',display:'inline-block' }}/>
+                              {login.is_active ? 'Active' : 'Revoked'}
+                            </span>
+                          </div>
+
+                          {/* Actions */}
+                          <div style={{ display:'flex',alignItems:'center',gap:8,flexShrink:0 }}>
+                            {login.is_active
+                              ? <button onClick={()=>revokeLogin(login.id)} style={{ padding:'7px 16px',fontSize:12,fontWeight:700,border:'none',borderRadius:8,background:'#DC2626',color:'#fff',cursor:'pointer',fontFamily:'var(--font)',transition:'background 0.15s' }}
+                                  onMouseEnter={e=>e.currentTarget.style.background='#B91C1C'}
+                                  onMouseLeave={e=>e.currentTarget.style.background='#DC2626'}
+                                >Revoke</button>
+                              : <button onClick={()=>reactivateLogin(login.id)} style={{ padding:'7px 16px',fontSize:12,fontWeight:700,border:'1px solid #0D9488',borderRadius:8,background:'#F0FDFA',color:'#0D9488',cursor:'pointer',fontFamily:'var(--font)',transition:'all 0.15s' }}
+                                  onMouseEnter={e=>{ e.currentTarget.style.background='#0D9488'; e.currentTarget.style.color='#fff' }}
+                                  onMouseLeave={e=>{ e.currentTarget.style.background='#F0FDFA'; e.currentTarget.style.color='#0D9488' }}
+                                >Restore</button>
+                            }
+                            <button
+                              onClick={() => {
+                                const user = allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase() || (login.username && u.username?.toLowerCase() === login.username.toLowerCase()))
+                                openDeleteModal(user?.id || null, login.id, login.coaches?.name || login.username || login.email)
+                              }}
+                              title="Permanently delete credentials"
+                              style={{ width:34,height:34,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid #FECACA',borderRadius:8,background:'#FFF',cursor:'pointer',transition:'all 0.15s',flexShrink:0 }}
+                              onMouseEnter={e=>{ e.currentTarget.style.background='#FEE2E2'; e.currentTarget.style.borderColor='#FCA5A5' }}
+                              onMouseLeave={e=>{ e.currentTarget.style.background='#FFF'; e.currentTarget.style.borderColor='#FECACA' }}
+                            >
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
               </div>

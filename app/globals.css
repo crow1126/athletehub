@@ -506,3 +506,25 @@ body {
 .safe-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ============================================================
+   Notification Panel Popover — Responsive Mobile & PWA
+   ============================================================ */
+@media (max-width: 640px) {
+  .mobile-notif-backdrop {
+    display: block !important;
+  }
+
+  .notif-panel-popover {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top, 0px) + 64px) !important;
+    left: 14px !important;
+    right: 14px !important;
+    width: auto !important;
+    max-width: 420px !important;
+    margin: 0 auto !important;
+    max-height: 75vh !important;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    z-index: 300 !important;
+  }
+}

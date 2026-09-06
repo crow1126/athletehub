@@ -98,6 +98,19 @@ export default function SettingsPage() {
     msg: { text: '', type: '' }
   })
 
+  const [staffResetModal, setStaffResetModal] = useState({
+    open: false,
+    loginId: '',
+    userId: '',
+    staffName: '',
+    username: '',
+    role: '',
+    phone: '',
+    newPassword: '',
+    saving: false,
+    msg: { text: '', type: '' }
+  })
+
   const [deleteModal, setDeleteModal] = useState({
     open: false,
     userId: null,
@@ -126,9 +139,9 @@ export default function SettingsPage() {
       }
       if (admin) {
         const [{ data:users },{ data:staff },{ data:logins },{ data:athletes }] = await Promise.all([
-          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
-          scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active'), prof.team_id).order('name'),
-          scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type)'), prof.team_id).order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
+          scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active,photo_url'), prof.team_id).order('name'),
+          scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type,photo_url,phone)'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('athletes').select('id,name,position,back_number,phone'), prof.team_id).order('name'),
         ])
         const enrichedUsers = (users||[]).map(u => {
@@ -327,6 +340,69 @@ export default function SettingsPage() {
       await loadAll()
     } catch (err) {
       setPlayerResetModal(m => ({ ...m, saving: false, msg: { text: 'Error: ' + err.message, type: 'error' } }))
+    }
+  }
+
+  function openStaffResetModal(login) {
+    const user = allUsers.find(u => (login.email && u.email?.toLowerCase() === login.email?.toLowerCase()) || (login.username && u.username?.toLowerCase() === login.username?.toLowerCase()))
+    const name = login.coaches?.name || user?.full_name || login.email || 'Staff'
+    const phone = login.coaches?.phone || login.phone || user?.phone || ''
+    setStaffResetModal({
+      open: true,
+      loginId: login.id,
+      userId: user?.id || null,
+      staffName: name,
+      username: login.username || login.email || '',
+      role: login.role || 'staff',
+      phone,
+      newPassword: makePassword(profile?.teams?.short_name),
+      saving: false,
+      msg: { text: '', type: '' }
+    })
+  }
+
+  async function submitStaffResetPassword() {
+    if (!staffResetModal.newPassword || staffResetModal.newPassword.length < 8) {
+      setStaffResetModal(m => ({ ...m, msg: { text: 'Password must be at least 8 characters.', type: 'error' } }))
+      return
+    }
+    setStaffResetModal(m => ({ ...m, saving: true, msg: { text: '', type: '' } }))
+    try {
+      let smsNote = ''
+      if (staffResetModal.userId) {
+        const res = await fetchWithAuth('/api/admin/create-user', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: staffResetModal.userId,
+            login_id: staffResetModal.loginId,
+            action: 'reset_password',
+            new_password: staffResetModal.newPassword,
+            phone: staffResetModal.phone?.trim() || undefined,
+          })
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) {
+          setStaffResetModal(m => ({ ...m, saving: false, msg: { text: data.error || 'Failed to update user password.', type: 'error' } }))
+          return
+        }
+        if (data.sms_sent) smsNote = ' Credentials sent via SMS!'
+      }
+
+      // Always update plain_password in staff_logins table so it stays revealed & copyable
+      await supabase
+        .from('staff_logins')
+        .update({
+          plain_password: staffResetModal.newPassword,
+          phone: staffResetModal.phone?.trim() || null,
+        })
+        .eq('id', staffResetModal.loginId)
+
+      flash(`Password set and revealed for ${staffResetModal.staffName}.${smsNote}`, 'success')
+      setStaffResetModal(m => ({ ...m, open: false, saving: false }))
+      await loadAll()
+    } catch (err) {
+      setStaffResetModal(m => ({ ...m, saving: false, msg: { text: 'Error: ' + err.message, type: 'error' } }))
     }
   }
 
@@ -767,49 +843,61 @@ export default function SettingsPage() {
                 ) : (
                   <div style={{ display:'flex',flexDirection:'column',gap:10,marginTop:12 }}>
                     {staffLogins.map(login => {
-                      const name = login.coaches?.name || allUsers.find(u => u.email?.toLowerCase() === login.email?.toLowerCase())?.full_name || login.email || '—'
+                      const user = allUsers.find(u => (login.email && u.email?.toLowerCase() === login.email?.toLowerCase()) || (login.username && u.username?.toLowerCase() === login.username?.toLowerCase()))
+                      const name = login.coaches?.name || user?.full_name || login.email || '—'
                       const subtitle = login.coaches?.staff_type ? (login.coaches.staff_type||'').replace(/_/g,' ') : (login.role === 'accountant' ? 'ApexPay Accountant' : login.role === 'admin' ? 'Club Admin' : login.role)
                       const initChar = (name[0]||'?').toUpperCase()
                       const roleColor = ROLE_COLORS[login.role] || '#0D9488'
+                      const avatarUrl = login.coaches?.photo_url || user?.avatar_url || null
                       return (
                         <div key={login.id} style={{ background:'#FFFFFF',border:'1px solid #E2E8F0',borderRadius:14,padding:'16px 20px',display:'flex',alignItems:'center',gap:16,flexWrap:'wrap',opacity:login.is_active?1:0.65,transition:'box-shadow 0.15s,border-color 0.15s',boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}
                           onMouseEnter={e=>{ e.currentTarget.style.boxShadow='0 4px 12px rgba(0,0,0,0.09)'; e.currentTarget.style.borderColor='#CBD5E1' }}
                           onMouseLeave={e=>{ e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor='#E2E8F0' }}
                         >
-                          {/* Avatar */}
-                          <div style={{ width:44,height:44,borderRadius:'50%',background:roleColor+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,fontWeight:800,color:roleColor,flexShrink:0,border:`1.5px solid ${roleColor}30` }}>
-                            {initChar}
+                          {/* Avatar — uses uploaded picture with initial fallback */}
+                          <div style={{ width:44,height:44,borderRadius:'50%',overflow:'hidden',background:roleColor+'20',display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,fontWeight:800,color:roleColor,flexShrink:0,border:`1.5px solid ${roleColor}30` }}>
+                            {avatarUrl ? (
+                              <img
+                                src={avatarUrl}
+                                alt={name}
+                                style={{ width:'100%',height:'100%',objectFit:'cover' }}
+                                onError={e => { e.currentTarget.style.display = 'none' }}
+                              />
+                            ) : (
+                              initChar
+                            )}
                           </div>
 
                           {/* Name + role */}
-                          <div style={{ flex:'1 1 140px',minWidth:0 }}>
+                          <div style={{ flex:'1 1 150px',minWidth:130 }}>
                             <div style={{ fontSize:14,fontWeight:700,color:'#0F172A',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis' }}>{name}</div>
                             <div style={{ fontSize:12,color:'#64748B',textTransform:'capitalize',marginTop:1 }}>{subtitle}</div>
                           </div>
 
                           {/* Username */}
-                          <div style={{ flex:'1 1 120px',minWidth:0 }}>
+                          <div style={{ flex:'1 1 120px',minWidth:100 }}>
                             <div style={{ fontSize:10,fontWeight:700,color:'#94A3B8',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:2 }}>Username</div>
                             <div style={{ fontSize:12,fontFamily:'monospace',color:'#1E293B',fontWeight:600,wordBreak:'break-all' }}>{login.username || login.email}</div>
                           </div>
 
-                          {/* Password */}
-                          <div style={{ flex:'1 1 140px',minWidth:0 }}>
+                          {/* Password — fixed width pill with zero overlap */}
+                          <div style={{ flex:'0 0 auto',minWidth:220 }}>
                             <div style={{ fontSize:10,fontWeight:700,color:'#94A3B8',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:4 }}>Password</div>
                             {login.plain_password ? (
-                              <div style={{ display:'flex',alignItems:'center',gap:6 }}>
-                                <span style={{ fontSize:12,fontFamily:'monospace',background:'#F1F5F9',padding:'3px 10px',borderRadius:6,border:'1px solid #E2E8F0',color:'#0F172A',fontWeight:600,letterSpacing:'0.05em' }}>
+                              <div style={{ display:'inline-flex',alignItems:'center',gap:6,background:'#F8FAFC',border:'1px solid #E2E8F0',padding:'3px 6px',borderRadius:8 }}>
+                                <span style={{ fontSize:12,fontFamily:'monospace',color:'#0F172A',fontWeight:600,letterSpacing:'0.05em',padding:'0 4px' }}>
                                   {showPassword[login.id] ? login.plain_password : '••••••••'}
                                 </span>
-                                <button onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#0D9488',fontWeight:700,padding:'2px 4px',fontFamily:'var(--font)' }}>
+                                <button type="button" onClick={()=>setShowPassword(p=>({...p,[login.id]:!p[login.id]}))} style={{ background:'none',border:'none',cursor:'pointer',fontSize:11,color:'#0D9488',fontWeight:700,padding:'2px 4px',whiteSpace:'nowrap',fontFamily:'var(--font)' }}>
                                   {showPassword[login.id] ? 'Hide' : 'Show'}
                                 </button>
-                                <button onClick={()=>navigator.clipboard?.writeText(login.plain_password)} title="Copy" style={{ background:'#F0FDFA',border:'1px solid #99F6E4',color:'#0D9488',borderRadius:6,padding:'3px 8px',fontSize:10,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}>Copy</button>
+                                <button type="button" onClick={()=>navigator.clipboard?.writeText(login.plain_password)} title="Copy" style={{ background:'#F0FDFA',border:'1px solid #99F6E4',color:'#0D9488',borderRadius:6,padding:'2px 8px',fontSize:10,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',fontFamily:'var(--font)' }}>Copy</button>
                               </div>
                             ) : (
                               <button
-                                onClick={() => openRecoverDrawer(login)}
-                                style={{ background:'#FFFBEB',border:'1px solid #FDE68A',color:'#B45309',borderRadius:7,padding:'4px 12px',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}
+                                type="button"
+                                onClick={() => openStaffResetModal(login)}
+                                style={{ background:'#FFFBEB',border:'1px solid #FDE68A',color:'#B45309',borderRadius:7,padding:'4px 12px',fontSize:11,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)',whiteSpace:'nowrap' }}
                               >
                                 Set / Reveal
                               </button>
@@ -817,8 +905,8 @@ export default function SettingsPage() {
                           </div>
 
                           {/* Role badge */}
-                          <div style={{ flexShrink:0 }}>
-                            <span style={{ fontSize:10,fontWeight:800,background:roleColor+'18',color:roleColor,padding:'4px 12px',borderRadius:99,textTransform:'uppercase',letterSpacing:'0.07em',border:`1px solid ${roleColor}30` }}>{login.role}</span>
+                          <div style={{ flexShrink:0,minWidth:72 }}>
+                            <span style={{ fontSize:10,fontWeight:800,background:roleColor+'18',color:roleColor,padding:'4px 12px',borderRadius:99,textTransform:'uppercase',letterSpacing:'0.07em',border:`1px solid ${roleColor}30`,whiteSpace:'nowrap',display:'inline-block' }}>{login.role}</span>
                           </div>
 
                           {/* Date */}
@@ -1621,6 +1709,110 @@ export default function SettingsPage() {
                   style={{ padding: '8px 18px', fontSize: 13, opacity: playerResetModal.saving ? 0.7 : 1 }}
                 >
                   {playerResetModal.saving ? 'Resetting and Sending SMS...' : 'Reset & Send SMS'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* STAFF SET & REVEAL PASSWORD MODAL */}
+      {staffResetModal.open && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.55)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: 16
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 'var(--r-lg)',
+            maxWidth: 480,
+            width: '100%',
+            padding: 26,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Set &amp; Reveal Staff Password</h3>
+                <p style={{ fontSize: 12, color: 'var(--text3)', margin: '4px 0 0' }}>
+                  Staff: <strong>{staffResetModal.staffName}</strong> ({staffResetModal.username}) · <span style={{ textTransform: 'capitalize' }}>{staffResetModal.role}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStaffResetModal(m => ({ ...m, open: false }))}
+                style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--text3)', padding: 4 }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
+                  <label style={{ ...lbl, margin: 0 }}>New Password *</label>
+                  <button
+                    type="button"
+                    onClick={() => setStaffResetModal(m => ({ ...m, newPassword: makePassword(profile?.teams?.short_name) }))}
+                    style={{ background: 'none', border: 'none', color: '#0D9488', fontSize: 11, fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+                  >
+                    Generate Password
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={staffResetModal.newPassword}
+                  onChange={e => setStaffResetModal(m => ({ ...m, newPassword: e.target.value }))}
+                  style={{ ...inp, background: 'var(--surface2)' }}
+                  placeholder="Min 8 characters"
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
+              </div>
+
+              <div>
+                <label style={lbl}>Registered Phone Number (Optional SMS)</label>
+                <input
+                  type="text"
+                  value={staffResetModal.phone || ''}
+                  onChange={e => setStaffResetModal(m => ({ ...m, phone: e.target.value }))}
+                  style={{ ...inp, background: 'var(--surface2)' }}
+                  placeholder="e.g. 0244123456 (Leave blank to skip SMS)"
+                  onFocus={onFocus}
+                  onBlur={onBlur}
+                />
+                <div style={{ fontSize: 11, color: '#0D9488', marginTop: 4, fontWeight: 600 }}>
+                  If provided, new credentials will be dispatched via SMS. The password will also be revealed and copyable on the dashboard.
+                </div>
+              </div>
+
+              <MsgBox m={staffResetModal.msg} />
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setStaffResetModal(m => ({ ...m, open: false }))}
+                  className="gm-btn outline"
+                  style={{ padding: '8px 16px', fontSize: 13 }}
+                  disabled={staffResetModal.saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitStaffResetPassword}
+                  disabled={staffResetModal.saving}
+                  className="gm-btn"
+                  style={{ padding: '8px 18px', fontSize: 13, opacity: staffResetModal.saving ? 0.7 : 1 }}
+                >
+                  {staffResetModal.saving ? 'Setting Password...' : 'Set & Reveal Password'}
                 </button>
               </div>
             </div>

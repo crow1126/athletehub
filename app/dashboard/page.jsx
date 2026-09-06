@@ -148,7 +148,8 @@ export default function Dashboard() {
   const isPhysio = userRole === 'physio' || profile?.staff_type === 'physio' || profile?.staff_type === 'medical' || profile?.staff_type === 'sports_scientist'
   const isAnalyst = userRole === 'analyst' || profile?.staff_type === 'analyst'
   const isFullAdmin = userRole === 'admin' || userRole === 'superadmin'
-  const canViewRehab = isPhysio || isFullAdmin
+  // Admin accesses rehab notes via Medical tab (/injuries); keep main dashboard uncluttered
+  const canViewRehab = isPhysio && !isFullAdmin
 
   const iconProps = { size: 18, strokeWidth: 2 }
   const stats = isPhysio ? [

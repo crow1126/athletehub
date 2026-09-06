@@ -87,24 +87,38 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
       </button>
 
       {panelOpen && (
-        <div
-          id="notification-panel"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 10px)',
-            right: 0,
-            width: 320,
-            maxWidth: 'calc(100vw - 32px)',
-            maxHeight: 480,
-            background: C.floralDark,
-            border: `1px solid ${C.border}`,
-            borderRadius: 16,
-            boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
-            zIndex: 300,
-            overflow: 'hidden',
-            animation: 'notifDrop 0.18s cubic-bezier(0.16,1,0.3,1)',
-          }}
-        >
+        <>
+          <div
+            className="mobile-notif-backdrop"
+            onClick={() => setPanelOpen(false)}
+            style={{
+              display: 'none',
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.4)',
+              backdropFilter: 'blur(2px)',
+              zIndex: 299,
+            }}
+          />
+          <div
+            id="notification-panel"
+            className="notif-panel-popover"
+            style={{
+              position: 'absolute',
+              top: 'calc(100% + 10px)',
+              right: 0,
+              width: 340,
+              maxWidth: 'calc(100vw - 32px)',
+              maxHeight: 480,
+              background: C.floralDark,
+              border: `1px solid ${C.border}`,
+              borderRadius: 16,
+              boxShadow: '0 20px 60px rgba(0,0,0,0.25)',
+              zIndex: 300,
+              overflow: 'hidden',
+              animation: 'notifDrop 0.18s cubic-bezier(0.16,1,0.3,1)',
+            }}
+          >
           {/* Panel header */}
           <div style={{
             padding: '14px 18px',
@@ -196,6 +210,7 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
             })}
           </div>
         </div>
+        </>
       )}
     </div>
   )

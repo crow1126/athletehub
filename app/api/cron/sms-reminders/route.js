@@ -139,7 +139,7 @@ export async function GET(req) {
     }))
 
     // Send
-    const { sent, failed, error: smsErr } = await sendBulkSMS(recipients)
+    const { sent, failed, error: smsErr } = await sendBulkSMS(recipients, { teamId: session.team_id })
     console.log(`[cron/sms-reminders] Session ${session.id}: sent=${sent} failed=${failed} ${smsErr || ''}`)
 
     totalSent   += sent

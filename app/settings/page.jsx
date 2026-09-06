@@ -1422,8 +1422,7 @@ export default function SettingsPage() {
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0,0,0,0.6)',
-          backdropFilter: 'blur(6px)',
+          background: 'rgba(15, 23, 42, 0.75)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -1431,30 +1430,34 @@ export default function SettingsPage() {
           padding: 16
         }}>
           <div style={{
-            background: 'var(--surface)',
-            borderRadius: 'var(--r-lg)',
+            background: '#FFFFFF',
+            borderRadius: 20,
             maxWidth: 440,
             width: '100%',
-            padding: 28,
-            boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
-            border: '1px solid #FECACA'
+            padding: '32px 28px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0,0,0,0.05)',
+            border: '1px solid #E2E8F0'
           }}>
-            <div style={{ display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:16 }}>
-              <div style={{ width:56,height:56,borderRadius:'50%',background:'#FEF2F2',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,border:'2px solid #FECACA' }}>🗑</div>
+            <div style={{ display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:18 }}>
+              <div style={{ width:60,height:60,borderRadius:'50%',background:'#FEE2E2',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #FECACA' }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#DC2626" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                </svg>
+              </div>
               <div>
-                <h3 style={{ fontSize:18,fontWeight:800,color:'#DC2626',margin:'0 0 8px' }}>Delete Credentials</h3>
-                <p style={{ fontSize:14,color:'var(--text2)',lineHeight:1.6,margin:0 }}>
-                  You are about to <strong>permanently delete</strong> the login account for:
+                <h3 style={{ fontSize:19,fontWeight:800,color:'#DC2626',margin:'0 0 10px',letterSpacing:'-0.3px' }}>Delete Credentials</h3>
+                <p style={{ fontSize:14,color:'#334155',lineHeight:1.65,margin:0 }}>
+                  You are about to <strong style={{color:'#0F172A'}}>permanently delete</strong> the login account for:
                 </p>
-                <div style={{ margin:'12px 0',padding:'10px 16px',background:'#FEF2F2',borderRadius:'var(--r-md)',border:'1px solid #FECACA',fontSize:15,fontWeight:700,color:'#991B1B' }}>
+                <div style={{ margin:'14px 0',padding:'10px 18px',background:'#F8FAFC',borderRadius:10,border:'1px solid #E2E8F0',fontSize:15,fontWeight:700,color:'#0F172A' }}>
                   {deleteModal.targetName}
                 </div>
-                <p style={{ fontSize:13,color:'var(--text3)',lineHeight:1.6,margin:0 }}>
-                  This will remove their Supabase auth account, profile, and all login records. <strong>This cannot be undone.</strong>
+                <p style={{ fontSize:13,color:'#64748B',lineHeight:1.65,margin:0 }}>
+                  This will remove their Supabase auth account, profile, and all login records. <strong style={{color:'#DC2626'}}>This cannot be undone.</strong>
                 </p>
               </div>
               {deleteModal.error && (
-                <div style={{ width:'100%',padding:'10px 14px',background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:'var(--r-md)',fontSize:13,color:'#DC2626',fontWeight:600 }}>
+                <div style={{ width:'100%',padding:'10px 14px',background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:10,fontSize:13,color:'#DC2626',fontWeight:600 }}>
                   {deleteModal.error}
                 </div>
               )}
@@ -1463,7 +1466,9 @@ export default function SettingsPage() {
                   type="button"
                   onClick={() => setDeleteModal(m => ({ ...m, open: false }))}
                   disabled={deleteModal.saving}
-                  style={{ flex:1,padding:'10px',fontSize:14,fontWeight:700,border:'1px solid var(--border)',borderRadius:'var(--r-md)',background:'var(--surface2)',color:'var(--text)',cursor:'pointer',fontFamily:'var(--font)',opacity:deleteModal.saving?0.5:1 }}
+                  style={{ flex:1,padding:'11px',fontSize:14,fontWeight:700,border:'1px solid #CBD5E1',borderRadius:10,background:'#F1F5F9',color:'#334155',cursor:'pointer',fontFamily:'var(--font)',opacity:deleteModal.saving?0.5:1,transition:'all 0.15s' }}
+                  onMouseEnter={e=>{ if(!deleteModal.saving) { e.currentTarget.style.background='#E2E8F0'; e.currentTarget.style.borderColor='#94A3B8'; }}}
+                  onMouseLeave={e=>{ if(!deleteModal.saving) { e.currentTarget.style.background='#F1F5F9'; e.currentTarget.style.borderColor='#CBD5E1'; }}}
                 >
                   Cancel
                 </button>
@@ -1471,7 +1476,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={confirmDeleteCredentials}
                   disabled={deleteModal.saving}
-                  style={{ flex:1,padding:'10px',fontSize:14,fontWeight:700,border:'none',borderRadius:'var(--r-md)',background:deleteModal.saving?'#991B1B':'#DC2626',color:'#fff',cursor:'pointer',fontFamily:'var(--font)',opacity:deleteModal.saving?0.8:1,transition:'all 0.15s' }}
+                  style={{ flex:1,padding:'11px',fontSize:14,fontWeight:700,border:'none',borderRadius:10,background:deleteModal.saving?'#991B1B':'#DC2626',color:'#fff',cursor:'pointer',fontFamily:'var(--font)',opacity:deleteModal.saving?0.8:1,transition:'all 0.15s' }}
                   onMouseEnter={e=>{ if(!deleteModal.saving) e.currentTarget.style.background='#B91C1C' }}
                   onMouseLeave={e=>{ if(!deleteModal.saving) e.currentTarget.style.background='#DC2626' }}
                 >

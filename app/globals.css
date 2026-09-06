@@ -37,6 +37,14 @@ html.is-native-app a[href*="/download/android"] {
   --floral:        #F4FAF6; /* Mint 50 - App Background */
   --floral-dark:   #FFFFFF; /* Pure White - Sidebar / Cards */
   --floral-muted:  #E5F5EB; /* Tinted hover states */
+
+  /* Modal & Card Surfaces — solid opaque, no glassmorphism */
+  --surface:       #FFFFFF;
+  --surface2:      #F8FAFC;
+  --surface3:      #F1F5F9;
+  --text:          #0F172A;
+  --text2:         #1E293B;
+  --text3:         #475569;
   
   --border:        #BEE3CB; /* Clean, visible green-tinted border */
   --border-light:  #E0F3E7;

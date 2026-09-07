@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Layout from '@/components/Layout'
@@ -74,32 +74,46 @@ export default function Dashboard() {
   const [teamId, setTeamId] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
 
-  useEffect(() => {
-    async function load() {
-      const { profile: p, teamId: tid } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
-      if (p?.role === 'player') {
-        router.replace('/player-hub')
-        return
-      }
-      setProfile(p)
-      setTeamId(tid)
-      const uRole = p?.role || 'staff'
-      const isAn = uRole === 'analyst' || p?.staff_type === 'analyst'
-      setIsAdmin((uRole === 'admin' || uRole === 'superadmin' || uRole === 'coach') && !isAn)
-
-      const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }, { data: ps }] = await Promise.all([
-        scopeTeam(supabase.from('athletes').select('*'), tid).order('created_at', { ascending: false }),
-        scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), tid),
-        scopeTeam(supabase.from('coaches').select('*'), tid),
-        scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), tid).order('date', { ascending: true }),
-        scopeTeam(supabase.from('notices').select('*'), tid).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
-        scopeTeam(supabase.from('performance_stats').select('*,athletes(id,name,position,photo_url)'), tid).order('match_date', { ascending: false }).limit(50),
-      ])
-      setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || []); setPerformanceStats(ps || [])
-      setLoading(false)
+  const load = useCallback(async () => {
+    const { profile: p, teamId: tid } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+    if (p?.role === 'player') {
+      router.replace('/player-hub')
+      return
     }
-    load()
+    setProfile(p)
+    setTeamId(tid)
+    const uRole = p?.role || 'staff'
+    const isAn = uRole === 'analyst' || p?.staff_type === 'analyst'
+    setIsAdmin((uRole === 'admin' || uRole === 'superadmin' || uRole === 'coach') && !isAn)
+
+    const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }, { data: ps }] = await Promise.all([
+      scopeTeam(supabase.from('athletes').select('*'), tid).order('created_at', { ascending: false }),
+      scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), tid),
+      scopeTeam(supabase.from('coaches').select('*'), tid),
+      scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), tid).order('date', { ascending: true }),
+      scopeTeam(supabase.from('notices').select('*'), tid).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
+      scopeTeam(supabase.from('performance_stats').select('*,athletes(id,name,position,photo_url)'), tid).order('match_date', { ascending: false }).limit(50),
+    ])
+    setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || []); setPerformanceStats(ps || [])
+    setLoading(false)
   }, [router])
+
+  useEffect(() => {
+    load()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid && tid !== teamId) {
+        load()
+      }
+    }
+    const handleTeamChange = () => load()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [load, teamId])
 
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]

@@ -214,7 +214,22 @@ export default function NoticeBoardPage() {
     }
   }, []) // eslint-disable-line
 
-  useEffect(() => { loadData() }, [loadData])
+  useEffect(() => {
+    loadData()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid && tid !== teamId) {
+        loadData()
+      }
+    }
+    const handleTeamChange = () => loadData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [loadData, teamId])
 
   // Eligible athletes for matchday call-up (not injured)
   const eligibleForCallUp = useMemo(() => {

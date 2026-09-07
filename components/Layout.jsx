@@ -386,15 +386,31 @@ export default function Layout({ children }) {
 
   const loadProfile = useCallback(async () => {
     try {
-      const { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
+      let { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
       if (!session) { router.replace('/login'); return }
       if (p?.role === 'player' && (path === '/dashboard' || path === '/')) {
         router.replace('/player-hub')
         return
       }
 
+      // If p is not yet available, attempt a second pass before giving up
+      if (!p) {
+        await new Promise(r => setTimeout(r, 400))
+        const retryRes = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
+        if (retryRes.profile) {
+          p = retryRes.profile
+        }
+      }
+
       setCurrentUserId(session.user.id)
-      setProfile(p || { full_name: session.user.email, role: p?.role || 'staff', email: session.user.email })
+      if (p) {
+        setProfile(p)
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('apex_profile_loaded', { detail: { profile: p, teamId: p.team_id } }))
+        }
+      } else {
+        setProfile({ full_name: session.user.email, role: 'admin', email: session.user.email })
+      }
 
       // Set logger context so all subsequent logs are tagged with this tenant
       if (p) {
@@ -411,14 +427,22 @@ export default function Layout({ children }) {
       }
     } catch (e) { console.error('Layout error:', e) }
     setLoading(false)
-  }, [router])
+  }, [router, path])
 
   useEffect(() => {
     loadProfile()
     const onTeamChange = () => loadProfile()
     window.addEventListener('apex_superadmin_team_changed', onTeamChange)
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        loadProfile()
+      }
+    })
+
     return () => {
       window.removeEventListener('apex_superadmin_team_changed', onTeamChange)
+      subscription?.unsubscribe?.()
     }
   }, [loadProfile])
 

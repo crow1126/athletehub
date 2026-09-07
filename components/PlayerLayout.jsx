@@ -4,7 +4,8 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
-import { triggerNotificationAlert, requestNotificationPermission } from '@/lib/notifications'
+import { triggerNotificationAlert, requestNotificationPermission, sendTestNotificationToSelf } from '@/lib/notifications'
+import NotificationPromptBanner from '@/components/NotificationPromptBanner'
 import { User, Zap, Calendar, LogOut, Bell, Megaphone } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -154,6 +155,64 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
               </button>
             )}
           </div>
+
+          {/* Push status bar in dropdown */}
+          {typeof window !== 'undefined' && (
+            <div style={{
+              padding: '8px 16px',
+              background: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#F0FDF4' : '#F8FAFC',
+              borderBottom: `1px solid ${C.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              fontSize: 11,
+            }}>
+              <span style={{ color: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#166534' : C.text2, fontWeight: 600 }}>
+                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✅ Push Alerts Active' : '🔔 Push Alerts Off'}
+              </span>
+              {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? (
+                <button
+                  onClick={async () => {
+                    await sendTestNotificationToSelf()
+                  }}
+                  style={{
+                    background: '#E2E8F0',
+                    color: '#334155',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  title="Send a test notification to this device"
+                >
+                  Test Alert
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    await requestNotificationPermission()
+                  }}
+                  style={{
+                    background: '#16A34A',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '3px 9px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Turn On
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Notification list */}
           <div style={{ overflowY: 'auto', maxHeight: 400 }}>
@@ -486,6 +545,8 @@ export default function PlayerLayout({ children }) {
           </div>
         </header>
 
+        <NotificationPromptBanner />
+
         <main style={{ flex: 1, paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))', minWidth: 0, overflowX: 'hidden' }}>{children}</main>
 
         <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: 'calc(64px + env(safe-area-inset-bottom, 0px))', boxSizing: 'border-box', background: C.floralDark, borderTop: `1px solid ${C.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-around', zIndex: 100, paddingBottom: 'env(safe-area-inset-bottom, 0px)', paddingLeft: 'env(safe-area-inset-left, 0px)', paddingRight: 'env(safe-area-inset-right, 0px)' }}>
@@ -626,6 +687,7 @@ export default function PlayerLayout({ children }) {
             />
           </div>
         </header>
+        <NotificationPromptBanner />
         <main style={{ flex: 1 }}>{children}</main>
       </div>
 

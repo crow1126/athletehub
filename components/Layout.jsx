@@ -8,7 +8,8 @@ import InstallPWAButton from '@/components/InstallPWAButton'
 
 import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
 import { logger } from '@/lib/logger'
-import { triggerNotificationAlert, requestNotificationPermission, playNotificationSound } from '@/lib/notifications'
+import { triggerNotificationAlert, requestNotificationPermission, playNotificationSound, sendTestNotificationToSelf } from '@/lib/notifications'
+import NotificationPromptBanner from '@/components/NotificationPromptBanner'
 
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
@@ -220,11 +221,11 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
               </button>
             )}
           </div>
-          {/* Permission prompt banner if permission is default */}
-          {typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default' && (
+          {/* Push status bar in dropdown */}
+          {typeof window !== 'undefined' && (
             <div style={{
-              padding: '9px 16px',
-              background: '#F0FDF4',
+              padding: '8px 16px',
+              background: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#F0FDF4' : '#F8FAFC',
               borderBottom: `1px solid ${C.border}`,
               display: 'flex',
               alignItems: 'center',
@@ -232,25 +233,49 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
               gap: 8,
               fontSize: 11,
             }}>
-              <span style={{ color: '#166534', fontWeight: 600 }}>Enable push alerts</span>
-              <button
-                onClick={async () => {
-                  await requestNotificationPermission()
-                }}
-                style={{
-                  background: '#16A34A',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 6,
-                  padding: '3px 9px',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  fontFamily: 'inherit',
-                }}
-              >
-                Turn On
-              </button>
+              <span style={{ color: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#166534' : C.text2, fontWeight: 600 }}>
+                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✅ Push Alerts Active' : '🔔 Push Alerts Off'}
+              </span>
+              {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? (
+                <button
+                  onClick={async () => {
+                    await sendTestNotificationToSelf()
+                  }}
+                  style={{
+                    background: '#E2E8F0',
+                    color: '#334155',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  title="Send a test notification to this phone/browser"
+                >
+                  Test Alert
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    await requestNotificationPermission()
+                  }}
+                  style={{
+                    background: '#16A34A',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '3px 9px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Turn On
+                </button>
+              )}
             </div>
           )}
 
@@ -1118,6 +1143,8 @@ export default function Layout({ children }) {
             />
           </div>
         </header>
+
+        <NotificationPromptBanner />
 
         {/* SUPERADMIN WORKSPACE INSPECTION BAR */}
         {role === 'superadmin' && (

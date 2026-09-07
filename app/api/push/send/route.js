@@ -17,9 +17,10 @@ export async function POST(req) {
 
     const targetTeamId = team_id || requester.profile?.team_id
 
-    // Check authority: user must be coach, admin, or superadmin
+    // Check authority: user must be coach, admin, or superadmin, unless testing to own device
     const userRole = requester.profile?.role
-    if (!['admin', 'coach', 'superadmin', 'manager'].includes(userRole)) {
+    const isSelfTest = user_id && user_id === requester.profile?.id
+    if (!isSelfTest && !['admin', 'coach', 'superadmin', 'manager'].includes(userRole)) {
       return NextResponse.json({ error: 'Unauthorized to send push notifications' }, { status: 403 })
     }
 

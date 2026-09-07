@@ -342,10 +342,16 @@ export default function PlayerLayout({ children }) {
         (payload) => {
           const newNotif = payload.new
           if (newNotif) {
+            const rawBody = (newNotif.body || newNotif.message || '').replace(/\s*\(\d+\s+(players?|members?|athletes?)\s+notified\s+via\s+SMS\)/gi, '').trim()
+            const firstName = (profile?.full_name || '').trim().split(' ')[0]
+            const individualizedBody = (firstName && !rawBody.toLowerCase().startsWith('hi '))
+              ? `Hi ${firstName}, ${rawBody}`
+              : rawBody
+
             triggerNotificationAlert({
               title: newNotif.title || 'ApexTrack Alert',
-              message: newNotif.body || newNotif.message || '',
-              body: newNotif.body || newNotif.message || '',
+              message: individualizedBody,
+              body: individualizedBody,
               url: newNotif.link || '/notices',
               playSound: true,
             })

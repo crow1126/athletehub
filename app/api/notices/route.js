@@ -266,7 +266,7 @@ export async function POST(req) {
         team_id: teamId,
         type: 'general',
         title: `${catLabel} ${title.trim()}`,
-        body: `${content.trim()}${sent > 0 ? ` (${sent} players notified via SMS)` : ''}`,
+        body: content.trim(),
         sent_count: sent,
       })
 

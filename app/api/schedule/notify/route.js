@@ -102,14 +102,26 @@ export async function POST(req) {
     // ── Write a bell notification ───────────────────────────────────────────────────────
     try {
       const dateStr = new Date(session.date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      const cleanScheduleBody = `A ${session.type} session — "${session.title}" — has been scheduled for ${dateStr} at ${session.time} (${session.duration} min) at ${session.venue}.`
       await supabase.from('notifications').insert({
         team_id,
         type:       'sms_schedule',
         title:      session.title,
-        body:       `A ${session.type} session — "${session.title}" — has been scheduled for ${dateStr} at ${session.time} (${session.duration} min) at ${session.venue}. ${sent} ${sent === 1 ? 'athlete has' : 'athletes have'} been notified via SMS.`,
+        body:       cleanScheduleBody,
         session_id,
         sent_count: sent,
       })
+
+      // Also trigger Web / Native Push to team
+      try {
+        const { dispatchPushToTeam } = await import('@/lib/serverPush')
+        dispatchPushToTeam(team_id, {
+          title: `Schedule: ${session.title}`,
+          body: cleanScheduleBody,
+          url: '/schedule',
+          tag: `session-${session_id}`,
+        }).catch(() => {})
+      } catch {}
     } catch (nErr) { console.warn('[notify] notifications insert skipped:', nErr.message) }
 
     return NextResponse.json({ ok: true, sent, failed, total: athletes.length, smsError: smsError || null })

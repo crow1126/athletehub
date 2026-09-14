@@ -165,11 +165,24 @@ export default function Dashboard() {
   // Admin accesses rehab notes via Medical tab (/injuries); keep main dashboard uncluttered
   const canViewRehab = isPhysio && !isFullAdmin
 
+  // Count athletes who currently have NO active injury (fit players)
+  const injuredAthleteIds = new Set(activeInj.map(i => i.athlete_id))
+  const fitAthletes = athletes.filter(a => !injuredAthleteIds.has(a.id))
+
+  // Count distinct athletes whose most recent injury is 'Recovered' (cleared to play)
+  const recoveredAthleteIds = new Set(
+    injuries
+      .filter(i => i.status === 'Recovered')
+      .map(i => i.athlete_id)
+      .filter(id => !injuredAthleteIds.has(id)) // exclude those still actively injured
+  )
+  const recoveredCount = recoveredAthleteIds.size
+
   const iconProps = { size: 18, strokeWidth: 2 }
   const stats = isPhysio ? [
-    { label: 'Athletes', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} fit & active`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
+    { label: 'Athletes', value: athletes.length, note: `${fitAthletes.length} fit · ${injuredAthleteIds.size} injured`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
     { label: 'In Rehabilitation', value: activeInj.length, note: 'active injuries', icon: <HeartPulse {...iconProps} />, accent: 'var(--danger)' },
-    { label: 'Recovered', value: injuries.filter(i => i.status === 'Recovered').length, note: 'cleared to play', icon: <ShieldCheck {...iconProps} />, accent: 'var(--success)' },
+    { label: 'Recovered', value: recoveredCount, note: 'cleared to play', icon: <ShieldCheck {...iconProps} />, accent: 'var(--success)' },
     { label: 'Upcoming Sessions', value: upcoming.length, note: 'next 7 days', icon: <CalendarDays {...iconProps} />, accent: '#4A90E2' },
     { label: 'Today', value: todaySess.length, note: 'sessions', icon: <Flame {...iconProps} />, accent: 'var(--warning)' },
   ] : isAnalyst ? [

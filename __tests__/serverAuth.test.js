@@ -155,3 +155,60 @@ describe('requireSelf', () => {
     expect(result.status).toBe(400)
   })
 })
+
+// ── Bulk Upload Admin Gate ─────────────────────────────────────────────────────
+// Tests that only admin/superadmin may call the bulk import route.
+// Uses the same canManageTeam helper that app/api/athletes/bulk/route.js uses.
+// This validates both the "non-admin role cannot see the upload UI" logic
+// and "a direct API call from a non-admin session is rejected with 403" logic.
+
+describe('bulk upload admin gate (canManageTeam)', () => {
+  test('admin on own team is allowed', () => {
+    const p = makeProfile({ role: 'admin', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_A)).toBe(true)
+  })
+
+  test('superadmin is allowed on any team', () => {
+    const p = makeProfile({ role: 'superadmin', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_B)).toBe(true)
+  })
+
+  test('admin on wrong team is rejected', () => {
+    const p = makeProfile({ role: 'admin', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_B)).toBe(false)
+  })
+
+  test('coach on own team is rejected (bulk upload is admin-only)', () => {
+    const p = makeProfile({ role: 'coach', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_A)).toBe(false)
+  })
+
+  test('analyst is rejected', () => {
+    const p = makeProfile({ role: 'analyst', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_A)).toBe(false)
+  })
+
+  test('physio is rejected', () => {
+    const p = makeProfile({ role: 'physio', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_A)).toBe(false)
+  })
+
+  test('accountant is rejected', () => {
+    const p = makeProfile({ role: 'accountant', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_A)).toBe(false)
+  })
+
+  test('scout is rejected', () => {
+    const p = makeProfile({ role: 'scout', team_id: TEAM_A })
+    expect(canManageTeam(p, TEAM_A)).toBe(false)
+  })
+
+  test('null profile is rejected', () => {
+    expect(canManageTeam(null, TEAM_A)).toBe(false)
+  })
+
+  test('admin with no team_id is rejected', () => {
+    const p = makeProfile({ role: 'admin', team_id: null })
+    expect(canManageTeam(p, TEAM_A)).toBe(false)
+  })
+})

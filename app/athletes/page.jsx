@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import BulkAthleteUpload from '@/components/BulkAthleteUpload'
 
 import Link from 'next/link'
 import { FileText } from 'lucide-react'
@@ -80,21 +81,26 @@ const inp = { width:'100%', padding:'10px 14px', background:'#F8FAFC', border:'1
 const lbl = { display:'block', fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'#64748B', marginBottom:6 }
 
 export default function AthletesPage() {
-  const [athletes,     setAthletes]     = useState([])
-  const [coaches,      setCoaches]      = useState([])
-  const [loading,      setLoading]      = useState(true)
-  const [saving,       setSaving]       = useState(false)
-  const [deleting,     setDeleting]     = useState(null)
-  const [showForm,     setShowForm]     = useState(false)
-  const [editId,       setEditId]       = useState(null)
-  const [form,         setForm]         = useState(EMPTY)
-  const [photoFile,    setPhotoFile]    = useState(null)
-  const [photoPreview, setPhotoPreview] = useState(null)
-  const [search,       setSearch]       = useState('')
-  const [posFilter,    setPosFilter]    = useState('')
-  const [statFilter,   setStatFilter]   = useState('')
-  const [formError,    setFormError]    = useState('')
-  const [teamId,       setTeamId]       = useState(null)
+  const [athletes,      setAthletes]      = useState([])
+  const [coaches,       setCoaches]       = useState([])
+  const [loading,       setLoading]       = useState(true)
+  const [saving,        setSaving]        = useState(false)
+  const [deleting,      setDeleting]      = useState(null)
+  const [showForm,      setShowForm]      = useState(false)
+  const [showBulkUpload,setShowBulkUpload]= useState(false)
+  const [editId,        setEditId]        = useState(null)
+  const [form,          setForm]          = useState(EMPTY)
+  const [photoFile,     setPhotoFile]     = useState(null)
+  const [photoPreview,  setPhotoPreview]  = useState(null)
+  const [search,        setSearch]        = useState('')
+  const [posFilter,     setPosFilter]     = useState('')
+  const [statFilter,    setStatFilter]    = useState('')
+  const [formError,     setFormError]     = useState('')
+  const [teamId,        setTeamId]        = useState(null)
+  // Strict admin gate: admin + superadmin only (not coaches)
+  const [isAdmin,       setIsAdmin]       = useState(false)
+  // Bulk upload result banner: null | { added, skipped }
+  const [bulkResult,    setBulkResult]    = useState(null)
 
   const [draftSavedAt, setDraftSavedAt] = useState(null)
   const [hasDraft,     setHasDraft]     = useState(false)
@@ -104,8 +110,10 @@ export default function AthletesPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+    const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
     setTeamId(currentTeamId)
+    // Strict admin check — admin and superadmin only (not coach/analyst/physio/accountant)
+    setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin')
     const [{ data:a }, { data:c }] = await Promise.all([
       scopeTeam(supabase.from('athletes').select('*, coaches(name)'), currentTeamId).order('created_at', { ascending:false }),
       scopeTeam(supabase.from('coaches').select('id, name'), currentTeamId).order('name'),
@@ -367,8 +375,38 @@ export default function AthletesPage() {
         <PageHeader
           label="Football Registry" title={pageTitle}
           subtitle={`${filtered.length} of ${athletes.length} ${pageTitle.toLowerCase()} registered`}
-          action={<button className="btn-blue" onClick={openAdd}>+ Register Athlete</button>}
+          action={
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {isAdmin && (
+                <button
+                  id="bulk-upload-open"
+                  className="btn-blue"
+                  onClick={() => { setBulkResult(null); setShowBulkUpload(true) }}
+                  style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)', color:'#fff', border:'none', padding:'9px 16px', borderRadius:10, fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--font)', boxShadow:'0 3px 10px rgba(13,148,136,0.2)', display:'inline-flex', alignItems:'center', gap:6 }}
+                >
+                  ⬆ Bulk Upload
+                </button>
+              )}
+              <button className="btn-blue" onClick={openAdd}>+ Register Athlete</button>
+            </div>
+          }
         />
+
+        {/* Bulk import result banner */}
+        {bulkResult && (
+          <div style={{ display:'flex', alignItems:'center', gap:10, background: bulkResult.added > 0 ? '#ECFDF5' : '#FEF3C7', border:`1px solid ${bulkResult.added > 0 ? '#A7F3D0' : '#FCD34D'}`, borderRadius:12, padding:'12px 18px', marginBottom:18, flexWrap:'wrap' }}>
+            <span style={{ fontSize:20 }}>{bulkResult.added > 0 ? '✅' : '⚠️'}</span>
+            <span style={{ fontWeight:700, fontSize:14, color: bulkResult.added > 0 ? '#059669' : '#B45309' }}>
+              {bulkResult.added} athlete{bulkResult.added !== 1 ? 's' : ''} added
+              {bulkResult.skipped > 0 ? `, ${bulkResult.skipped} skipped` : ''}
+            </span>
+            <button
+              onClick={() => setBulkResult(null)}
+              style={{ marginLeft:'auto', background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#94A3B8', lineHeight:1 }}
+              aria-label="Dismiss"
+            >×</button>
+          </div>
+        )}
 
         <div className="ath-filters fade-up">
           <input placeholder="Search name, club, region…" value={search} onChange={e=>setSearch(e.target.value)}
@@ -760,6 +798,19 @@ export default function AthletesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Bulk Upload Modal (admin only) ── */}
+      {showBulkUpload && isAdmin && (
+        <BulkAthleteUpload
+          teamId={teamId}
+          onClose={() => setShowBulkUpload(false)}
+          onSuccess={({ added, skipped }) => {
+            setShowBulkUpload(false)
+            setBulkResult({ added, skipped })
+            fetchData()
+          }}
+        />
       )}
     </Layout>
   )

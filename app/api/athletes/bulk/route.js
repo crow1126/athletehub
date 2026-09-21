@@ -4,29 +4,33 @@ import { log } from '@/lib/logger'
 
 const MAX_ROWS = 500
 
-// ── Position normaliser: full English name → short DB code ───────────────────
+// ── Exact codes the DB check constraint allows ────────────────────────────────
+const VALID_POSITIONS = new Set(['GK','CB','RB','LB','RWB','LWB','CDM','CM','CAM','RM','LM','RW','LW','CF','SS','ST'])
+
+// ── Full English name → DB code ───────────────────────────────────────────────
 const POSITION_MAP = {
-  // Goalkeeper
-  'goalkeeper': 'GK', 'goal keeper': 'GK',
-  // Defenders
-  'centre back': 'CB', 'center back': 'CB', 'central defender': 'CB', 'centreback': 'CB',
-  'right back': 'RB', 'rightback': 'RB',
-  'left back': 'LB', 'leftback': 'LB',
-  'right wing back': 'RWB', 'right wingback': 'RWB',
-  'left wing back': 'LWB', 'left wingback': 'LWB',
-  // Midfielders
-  'central defensive midfielder': 'CDM', 'defensive midfielder': 'CDM', 'holding midfielder': 'CDM',
-  'central midfielder': 'CM', 'centre midfielder': 'CM',
-  'central attacking midfielder': 'CAM', 'attacking midfielder': 'CAM', 'number 10': 'CAM',
-  'right midfielder': 'RM', 'right midfield': 'RM',
-  'left midfielder': 'LM', 'left midfield': 'LM',
-  // Forwards
-  'right winger': 'RW', 'right wing': 'RW',
-  'left winger': 'LW', 'left wing': 'LW',
-  'centre forward': 'CF', 'center forward': 'CF',
-  'second striker': 'SS', 'support striker': 'SS',
+  'goalkeeper': 'GK', 'goal keeper': 'GK', 'gk': 'GK',
+  'centre back': 'CB', 'center back': 'CB', 'central back': 'CB',
+  'central defender': 'CB', 'centreback': 'CB', 'cb': 'CB',
+  'right back': 'RB', 'rightback': 'RB', 'rb': 'RB',
+  'left back': 'LB', 'leftback': 'LB', 'lb': 'LB',
+  'right wing back': 'RWB', 'right wingback': 'RWB', 'rwb': 'RWB',
+  'left wing back': 'LWB', 'left wingback': 'LWB', 'lwb': 'LWB',
+  'central defensive midfielder': 'CDM', 'defensive midfielder': 'CDM',
+  'holding midfielder': 'CDM', 'defensive mid': 'CDM', 'cdm': 'CDM',
+  'central midfielder': 'CM', 'centre midfielder': 'CM', 'cm': 'CM',
+  'central attacking midfielder': 'CAM', 'attacking midfielder': 'CAM',
+  'attacking mid': 'CAM', 'number 10': 'CAM', 'no. 10': 'CAM', 'cam': 'CAM',
+  'right midfielder': 'RM', 'right midfield': 'RM', 'rm': 'RM',
+  'left midfielder': 'LM', 'left midfield': 'LM', 'lm': 'LM',
+  'right winger': 'RW', 'right wing': 'RW', 'winger right': 'RW', 'rw': 'RW',
+  'left winger': 'LW', 'left wing': 'LW', 'winger left': 'LW', 'lw': 'LW',
+  'winger': 'RW', 'wide midfielder': 'RM',
+  'centre forward': 'CF', 'center forward': 'CF', 'cf': 'CF',
+  'second striker': 'SS', 'support striker': 'SS', 'ss': 'SS',
   'striker': 'ST', 'centre striker': 'ST', 'center striker': 'ST',
-  'forward': 'ST',
+  'centre-forward': 'ST', 'center-forward': 'ST',
+  'forward': 'ST', 'st': 'ST', 'attacker': 'ST',
 }
 
 // ── Status normaliser → only values the DB accepts ───────────────────────────
@@ -41,8 +45,11 @@ function normalisePosition(raw) {
   if (!raw) return null
   const lower = raw.toLowerCase().trim()
   if (POSITION_MAP[lower]) return POSITION_MAP[lower]
-  // Already a known short code (GK, ST, CM…) — pass through as-is
-  return raw.trim() || null
+  // Pass through if it's already a valid code (case-insensitive)
+  const upper = raw.trim().toUpperCase()
+  if (VALID_POSITIONS.has(upper)) return upper
+  // Unknown — omit rather than send a bad value to the DB
+  return null
 }
 
 function normaliseStatus(raw) {

@@ -164,8 +164,25 @@ export async function POST(req) {
   let skipped = rowErrors.length
 
   if (toInsert.length > 0) {
+    // ── Probe: try the first row alone to surface any DB constraint error ──
+    const { error: probeErr } = await db
+      .from('athletes')
+      .insert([toInsert[0]])
+      .select('id')
+
+    if (probeErr) {
+      console.error('[bulk-athletes] Probe insert failed:', probeErr.message, JSON.stringify(toInsert[0]))
+      return NextResponse.json({
+        added: 0,
+        skipped: toInsert.length + rowErrors.length,
+        errors: [`DB constraint error: ${probeErr.message}`, `First row payload: ${JSON.stringify(toInsert[0])}`],
+      }, { status: 422 })
+    }
+
+    // Probe succeeded — count it and insert the rest
+    added = 1
     const CHUNK = 100
-    for (let c = 0; c < toInsert.length; c += CHUNK) {
+    for (let c = 1; c < toInsert.length; c += CHUNK) {
       const chunk = toInsert.slice(c, c + CHUNK)
       const { data, error } = await db
         .from('athletes')
@@ -173,7 +190,7 @@ export async function POST(req) {
         .select('id')
 
       if (error) {
-        console.error('[bulk-athletes] Insert error:', error.message, JSON.stringify(chunk[0]))
+        console.error('[bulk-athletes] Chunk insert error:', error.message)
         skipped += chunk.length
         rowErrors.push(`DB insert error: ${error.message}`)
       } else {

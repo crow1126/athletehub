@@ -231,7 +231,11 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
       })
       const data = await res.json()
       if (!res.ok) {
-        setImportError(data?.error || `Server error (${res.status})`)
+        // 422 = probe insert failed — show the exact DB error
+        const errMsg = data?.errors?.length
+          ? data.errors.join('\n')
+          : (data?.error || `Server error (${res.status})`)
+        setImportError(errMsg)
         setView('preview')
         return
       }

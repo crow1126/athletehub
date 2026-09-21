@@ -235,7 +235,7 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
         setView('preview')
         return
       }
-      setResult({ added: data.added ?? 0, skipped: data.skipped ?? 0 })
+      setResult({ added: data.added ?? 0, skipped: data.skipped ?? 0, errors: data.errors || [] })
       setView('result')
       onSuccess?.({ added: data.added ?? 0, skipped: data.skipped ?? 0 })
     } catch (err) {
@@ -445,6 +445,16 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
                   </div>
                 )}
               </div>
+
+              {/* DB error details */}
+              {result.errors?.length > 0 && (
+                <div style={{ background: '#FFF8F8', border: `1px solid rgba(225,29,72,0.15)`, borderRadius: 10, padding: '12px 16px', textAlign: 'left', maxHeight: 160, overflowY: 'auto' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, color: RED, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Skip reasons</p>
+                  {result.errors.map((e, i) => (
+                    <p key={i} style={{ margin: '2px 0', fontSize: 12, color: RED }}>{e}</p>
+                  ))}
+                </div>
+              )}
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
                   id="bulk-upload-another"

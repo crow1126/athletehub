@@ -116,7 +116,6 @@ export async function POST(req) {
       email:         email         || null,
       team_id,
       status:        'Active',
-      created_by:    requester.user.id,
     })
   }
 

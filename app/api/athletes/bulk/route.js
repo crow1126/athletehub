@@ -84,14 +84,13 @@ export async function POST(req) {
     const errs = []
 
     const full_name    = (r.full_name     || '').toString().trim()
-    const position     = (r.position      || '').toString().trim()
+    const position     = (r.position      || '').toString().trim() || null
     const date_of_birth= (r.date_of_birth || '').toString().trim()
     const back_number  = (r.back_number   || '').toString().trim()
     const phone        = (r.phone         || '').toString().trim()
     const email        = (r.email         || '').toString().trim()
 
     if (!full_name)  errs.push('full_name is required')
-    if (!position)   errs.push('position is required')
     if (date_of_birth && !DATE_ISO.test(date_of_birth)) errs.push('date_of_birth must be YYYY-MM-DD')
     if (back_number  && !NUMERIC.test(back_number))     errs.push('back_number must be numeric')
     if (email        && !EMAIL_RE.test(email))           errs.push('email is invalid')
@@ -110,7 +109,7 @@ export async function POST(req) {
       name:          full_name,
       first_name,
       last_name,
-      position,
+      position:      position || null,
       date_of_birth: date_of_birth || null,
       back_number:   back_number   || null,
       phone:         phone         || null,

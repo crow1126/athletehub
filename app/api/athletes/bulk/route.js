@@ -52,6 +52,211 @@ function normalisePosition(raw) {
   return null
 }
 
+function parseModelJson(text) {
+  try {
+    return JSON.parse(text)
+  } catch {
+    const match = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/)
+    if (match) return JSON.parse(match[1])
+    const firstBrace = text.indexOf('{')
+    const lastBrace = text.lastIndexOf('}')
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      return JSON.parse(text.substring(firstBrace, lastBrace + 1))
+    }
+    throw new Error('Invalid JSON format in model output.')
+  }
+}
+
+const FIELD_DESCRIPTIONS = {
+  full_name: "Athlete's full name, player name, or athlete display name",
+  date_of_birth: "Date of birth, birth date, DOB, or birthday",
+  position: "Football/soccer playing position (e.g. Forward, Midfielder, Defender, Goalkeeper, Winger)",
+  jersey_number: "Shirt number, squad number, jersey number, or kit number",
+  phone: "Mobile phone number, telephone, or contact phone",
+  email: "Email address or electronic mail",
+}
+
+function heuristicHeaderMatch(unmappedHeaders, unmappedFields) {
+  const suggestions = {}
+  const usedHeaders = new Set()
+
+  const rules = {
+    full_name: ['surname', 'given name', 'player', 'athlete', 'member', 'first name', 'last name'],
+    date_of_birth: ['dob', 'birth', 'born', 'bday'],
+    position: ['role', 'pos', 'field', 'lineup'],
+    jersey_number: ['kit', 'squad', 'shirt', 'back', 'no', 'num'],
+    phone: ['cell', 'tel', 'contact', 'mobile', 'whatsapp'],
+    email: ['mail'],
+  }
+
+  for (const field of unmappedFields) {
+    const keywords = rules[field] || []
+    for (const h of unmappedHeaders) {
+      if (usedHeaders.has(h)) continue
+      const lower = h.toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (keywords.some(k => lower.includes(k.replace(/[^a-z0-9]/g, '')))) {
+        suggestions[field] = h
+        usedHeaders.add(h)
+        break
+      }
+    }
+  }
+
+  return suggestions
+}
+
+async function suggestHeaderMapping(unmappedHeaders, unmappedFields) {
+  const validFields = unmappedFields.filter(f => FIELD_DESCRIPTIONS[f])
+  if (validFields.length === 0 || unmappedHeaders.length === 0) {
+    return {}
+  }
+
+  const fieldsListStr = validFields
+    .map(f => `- ${f}: ${FIELD_DESCRIPTIONS[f]}`)
+    .join('\n')
+
+  const headersListStr = unmappedHeaders.map(h => `"${h}"`).join(', ')
+
+  const systemPrompt = `You are an expert data migration assistant for a football club management app.
+We have spreadsheet column headers that need to be mapped to athlete profile fields.
+Expected athlete fields:
+${fieldsListStr}
+
+Spreadsheet column headers from uploaded file:
+[${headersListStr}]
+
+Match each expected field to the closest matching spreadsheet column header.
+If no spreadsheet column header clearly corresponds to an expected field, return "no match" for that field.
+Do NOT map multiple fields to the same column header.
+Return ONLY a valid JSON object in this exact structure:
+{
+  "matches": {
+    "<expected_field_name>": "<matching_column_header_or_no_match>"
+  }
+}`
+
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  const groqKey = process.env.GROQ_API_KEY
+
+  // 1. Try Google Gemini first
+  if (geminiKey) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: systemPrompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            responseMimeType: 'application/json',
+          },
+        }),
+      })
+
+      if (res.ok) {
+        const json = await res.json()
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text
+        if (text) {
+          const parsed = parseModelJson(text)
+          return sanitizeSuggestions(parsed, unmappedHeaders, validFields)
+        }
+      }
+    } catch (err) {
+      console.warn('[bulk-athletes] Gemini header mapping failed, falling back:', err.message)
+    }
+  }
+
+  // 2. Try Anthropic Claude Haiku
+  if (anthropicKey) {
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key': anthropicKey,
+          'anthropic-version': '2023-06-01',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 300,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: 'Suggest mappings for the given column headers.' }],
+        }),
+      })
+
+      if (res.ok) {
+        const json = await res.json()
+        const text = json.content?.[0]?.text
+        if (text) {
+          const parsed = parseModelJson(text)
+          return sanitizeSuggestions(parsed, unmappedHeaders, validFields)
+        }
+      }
+    } catch (err) {
+      console.warn('[bulk-athletes] Claude header mapping failed, falling back:', err.message)
+    }
+  }
+
+  // 3. Try Groq
+  if (groqKey) {
+    try {
+      const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: 'Suggest mappings for the given column headers.' },
+          ],
+          response_format: { type: 'json_object' },
+          temperature: 0.1,
+          max_tokens: 300,
+        }),
+      })
+
+      if (res.ok) {
+        const json = await res.json()
+        const text = json.choices?.[0]?.message?.content
+        if (text) {
+          const parsed = parseModelJson(text)
+          return sanitizeSuggestions(parsed, unmappedHeaders, validFields)
+        }
+      }
+    } catch (err) {
+      console.warn('[bulk-athletes] Groq header mapping failed, falling back:', err.message)
+    }
+  }
+
+  // 4. Deterministic heuristic fallback
+  return heuristicHeaderMatch(unmappedHeaders, validFields)
+}
+
+function sanitizeSuggestions(parsed, unmappedHeaders, validFields) {
+  const matches = parsed.matches || parsed
+  const cleanSuggestions = {}
+  const headerSet = new Set(unmappedHeaders)
+  const usedHeaders = new Set()
+
+  for (const field of validFields) {
+    const rawVal = matches[field]
+    if (typeof rawVal === 'string') {
+      const val = rawVal.trim()
+      if (val && val.toLowerCase() !== 'no match' && headerSet.has(val) && !usedHeaders.has(val)) {
+        cleanSuggestions[field] = val
+        usedHeaders.add(val)
+      }
+    }
+  }
+
+  return cleanSuggestions
+}
+
 function normaliseStatus(raw) {
   if (!raw) return 'Active'
   return STATUS_MAP[raw.toLowerCase().trim()] || 'Active'
@@ -101,6 +306,24 @@ export async function POST(req) {
       { error: 'Forbidden: only admins can perform bulk athlete imports.' },
       { status: 403 }
     )
+  }
+
+  // ── 3a. Action: AI Column Mapping Suggestion ───────────────────────────────
+  if (body.action === 'suggest_mapping') {
+    const unmappedHeaders = Array.isArray(body.unmappedHeaders) ? body.unmappedHeaders : []
+    const unmappedFields  = Array.isArray(body.unmappedFields)  ? body.unmappedFields  : []
+
+    if (unmappedHeaders.length === 0 || unmappedFields.length === 0) {
+      return NextResponse.json({ suggestions: {} })
+    }
+
+    try {
+      const suggestions = await suggestHeaderMapping(unmappedHeaders, unmappedFields)
+      return NextResponse.json({ suggestions })
+    } catch (err) {
+      console.error('[bulk-athletes] suggest_mapping failed:', err.message)
+      return NextResponse.json({ suggestions: {} })
+    }
   }
 
   // ── 4. Validate rows array ─────────────────────────────────────────────────

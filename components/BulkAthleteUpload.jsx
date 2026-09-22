@@ -2,14 +2,19 @@
 /**
  * components/BulkAthleteUpload.jsx
  *
- * Admin-only bulk athlete upload modal.
+ * Admin-only bulk athlete upload modal with column mapping step.
  * Props:
  *   teamId    {string}   — current team UUID (must be truthy to submit)
  *   onClose   {() => void}
  *   onSuccess {({ added, skipped }) => void}
  */
 import { useState, useRef, useCallback } from 'react'
-import { parseAthleteFile } from '@/lib/parseAthletes'
+import {
+  extractSpreadsheetData,
+  matchHeadersLocally,
+  transformAndValidateRows,
+  EXPECTED_FIELDS,
+} from '@/lib/parseAthletes'
 import { fetchWithAuth } from '@/lib/tenant'
 
 // ─── Shared style tokens (matches athletes/page.jsx palette) ──────────────────
@@ -26,6 +31,9 @@ const GREEN      = '#059669'
 const GREEN_BG   = '#ECFDF5'
 const ORANGE_BG  = '#FEF3C7'
 const ORANGE     = '#B45309'
+const PURPLE_BG  = '#FAF5FF'
+const PURPLE     = '#7E22CE'
+const PURPLE_BRD = '#E9D5FF'
 
 const btn = {
   base: {
@@ -91,6 +99,194 @@ function DropZone({ onFile, disabled }) {
         onChange={handleChange}
         disabled={disabled}
       />
+    </div>
+  )
+}
+
+// ─── Column Mapping Component ─────────────────────────────────────────────────
+function ColumnMappingView({
+  headers,
+  mapping,
+  matchSources,
+  onMappingChange,
+  onConfirm,
+  onCancel,
+  rememberMapping,
+  setRememberMapping,
+  hasAiSuggestions,
+}) {
+  // Check for duplicate assignments (different fields mapping to same non-empty header)
+  const mappedCounts = {}
+  Object.values(mapping).forEach(header => {
+    if (header) {
+      mappedCounts[header] = (mappedCounts[header] || 0) + 1
+    }
+  })
+  const duplicates = Object.keys(mappedCounts).filter(h => mappedCounts[h] > 1)
+
+  const isFullNameMapped = Boolean(mapping.full_name)
+  const canProceed = isFullNameMapped && duplicates.length === 0
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Informative notification */}
+      <div style={{
+        background: hasAiSuggestions ? PURPLE_BG : TEAL_BG,
+        border: `1px solid ${hasAiSuggestions ? PURPLE_BRD : TEAL_LIGHT}`,
+        borderRadius: 12, padding: '12px 16px',
+      }}>
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: hasAiSuggestions ? PURPLE : TEAL }}>
+          {hasAiSuggestions ? '✨ AI Column Matching Applied' : '📋 Match Columns to Profile Fields'}
+        </p>
+        <p style={{ margin: '4px 0 0', fontSize: 12, color: SLATE, lineHeight: 1.4 }}>
+          {hasAiSuggestions
+            ? 'We used local rules and Gemini AI to suggest matches for your file headers. Please review and confirm below before proceeding.'
+            : 'Match each profile field to the corresponding column header from your uploaded file. Full Name is required.'}
+        </p>
+      </div>
+
+      {duplicates.length > 0 && (
+        <div style={{ background: ORANGE_BG, border: '1px solid #FCD34D', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: ORANGE, fontWeight: 600 }}>
+          <IconWarn /> The column header &quot;{duplicates.join(', ')}&quot; is mapped to multiple fields. Each field must use a unique column.
+        </div>
+      )}
+
+      {!isFullNameMapped && (
+        <div style={{ background: RED_BG, border: '1px solid rgba(225,29,72,0.2)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: RED, fontWeight: 600 }}>
+          <IconErr /> Full Name is required. Please map a column to Full Name to continue.
+        </div>
+      )}
+
+      {/* Field mapping list */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 10,
+        border: `1px solid ${BORDER}`, borderRadius: 14,
+        background: '#fff', overflow: 'hidden', padding: 8,
+      }}>
+        {EXPECTED_FIELDS.map(f => {
+          const selectedHeader = mapping[f.key] || ''
+          const source = matchSources[f.key]
+          const isDuplicate = selectedHeader && mappedCounts[selectedHeader] > 1
+
+          return (
+            <div
+              key={f.key}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 14px', borderRadius: 10,
+                background: isDuplicate ? '#FFF8F8' : '#F8FAFC',
+                border: `1px solid ${isDuplicate ? 'rgba(225,29,72,0.2)' : BORDER}`,
+                flexWrap: 'wrap', gap: 12,
+              }}
+            >
+              {/* Field Label & Description */}
+              <div style={{ minWidth: 200, flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: SLATE }}>
+                    {f.label}
+                  </span>
+                  {f.required ? (
+                    <span style={{ fontSize: 11, fontWeight: 700, color: RED, background: RED_BG, padding: '1px 6px', borderRadius: 4 }}>
+                      Required
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: 11, color: MUTED }}>Optional</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                  {f.description}
+                </div>
+              </div>
+
+              {/* Status Badge & Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                {/* Badge */}
+                {source === 'local' && selectedHeader && (
+                  <span style={{ background: TEAL_BG, color: TEAL, border: `1px solid ${TEAL_LIGHT}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                    ⚡ Auto-matched
+                  </span>
+                )}
+                {source === 'ai' && selectedHeader && (
+                  <span style={{ background: PURPLE_BG, color: PURPLE, border: `1px solid ${PURPLE_BRD}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                    ✨ AI suggested
+                  </span>
+                )}
+                {source === 'saved' && selectedHeader && (
+                  <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
+                    💾 Saved
+                  </span>
+                )}
+                {source === 'manual' && selectedHeader && (
+                  <span style={{ background: '#F1F5F9', color: SLATE, border: `1px solid ${BORDER}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
+                    ✎ Selected
+                  </span>
+                )}
+                {!selectedHeader && (
+                  <span style={{ background: '#F1F5F9', color: MUTED, border: `1px solid ${BORDER}`, padding: '3px 8px', borderRadius: 6, fontSize: 11 }}>
+                    Unmapped
+                  </span>
+                )}
+
+                {/* Dropdown */}
+                <select
+                  id={`mapping-select-${f.key}`}
+                  value={selectedHeader}
+                  onChange={e => onMappingChange(f.key, e.target.value)}
+                  style={{
+                    padding: '8px 12px', borderRadius: 8,
+                    border: `1px solid ${isDuplicate ? RED : selectedHeader ? TEAL_MID : BORDER}`,
+                    background: '#fff', fontSize: 13, fontWeight: 600, color: SLATE,
+                    minWidth: 200, cursor: 'pointer', outline: 'none',
+                  }}
+                >
+                  <option value="">-- Do not import (Unmapped) --</option>
+                  {headers.map(h => (
+                    <option key={h} value={h}>
+                      Column: {h}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Remember mapping checkbox */}
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, color: SLATE, userSelect: 'none' }}>
+        <input
+          id="remember-mapping-checkbox"
+          type="checkbox"
+          checked={rememberMapping}
+          onChange={e => setRememberMapping(e.target.checked)}
+          style={{ width: 16, height: 16, accentColor: TEAL }}
+        />
+        <span>Remember this column mapping for this team (future exports skip this screen)</span>
+      </label>
+
+      {/* Bottom actions */}
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', paddingTop: 6 }}>
+        <button
+          id="bulk-mapping-cancel"
+          onClick={onCancel}
+          style={{ ...btn.base, ...btn.ghost }}
+        >
+          ← Choose different file
+        </button>
+        <button
+          id="bulk-mapping-confirm"
+          onClick={onConfirm}
+          disabled={!canProceed}
+          style={{
+            ...btn.base, ...btn.primary,
+            flex: 1, justifyContent: 'center',
+            opacity: canProceed ? 1 : 0.5,
+            cursor: canProceed ? 'pointer' : 'not-allowed',
+          }}
+        >
+          Confirm Mapping & Preview →
+        </button>
+      </div>
     </div>
   )
 }
@@ -186,31 +382,162 @@ function PreviewTable({ rows }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
-  // view: 'idle' | 'parsing' | 'preview' | 'importing' | 'result'
-  const [view,        setView]       = useState('idle')
-  const [rows,        setRows]       = useState([])
-  const [parseError,  setParseError] = useState(null)
-  const [importError, setImportError]= useState(null)
-  const [result,      setResult]     = useState(null) // { added, skipped }
-  const [fileName,    setFileName]   = useState('')
+  // view: 'idle' | 'reading' | 'mapping' | 'preview' | 'importing' | 'result'
+  const [view,                 setView]                = useState('idle')
+  const [loadingText,          setLoadingText]         = useState('Reading file…')
+  const [fileHeaders,          setFileHeaders]         = useState([])
+  const [rawFileRows,          setRawFileRows]         = useState([])
+  const [mapping,              setMapping]             = useState({})
+  const [matchSources,         setMatchSources]        = useState({})
+  const [hasAiSuggestions,     setHasAiSuggestions]    = useState(false)
+  const [usedSavedMapping,     setUsedSavedMapping]    = useState(false)
+  const [rememberMapping,      setRememberMapping]     = useState(true)
+  const [rows,                 setRows]                = useState([])
+  const [parseError,           setParseError]          = useState(null)
+  const [importError,          setImportError]         = useState(null)
+  const [result,               setResult]              = useState(null) // { added, skipped }
+  const [fileName,             setFileName]            = useState('')
 
   const validRows   = rows.filter(r => r._valid)
   const invalidRows = rows.filter(r => !r._valid)
+
+  const storageKey = teamId ? `apextrack_bulk_mapping_${teamId}` : null
 
   // ── File chosen ──────────────────────────────────────────────────────────
   const handleFile = useCallback(async (file) => {
     setParseError(null)
     setFileName(file.name)
-    setView('parsing')
-    const { rows: parsed, error } = await parseAthleteFile(file)
+    setUsedSavedMapping(false)
+    setHasAiSuggestions(false)
+    setView('reading')
+    setLoadingText('Reading file…')
+
+    const { headers, rawRows, error } = await extractSpreadsheetData(file)
     if (error) {
       setParseError(error)
       setView('idle')
       return
     }
-    setRows(parsed)
-    setView('preview')
+
+    setFileHeaders(headers)
+    setRawFileRows(rawRows)
+
+    // Check if team has a saved mapping in localStorage that matches this file's headers
+    let saved = null
+    if (storageKey) {
+      try {
+        const rawSaved = localStorage.getItem(storageKey)
+        if (rawSaved) saved = JSON.parse(rawSaved)
+      } catch (err) {
+        console.warn('Failed to read saved mapping from localStorage', err)
+      }
+    }
+
+    const headersMatch = saved && Array.isArray(saved.headers) &&
+      saved.headers.length === headers.length &&
+      saved.headers.every((h, i) => h === headers[i])
+
+    if (headersMatch && saved.mapping && saved.mapping.full_name) {
+      // Repeat upload of same export format: apply saved mapping and skip mapping screen
+      const transformed = transformAndValidateRows(rawRows, headers, saved.mapping)
+      if (!transformed.error && transformed.rows.length > 0) {
+        setMapping(saved.mapping)
+        const sources = {}
+        Object.keys(saved.mapping).forEach(k => {
+          if (saved.mapping[k]) sources[k] = 'saved'
+        })
+        setMatchSources(sources)
+        setRows(transformed.rows)
+        setUsedSavedMapping(true)
+        setView('preview')
+        return
+      }
+    }
+
+    // Step 2: Run fast local fuzzy matching first
+    const localResult = matchHeadersLocally(headers)
+    const initialMapping = { ...localResult.mapping }
+    const initialSources = { ...localResult.matchedTypes }
+
+    // Step 3: Check if there are unmapped expected fields to send to Gemini
+    if (localResult.unmappedFields.length > 0 && localResult.unmappedHeaders.length > 0) {
+      setLoadingText('Analyzing column headers with AI…')
+      try {
+        const res = await fetchWithAuth('/api/athletes/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'suggest_mapping',
+            team_id: teamId,
+            unmappedHeaders: localResult.unmappedHeaders,
+            unmappedFields: localResult.unmappedFields,
+          }),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          if (data?.suggestions) {
+            let aiFoundAny = false
+            for (const [field, matchedHeader] of Object.entries(data.suggestions)) {
+              if (matchedHeader && !initialMapping[field]) {
+                initialMapping[field] = matchedHeader
+                initialSources[field] = 'ai'
+                aiFoundAny = true
+              }
+            }
+            if (aiFoundAny) {
+              setHasAiSuggestions(true)
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[bulk-athletes] AI suggestion fetch failed:', err)
+      }
+    }
+
+    setMapping(initialMapping)
+    setMatchSources(initialSources)
+    setView('mapping')
+  }, [storageKey, teamId])
+
+  // ── Mapping field changed by user ─────────────────────────────────────────
+  const handleMappingChange = useCallback((fieldKey, selectedHeader) => {
+    setMapping(prev => ({
+      ...prev,
+      [fieldKey]: selectedHeader || null,
+    }))
+    setMatchSources(prev => ({
+      ...prev,
+      [fieldKey]: selectedHeader ? 'manual' : null,
+    }))
   }, [])
+
+  // ── Confirm Mapping & Proceed to Preview ─────────────────────────────────
+  const handleConfirmMapping = useCallback(() => {
+    if (!mapping.full_name) return
+
+    // Save mapping if opted in
+    if (rememberMapping && storageKey) {
+      try {
+        localStorage.setItem(storageKey, JSON.stringify({
+          headers: fileHeaders,
+          mapping,
+          updatedAt: Date.now(),
+        }))
+      } catch (err) {
+        console.warn('Failed to persist column mapping', err)
+      }
+    }
+
+    const { rows: transformedRows, error } = transformAndValidateRows(rawFileRows, fileHeaders, mapping)
+    if (error) {
+      setParseError(error)
+      return
+    }
+
+    setRows(transformedRows)
+    setView('preview')
+  }, [mapping, rememberMapping, storageKey, fileHeaders, rawFileRows])
 
   // ── Import confirmed ─────────────────────────────────────────────────────
   const handleImport = useCallback(async () => {
@@ -242,7 +569,7 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
       setResult({ added: data.added ?? 0, skipped: data.skipped ?? 0, errors: data.errors || [] })
       setView('result')
       onSuccess?.({ added: data.added ?? 0, skipped: data.skipped ?? 0 })
-    } catch (err) {
+    } catch {
       setImportError('Network error. Please check your connection and try again.')
       setView('preview')
     }
@@ -251,7 +578,9 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
   // ── Reset to upload another ───────────────────────────────────────────────
   const handleReset = useCallback(() => {
     setRows([]); setResult(null); setParseError(null); setImportError(null)
-    setFileName(''); setView('idle')
+    setFileName(''); setFileHeaders([]); setRawFileRows([]); setMapping({})
+    setMatchSources({}); setHasAiSuggestions(false); setUsedSavedMapping(false)
+    setView('idle')
   }, [])
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -272,7 +601,7 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
         background: '#fff',
         borderRadius: 20,
         width: '100%',
-        maxWidth: 760,
+        maxWidth: 780,
         maxHeight: '92vh',
         overflow: 'auto',
         boxShadow: '0 25px 60px -10px rgba(0,0,0,0.28)',
@@ -297,7 +626,7 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
             </h2>
             {fileName && view !== 'idle' && (
               <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-                📄 {fileName}
+                📄 {fileName} {fileHeaders.length > 0 ? `(${fileHeaders.length} columns detected)` : ''}
               </p>
             )}
           </div>
@@ -338,9 +667,9 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
               {/* Template download */}
               <div style={{ background: TEAL_BG, border: `1px solid ${TEAL_LIGHT}`, borderRadius: 12, padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
                 <div>
-                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEAL }}>Step 1 — Download the template</p>
+                  <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: TEAL }}>Step 1 — Download standard template (optional)</p>
                   <p style={{ margin: '2px 0 0', fontSize: 12, color: MUTED }}>
-                    Columns: full_name, date_of_birth, position, jersey_number, phone, email
+                    Columns: full_name, date_of_birth, position, jersey_number, phone, email. Custom headers are also supported!
                   </p>
                 </div>
                 <a
@@ -356,43 +685,85 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
               {/* Drop zone */}
               <div>
                 <p style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: SLATE }}>
-                  Step 2 — Upload your completed file
+                  Step 2 — Upload your spreadsheet file
                 </p>
                 <DropZone onFile={handleFile} disabled={false} />
               </div>
             </>
           )}
 
-          {/* ── PARSING ── */}
-          {view === 'parsing' && (
+          {/* ── READING & AI PROCESSING ── */}
+          {view === 'reading' && (
             <div style={{ textAlign: 'center', padding: '48px 0' }}>
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
                 border: `4px solid ${TEAL_LIGHT}`, borderTopColor: TEAL_MID,
                 animation: 'spin 0.7s linear infinite', margin: '0 auto 14px',
               }} />
-              <p style={{ color: MUTED, fontSize: 14, margin: 0 }}>Parsing file…</p>
+              <p style={{ color: SLATE, fontSize: 14, fontWeight: 600, margin: 0 }}>{loadingText}</p>
+              <p style={{ color: MUTED, fontSize: 12, margin: '6px 0 0' }}>Parsing headers and optimizing mappings…</p>
             </div>
+          )}
+
+          {/* ── COLUMN MAPPING VIEW ── */}
+          {view === 'mapping' && (
+            <ColumnMappingView
+              headers={fileHeaders}
+              mapping={mapping}
+              matchSources={matchSources}
+              onMappingChange={handleMappingChange}
+              onConfirm={handleConfirmMapping}
+              onCancel={handleReset}
+              rememberMapping={rememberMapping}
+              setRememberMapping={setRememberMapping}
+              hasAiSuggestions={hasAiSuggestions}
+            />
           )}
 
           {/* ── PREVIEW ── */}
           {(view === 'preview' || view === 'importing') && (
             <>
+              {/* Saved mapping banner if used */}
+              {usedSavedMapping && (
+                <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '8px 14px', fontSize: 12, color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <span>💾 Automatically used your saved column mapping for this team format.</span>
+                  <button
+                    id="bulk-upload-edit-mapping-saved"
+                    onClick={() => setView('mapping')}
+                    style={{ background: 'none', border: 'none', color: '#1D4ED8', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline', fontSize: 12 }}
+                  >
+                    Adjust Mapping
+                  </button>
+                </div>
+              )}
+
               {/* Summary banner */}
               <div style={{
-                display: 'flex', gap: 10, flexWrap: 'wrap',
+                display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
               }}>
-                <div style={{ background: GREEN_BG, border: '1px solid #A7F3D0', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: GREEN, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <IconOk /> {validRows.length} ready to import
-                </div>
-                {invalidRows.length > 0 && (
-                  <div style={{ background: RED_BG, border: '1px solid rgba(225,29,72,0.2)', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: RED, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <IconErr /> {invalidRows.length} invalid (will be skipped)
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ background: GREEN_BG, border: '1px solid #A7F3D0', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: GREEN, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <IconOk /> {validRows.length} ready to import
                   </div>
-                )}
-                <div style={{ background: ORANGE_BG, border: '1px solid #FCD34D', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: ORANGE, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <IconWarn /> {rows.length} rows total
+                  {invalidRows.length > 0 && (
+                    <div style={{ background: RED_BG, border: '1px solid rgba(225,29,72,0.2)', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: RED, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <IconErr /> {invalidRows.length} invalid (will be skipped)
+                    </div>
+                  )}
+                  <div style={{ background: ORANGE_BG, border: '1px solid #FCD34D', borderRadius: 10, padding: '8px 14px', fontSize: 13, fontWeight: 700, color: ORANGE, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <IconWarn /> {rows.length} rows total
+                  </div>
                 </div>
+
+                {/* Button to edit mapping */}
+                <button
+                  id="bulk-upload-edit-mapping"
+                  onClick={() => setView('mapping')}
+                  disabled={view === 'importing'}
+                  style={{ ...btn.base, ...btn.ghost, fontSize: 12, padding: '6px 12px' }}
+                >
+                  ⚙ Edit Mapping
+                </button>
               </div>
 
               {/* Preview table */}
@@ -485,3 +856,4 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
     </div>
   )
 }
+

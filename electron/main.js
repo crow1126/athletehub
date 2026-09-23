@@ -128,8 +128,6 @@ const ALLOWED_INTERNAL_ORIGINS = [
 
 const ALLOWED_EXTERNAL_PREFIXES = [
   'https://checkout.moolre.com',
-  'https://paystack.com',
-  'https://checkout.paystack.com',
   'https://github.com',
   'https://release-assets.githubusercontent.com',
   'mailto:admin@apextrackgh.com'

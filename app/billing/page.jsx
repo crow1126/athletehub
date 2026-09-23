@@ -9,8 +9,6 @@ import { PLAN_LIMITS } from '@/lib/subscription'
 import { fetchWithAuth } from '@/lib/tenant'
 import { ShieldCheck, Smartphone } from 'lucide-react'
 
-const PAYSTACK_PUBLIC_KEY = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || 'pk_test_xxxxxxxxxx'
-
 /* ── Custom CSS Animations & Shimmers ── */
 const customStyles = `
   @keyframes shimmer {
@@ -63,17 +61,6 @@ const Icon = {
 
 /* ── Real Logos ── */
 const Logo = {
-  paystack: (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <svg viewBox="0 0 32 32" style={{ width: 18, height: 18 }} fill="none">
-        <rect x="0" y="4" width="24" height="4" rx="2" fill="#09A5DB" />
-        <rect x="0" y="11" width="32" height="4" rx="2" fill="#09A5DB" />
-        <rect x="0" y="18" width="32" height="4" rx="2" fill="#09A5DB" />
-        <rect x="0" y="25" width="16" height="4" rx="2" fill="#09A5DB" />
-      </svg>
-      <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font)', letterSpacing: '-0.03em' }}>paystack</span>
-    </div>
-  ),
   moolre: (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
       <svg viewBox="0 0 120 120" style={{ width: 18, height: 18 }} fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -111,12 +98,6 @@ const STATUS_COLORS = {
 function daysLeft(d){ if(!d)return 0; return Math.max(0,Math.ceil((new Date(d)-new Date())/86400000)) }
 function fmtDate(d) { if(!d)return'—'; return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) }
 
-function loadPaystack(){
-  return new Promise(resolve=>{
-    if(window.PaystackPop){resolve();return}
-    const s=document.createElement('script'); s.src='https://js.paystack.co/v1/inline.js'; s.onload=resolve; document.head.appendChild(s)
-  })
-}
 
 function StatTile({label,value}){
   return(
@@ -163,7 +144,7 @@ function BillingContent(){
   const [isAdmin,   setIsAdmin]   = useState(false)
   const [selPlan,   setSelPlan]   = useState(null)
   const [paying,    setPaying]    = useState(false)
-  const [payMethod, setPayMethod] = useState(null)
+  const [payMethod, setPayMethod] = useState('moolre')
   const [msg,       setMsg]       = useState({text:'',type:''})
   const [billingCycle, setBillingCycle] = useState('monthly') // 'monthly' | 'annual'
   const [verifyStatus, setVerifyStatus] = useState(null) // { type: 'loading'|'success'|'error', text: string }
@@ -193,12 +174,9 @@ function BillingContent(){
       setProfile({...p,email:session.user.email})
       setIsAdmin(p.role==='admin'||p.role==='superadmin')
       if(p.team_id){
-        // Fetch Billing API
         const res=await fetchWithAuth(`/api/billing?team_id=${p.team_id}`)
         const data=await res.json()
         setSub(data.subscription); setHistory(data.history||[])
-
-        // Fetch counts for usage limits
         const [athCountRes, coachCountRes] = await Promise.all([
           supabase.from('athletes').select('id', { count: 'exact', head: true }).eq('team_id', p.team_id),
           supabase.from('coaches').select('id', { count: 'exact', head: true }).eq('team_id', p.team_id)
@@ -219,7 +197,6 @@ function BillingContent(){
     if(ref&&ref.startsWith('APEX-M-')){
       const plan=params.get('plan')
       const team_id=params.get('team_id')
-      // Clean URL immediately
       const url=new URL(window.location.href)
       url.searchParams.delete('ref'); url.searchParams.delete('plan')
       url.searchParams.delete('team_id'); url.searchParams.delete('redirect')
@@ -248,43 +225,6 @@ function BillingContent(){
   // Compute pricing safely
   const planPrice = selPlan ? (billingCycle === 'monthly' ? PLANS[selPlan].price : Math.round(PLANS[selPlan].price * 12 * 0.8)) : 0
   const planUsd   = selPlan ? (billingCycle === 'monthly' ? PLANS[selPlan].usd   : Math.round(PLANS[selPlan].usd * 12 * 0.8)) : 0
-
-  async function handlePaystack(){
-    if(!selPlan){flash('Select a plan first.','error');return}
-    if(!profile?.email){flash('Profile email not found.','error');return}
-    setPaying(true)
-    try{
-      await loadPaystack()
-      const ref=`APEX-${profile.team_id?.slice(0,8)}-${Date.now()}`
-      const handler=window.PaystackPop.setup({
-        key:PAYSTACK_PUBLIC_KEY, email:profile.email,
-        amount:planPrice*100, currency:'GHS', ref,
-        label:`Apex Track — ${PLANS[selPlan].label} (${billingCycle})`,
-        metadata:{custom_fields:[
-          {display_name:'Club',variable_name:'club',value:profile.teams?.name||'Unknown'},
-          {display_name:'Plan',variable_name:'plan',value:selPlan},
-          {display_name:'Cycle',variable_name:'cycle',value:billingCycle},
-          {display_name:'Team ID',variable_name:'team_id',value:profile.team_id},
-        ]},
-        channels:['card','mobile_money','bank'],
-        onClose:()=>{setPaying(false);flash('Payment window closed.','error')},
-        callback:(response)=>{
-          fetchWithAuth('/api/billing',{
-            method:'POST',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({team_id:profile.team_id,plan:selPlan,payment_method:'paystack',payment_ref:response.reference,notes:`Paystack (${billingCycle}) — `+response.reference,requested_by:profile.id}),
-          })
-          .then(r=>r.json())
-          .then(data=>{
-            if(data.error){flash('Activation failed: '+(data.error||'Unknown')+'. Ref: '+response.reference,'error');setPaying(false);return}
-            flash('Payment successful — '+PLANS[selPlan].label+' plan is now active.','success')
-            load().then(()=>setTab('overview')); setPaying(false)
-          })
-          .catch(()=>{flash('Payment received but activation failed. Ref: '+response.reference,'error');setPaying(false)})
-        },
-      })
-      handler.openIframe()
-    }catch(e){flash('Error: '+e.message,'error');setPaying(false)}
-  }
 
   async function handleMoolre(){
     if(!selPlan){flash('Select a plan first.','error');return}

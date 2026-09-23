@@ -33,7 +33,7 @@ export default function TermsPage() {
       <ul>
         <li><strong>Plans:</strong> ApexTrack offers tier-based plans including <em>Starting XI</em> (GHS 199/month) and <em>Captain</em> (GHS 499/month).</li>
         <li><strong>ApexPay Payroll:</strong> ApexPay features (wallet top-ups and Mobile Money payouts) are exclusively available on the Captain plan. Clubs are solely responsible for ensuring sufficient wallet funds and verifying correct MoMo recipient numbers prior to executing payroll disbursements.</li>
-        <li><strong>Renewals &amp; Cancellations:</strong> Subscriptions renew automatically unless cancelled before the renewal date. Payments processed via Paystack or Moolre are non-refundable except where required by law.</li>
+        <li><strong>Renewals &amp; Cancellations:</strong> Subscriptions renew automatically unless cancelled before the renewal date. Payments processed via Moolre are non-refundable except where required by law.</li>
       </ul>
 
       <h2>4. Medical Disclaimer</h2>

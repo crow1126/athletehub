@@ -29,7 +29,7 @@ export default function SecurityPage() {
       <ul>
         <li><strong>Deposit Entitlement Checks:</strong> Wallet balances and spending caps are continuously reconciled against verified MoMo top-up deposits to detect and prevent balance discrepancies.</li>
         <li><strong>Automated Disbursement Freezes:</strong> In the event of an entitlement drift or transaction mismatch, disbursement routes are automatically locked until administrator review.</li>
-        <li><strong>Encrypted Payment Gateways:</strong> Top-ups and payouts are executed via PCI-DSS compliant providers (Moolre &amp; Paystack) over TLS encrypted channels.</li>
+        <li><strong>Encrypted Payment Gateway:</strong> Top-ups and payouts are executed via PCI-DSS compliant Moolre over TLS encrypted channels.</li>
       </ul>
 
       <h2>3. Data Encryption Standards</h2>

@@ -90,6 +90,17 @@ const FEATURES = [
       </span>
     )
   },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="18" rx="4" stroke="#0D9488" strokeWidth="2"/>
+        <path d="M12 8v8M8 12l4-4 4 4" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M7 17h10" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ), 
+    title: 'Smart Bulk Athlete Upload', 
+    desc: 'Import your entire squad from CSV or Excel in seconds. AI-powered column mapping auto-matches your spreadsheet headers, validates positions, detects duplicates, and flags errors — so your roster is onboarded without manual data entry.' 
+  },
 ]
 
 const STATS = [
@@ -2055,11 +2066,10 @@ export default function LandingPage() {
             </div>
             <h2 className="section-title">Download ApexTrack</h2>
             <p className="section-sub" style={{ margin: '0 auto', maxWidth: 480 }}>
-              Install the official native app for a fast, focused football management experience on desktop and mobile.
+              Install the official ApexTrack desktop app for a fast, focused football management experience on Windows.
             </p>
           </div>
 
-          {/* ── PILL DOWNLOAD BUTTONS ── */}
           <div className="dl-pill-group">
             {/* Windows Button */}
             <a
@@ -2082,64 +2092,9 @@ export default function LandingPage() {
               </span>
               <span className="dl-pill-arrow">→</span>
             </a>
-
-            {/* Android Button */}
-            <a
-              href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk"
-              target="_blank"
-              rel="noopener noreferrer"
-              download="ApexTrack.apk"
-              className="dl-pill-btn"
-              id="dl-btn-android"
-            >
-              <span className="dl-pill-left">
-                <span className="dl-pill-icon">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993s-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993s-.4482.9997-.9993.9997m11.4045-6.02l1.996-3.4572c.1558-.2701.0632-.615-.2069-.7708-.2706-.1562-.615-.0636-.7708.2065l-2.0223 3.5029c-1.4699-.672-3.1118-1.0505-4.8775-1.0505-1.7657 0-3.4076.3785-4.8775 1.0505L5.097 5.2999c-.1558-.2701-.5002-.3627-.7708-.2065-.2701.1558-.3627.5007-.2069.7708l1.996 3.4572C2.6847 11.238 0 14.887 0 19.1672h24c0-4.2802-2.6847-7.9292-6.1185-9.8458"/>
-                  </svg>
-                </span>
-                <span className="dl-pill-label">
-                  <strong>Download for Android</strong>
-                  <small>Direct APK Install · Android 8.0+</small>
-                </span>
-              </span>
-              <span className="dl-pill-arrow">→</span>
-            </a>
           </div>
 
-          {/* ── INSTALL STEPS CARD ── */}
-          <div className="dl-install-card">
-            <div className="dl-install-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#0F172A" strokeWidth="2"/>
-                <path d="M12 8v5M12 16h.01" stroke="#0F172A" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-              Android Install Guide
-            </div>
-            <div className="dl-install-steps">
-              <div className="dl-install-step">
-                <div className="dl-step-num">1</div>
-                <div className="dl-step-text">
-                  <strong>Download the APK</strong> — tap the Android button above and save the file.
-                </div>
-              </div>
-              <div className="dl-install-step">
-                <div className="dl-step-num">2</div>
-                <div className="dl-step-text">
-                  <strong>Allow unknown sources</strong> — go to Settings → Apps → Special Access → Install Unknown Apps and enable your browser or file manager.
-                </div>
-              </div>
-              <div className="dl-install-step">
-                <div className="dl-step-num">3</div>
-                <div className="dl-step-text">
-                  <strong>Open the APK</strong> — tap the downloaded file and press Install. ApexTrack will appear on your home screen.
-                </div>
-              </div>
-            </div>
-            <div className="dl-ios-strip">
-              <strong>iPhone / iPad?</strong> Apple restricts direct APK installs. Open <strong>apextrackgh.com</strong> in Safari and tap Share → Add to Home Screen for a full PWA experience.
-            </div>
-          </div>
+
 
         </section>
       )}

@@ -12,6 +12,7 @@ const POSITION_MAP = {
   'goalkeeper': 'GK', 'goal keeper': 'GK', 'gk': 'GK',
   'centre back': 'CB', 'center back': 'CB', 'central back': 'CB',
   'central defender': 'CB', 'centreback': 'CB', 'cb': 'CB',
+  'full back': 'CB', 'fullback': 'CB', 'back': 'CB',
   'right back': 'RB', 'rightback': 'RB', 'rb': 'RB',
   'left back': 'LB', 'leftback': 'LB', 'lb': 'LB',
   'right wing back': 'RWB', 'right wingback': 'RWB', 'rwb': 'RWB',
@@ -29,7 +30,6 @@ const POSITION_MAP = {
   'centre forward': 'CF', 'center forward': 'CF', 'cf': 'CF',
   'second striker': 'SS', 'support striker': 'SS', 'ss': 'SS',
   'striker': 'ST', 'centre striker': 'ST', 'center striker': 'ST',
-  'centre-forward': 'ST', 'center-forward': 'ST',
   'forward': 'ST', 'st': 'ST', 'attacker': 'ST',
 }
 
@@ -43,7 +43,8 @@ const STATUS_MAP = {
 
 function normalisePosition(raw) {
   if (!raw) return null
-  const lower = raw.toLowerCase().trim()
+  // Normalise hyphens → spaces so "Centre-Back" matches "centre back"
+  const lower = raw.trim().toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
   if (POSITION_MAP[lower]) return POSITION_MAP[lower]
   // Pass through if it's already a valid code (case-insensitive)
   const upper = raw.trim().toUpperCase()

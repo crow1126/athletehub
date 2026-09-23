@@ -49,7 +49,7 @@ export default function PrivacyPage() {
       <ul>
         <li><strong>Supabase</strong> — Cloud database, user authentication, and encrypted file storage.</li>
         <li><strong>Vercel</strong> — Web application hosting, serverless execution, and edge routing.</li>
-        <li><strong>Paystack &amp; Moolre</strong> — Mobile Money (MTN MoMo, Telecel Cash, AT Money) and card payment processing for club subscriptions and wallet top-ups.</li>
+        <li><strong>Moolre</strong> — Mobile Money (MTN MoMo, Telecel Cash, AT Money) and card payment processing for club subscriptions and wallet top-ups via our official Ghana payment gateway.</li>
         <li><strong>Resend</strong> — Transactional email delivery for notifications and verification emails.</li>
       </ul>
 

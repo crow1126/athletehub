@@ -124,7 +124,7 @@ function ColumnMappingView({
   })
   const duplicates = Object.keys(mappedCounts).filter(h => mappedCounts[h] > 1)
 
-  const isFullNameMapped = Boolean(mapping.full_name)
+  const isFullNameMapped = Boolean(mapping.full_name || mapping.first_name)
   const canProceed = isFullNameMapped && duplicates.length === 0
 
   return (
@@ -141,7 +141,7 @@ function ColumnMappingView({
         <p style={{ margin: '4px 0 0', fontSize: 12, color: SLATE, lineHeight: 1.4 }}>
           {hasAiSuggestions
             ? 'We used local rules and Gemini AI to suggest matches for your file headers. Please review and confirm below before proceeding.'
-            : 'Match each profile field to the corresponding column header from your uploaded file. Full Name is required.'}
+            : 'Match each profile field to the corresponding column header from your uploaded file. Full Name (or First Name) is required.'}
         </p>
       </div>
 
@@ -153,7 +153,7 @@ function ColumnMappingView({
 
       {!isFullNameMapped && (
         <div style={{ background: RED_BG, border: '1px solid rgba(225,29,72,0.2)', borderRadius: 10, padding: '10px 14px', fontSize: 12, color: RED, fontWeight: 600 }}>
-          <IconErr /> Full Name is required. Please map a column to Full Name to continue.
+          <IconErr /> Full Name or First Name is required. Please map a column to continue.
         </div>
       )}
 
@@ -296,10 +296,12 @@ function PreviewTable({ rows }) {
   const cols = [
     { key: '_status', label: '' },
     { key: 'full_name',    label: 'Full Name' },
+    { key: 'status',       label: 'Status' },
     { key: 'position',     label: 'Position' },
     { key: 'date_of_birth',label: 'DOB' },
     { key: 'back_number',  label: 'Jersey #' },
     { key: 'phone',        label: 'Phone' },
+    { key: 'nationality',  label: 'Nationality' },
     { key: 'email',        label: 'Email' },
   ]
 
@@ -337,6 +339,16 @@ function PreviewTable({ rows }) {
               <td style={{ padding: '8px 12px', fontWeight: 600, color: SLATE, whiteSpace: 'nowrap' }}>
                 {row.full_name || <span style={{ color: RED, fontStyle: 'italic' }}>missing</span>}
               </td>
+              {/* status */}
+              <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 99,
+                  background: row.status === 'Injured' ? '#FEE2E2' : row.status === 'Suspended' ? '#FEF3C7' : '#ECFDF5',
+                  color: row.status === 'Injured' ? '#DC2626' : row.status === 'Suspended' ? '#B45309' : '#059669',
+                }}>
+                  {row.status || 'Active'}
+                </span>
+              </td>
               {/* position */}
               <td style={{ padding: '8px 12px', color: row.position ? TEAL : RED }}>
                 {row.position || <span style={{ fontStyle: 'italic' }}>missing</span>}
@@ -347,6 +359,8 @@ function PreviewTable({ rows }) {
               <td style={{ padding: '8px 12px', color: SLATE }}>{row.back_number || '—'}</td>
               {/* phone */}
               <td style={{ padding: '8px 12px', color: SLATE }}>{row.phone || '—'}</td>
+              {/* nationality */}
+              <td style={{ padding: '8px 12px', color: SLATE }}>{row.nationality || '—'}</td>
               {/* email */}
               <td style={{ padding: '8px 12px', color: SLATE, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {row.email || '—'}
@@ -514,7 +528,7 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
 
   // ── Confirm Mapping & Proceed to Preview ─────────────────────────────────
   const handleConfirmMapping = useCallback(() => {
-    if (!mapping.full_name) return
+    if (!mapping.full_name && !mapping.first_name) return
 
     // Save mapping if opted in
     if (rememberMapping && storageKey) {
@@ -545,10 +559,8 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
     setImportError(null)
     setView('importing')
 
-    // Strip internal fields before sending
-    const payload = validRows.map(({ full_name, date_of_birth, position, back_number, phone, email }) => ({
-      full_name, date_of_birth, position, back_number, phone, email,
-    }))
+    // Strip internal fields before sending, forwarding all parsed biodata
+    const payload = validRows.map(({ _rowIndex, _valid, _errors, ...athleteData }) => athleteData)
 
     try {
       const res = await fetchWithAuth('/api/athletes/bulk', {

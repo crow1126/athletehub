@@ -17,7 +17,7 @@ function AthleteAvatar({ ath, size=38, index=0 }) {
 // Match "Register Athlete" modal look & feel
 const inp={width:'100%',padding:'10px 14px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:'12px',fontSize:14,outline:'none',color:'#0F172A',fontFamily:'var(--font)',transition:'border-color 0.2s'}
 const lbl={display:'block',fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:'#64748B',marginBottom:6}
-const EMPTY={athlete_id:'',match_date:new Date().toISOString().split('T')[0],opponent:'',minutes_played:90,goals:0,assists:0,shots:0,shots_on_target:0,passes:0,pass_accuracy:0,distance_km:0,sprint_count:0,duels_won:0,duels_total:0,xg:0,xa:0,rating:0,notes:''}
+const EMPTY={athlete_id:'',match_date:new Date().toISOString().split('T')[0],opponent:'',minutes_played:90,goals:0,assists:0,shots:0,shots_on_target:0,passes:0,pass_accuracy:0,distance_km:0,sprint_count:0,duels_won:0,duels_total:0,xg:0,xa:0,rating:0,notes:'',red_card:false,suspension_games:1,update_status_suspended:true}
 
 export default function PerformancePage(){
   const [stats,        setStats]       = useState([])
@@ -39,8 +39,8 @@ export default function PerformancePage(){
     const { teamId: currentTeamId } = await getTenantProfile()
     setTeamId(currentTeamId)
     const [{data:s},{data:a}]=await Promise.all([
-      scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url)'), currentTeamId).order('match_date',{ascending:false}),
-      scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url'), currentTeamId).order('name'),
+      scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url,status,back_number)'), currentTeamId).order('match_date',{ascending:false}),
+      scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url,status,back_number'), currentTeamId).order('name'),
     ])
     setStats(s||[])
     setAthletes(a||[])
@@ -53,16 +53,59 @@ export default function PerformancePage(){
 
   const set=k=>v=>setForm(f=>({...f,[k]:v}))
   function openAdd(){setEditId(null);setForm(EMPTY);setShowForm(true)}
-  function openEdit(s){setEditId(s.id);setForm({athlete_id:s.athlete_id||'',match_date:s.match_date||'',opponent:s.opponent||'',minutes_played:s.minutes_played||0,goals:s.goals||0,assists:s.assists||0,shots:s.shots||0,shots_on_target:s.shots_on_target||0,passes:s.passes||0,pass_accuracy:s.pass_accuracy||0,distance_km:s.distance_km||0,sprint_count:s.sprint_count||0,duels_won:s.duels_won||0,duels_total:s.duels_total||0,xg:s.xg||0,xa:s.xa||0,rating:s.rating||0,notes:s.notes||''});setShowForm(true)}
+  function openEdit(s){
+    const hasRed = (s.notes||'').includes('Red Card')
+    setEditId(s.id)
+    setForm({
+      athlete_id:s.athlete_id||'',
+      match_date:s.match_date||'',
+      opponent:s.opponent||'',
+      minutes_played:s.minutes_played||0,
+      goals:s.goals||0,
+      assists:s.assists||0,
+      shots:s.shots||0,
+      shots_on_target:s.shots_on_target||0,
+      passes:s.passes||0,
+      pass_accuracy:s.pass_accuracy||0,
+      distance_km:s.distance_km||0,
+      sprint_count:s.sprint_count||0,
+      duels_won:s.duels_won||0,
+      duels_total:s.duels_total||0,
+      xg:s.xg||0,
+      xa:s.xa||0,
+      rating:s.rating||0,
+      notes:s.notes||'',
+      red_card:hasRed,
+      suspension_games:1,
+      update_status_suspended:false,
+    })
+    setShowForm(true)
+  }
+
+  async function handleReinstate(athleteId, athleteName) {
+    if (!confirm(`Reinstate ${athleteName} to Active? They will become available for matchday selection.`)) return
+    const { error } = await scopeTeam(supabase.from('athletes').update({ status: 'Active' }).eq('id', athleteId), teamId)
+    if (error) alert('Failed: ' + error.message)
+    else fetchData()
+  }
 
   async function handleSave(){
     if (!form.athlete_id) return alert('Select athlete.')
     if (!teamId) return alert('Your account is not assigned to a team.')
     setSaving(true)
+
+    let finalNotes = form.notes || ''
+    if (form.red_card) {
+      const banText = `[🔴 Red Card: Suspended for ${form.suspension_games || 1} match${(parseInt(form.suspension_games) || 1) > 1 ? 'es' : ''}]`
+      if (!finalNotes.includes('Red Card')) {
+        finalNotes = finalNotes ? `${banText} ${finalNotes}` : banText
+      }
+    }
+
     const payload={
-      ...form,
-      team_id:teamId,
-      notified:false,           // always saved as draft until analyst publishes
+      athlete_id:form.athlete_id,
+      match_date:form.match_date,
+      opponent:form.opponent,
       minutes_played:parseInt(form.minutes_played)||0,
       goals:parseInt(form.goals)||0,
       assists:parseInt(form.assists)||0,
@@ -77,17 +120,26 @@ export default function PerformancePage(){
       xg:parseFloat(form.xg)||0,
       xa:parseFloat(form.xa)||0,
       rating:parseFloat(form.rating)||0,
+      notes:finalNotes,
+      team_id:teamId,
+      notified:false,           // always saved as draft until analyst publishes
     }
     if (editId){
       const {error}=await scopeTeam(supabase.from('performance_stats').update(payload).eq('id',editId), teamId)
-      if(error) alert(error.message)
-      else { setShowForm(false); fetchData() }
+      if(error) { alert(error.message); setSaving(false); return }
     } else {
       const {error}=await supabase.from('performance_stats').insert([payload])
-      if(error) alert(error.message)
-      // ⬇ No per-save notification — analyst uses Publish & Notify All when done
-      else { setShowForm(false); setForm(EMPTY); fetchData() }
+      if(error) { alert(error.message); setSaving(false); return }
     }
+
+    // Auto-update athlete status to Suspended if red card was flagged
+    if (form.red_card && form.update_status_suspended && form.athlete_id) {
+      await scopeTeam(supabase.from('athletes').update({ status: 'Suspended' }).eq('id', form.athlete_id), teamId)
+    }
+
+    setShowForm(false)
+    if (!editId) setForm(EMPTY)
+    fetchData()
     setSaving(false)
   }
 
@@ -190,6 +242,64 @@ export default function PerformancePage(){
             </div>
           </div>
         )}
+
+        {/* ── Suspended Players / Disciplinary Status Banner ── */}
+        {(() => {
+          const suspendedAthletes = athletes.filter(a => (a.status || '').toLowerCase() === 'suspended')
+          if (suspendedAthletes.length === 0) return null
+          return (
+            <div className="fade-up" style={{
+              background: '#FFFBEB',
+              border: '1.5px solid #FCD34D',
+              borderRadius: 14,
+              padding: '14px 18px',
+              marginBottom: 20,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              flexWrap: 'wrap',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
+                  🚫
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: '#92400E' }}>
+                    {suspendedAthletes.length} Player{suspendedAthletes.length > 1 ? 's' : ''} Suspended (Unavailable for Matchday Selection)
+                  </div>
+                  <div style={{ fontSize: 12, color: '#B45309', marginTop: 2 }}>
+                    {suspendedAthletes.map(a => `${a.name}${a.back_number ? ' #' + a.back_number : ''}`).join(', ')}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {suspendedAthletes.map(a => (
+                  <button
+                    key={a.id}
+                    onClick={() => handleReinstate(a.id, a.name)}
+                    title={`Reinstate ${a.name} to active match status`}
+                    style={{
+                      background: '#FFFFFF',
+                      border: '1px solid #D97706',
+                      color: '#92400E',
+                      padding: '5px 12px',
+                      borderRadius: 8,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    ✓ Lift Ban for {a.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
         {/* Leaderboard with photos */}
         {lb.length>0&&(
@@ -317,6 +427,70 @@ export default function PerformancePage(){
                 <div><label style={lbl}>xG</label><input type="number" step="0.001" min="0" value={form.xg} onChange={e=>set('xg')(e.target.value)} style={inp}/></div>
                 <div><label style={lbl}>xA</label><input type="number" step="0.001" min="0" value={form.xa} onChange={e=>set('xa')(e.target.value)} style={inp}/></div>
               </div>
+              {/* ── Disciplinary & Red Card ── */}
+              <div style={{
+                background: form.red_card ? '#FFF1F2' : '#F8FAFC',
+                border: `1.5px solid ${form.red_card ? '#FDA4AF' : '#E2E8F0'}`,
+                borderRadius: 12,
+                padding: '12px 16px',
+                transition: 'all 0.2s',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', margin: 0 }}>
+                    <input
+                      type="checkbox"
+                      checked={form.red_card}
+                      onChange={e => setForm(f => ({ ...f, red_card: e.target.checked, update_status_suspended: e.target.checked }))}
+                      style={{ width: 18, height: 18, accentColor: '#E11D48', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: form.red_card ? '#BE123C' : '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      🟥 Red Card / Match Suspension
+                    </span>
+                  </label>
+                  {form.red_card && (
+                    <span style={{ fontSize: 11, background: '#FFE4E6', color: '#BE123C', padding: '2px 8px', borderRadius: 6, fontWeight: 800 }}>
+                      Suspension Active
+                    </span>
+                  )}
+                </div>
+
+                {form.red_card && (
+                  <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid #FECDD3', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                      <div>
+                        <label style={{ ...lbl, color: '#BE123C' }}>Suspension Length</label>
+                        <select
+                          value={form.suspension_games}
+                          onChange={e => setForm(f => ({ ...f, suspension_games: parseInt(e.target.value) || 1 }))}
+                          style={{ ...inp, background: '#FFFFFF', borderColor: '#FDA4AF' }}
+                        >
+                          <option value="1">1 Match Ban (Standard / 2nd Yellow)</option>
+                          <option value="2">2 Matches Ban (Serious Foul Play)</option>
+                          <option value="3">3 Matches Ban (Violent Conduct)</option>
+                          <option value="4">4 Matches Ban</option>
+                          <option value="5">5+ Matches Ban</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ ...lbl, color: '#BE123C' }}>Automatic Squad Status</label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, cursor: 'pointer', fontSize: 12, color: '#9F1239', fontWeight: 600 }}>
+                          <input
+                            type="checkbox"
+                            checked={form.update_status_suspended}
+                            onChange={e => setForm(f => ({ ...f, update_status_suspended: e.target.checked }))}
+                            style={{ width: 16, height: 16, accentColor: '#E11D48' }}
+                          />
+                          Mark player &ldquo;Suspended&rdquo; (blocks matchday selection)
+                        </label>
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 11, color: '#9F1239', lineHeight: 1.4 }}>
+                      ℹ️ Suspended players are automatically excluded from Starting XI and Substitutes selection in Matchday Call-Ups until reinstated.
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <div><label style={lbl}>Notes</label><textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={2} style={{ ...inp,resize:'vertical' }}/></div>
               <div style={{ display:'flex',gap:10,paddingTop:8 }}>
                 <button onClick={()=>setShowForm(false)} style={{ flex:1,background:'#F1F5F9',border:'1px solid #E2E8F0',color:'#334155',padding:'11px',borderRadius:'12px',fontSize:14,cursor:'pointer',fontWeight:700,fontFamily:'var(--font)' }}>Cancel</button>

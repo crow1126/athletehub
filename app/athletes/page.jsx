@@ -31,6 +31,7 @@ const EMPTY     = {
   height: '',
   weight: '',
   coach_id: '',
+  status: 'Active',
   // New fields:
   first_name: '',
   last_name: '',
@@ -226,7 +227,8 @@ export default function AthletesPage() {
       contract_details: ath.contract_details||'',
       iban: ath.iban||'',
       bic: ath.bic||'',
-      tax_id: ath.tax_id||''
+      tax_id: ath.tax_id||'',
+      status: ath.status||'Active'
     })
     setPhotoFile(null); setPhotoPreview(ath.photo_url||null); setFormError(''); setShowForm(true)
   }
@@ -326,6 +328,7 @@ export default function AthletesPage() {
       iban: form.iban.trim() || null,
       bic: form.bic.trim() || null,
       tax_id: form.tax_id.trim() || null,
+      status: form.status || 'Active',
     }
     if (editId) {
       const url = await uploadPhoto(editId)
@@ -334,7 +337,7 @@ export default function AthletesPage() {
       if (error) { setFormError('Update failed: '+error.message); setSaving(false); return }
       setShowForm(false); fetchData()
     } else {
-      const { data, error } = await supabase.from('athletes').insert([{ ...payload, status:'Active' }]).select().single()
+      const { data, error } = await supabase.from('athletes').insert([payload]).select().single()
       if (error) { setFormError('Save failed: '+error.message); setSaving(false); return }
       const url = await uploadPhoto(data.id)
       if (url) await scopeTeam(supabase.from('athletes').update({ photo_url:url }).eq('id', data.id), teamId)
@@ -552,6 +555,46 @@ export default function AthletesPage() {
 
               {/* Master Data Header */}
               <div style={{ borderBottom:'2px solid #0D9488', paddingBottom:4, marginTop:8, fontSize:12, fontWeight:800, color:'#0F766E', letterSpacing:'0.05em' }}>MASTER DATA</div>
+
+              {/* Status Selector */}
+              <div>
+                <label style={lbl}>Athlete Status & Availability</label>
+                <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
+                  {[
+                    { val:'Active', label:'Active (Available)', bg:'#ECFDF5', color:'#059669', dot:'#10B981' },
+                    { val:'Injured', label:'Injured (Unavailable)', bg:'#FEF2F2', color:'#DC2626', dot:'#EF4444' },
+                    { val:'Suspended', label:'Suspended (e.g. Red Card)', bg:'#FEF9E7', color:'#B45309', dot:'#F59E0B' },
+                  ].map(s => {
+                    const sel = (form.status || 'Active') === s.val
+                    return (
+                      <button
+                        key={s.val}
+                        type="button"
+                        onClick={() => set('status')(s.val)}
+                        style={{
+                          flex: 1, minWidth: 140,
+                          padding: '8px 12px',
+                          borderRadius: '10px',
+                          border: `1.5px solid ${sel ? s.color : '#E2E8F0'}`,
+                          background: sel ? s.bg : '#F8FAFC',
+                          color: sel ? s.color : '#64748B',
+                          fontWeight: sel ? 800 : 600,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 6,
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.dot }} />
+                        {s.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
 
               {/* First Name + Last Name */}
               <div className="modal-g2">

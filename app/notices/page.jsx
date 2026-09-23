@@ -231,12 +231,23 @@ export default function NoticeBoardPage() {
     }
   }, [loadData, teamId])
 
-  // Eligible athletes for matchday call-up (not injured)
+  // Suspended athletes (e.g. red cards / disciplinary)
+  const suspendedAthletes = useMemo(() => {
+    return athletes.filter(a => (a.status || '').toLowerCase() === 'suspended')
+  }, [athletes])
+
+  // Injured athletes
+  const injuredAthletes = useMemo(() => {
+    return athletes.filter(a => (a.status || '').toLowerCase() === 'injured' || injuredIds.has(a.id))
+  }, [athletes, injuredIds])
+
+  // Eligible athletes for matchday call-up (not injured and not suspended)
   const eligibleForCallUp = useMemo(() => {
     return athletes.filter(a => {
       const statusIsInjured = (a.status || '').toLowerCase() === 'injured'
       const hasActiveInjury = injuredIds.has(a.id)
-      return !statusIsInjured && !hasActiveInjury
+      const statusIsSuspended = (a.status || '').toLowerCase() === 'suspended'
+      return !statusIsInjured && !hasActiveInjury && !statusIsSuspended
     })
   }, [athletes, injuredIds])
 
@@ -790,11 +801,21 @@ export default function NoticeBoardPage() {
                 </div>
 
                 {/* ── INJURED PLAYERS WARNING ── */}
-                {injuredIds.size > 0 && (
+                {injuredAthletes.length > 0 && (
                   <div style={{ background: '#FFF7ED', border: '1px solid #FDE68A', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <ShieldAlert size={15} color="#D97706" />
                     <span style={{ fontSize: 12, fontWeight: 600, color: '#92400E' }}>
-                      {injuredIds.size} player{injuredIds.size > 1 ? 's are' : ' is'} currently injured and have been automatically excluded from selection below.
+                      {injuredAthletes.length} player{injuredAthletes.length > 1 ? 's are' : ' is'} currently injured and automatically excluded from matchday selection: {injuredAthletes.map(a => getPlayerName(a)).join(', ')}.
+                    </span>
+                  </div>
+                )}
+
+                {/* ── SUSPENDED PLAYERS WARNING ── */}
+                {suspendedAthletes.length > 0 && (
+                  <div style={{ background: '#FEF9E7', border: '1.5px solid #FDE68A', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 15 }}>🚫</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>
+                      {suspendedAthletes.length} player{suspendedAthletes.length > 1 ? 's are' : ' is'} suspended (red card / disciplinary ban) and cannot be selected: {suspendedAthletes.map(a => `${getPlayerName(a)}${a.back_number ? ' #' + a.back_number : ''}`).join(', ')}.
                     </span>
                   </div>
                 )}
@@ -817,7 +838,7 @@ export default function NoticeBoardPage() {
 
                   {eligibleForCallUp.length === 0 ? (
                     <div style={{ textAlign: 'center', padding: '24px', color: '#94A3B8', fontSize: 13 }}>
-                      No eligible (non-injured) players found in squad.
+                      No eligible (available, non-injured, non-suspended) players found in squad.
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 8 }}>

@@ -392,23 +392,63 @@ export async function POST(req) {
       continue
     }
 
-    // Derive first_name / last_name from full_name
-    const parts      = full_name.split(' ')
-    const first_name = parts[0] || null
-    const last_name  = parts.length > 1 ? parts.slice(1).join(' ') : null
+    // First / Last Name
+    let first_name = (r.first_name || '').toString().trim()
+    let last_name  = (r.last_name  || '').toString().trim()
+    if (!first_name && !last_name) {
+      const parts = full_name.split(' ')
+      first_name = parts[0] || null
+      last_name  = parts.length > 1 ? parts.slice(1).join(' ') : null
+    }
 
     const position = normalisePosition(position_raw)
     const status   = normaliseStatus(r.status || '')
 
     // Only include fields that have actual values — avoids hitting NOT NULL
     // constraints on columns the DB may not allow nulls for.
-    const payload = { name: full_name, first_name, team_id, status }
+    const payload = { name: full_name, team_id, status }
+    if (first_name)   payload.first_name   = first_name
     if (last_name)    payload.last_name    = last_name
     if (position)     payload.position     = position
     if (date_of_birth)payload.date_of_birth= date_of_birth
     if (back_number)  payload.back_number  = back_number
     if (phone)        payload.phone        = phone
     if (email)        payload.email        = email
+
+    // Extended biodata fields
+    if (r.age && !isNaN(parseInt(r.age, 10))) payload.age = parseInt(r.age, 10)
+    if (r.nationality)       payload.nationality       = String(r.nationality).trim()
+    if (r.country)           payload.country           = String(r.country).trim()
+    if (r.place_of_birth)    payload.place_of_birth    = String(r.place_of_birth).trim()
+    if (r.membership_number) payload.membership_number = String(r.membership_number).trim()
+    if (r.address)           payload.address           = String(r.address).trim()
+    if (r.strong_foot)       payload.strong_foot       = String(r.strong_foot).trim()
+    if (r.team_section)      payload.team_section      = String(r.team_section).trim()
+    if (r.passport_number)   payload.passport_number   = String(r.passport_number).trim()
+    if (r.wrist_measurement) payload.wrist_measurement = String(r.wrist_measurement).trim()
+    if (r.height && !isNaN(parseFloat(r.height))) payload.height = parseFloat(r.height)
+    if (r.weight && !isNaN(parseFloat(r.weight))) payload.weight = parseFloat(r.weight)
+    if (r.current_club || r.club) {
+      const c = String(r.current_club || r.club).trim()
+      payload.club = c
+      payload.current_club = c
+    }
+    if (r.last_club)         payload.last_club         = String(r.last_club).trim()
+    if (r.in_club_since)     payload.in_club_since     = String(r.in_club_since).trim()
+    if (r.contract_until)    payload.contract_until    = String(r.contract_until).trim()
+    if (r.contract_option_until) payload.contract_option_until = String(r.contract_option_until).trim()
+    if (r.contract_details)  payload.contract_details  = String(r.contract_details).trim()
+    if (r.clothing_size)     payload.clothing_size     = String(r.clothing_size).trim()
+    if (r.shoe_size)         payload.shoe_size         = String(r.shoe_size).trim()
+    if (r.number_lettering)  payload.number_lettering  = String(r.number_lettering).trim()
+    if (r.landline)          payload.landline          = String(r.landline).trim()
+    if (r.homepage)          payload.homepage          = String(r.homepage).trim()
+    if (r.facebook)          payload.facebook          = String(r.facebook).trim()
+    if (r.instagram)         payload.instagram         = String(r.instagram).trim()
+    if (r.snapchat)          payload.snapchat          = String(r.snapchat).trim()
+    if (r.iban)              payload.iban              = String(r.iban).trim()
+    if (r.bic)               payload.bic               = String(r.bic).trim()
+    if (r.tax_id)            payload.tax_id            = String(r.tax_id).trim()
 
     toInsert.push(payload)
   }

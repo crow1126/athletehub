@@ -265,6 +265,24 @@ export default function AthletesPage() {
     if (!fullName) { setFormError('Name is required.'); return }
     if (!form.position)    { setFormError('Position is required.'); return }
     if (!teamId)           { setFormError('Your account is not assigned to a team.'); return }
+
+    // ── Jersey number uniqueness check ────────────────────────────────────────
+    const jerseyVal = form.back_number.trim()
+    if (jerseyVal) {
+      let query = supabase
+        .from('athletes')
+        .select('id, name')
+        .eq('team_id', teamId)
+        .eq('back_number', jerseyVal)
+      // Exclude the athlete being edited from the conflict check
+      if (editId) query = query.neq('id', editId)
+      const { data: conflict } = await query.limit(1).maybeSingle()
+      if (conflict) {
+        setFormError(`Jersey #${jerseyVal} is already assigned to ${conflict.name}. Each athlete must have a unique jersey number.`)
+        return
+      }
+    }
+
     setSaving(true)
     const payload = {
       name: fullName,

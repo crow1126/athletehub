@@ -344,6 +344,18 @@ export async function POST(req) {
   const NUMERIC  = /^\d+$/
   const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/
 
+  // Pre-fetch jersey numbers already taken by existing athletes on this team
+  const { data: existingAthletes } = await db
+    .from('athletes')
+    .select('back_number')
+    .eq('team_id', team_id)
+    .not('back_number', 'is', null)
+
+  const takenJerseys = new Set((existingAthletes || []).map(a => String(a.back_number).trim()))
+
+  // Track jersey numbers used within this batch to catch within-file duplicates
+  const batchJerseys = {} // jersey → row index (1-based)
+
   const toInsert  = []
   const rowErrors = []
 
@@ -363,6 +375,17 @@ export async function POST(req) {
     if (date_of_birth && !DATE_ISO.test(date_of_birth)) errs.push('date_of_birth must be YYYY-MM-DD')
     if (back_number   && !NUMERIC.test(back_number))    errs.push('back_number must be numeric')
     if (email         && !EMAIL_RE.test(email))          errs.push('email is invalid')
+
+    // Jersey uniqueness checks
+    if (back_number && NUMERIC.test(back_number)) {
+      if (takenJerseys.has(back_number)) {
+        errs.push(`jersey #${back_number} is already assigned to an existing athlete on this team`)
+      } else if (batchJerseys[back_number] !== undefined) {
+        errs.push(`jersey #${back_number} is a duplicate within this import (first seen at row ${batchJerseys[back_number]})`)
+      } else {
+        batchJerseys[back_number] = i + 1
+      }
+    }
 
     if (errs.length) {
       rowErrors.push(`Row ${i + 1} (${full_name || 'unnamed'}): ${errs.join('; ')}`)

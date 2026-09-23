@@ -27,6 +27,7 @@ const POSITION_MAP = {
   'defender': 'CB', 'defense': 'CB', 'defence': 'CB',
   'centre back': 'CB', 'center back': 'CB', 'central back': 'CB',
   'central defender': 'CB', 'centreback': 'CB', 'cb': 'CB',
+  'full back': 'CB', 'fullback': 'CB', 'back': 'CB',
   'right back': 'RB', 'rightback': 'RB', 'rb': 'RB',
   'left back': 'LB', 'leftback': 'LB', 'lb': 'LB',
   'right wing back': 'RWB', 'right wingback': 'RWB', 'rwb': 'RWB',
@@ -54,7 +55,7 @@ const VALID_POS_LIST = [...VALID_POSITIONS].join(', ')
 function normalisePosition(raw) {
   if (!raw) return { code: null, error: null }
   const trimmed = String(raw).trim()
-  const lower   = trimmed.toLowerCase()
+  const lower   = trimmed.toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
   if (POSITION_MAP[lower]) return { code: POSITION_MAP[lower], error: null }
   const upper = trimmed.toUpperCase()
   if (VALID_POSITIONS.has(upper)) return { code: upper, error: null }
@@ -424,6 +425,8 @@ describe('normalisePosition & normaliseDate helpers', () => {
     expect(normalisePosition('goalkeeper').code).toBe('GK')
     expect(normalisePosition('striker').code).toBe('ST')
     expect(normalisePosition('central back').code).toBe('CB')
+    expect(normalisePosition('Centre-Back').code).toBe('CB')
+    expect(normalisePosition('Full-Back').code).toBe('CB')
     expect(normalisePosition('lw').code).toBe('LW')
     expect(normalisePosition('unknown_xyz').code).toBeNull()
   })

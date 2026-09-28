@@ -14,7 +14,10 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata = {
-  metadataBase: new URL('https://apextrackgh.com'),
+  metadataBase: new URL('https://www.apextrackgh.com'),
+  alternates: {
+    canonical: '/',
+  },
   title: {
     default: 'ApexTrack - Complete Football Club Management Platform',
     template: '%s | ApexTrack',
@@ -36,7 +39,7 @@ export const metadata = {
   openGraph: {
     title: 'ApexTrack - Complete Football Club Management Platform',
     description: 'Premier football club management, scouting, and athlete tracking platform.',
-    url: 'https://apextrackgh.com',
+    url: 'https://www.apextrackgh.com',
     siteName: 'ApexTrack',
     locale: 'en_GH',
     type: 'website',

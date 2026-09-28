@@ -16,4 +16,4 @@ Disallow: /coaches/
 Disallow: /athletes/
 Disallow: /performance/
 
-Sitemap: https://apextrackgh.com/sitemap.xml
+Sitemap: https://www.apextrackgh.com/sitemap.xml

@@ -14,8 +14,33 @@ const jakarta = Plus_Jakarta_Sans({
 })
 
 export const metadata = {
-  title: 'ApexTrack',
-  description: 'Complete football club management platform',
+  metadataBase: new URL('https://apextrackgh.com'),
+  title: {
+    default: 'ApexTrack - Complete Football Club Management Platform',
+    template: '%s | ApexTrack',
+  },
+  description: 'ApexTrack (apextrackgh) is the premier football club management and scouting platform in Ghana and Africa. Track athlete performance, transfers, match schedules, contracts, and player development.',
+  keywords: [
+    'apextrack',
+    'apextrackgh',
+    'ApexTrack Ghana',
+    'football club management',
+    'Ghana football scouting',
+    'soccer scouting platform',
+    'athlete tracking system',
+    'Ghana Premier League analytics',
+  ],
+  authors: [{ name: 'ApexTrack' }],
+  creator: 'ApexTrack',
+  publisher: 'ApexTrack',
+  openGraph: {
+    title: 'ApexTrack - Complete Football Club Management Platform',
+    description: 'Premier football club management, scouting, and athlete tracking platform.',
+    url: 'https://apextrackgh.com',
+    siteName: 'ApexTrack',
+    locale: 'en_GH',
+    type: 'website',
+  },
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -26,6 +51,9 @@ export const metadata = {
     icon: '/logo.png',
     shortcut: '/logo.png',
     apple: '/logo.png',
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || '',
   },
 }
 

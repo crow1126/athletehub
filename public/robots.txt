@@ -1,0 +1,19 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard/
+Disallow: /superadmin/
+Disallow: /billing/
+Disallow: /settings/
+Disallow: /player-hub/
+Disallow: /scouting/
+Disallow: /contracts/
+Disallow: /transfers/
+Disallow: /injuries/
+Disallow: /reports/
+Disallow: /schedule/
+Disallow: /coaches/
+Disallow: /athletes/
+Disallow: /performance/
+
+Sitemap: https://apextrackgh.com/sitemap.xml

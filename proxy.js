@@ -16,8 +16,8 @@ function getCookieDomain(hostname) {
 }
 
 // Routes that don't require authentication
-const PUBLIC_PREFIXES = ['/login', '/auth', '/privacy', '/terms', '/security', '/api/', '/forgot-password']
-const PUBLIC_EXACT    = ['/']
+const PUBLIC_PREFIXES = ['/login', '/auth', '/privacy', '/terms', '/security', '/api/', '/forgot-password', '/download', '/sitemap', '/robots']
+const PUBLIC_EXACT    = ['/', '/sitemap.xml', '/robots.txt']
 
 export async function proxy(request) {
   const url      = request.nextUrl.clone()
@@ -74,13 +74,14 @@ export async function proxy(request) {
 
   // ── 2. Handle root path (/) and public routes ─────────────────────────────
   const checkPath = rewriteUrl?.pathname ?? request.nextUrl.pathname
-  const isStatic = checkPath.match(/\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot|ico)$/)
+  const isStatic = checkPath.match(/\.(?:svg|png|jpg|jpeg|gif|webp|woff2?|ttf|otf|eot|ico|xml|txt|json)$/)
   if (isStatic) {
     return rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
   }
 
+  const isPublicExact = PUBLIC_EXACT.includes(checkPath)
   const isPublicPrefix = PUBLIC_PREFIXES.some(p => checkPath.startsWith(p))
-  if (isPublicPrefix) {
+  if (isPublicExact || isPublicPrefix) {
     return rewriteUrl ? NextResponse.rewrite(rewriteUrl) : NextResponse.next()
   }
 

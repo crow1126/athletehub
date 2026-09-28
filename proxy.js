@@ -152,7 +152,7 @@ export async function proxy(request) {
 
 export const config = {
   matcher: [
-    // Run on every request except Next.js internals and static files
-    '/((?!_next/static|_next/image|favicon.ico|icon.png).*)',
+    // Run on every request except Next.js internals, sitemaps, robots, and static assets
+    '/((?!_next/static|_next/image|favicon.ico|icon.png|sitemap.xml|robots.txt).*)',
   ],
 }

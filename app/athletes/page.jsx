@@ -415,10 +415,13 @@ export default function AthletesPage() {
 
         {/* Bulk import result banner */}
         {bulkResult && (
-          <div style={{ display:'flex', alignItems:'center', gap:10, background: bulkResult.added > 0 ? '#ECFDF5' : '#FEF3C7', border:`1px solid ${bulkResult.added > 0 ? '#A7F3D0' : '#FCD34D'}`, borderRadius:12, padding:'12px 18px', marginBottom:18, flexWrap:'wrap' }}>
-            <span style={{ fontSize:20 }}>{bulkResult.added > 0 ? '✅' : '⚠️'}</span>
-            <span style={{ fontWeight:700, fontSize:14, color: bulkResult.added > 0 ? '#059669' : '#B45309' }}>
-              {bulkResult.added} athlete{bulkResult.added !== 1 ? 's' : ''} added
+          <div style={{ display:'flex', alignItems:'center', gap:10, background: (bulkResult.added > 0 || bulkResult.updated > 0) ? '#ECFDF5' : '#FEF3C7', border:`1px solid ${(bulkResult.added > 0 || bulkResult.updated > 0) ? '#A7F3D0' : '#FCD34D'}`, borderRadius:12, padding:'12px 18px', marginBottom:18, flexWrap:'wrap' }}>
+            <span style={{ fontSize:20 }}>{(bulkResult.added > 0 || bulkResult.updated > 0) ? '✅' : '⚠️'}</span>
+            <span style={{ fontWeight:700, fontSize:14, color: (bulkResult.added > 0 || bulkResult.updated > 0) ? '#059669' : '#B45309' }}>
+              {bulkResult.added > 0 && `${bulkResult.added} athlete${bulkResult.added !== 1 ? 's' : ''} added`}
+              {bulkResult.added > 0 && bulkResult.updated > 0 && ', '}
+              {bulkResult.updated > 0 && `${bulkResult.updated} athlete${bulkResult.updated !== 1 ? 's' : ''} updated`}
+              {bulkResult.added === 0 && bulkResult.updated === 0 && 'No changes applied'}
               {bulkResult.skipped > 0 ? `, ${bulkResult.skipped} skipped` : ''}
             </span>
             <button
@@ -866,9 +869,9 @@ export default function AthletesPage() {
         <BulkAthleteUpload
           teamId={teamId}
           onClose={() => setShowBulkUpload(false)}
-          onSuccess={({ added, skipped }) => {
+          onSuccess={({ added, updated, skipped }) => {
             setShowBulkUpload(false)
-            setBulkResult({ added, skipped })
+            setBulkResult({ added, updated, skipped })
             fetchData()
           }}
         />

@@ -1,6 +1,6 @@
 {
-  "name": "ApexTrack",
-  "short_name": "ApexTrack",
+  "name": "ApexTrack GH",
+  "short_name": "ApexTrack GH",
   "description": "Complete football club management platform",
   "start_url": "/dashboard",
   "display": "standalone",

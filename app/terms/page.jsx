@@ -1,24 +1,24 @@
 import LegalPage from '@/components/LegalPage'
 
 export const metadata = {
-  title: 'Terms of Service | ApexTrack',
-  description: 'Terms and conditions governing the use of ApexTrack, including squad management and ApexPay features.',
+  title: 'Terms of Service | ApexTrack GH',
+  description: 'Terms and conditions governing the use of ApexTrack GH, including squad management and ApexPay features.',
 }
 
 export default function TermsPage() {
   return (
     <LegalPage
       title="Terms of Service"
-      subtitle="Please read these terms carefully before registering your club or using ApexTrack."
+      subtitle="Please read these terms carefully before registering your club or using ApexTrack GH."
       lastUpdated="21 July 2026"
     >
       <p>
-        By creating an account, initiating a trial, or using ApexTrack, you agree to be bound by these Terms of Service (&quot;Terms&quot;) on behalf of yourself and the sports club or organization you represent.
+        By creating an account, initiating a trial, or using ApexTrack GH, you agree to be bound by these Terms of Service (&quot;Terms&quot;) on behalf of yourself and the sports club or organization you represent.
       </p>
 
       <h2>1. Services Offered</h2>
       <p>
-        ApexTrack provides an integrated sports management platform covering squad analytics, injury logs, training schedules, scouting registries, contract tracking, performance reporting, and the <strong>ApexPay</strong> payroll disbursement system.
+        ApexTrack GH provides an integrated sports management platform covering squad analytics, injury logs, training schedules, scouting registries, contract tracking, performance reporting, and the <strong>ApexPay</strong> payroll disbursement system.
       </p>
 
       <h2>2. Account Registration &amp; Responsibilities</h2>
@@ -31,14 +31,14 @@ export default function TermsPage() {
 
       <h2>3. Subscription, ApexPay &amp; Billing Terms</h2>
       <ul>
-        <li><strong>Plans:</strong> ApexTrack offers tier-based plans including <em>Starting XI</em> (GHS 199/month) and <em>Captain</em> (GHS 499/month).</li>
+        <li><strong>Plans:</strong> ApexTrack GH offers tier-based plans including <em>Starting XI</em> (GHS 199/month) and <em>Captain</em> (GHS 499/month).</li>
         <li><strong>ApexPay Payroll:</strong> ApexPay features (wallet top-ups and Mobile Money payouts) are exclusively available on the Captain plan. Clubs are solely responsible for ensuring sufficient wallet funds and verifying correct MoMo recipient numbers prior to executing payroll disbursements.</li>
         <li><strong>Renewals &amp; Cancellations:</strong> Subscriptions renew automatically unless cancelled before the renewal date. Payments processed via Moolre are non-refundable except where required by law.</li>
       </ul>
 
       <h2>4. Medical Disclaimer</h2>
       <p>
-        ApexTrack is an operational management tool and does <strong>not</strong> provide medical diagnoses, treatment plans, or clinical decision making. Injury tracking records are for organizational coordination only. Medical decisions remain the sole responsibility of qualified medical professionals.
+        ApexTrack GH is an operational management tool and does <strong>not</strong> provide medical diagnoses, treatment plans, or clinical decision making. Injury tracking records are for organizational coordination only. Medical decisions remain the sole responsibility of qualified medical professionals.
       </p>
 
       <h2>5. Acceptable Use Policy</h2>
@@ -51,7 +51,7 @@ export default function TermsPage() {
 
       <h2>6. Limitation of Liability</h2>
       <p>
-        To the maximum extent permitted by law, ApexTrack is provided &quot;as is&quot; without warranties of any kind. We are not liable for indirect, incidental, or consequential damages resulting from platform downtime or incorrect data entries. Our total liability for any claim shall not exceed the fees paid by your club in the preceding 12 months.
+        To the maximum extent permitted by law, ApexTrack GH is provided &quot;as is&quot; without warranties of any kind. We are not liable for indirect, incidental, or consequential damages resulting from platform downtime or incorrect data entries. Our total liability for any claim shall not exceed the fees paid by your club in the preceding 12 months.
       </p>
 
       <h2>7. Governing Law</h2>

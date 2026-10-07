@@ -41,7 +41,7 @@ self.addEventListener('notificationclick', (event) => {
 
 // Handle background push messages
 self.addEventListener('push', (event) => {
-  let data = { title: 'ApexTrack Alert', body: 'You have a new team notification.', url: '/dashboard' }
+  let data = { title: 'ApexTrack GH Alert', body: 'You have a new team notification.', url: '/dashboard' }
   try {
     if (event.data) {
       data = { ...data, ...event.data.json() }
@@ -60,5 +60,5 @@ self.addEventListener('push', (event) => {
     vibrate: [100, 50, 150],
   }
 
-  event.waitUntil(self.registration.showNotification(data.title || 'ApexTrack Alert', options))
+  event.waitUntil(self.registration.showNotification(data.title || 'ApexTrack GH Alert', options))
 })

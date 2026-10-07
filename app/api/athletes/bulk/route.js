@@ -9,28 +9,37 @@ const VALID_POSITIONS = new Set(['GK','CB','RB','LB','RWB','LWB','CDM','CM','CAM
 
 // ── Full English name → DB code ───────────────────────────────────────────────
 const POSITION_MAP = {
-  'goalkeeper': 'GK', 'goal keeper': 'GK', 'gk': 'GK',
+  // Goalkeeper
+  'goalkeeper': 'GK', 'goal keeper': 'GK', 'gk': 'GK', 'keeper': 'GK', 'goalie': 'GK',
+  // Defenders
+  'defender': 'CB', 'defense': 'CB', 'defence': 'CB', 'def': 'CB', 'cb': 'CB',
   'centre back': 'CB', 'center back': 'CB', 'central back': 'CB',
-  'central defender': 'CB', 'centreback': 'CB', 'cb': 'CB',
+  'central defender': 'CB', 'centreback': 'CB', 'centerback': 'CB', 'centre-back': 'CB', 'center-back': 'CB',
   'full back': 'CB', 'fullback': 'CB', 'back': 'CB',
-  'right back': 'RB', 'rightback': 'RB', 'rb': 'RB',
-  'left back': 'LB', 'leftback': 'LB', 'lb': 'LB',
+  'right back': 'RB', 'rightback': 'RB', 'right-back': 'RB', 'rb': 'RB', 'r-back': 'RB',
+  'left back': 'LB', 'leftback': 'LB', 'left-back': 'LB', 'lb': 'LB', 'l-back': 'LB',
   'right wing back': 'RWB', 'right wingback': 'RWB', 'rwb': 'RWB',
   'left wing back': 'LWB', 'left wingback': 'LWB', 'lwb': 'LWB',
+  'wing back': 'RWB', 'wingback': 'RWB',
+  // Midfielders
+  'midfielder': 'CM', 'midfield': 'CM', 'mid': 'CM', 'mf': 'CM',
   'central defensive midfielder': 'CDM', 'defensive midfielder': 'CDM',
-  'holding midfielder': 'CDM', 'defensive mid': 'CDM', 'cdm': 'CDM',
-  'central midfielder': 'CM', 'centre midfielder': 'CM', 'cm': 'CM',
+  'holding midfielder': 'CDM', 'defensive mid': 'CDM', 'cdm': 'CDM', 'dm': 'CDM',
+  'central midfielder': 'CM', 'centre midfielder': 'CM', 'center midfielder': 'CM', 'cm': 'CM',
   'central attacking midfielder': 'CAM', 'attacking midfielder': 'CAM',
-  'attacking mid': 'CAM', 'number 10': 'CAM', 'no. 10': 'CAM', 'cam': 'CAM',
+  'attacking mid': 'CAM', 'number 10': 'CAM', 'no. 10': 'CAM', 'cam': 'CAM', 'am': 'CAM', 'playmaker': 'CAM',
   'right midfielder': 'RM', 'right midfield': 'RM', 'rm': 'RM',
   'left midfielder': 'LM', 'left midfield': 'LM', 'lm': 'LM',
+  // Forwards / Wingers
   'right winger': 'RW', 'right wing': 'RW', 'winger right': 'RW', 'rw': 'RW',
   'left winger': 'LW', 'left wing': 'LW', 'winger left': 'LW', 'lw': 'LW',
-  'winger': 'RW', 'wide midfielder': 'RM',
+  'winger': 'RW', 'wing': 'RW',
+  'wide midfielder': 'RM',
   'centre forward': 'CF', 'center forward': 'CF', 'cf': 'CF',
   'second striker': 'SS', 'support striker': 'SS', 'ss': 'SS',
-  'striker': 'ST', 'centre striker': 'ST', 'center striker': 'ST',
-  'forward': 'ST', 'st': 'ST', 'attacker': 'ST',
+  'striker': 'ST', 'centre striker': 'ST', 'center striker': 'ST', 'st': 'ST',
+  'forward': 'ST', 'fwd': 'ST', 'fw': 'ST',
+  'attacker': 'ST', 'att': 'ST',
 }
 
 // ── Status normaliser → only values the DB accepts ───────────────────────────
@@ -38,18 +47,83 @@ const STATUS_MAP = {
   'active': 'Active', 'fit': 'Active', 'available': 'Active',
   'injured': 'Injured', 'injury': 'Injured',
   'suspended': 'Suspended', 'banned': 'Suspended',
-  'inactive': 'Suspended',  // closest valid equivalent
+  'inactive': 'Suspended',
 }
 
 function normalisePosition(raw) {
   if (!raw) return null
-  // Normalise hyphens → spaces so "Centre-Back" matches "centre back"
-  const lower = raw.trim().toLowerCase().replace(/-/g, ' ').replace(/\s+/g, ' ').trim()
+  const trimmed = String(raw).trim()
+  if (!trimmed) return null
+  // Normalise hyphens/slashes → spaces
+  const lower = trimmed.toLowerCase().replace(/[-_/]/g, ' ').replace(/\s+/g, ' ').trim()
   if (POSITION_MAP[lower]) return POSITION_MAP[lower]
   // Pass through if it's already a valid code (case-insensitive)
-  const upper = raw.trim().toUpperCase()
+  const upper = trimmed.toUpperCase()
   if (VALID_POSITIONS.has(upper)) return upper
-  // Unknown — omit rather than send a bad value to the DB
+
+  // Fuzzy heuristics
+  if (lower.includes('goal') || lower.includes('keep')) return 'GK'
+  if (lower.includes('right back') || lower.includes('rb')) return 'RB'
+  if (lower.includes('left back') || lower.includes('lb')) return 'LB'
+  if (lower.includes('def') || lower.includes('back')) return 'CB'
+  if (lower.includes('strik') || lower.includes('forward') || lower.includes('attack')) return 'ST'
+  if (lower.includes('left wing') || lower.includes('lw')) return 'LW'
+  if (lower.includes('right wing') || lower.includes('rw') || lower.includes('wing')) return 'RW'
+  if (lower.includes('defensive mid') || lower.includes('holding') || lower.includes('cdm')) return 'CDM'
+  if (lower.includes('attacking mid') || lower.includes('cam') || lower.includes('number 10')) return 'CAM'
+  if (lower.includes('mid')) return 'CM'
+
+  // Default fallback rather than omitting
+  return 'CM'
+}
+
+function normaliseDateString(raw) {
+  if (!raw) return null
+  const s = String(raw).trim()
+  if (!s) return null
+
+  // YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? null : s
+  }
+
+  // ISO timestamp (YYYY-MM-DDTHH:MM...)
+  if (/^\d{4}-\d{2}-\d{2}T/.test(s)) {
+    const d = new Date(s)
+    return isNaN(d.getTime()) ? null : s.split('T')[0]
+  }
+
+  // D/M/YYYY or DD/MM/YYYY or D-M-YYYY or DD.MM.YYYY
+  const parts = s.split(/[\/\-.]/)
+  if (parts.length === 3) {
+    let [p1, p2, p3] = parts
+    if (p3.length === 4) {
+      let day = parseInt(p1, 10)
+      let month = parseInt(p2, 10)
+      if (month > 12 && day <= 12) {
+        const tmp = day; day = month; month = tmp
+      }
+      const yyyy = p3
+      const mm = String(month).padStart(2, '0')
+      const dd = String(day).padStart(2, '0')
+      const d = new Date(`${yyyy}-${mm}-${dd}`)
+      if (!isNaN(d.getTime())) return `${yyyy}-${mm}-${dd}`
+    }
+    if (p1.length === 4) {
+      const yyyy = p1
+      const mm = String(parseInt(p2, 10)).padStart(2, '0')
+      const dd = String(parseInt(p3, 10)).padStart(2, '0')
+      const d = new Date(`${yyyy}-${mm}-${dd}`)
+      if (!isNaN(d.getTime())) return `${yyyy}-${mm}-${dd}`
+    }
+  }
+
+  const parsed = new Date(s)
+  if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 1900 && parsed.getFullYear() < 2100) {
+    return parsed.toISOString().split('T')[0]
+  }
+
   return null
 }
 
@@ -339,24 +413,33 @@ export async function POST(req) {
     )
   }
 
-  // ── 5. Build insert payloads ───────────────────────────────────────────────
+  // ── 5. Build insert / update payloads ──────────────────────────────────────
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   const NUMERIC  = /^\d+$/
-  const DATE_ISO = /^\d{4}-\d{2}-\d{2}$/
 
-  // Pre-fetch jersey numbers already taken by existing athletes on this team
+  // Pre-fetch existing athletes on this team to allow updating them if already present
   const { data: existingAthletes } = await db
     .from('athletes')
-    .select('back_number')
+    .select('id, name, back_number')
     .eq('team_id', team_id)
-    .not('back_number', 'is', null)
 
-  const takenJerseys = new Set((existingAthletes || []).map(a => String(a.back_number).trim()))
+  const existingByName = new Map()
+  const existingById   = new Map()
+  const takenJerseys   = new Map() // jersey string -> athlete id
+
+  for (const a of (existingAthletes || [])) {
+    if (a.id) existingById.set(a.id, a)
+    if (a.name) existingByName.set(a.name.trim().toLowerCase(), a)
+    if (a.back_number !== null && a.back_number !== undefined && String(a.back_number).trim() !== '') {
+      takenJerseys.set(String(a.back_number).trim(), a.id)
+    }
+  }
 
   // Track jersey numbers used within this batch to catch within-file duplicates
   const batchJerseys = {} // jersey → row index (1-based)
 
   const toInsert  = []
+  const toUpdate  = []
   const rowErrors = []
 
   for (let i = 0; i < rows.length; i++) {
@@ -365,21 +448,33 @@ export async function POST(req) {
 
     const full_name     = (r.full_name     || '').toString().trim()
     const position_raw  = (r.position      || '').toString().trim()
-    const date_of_birth = (r.date_of_birth || '').toString().trim()
+    const raw_dob       = (r.date_of_birth || '').toString().trim()
     const back_number   = (r.back_number   || '').toString().trim()
     const phone         = (r.phone         || '').toString().trim()
     const email         = (r.email         || '').toString().trim()
 
     // Only full_name is required
     if (!full_name) errs.push('full_name is required')
-    if (date_of_birth && !DATE_ISO.test(date_of_birth)) errs.push('date_of_birth must be YYYY-MM-DD')
-    if (back_number   && !NUMERIC.test(back_number))    errs.push('back_number must be numeric')
-    if (email         && !EMAIL_RE.test(email))          errs.push('email is invalid')
+
+    const date_of_birth = normaliseDateString(raw_dob)
+    if (raw_dob && !date_of_birth) {
+      errs.push('date_of_birth is invalid (use YYYY-MM-DD or DD/MM/YYYY)')
+    }
+
+    if (back_number && !NUMERIC.test(back_number)) errs.push('back_number must be numeric')
+    if (email && !EMAIL_RE.test(email)) errs.push('email is invalid')
+
+    // Find if player is already registered in the squad
+    const matchedExisting = (r.id && existingById.get(r.id)) || existingByName.get(full_name.toLowerCase())
 
     // Jersey uniqueness checks
     if (back_number && NUMERIC.test(back_number)) {
       if (takenJerseys.has(back_number)) {
-        errs.push(`jersey #${back_number} is already assigned to an existing athlete on this team`)
+        const ownerId = takenJerseys.get(back_number)
+        // If it's already assigned to someone else
+        if (!matchedExisting || ownerId !== matchedExisting.id) {
+          errs.push(`jersey #${back_number} is already assigned to another athlete on this team`)
+        }
       } else if (batchJerseys[back_number] !== undefined) {
         errs.push(`jersey #${back_number} is a duplicate within this import (first seen at row ${batchJerseys[back_number]})`)
       } else {
@@ -404,8 +499,6 @@ export async function POST(req) {
     const position = normalisePosition(position_raw)
     const status   = normaliseStatus(r.status || '')
 
-    // Only include fields that have actual values — avoids hitting NOT NULL
-    // constraints on columns the DB may not allow nulls for.
     const payload = { name: full_name, team_id, status }
     if (first_name)   payload.first_name   = first_name
     if (last_name)    payload.last_name    = last_name
@@ -415,8 +508,23 @@ export async function POST(req) {
     if (phone)        payload.phone        = phone
     if (email)        payload.email        = email
 
+    // Age parsing / auto-calculation
+    let age = null
+    if (r.age && !isNaN(parseInt(r.age, 10))) {
+      age = parseInt(r.age, 10)
+    } else if (date_of_birth) {
+      const birth = new Date(date_of_birth)
+      if (!isNaN(birth.getTime())) {
+        const diff = Date.now() - birth.getTime()
+        const calculatedAge = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000))
+        if (calculatedAge >= 5 && calculatedAge <= 65) {
+          age = calculatedAge
+        }
+      }
+    }
+    if (age !== null) payload.age = age
+
     // Extended biodata fields
-    if (r.age && !isNaN(parseInt(r.age, 10))) payload.age = parseInt(r.age, 10)
     if (r.nationality)       payload.nationality       = String(r.nationality).trim()
     if (r.country)           payload.country           = String(r.country).trim()
     if (r.place_of_birth)    payload.place_of_birth    = String(r.place_of_birth).trim()
@@ -434,9 +542,9 @@ export async function POST(req) {
       payload.current_club = c
     }
     if (r.last_club)         payload.last_club         = String(r.last_club).trim()
-    if (r.in_club_since)     payload.in_club_since     = String(r.in_club_since).trim()
-    if (r.contract_until)    payload.contract_until    = String(r.contract_until).trim()
-    if (r.contract_option_until) payload.contract_option_until = String(r.contract_option_until).trim()
+    if (r.in_club_since)     payload.in_club_since     = normaliseDateString(r.in_club_since) || String(r.in_club_since).trim()
+    if (r.contract_until)    payload.contract_until    = normaliseDateString(r.contract_until) || String(r.contract_until).trim()
+    if (r.contract_option_until) payload.contract_option_until = normaliseDateString(r.contract_option_until) || String(r.contract_option_until).trim()
     if (r.contract_details)  payload.contract_details  = String(r.contract_details).trim()
     if (r.clothing_size)     payload.clothing_size     = String(r.clothing_size).trim()
     if (r.shoe_size)         payload.shoe_size         = String(r.shoe_size).trim()
@@ -450,15 +558,37 @@ export async function POST(req) {
     if (r.bic)               payload.bic               = String(r.bic).trim()
     if (r.tax_id)            payload.tax_id            = String(r.tax_id).trim()
 
-    toInsert.push(payload)
+    if (matchedExisting) {
+      toUpdate.push({ id: matchedExisting.id, payload })
+    } else {
+      toInsert.push(payload)
+    }
   }
 
-  // ── 6. Batch insert ────────────────────────────────────────────────────────
+  // ── 6. Execute updates and inserts ─────────────────────────────────────────
   let added   = 0
+  let updated = 0
   let skipped = rowErrors.length
 
+  // Process Updates
+  for (const item of toUpdate) {
+    const { error: updErr } = await db
+      .from('athletes')
+      .update(item.payload)
+      .eq('id', item.id)
+
+    if (updErr) {
+      console.error('[bulk-athletes] Update error:', updErr.message)
+      rowErrors.push(`Failed to update ${item.payload.name}: ${updErr.message}`)
+      skipped++
+    } else {
+      updated++
+    }
+  }
+
+  // Process Inserts
   if (toInsert.length > 0) {
-    // ── Probe: try the first row alone to surface any DB constraint error ──
+    // Probe test first row
     const { error: probeErr } = await db
       .from('athletes')
       .insert([toInsert[0]])
@@ -468,12 +598,12 @@ export async function POST(req) {
       console.error('[bulk-athletes] Probe insert failed:', probeErr.message, JSON.stringify(toInsert[0]))
       return NextResponse.json({
         added: 0,
-        skipped: toInsert.length + rowErrors.length,
+        updated,
+        skipped: toInsert.length + skipped,
         errors: [`DB constraint error: ${probeErr.message}`, `First row payload: ${JSON.stringify(toInsert[0])}`],
       }, { status: 422 })
     }
 
-    // Probe succeeded — count it and insert the rest
     added = 1
     const CHUNK = 100
     for (let c = 1; c < toInsert.length; c += CHUNK) {
@@ -499,8 +629,9 @@ export async function POST(req) {
     team_id,
     attempted: rows.length,
     added,
+    updated,
     skipped,
   })
 
-  return NextResponse.json({ added, skipped, errors: rowErrors })
+  return NextResponse.json({ added, updated, skipped, errors: rowErrors })
 }

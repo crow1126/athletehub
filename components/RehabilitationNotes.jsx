@@ -250,8 +250,11 @@ export default function RehabilitationNotes({
   }
 
   const handleDelete = async (noteId) => {
-    if (!isPhysio) return
-    if (!confirm('Are you sure you want to delete this confidential rehabilitation note?')) return
+    if (!isAdmin) {
+      alert('Permission Denied: Only club administrators can permanently delete medical rehabilitation records.')
+      return
+    }
+    if (!confirm('Are you sure you want to delete this confidential rehabilitation note? This permanent action is strictly restricted to club administrators.')) return
 
     try {
       const { error } = await scopeTeam(supabase.from('rehabilitation_notes').delete().eq('id', noteId), teamId)
@@ -570,12 +573,14 @@ export default function RehabilitationNotes({
                           </span>
                         )}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: '#64748B', marginTop: 2, flexWrap: 'wrap' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600 }}>
-                          <Calendar size={11} /> {new Date(n.session_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          <Calendar size={11} /> Session: {new Date(n.session_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                         <span>•</span>
-                        <span>Logged by <strong>{n.author_name || 'Physio'}</strong></span>
+                        <span>⏱ Logged: <strong>{new Date(n.created_at || n.session_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></span>
+                        <span>•</span>
+                        <span>Author: <strong>{n.author_name || 'Physio'}</strong> ({n.author_role || 'Medical Staff'})</span>
                       </div>
                     </div>
                   </div>
@@ -613,7 +618,7 @@ export default function RehabilitationNotes({
                       {clearanceObj.label}
                     </span>
 
-                    {isPhysio && (
+                    {(isPhysio || isAdmin) && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginLeft: 4 }}>
                         <button
                           onClick={() => handleOpenEdit(n)}
@@ -622,13 +627,15 @@ export default function RehabilitationNotes({
                         >
                           <Edit3 size={13} />
                         </button>
-                        <button
-                          onClick={() => handleDelete(n.id)}
-                          title="Delete note"
-                          style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', borderRadius: 6, padding: '4px 7px', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(n.id)}
+                            title="Delete note (Admin Only)"
+                            style={{ background: '#FEE2E2', border: 'none', color: '#DC2626', borderRadius: 6, padding: '4px 7px', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>

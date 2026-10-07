@@ -1,8 +1,8 @@
 import LegalPage from '@/components/LegalPage'
 
 export const metadata = {
-  title: 'Privacy Policy | ApexTrack',
-  description: 'How ApexTrack collects, uses, and protects athlete, club, and payroll data in compliance with relevant privacy regulations.',
+  title: 'Privacy Policy | ApexTrack GH',
+  description: 'How ApexTrack GH collects, uses, and protects athlete, club, and payroll data in compliance with relevant privacy regulations.',
 }
 
 export default function PrivacyPage() {
@@ -13,13 +13,13 @@ export default function PrivacyPage() {
       lastUpdated="21 July 2026"
     >
       <p>
-        ApexTrack (&quot;we&quot;, &quot;us&quot;, &quot;ApexTrack&quot;) provides a comprehensive football performance, squad management, and payroll platform built for clubs across Ghana and Africa.
+        ApexTrack GH (&quot;we&quot;, &quot;us&quot;, &quot;ApexTrack GH&quot;) provides a comprehensive football performance, squad management, and payroll platform built for clubs across Ghana and Africa.
         This policy outlines what information we collect, why, and how we protect your club&apos;s data, in alignment with the Data Protection Act, 2012 (Act 843) of Ghana as well as applicable international standards (including UK/EU GDPR where applicable).
       </p>
 
       <h2>1. Who We Are</h2>
       <p>
-        ApexTrack is operated as a cloud-based software service for sports clubs, academies, and professional sports organisations. For privacy and data protection inquiries, contact our Data Protection Officer at <a href="mailto:admin@apextrackgh.com">admin@apextrackgh.com</a>.
+        ApexTrack GH is operated as a cloud-based software service for sports clubs, academies, and professional sports organisations. For privacy and data protection inquiries, contact our Data Protection Officer at <a href="mailto:admin@apextrackgh.com">admin@apextrackgh.com</a>.
       </p>
 
       <h2>2. Data We Process</h2>
@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <li><strong>Compliance:</strong> Fulfilling financial record-keeping requirements for payroll transactions and meeting legal obligations under local laws.</li>
       </ul>
       <p>
-        For athlete and injury data, your club acts as the <strong>Data Controller</strong>, while ApexTrack serves as the <strong>Data Processor</strong> acting on the club&apos;s instructions.
+        For athlete and injury data, your club acts as the <strong>Data Controller</strong>, while ApexTrack GH serves as the <strong>Data Processor</strong> acting on the club&apos;s instructions.
       </p>
 
       <h2>4. Sub-Processors &amp; Service Providers</h2>

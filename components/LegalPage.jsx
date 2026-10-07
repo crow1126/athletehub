@@ -11,9 +11,9 @@ export default function LegalPage({ title, subtitle, lastUpdated, children }) {
     <div style={{ minHeight: '100vh', background: '#001E1E', color: '#FFFCF6', fontFamily: 'var(--font-jakarta), system-ui, sans-serif' }}>
       <header style={{ borderBottom: '1px solid rgba(255,252,246,0.08)', padding: '20px 40px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
         <Link href="/login" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none', color: 'inherit' }}>
-          <img src="/logo.png" alt="Apex Track" style={{ height: 36, width: 'auto', borderRadius: 8 }} />
+          <img src="/logo.png" alt="ApexTrack GH" style={{ height: 36, width: 'auto', borderRadius: 8 }} />
           <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.02em' }}>
-            Apex <span style={{ color: '#7ECACA', fontWeight: 400 }}>Track</span>
+            Apex<span style={{ color: '#7ECACA', fontWeight: 400 }}>Track GH</span>
           </span>
         </Link>
         <nav style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
@@ -46,7 +46,7 @@ export default function LegalPage({ title, subtitle, lastUpdated, children }) {
           </div>
           <p style={{ fontSize: 12, color: 'rgba(255,252,246,0.3)', marginTop: 24 }}>
             Questions? Contact{' '}
-            <a href="mailto:privacy@apextrack.app" style={{ color: '#7ECACA' }}>privacy@apextrack.app</a>
+            <a href="mailto:admin@apextrackgh.com" style={{ color: '#7ECACA' }}>admin@apextrackgh.com</a>
           </p>
         </div>
       </main>

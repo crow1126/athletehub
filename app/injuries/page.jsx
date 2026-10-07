@@ -147,7 +147,11 @@ export default function InjuriesPage() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this injury record?')) return
+    if (!isAdmin) {
+      alert('Permission Denied: Only club administrators can permanently delete medical injury records.')
+      return
+    }
+    if (!confirm('Are you sure you want to delete this injury record? This permanent action is strictly restricted to club administrators.')) return
     setDeleting(id)
     const { error } = await scopeTeam(supabase.from('injuries').delete().eq('id', id), teamId)
     if (error) alert('Delete failed: ' + error.message)
@@ -163,6 +167,7 @@ export default function InjuriesPage() {
   }
 
   const fmtDate = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+  const fmtDateTime = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
 
   const userRole = currentUser?.role || 'staff'
   const isPhysio = userRole === 'physio' || userRole === 'superadmin' || currentUser?.staff_type === 'physio' || currentUser?.staff_type === 'medical' || currentUser?.staff_type === 'sports_scientist'
@@ -322,7 +327,15 @@ export default function InjuriesPage() {
                       </div>
 
                       {/* Injury */}
-                      <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
+                        <div style={{ fontSize:10.5, color:'var(--text3)', marginTop:3 }}>
+                          <span>⏱ Logged: <strong>{fmtDateTime(inj.logged_at || inj.created_at)}</strong>{inj.logged_profile?.full_name ? ` by ${inj.logged_profile.full_name}` : ''}</span>
+                          {inj.updated_at && (
+                            <span style={{ marginLeft:6 }}>• Updated: <strong>{fmtDateTime(inj.updated_at)}</strong>{inj.updated_profile?.full_name ? ` by ${inj.updated_profile.full_name}` : ''}</span>
+                          )}
+                        </div>
+                      </div>
 
                       {/* Severity */}
                       <div><SeverityBadge severity={inj.severity}/></div>
@@ -349,9 +362,11 @@ export default function InjuriesPage() {
                               <Check size={13}/>
                             </button>
                           )}
-                          <button onClick={() => handleDelete(inj.id)} disabled={deleting===inj.id} title="Delete" style={{ background:'#FEF2F2', color:'#E74C3C', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center', opacity: deleting===inj.id ? 0.5 : 1 }}>
-                            <Trash2 size={13}/>
-                          </button>
+                          {isAdmin && (
+                            <button onClick={() => handleDelete(inj.id)} disabled={deleting===inj.id} title="Delete Record (Admin Only)" style={{ background:'#FEF2F2', color:'#E74C3C', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center', opacity: deleting===inj.id ? 0.5 : 1 }}>
+                              <Trash2 size={13}/>
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

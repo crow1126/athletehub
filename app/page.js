@@ -120,12 +120,12 @@ const LOGOS = [
 
 const FAQS = [
   {
-    q: 'What is Apex Track?',
-    a: 'Apex Track is an all-in-one football management software built for football clubs, academies, and technical teams in Ghana and across Africa to streamline squad tracking, medical logs, match performance, and payroll.'
+    q: 'What is ApexTrack GH?',
+    a: 'ApexTrack GH is an all-in-one football management software built for football clubs, academies, and technical teams in Ghana and across Africa to streamline squad tracking, medical logs, match performance, and payroll.'
   },
   {
     q: 'How secure is our club and athlete database?',
-    a: 'ApexTrack uses Postgres Row Level Security (RLS) and TLS encryption to fully isolate your squad data. Only authorized coaches and administrators within your specific club can access athlete and injury records — no cross-club data leakage is possible.'
+    a: 'ApexTrack GH uses Postgres Row Level Security (RLS) and TLS encryption to fully isolate your squad data. Only authorized coaches and administrators within your specific club can access athlete and injury records — no cross-club data leakage is possible.'
   },
   {
     q: 'What is ApexPay and when will it be available?',
@@ -141,7 +141,7 @@ const FAQS = [
   },
   {
     q: 'Can we export reports for club executives or board members?',
-    a: 'Yes. ApexTrack lets you generate professional PDF performance sheets, medical summaries, transfer history reports, and payroll summaries in just a few clicks — ready for board-level review.'
+    a: 'Yes. ApexTrack GH lets you generate professional PDF performance sheets, medical summaries, transfer history reports, and payroll summaries in just a few clicks — ready for board-level review.'
   }
 ]
 
@@ -226,7 +226,7 @@ export default function LandingPage() {
 
   function triggerWhatsAppBooking(form = demoForm, shouldOpen = true) {
     const lines = [
-      '*APEXTRACK DEMO REQUEST*',
+      '*APEXTRACK GH DEMO REQUEST*',
       '----------------------------------------',
       `*Club / Academy:* ${form.club?.trim() || 'Not specified'}`,
       `*Contact Person:* ${form.name?.trim() || 'Not specified'}`,
@@ -243,7 +243,7 @@ export default function LandingPage() {
       lines.push('', `*Notes:*\n${form.notes.trim()}`)
     }
     lines.push('----------------------------------------')
-    lines.push('Hi ApexTrack Support, I would like to schedule a 1-on-1 walkthrough for our club.')
+    lines.push('Hi ApexTrack GH Support, I would like to schedule a 1-on-1 walkthrough for our club.')
     lines.push('')
     lines.push('https://apextrackgh.com')
 
@@ -261,7 +261,7 @@ export default function LandingPage() {
   function triggerEmailBooking(form = demoForm, shouldOpen = true) {
     const subject = `Demo Request: ${form.club?.trim() || 'Club'} - ${form.name?.trim() || 'Walkthrough'}`
     const lines = [
-      'APEXTRACK DEMO REQUEST',
+      'APEXTRACK GH DEMO REQUEST',
       '========================================',
       `Club / Academy: ${form.club?.trim() || 'Not specified'}`,
       `Contact Person: ${form.name?.trim() || 'Not specified'}`,
@@ -278,7 +278,7 @@ export default function LandingPage() {
       lines.push('', `Additional Notes:\n${form.notes.trim()}`)
     }
     lines.push('========================================')
-    lines.push('ApexTrack Football Management Platform')
+    lines.push('ApexTrack GH Football Management Platform')
     lines.push('Website: https://apextrackgh.com')
     lines.push('Direct Support: admin@apextrackgh.com / WhatsApp: +233554074984')
 
@@ -377,7 +377,7 @@ export default function LandingPage() {
           </div>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-              Apex<span style={{ color: '#0D9488' }}>Track</span>
+              Apex<span style={{ color: '#0D9488' }}>Track GH</span>
             </div>
             <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
               Connecting to squad...
@@ -1717,8 +1717,8 @@ export default function LandingPage() {
         <div className="mobile-menu">
           <div className="mobile-menu-header">
             <Link className="nav-brand" href="/" onClick={() => setMenuOpen(false)}>
-              <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
-              <span className="nav-brand-name">Apex<span>Track</span></span>
+              <img src="/logo.png" alt="ApexTrack GH" className="nav-brand-img" />
+              <span className="nav-brand-name">Apex<span>Track GH</span></span>
             </Link>
             <button className="mobile-menu-close" onClick={() => setMenuOpen(false)} aria-label="Close menu">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1780,8 +1780,8 @@ export default function LandingPage() {
       {/* ── NAVBAR ── */}
       <nav className={`lp-nav${scrolled ? ' scrolled' : ''}`}>
         <Link className="nav-brand" href="/">
-          <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
-          <span className="nav-brand-name">Apex<span>Track</span></span>
+          <img src="/logo.png" alt="ApexTrack GH" className="nav-brand-img" />
+          <span className="nav-brand-name">Apex<span>Track GH</span></span>
         </Link>
 
         <div className="nav-links-center">
@@ -1887,7 +1887,7 @@ export default function LandingPage() {
           </div>
           <h2 className="section-title">Everything your club needs</h2>
           <p className="section-sub">
-            From grassroots academies to semi-professional clubs — ApexTrack covers every operation on and off the pitch.
+            From grassroots academies to semi-professional clubs — ApexTrack GH covers every operation on and off the pitch.
           </p>
           <div className="features-grid">
             {FEATURES.map(f => (
@@ -2048,7 +2048,7 @@ export default function LandingPage() {
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
               <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.7, margin: 0 }}>
-                <strong style={{ color: '#0F172A' }}>ApexPay</strong> is our built-in club payroll system. Fund your club wallet via Mobile Money, run payroll cycles for players and staff, and track every disbursement — all inside ApexTrack. No third-party apps, no spreadsheets.
+                <strong style={{ color: '#0F172A' }}>ApexPay</strong> is our built-in club payroll system. Fund your club wallet via Mobile Money, run payroll cycles for players and staff, and track every disbursement — all inside ApexTrack GH. No third-party apps, no spreadsheets.
               </p>
             </div>
           </div>
@@ -2064,9 +2064,9 @@ export default function LandingPage() {
               <span className="eyebrow-text">App Download</span>
               <div className="eyebrow-line" />
             </div>
-            <h2 className="section-title">Download ApexTrack</h2>
+            <h2 className="section-title">Download ApexTrack GH</h2>
             <p className="section-sub" style={{ margin: '0 auto', maxWidth: 480 }}>
-              Install the official ApexTrack desktop app for a fast, focused football management experience on Windows.
+              Install the official ApexTrack GH desktop app for a fast, focused football management experience on Windows.
             </p>
           </div>
 
@@ -2138,7 +2138,7 @@ export default function LandingPage() {
         <div className="cta-box">
           <h2 className="cta-title">Ready to run your club smarter?</h2>
           <p className="cta-sub">
-            Join 60+ football clubs and academies across Africa already managing squads, tracking performance, and running payroll with ApexTrack.
+            Join 60+ football clubs and academies across Africa already managing squads, tracking performance, and running payroll with ApexTrack GH.
             Get started today — no credit card required.
           </p>
           <div className="cta-btns">
@@ -2159,7 +2159,7 @@ export default function LandingPage() {
       {/* ── FOOTER ── */}
       <footer className="footer">
         <div className="footer-inner">
-          <div className="footer-brand">Apex<span>Track</span></div>
+          <div className="footer-brand">Apex<span>Track GH</span></div>
           <div className="footer-links">
             {!isElectron && (
               <>
@@ -2173,7 +2173,7 @@ export default function LandingPage() {
             <Link href="/login" className="footer-link">Sign In</Link>
           </div>
         </div>
-        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Football Club Management Platform built for African football clubs.</div>
+        <div className="footer-copy">© {new Date().getFullYear()} ApexTrack GH. All rights reserved. Football Club Management Platform built for African football clubs.</div>
       </footer>
 
       {/* ── DEMO BOOKING MODAL ── */}
@@ -2184,14 +2184,14 @@ export default function LandingPage() {
 
             <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <img src="/logo.png" alt="ApexTrack Logo" style={{ height: 38, width: 'auto', borderRadius: 8 }} />
+                <img src="/logo.png" alt="ApexTrack GH Logo" style={{ height: 38, width: 'auto', borderRadius: 8 }} />
                 <span style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.03em' }}>
-                  Apex<span style={{ color: '#0D9488' }}>Track</span>
+                  Apex<span style={{ color: '#0D9488' }}>Track GH</span>
                 </span>
               </div>
               <div>
                 <h3 style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 4 }}>
-                  Book Your ApexTrack Walkthrough
+                  Book Your ApexTrack GH Walkthrough
                 </h3>
                 <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.5 }}>
                   Fill in your details to connect instantly with our support team on WhatsApp or Email.

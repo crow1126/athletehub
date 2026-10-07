@@ -1,8 +1,8 @@
 import LegalPage from '@/components/LegalPage'
 
 export const metadata = {
-  title: 'Security & Data Protection | ApexTrack',
-  description: 'How ApexTrack safeguards squad data, medical logs, and ApexPay payroll transactions.',
+  title: 'Security & Data Protection | ApexTrack GH',
+  description: 'How ApexTrack GH safeguards squad data, medical logs, and ApexPay payroll transactions.',
 }
 
 export default function SecurityPage() {
@@ -13,12 +13,12 @@ export default function SecurityPage() {
       lastUpdated="21 July 2026"
     >
       <p>
-        At ApexTrack, protecting athlete health records, performance data, and financial payroll transactions is our highest technical priority. This document outlines our security architecture and operational controls.
+        At ApexTrack GH, protecting athlete health records, performance data, and financial payroll transactions is our highest technical priority. This document outlines our security architecture and operational controls.
       </p>
 
       <h2>1. Multi-Tenant Data Isolation</h2>
       <p>
-        ApexTrack enforces strict multi-tenant isolation at the database layer using PostgreSQL <strong>Row Level Security (RLS)</strong>.
+        ApexTrack GH enforces strict multi-tenant isolation at the database layer using PostgreSQL <strong>Row Level Security (RLS)</strong>.
         Every database query is bound to the user&apos;s authenticated <code>team_id</code> session token. This ensures that coaches, physios, and administrators can only view or mutate records belonging to their specific club.
       </p>
 

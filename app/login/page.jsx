@@ -192,6 +192,7 @@ export default function LoginPage() {
     if (!email.trim())    { setError('Email address is required.'); return }
     if (!clubName.trim()) { setError('Club / organisation name is required.'); return }
     if (!password || password.length < 8) { setError('Password must be at least 8 characters.'); return }
+    if (!clubLogo) { setError('Club logo is required. Please upload your club crest or badge before registering.'); return }
     if (!acceptedTerms) { setError('Please accept the Terms of Service and Privacy Policy to register.'); return }
     setLoading(true)
     try {
@@ -560,7 +561,7 @@ export default function LoginPage() {
                 <form className="auth-form" onSubmit={handleSignup}>
                   <div>
                     <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 3 }}>Create account</h3>
-                    <p style={{ fontSize: 13, color: '#64748B' }}>Join Apex Track — free to get started</p>
+                    <p style={{ fontSize: 13, color: '#64748B' }}>Join ApexTrack GH — free to get started</p>
                   </div>
 
                   {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>{error}</div>}
@@ -578,26 +579,39 @@ export default function LoginPage() {
 
 
                   <div>
-                    <label className="auth-field-label">Club Logo <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, fontSize: 10, color: '#94A3B8' }}>(optional)</span></label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#F0FDFA', border: '2px dashed #CCFBF1', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <label className="auth-field-label">
+                      Club Logo
+                      <span style={{ marginLeft: 6, fontWeight: 700, textTransform: 'none', letterSpacing: 0, fontSize: 10, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FECACA', padding: '1px 6px', borderRadius: 4 }}>Required</span>
+                    </label>
+                    <div style={{ border: `1.5px dashed ${logoPreview ? '#0D9488' : '#FBBF24'}`, borderRadius: 12, padding: '14px 16px', background: logoPreview ? '#F0FDFA' : '#FFFBEB', display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s' }}>
+                      <div style={{ width: 56, height: 56, borderRadius: 10, background: logoPreview ? 'transparent' : '#FEF3C7', border: `2px solid ${logoPreview ? '#0D9488' : '#FCD34D'}`, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
                         {logoPreview
-                          ? <img src={logoPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="7" r="3.5" stroke="#94A3B8" strokeWidth="1.5"/><path d="M3 18c0-3.866 3.134-6 7-6s7 2.134 7 6" stroke="#94A3B8" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                          ? <img src={logoPreview} alt="Club Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          : <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="#D97706" opacity="0.5"/><circle cx="12" cy="12" r="10" stroke="#D97706" strokeWidth="1.5" fill="none"/><path d="M8 12l2.5 2.5L16 9" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0"/><text x="12" y="14" textAnchor="middle" fontSize="9" fill="#D97706" fontWeight="bold">LOGO</text></svg>
                         }
                       </div>
                       <div style={{ flex: 1 }}>
-                        <label htmlFor="signup-logo" style={{ display: 'inline-block', background: '#F0FDFA', color: '#0D9488', border: '1px solid rgba(13,148,136,0.2)', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s' }}>
-                          {logoPreview ? 'Change Logo' : 'Upload Logo'}
-                        </label>
-                        <input id="signup-logo" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                          const f = e.target.files[0]
-                          if (!f) return
-                          if (f.size > 2 * 1024 * 1024) { setError('Logo must be under 2MB.'); return }
-                          setClubLogo(f)
-                          setLogoPreview(URL.createObjectURL(f))
-                        }} />
-                        {logoPreview && <button type="button" onClick={() => { setClubLogo(null); setLogoPreview('') }} style={{ marginLeft: 8, background: 'none', border: 'none', color: '#8B2020', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Remove</button>}
+                        <p style={{ margin: '0 0 6px', fontSize: 12.5, fontWeight: 700, color: logoPreview ? '#0F766E' : '#92400E' }}>
+                          {logoPreview ? '✓ Club logo uploaded' : 'Upload your club crest or badge'}
+                        </p>
+                        <p style={{ margin: '0 0 8px', fontSize: 11, color: '#94A3B8', lineHeight: 1.4 }}>
+                          {logoPreview ? 'Logo will appear on reports, PDFs and your dashboard.' : 'This is required. It appears on all club reports and documents.'}
+                        </p>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <label htmlFor="signup-logo" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: logoPreview ? '#F0FDFA' : '#0D9488', color: logoPreview ? '#0D9488' : '#fff', border: logoPreview ? '1px solid #0D9488' : 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', boxShadow: logoPreview ? 'none' : '0 2px 8px rgba(13,148,136,0.3)' }}>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            {logoPreview ? 'Change Logo' : 'Upload Club Logo'}
+                          </label>
+                          <input id="signup-logo" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                            const f = e.target.files[0]
+                            if (!f) return
+                            if (f.size > 2 * 1024 * 1024) { setError('Logo must be under 2MB.'); return }
+                            setClubLogo(f)
+                            setLogoPreview(URL.createObjectURL(f))
+                          }} />
+                          {logoPreview && <button type="button" onClick={() => { setClubLogo(null); setLogoPreview('') }} style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Remove</button>}
+                        </div>
+                        {!logoPreview && <p style={{ margin: '6px 0 0', fontSize: 11, color: '#DC2626', fontWeight: 600 }}>⚠ You cannot create an account without a club logo.</p>}
                       </div>
                     </div>
                   </div>
@@ -642,7 +656,7 @@ export default function LoginPage() {
         {/* ── FOOTER ── */}
         <footer className="footer">
           <div className="footer-inner">
-            <div className="footer-brand">Apex<span>Track</span></div>
+            <div className="footer-brand">ApexTrack<span> GH</span></div>
             <div className="footer-links">
               <Link href="/privacy" className="footer-link">Privacy Policy</Link>
               <Link href="/terms" className="footer-link">Terms of Service</Link>
@@ -650,7 +664,7 @@ export default function LoginPage() {
               <Link href="/" className="footer-link">Home</Link>
             </div>
           </div>
-          <div className="footer-copy">© {new Date().getFullYear()} ApexTrack. All rights reserved. Built for African football.</div>
+          <div className="footer-copy">© {new Date().getFullYear()} ApexTrack GH. All rights reserved. Built for African football.</div>
         </footer>
       </div>
     </>

@@ -299,6 +299,7 @@ function PreviewTable({ rows }) {
     { key: 'status',       label: 'Status' },
     { key: 'position',     label: 'Position' },
     { key: 'date_of_birth',label: 'DOB' },
+    { key: 'age',          label: 'Age' },
     { key: 'back_number',  label: 'Jersey #' },
     { key: 'phone',        label: 'Phone' },
     { key: 'nationality',  label: 'Nationality' },
@@ -350,13 +351,21 @@ function PreviewTable({ rows }) {
                 </span>
               </td>
               {/* position */}
-              <td style={{ padding: '8px 12px', color: row.position ? TEAL : RED }}>
-                {row.position || <span style={{ fontStyle: 'italic' }}>missing</span>}
+              <td style={{ padding: '8px 12px' }}>
+                {row.position ? (
+                  <span style={{ background: '#F0FDFA', color: '#0F766E', border: '1px solid #CCFBF1', padding: '2px 7px', borderRadius: 6, fontWeight: 700, fontSize: 11 }}>
+                    {row.position}
+                  </span>
+                ) : (
+                  <span style={{ color: MUTED, fontStyle: 'italic' }}>—</span>
+                )}
               </td>
               {/* date_of_birth */}
-              <td style={{ padding: '8px 12px', color: SLATE }}>{row.date_of_birth || '—'}</td>
+              <td style={{ padding: '8px 12px', color: SLATE, whiteSpace: 'nowrap' }}>{row.date_of_birth || '—'}</td>
+              {/* age */}
+              <td style={{ padding: '8px 12px', color: SLATE, whiteSpace: 'nowrap' }}>{row.age ? `${row.age} yrs` : '—'}</td>
               {/* back_number */}
-              <td style={{ padding: '8px 12px', color: SLATE }}>{row.back_number || '—'}</td>
+              <td style={{ padding: '8px 12px', color: SLATE }}>{row.back_number ? `#${row.back_number}` : '—'}</td>
               {/* phone */}
               <td style={{ padding: '8px 12px', color: SLATE }}>{row.phone || '—'}</td>
               {/* nationality */}
@@ -578,9 +587,9 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
         setView('preview')
         return
       }
-      setResult({ added: data.added ?? 0, skipped: data.skipped ?? 0, errors: data.errors || [] })
+      setResult({ added: data.added ?? 0, updated: data.updated ?? 0, skipped: data.skipped ?? 0, errors: data.errors || [] })
       setView('result')
-      onSuccess?.({ added: data.added ?? 0, skipped: data.skipped ?? 0 })
+      onSuccess?.({ added: data.added ?? 0, updated: data.updated ?? 0, skipped: data.skipped ?? 0 })
     } catch {
       setImportError('Network error. Please check your connection and try again.')
       setView('preview')
@@ -815,16 +824,24 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
           {view === 'result' && result && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
               <div style={{ fontSize: 48, marginBottom: 12 }}>
-                {result.added > 0 ? '🎉' : '⚠️'}
+                {(result.added > 0 || result.updated > 0) ? '🎉' : '⚠️'}
               </div>
               <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: SLATE }}>
                 Import complete
               </h3>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
-                <div style={{ background: GREEN_BG, border: '1px solid #A7F3D0', borderRadius: 12, padding: '12px 24px' }}>
-                  <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: GREEN }}>{result.added}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: 12, color: MUTED, fontWeight: 600 }}>athletes added</p>
-                </div>
+                {result.added > 0 && (
+                  <div style={{ background: GREEN_BG, border: '1px solid #A7F3D0', borderRadius: 12, padding: '12px 24px' }}>
+                    <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: GREEN }}>{result.added}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: MUTED, fontWeight: 600 }}>athletes added</p>
+                  </div>
+                )}
+                {result.updated > 0 && (
+                  <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 12, padding: '12px 24px' }}>
+                    <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#2563EB' }}>{result.updated}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: MUTED, fontWeight: 600 }}>athletes updated</p>
+                  </div>
+                )}
                 {result.skipped > 0 && (
                   <div style={{ background: ORANGE_BG, border: '1px solid #FCD34D', borderRadius: 12, padding: '12px 24px' }}>
                     <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: ORANGE }}>{result.skipped}</p>

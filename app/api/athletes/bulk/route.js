@@ -110,6 +110,20 @@ function normaliseDateString(raw) {
       const d = new Date(`${yyyy}-${mm}-${dd}`)
       if (!isNaN(d.getTime())) return `${yyyy}-${mm}-${dd}`
     }
+    if (p3.length === 2) {
+      let day = parseInt(p1, 10)
+      let month = parseInt(p2, 10)
+      if (month > 12 && day <= 12) {
+        const tmp = day; day = month; month = tmp
+      }
+      const rawY = parseInt(p3, 10)
+      const currentCentury = Math.floor(new Date().getFullYear() / 100) * 100
+      const yyyy = rawY > 50 ? (currentCentury - 100 + rawY) : (currentCentury + rawY)
+      const mm = String(month).padStart(2, '0')
+      const dd = String(day).padStart(2, '0')
+      const d = new Date(`${yyyy}-${mm}-${dd}`)
+      if (!isNaN(d.getTime())) return `${yyyy}-${mm}-${dd}`
+    }
     if (p1.length === 4) {
       const yyyy = p1
       const mm = String(parseInt(p2, 10)).padStart(2, '0')
@@ -420,16 +434,31 @@ export async function POST(req) {
   // Pre-fetch existing athletes on this team to allow updating them if already present
   const { data: existingAthletes } = await db
     .from('athletes')
-    .select('id, name, back_number')
+    .select('id, name, first_name, last_name, back_number, membership_number, phone, email')
     .eq('team_id', team_id)
 
   const existingByName = new Map()
   const existingById   = new Map()
+  const existingByMembership = new Map()
+  const existingByPhone = new Map()
+  const existingByEmail = new Map()
   const takenJerseys   = new Map() // jersey string -> athlete id
 
   for (const a of (existingAthletes || [])) {
     if (a.id) existingById.set(a.id, a)
-    if (a.name) existingByName.set(a.name.trim().toLowerCase(), a)
+    if (a.name) {
+      existingByName.set(a.name.trim().toLowerCase().replace(/\s+/g, ' '), a)
+    }
+    if (a.membership_number) {
+      existingByMembership.set(String(a.membership_number).trim().toLowerCase(), a)
+    }
+    if (a.phone) {
+      const cleanP = String(a.phone).replace(/\D/g, '')
+      if (cleanP.length >= 7) existingByPhone.set(cleanP, a)
+    }
+    if (a.email) {
+      existingByEmail.set(String(a.email).trim().toLowerCase(), a)
+    }
     if (a.back_number !== null && a.back_number !== undefined && String(a.back_number).trim() !== '') {
       takenJerseys.set(String(a.back_number).trim(), a.id)
     }
@@ -465,7 +494,16 @@ export async function POST(req) {
     if (email && !EMAIL_RE.test(email)) errs.push('email is invalid')
 
     // Find if player is already registered in the squad
-    const matchedExisting = (r.id && existingById.get(r.id)) || existingByName.get(full_name.toLowerCase())
+    const cleanName = full_name.toLowerCase().trim().replace(/\s+/g, ' ')
+    const cleanPhone = phone ? phone.replace(/\D/g, '') : ''
+    const cleanMem = r.membership_number ? String(r.membership_number).trim().toLowerCase() : ''
+    const cleanEmail = email ? email.trim().toLowerCase() : ''
+
+    const matchedExisting = (r.id && existingById.get(r.id))
+      || existingByName.get(cleanName)
+      || (cleanMem && existingByMembership.get(cleanMem))
+      || (cleanEmail && existingByEmail.get(cleanEmail))
+      || (cleanPhone && cleanPhone.length >= 7 && existingByPhone.get(cleanPhone))
 
     // Jersey uniqueness checks
     if (back_number && NUMERIC.test(back_number)) {
@@ -499,21 +537,19 @@ export async function POST(req) {
     const position = normalisePosition(position_raw)
     const status   = normaliseStatus(r.status || '')
 
-    const payload = { name: full_name, team_id, status }
-    if (first_name)   payload.first_name   = first_name
-    if (last_name)    payload.last_name    = last_name
-    if (position)     payload.position     = position
-    if (date_of_birth)payload.date_of_birth= date_of_birth
-    if (back_number)  payload.back_number  = back_number
-    if (phone)        payload.phone        = phone
-    if (email)        payload.email        = email
-
-    // Age parsing / auto-calculation
+    // Age parsing / auto-calculation & bidirectional DOB derivation
     let age = null
-    if (r.age && !isNaN(parseInt(r.age, 10))) {
-      age = parseInt(r.age, 10)
-    } else if (date_of_birth) {
-      const birth = new Date(date_of_birth)
+    if (r.age !== null && r.age !== undefined && r.age !== '') {
+      const m = String(r.age).match(/\b(\d{1,2})\b/)
+      if (m) {
+        const val = parseInt(m[1], 10)
+        if (val >= 5 && val <= 70) age = val
+      }
+    }
+
+    let finalDob = date_of_birth
+    if (!age && finalDob) {
+      const birth = new Date(finalDob)
       if (!isNaN(birth.getTime())) {
         const diff = Date.now() - birth.getTime()
         const calculatedAge = Math.floor(diff / (365.25 * 24 * 60 * 60 * 1000))
@@ -521,8 +557,23 @@ export async function POST(req) {
           age = calculatedAge
         }
       }
+    } else if (age && !finalDob) {
+      const currentYear = new Date().getFullYear()
+      const estYear = currentYear - age
+      if (estYear >= 1950 && estYear <= currentYear) {
+        finalDob = `${estYear}-01-01`
+      }
     }
-    if (age !== null) payload.age = age
+
+    const payload = { name: full_name, team_id, status }
+    if (first_name)   payload.first_name   = first_name
+    if (last_name)    payload.last_name    = last_name
+    if (position)     payload.position     = position
+    if (finalDob)     payload.date_of_birth= finalDob
+    if (age !== null) payload.age          = age
+    if (back_number)  payload.back_number  = back_number
+    if (phone)        payload.phone        = phone
+    if (email)        payload.email        = email
 
     // Extended biodata fields
     if (r.nationality)       payload.nationality       = String(r.nationality).trim()

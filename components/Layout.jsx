@@ -14,7 +14,7 @@ import NotificationPromptBanner from '@/components/NotificationPromptBanner'
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
   Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
-  Wallet, Menu, X, Bell, ChevronDown, Building2, Megaphone
+  Wallet, Menu, X, Bell, ChevronDown, Building2, Megaphone, Activity
 } from 'lucide-react'
 
 const ALL_NAV = [
@@ -29,6 +29,7 @@ const ALL_NAV = [
   { href:'/scouting',    label:'Scouting',           page:'scouting'    },
   { href:'/contracts',   label:'Contracts',          page:'contracts'   },
   { href:'/reports',     label:'Reports',            page:'reports'     },
+  { href:'/activity',    label:'Activity Log',       page:'activity'    },
   { href:'/settings',    label:'Settings',           page:'settings'    },
   { href:'/transfers',   label:'Transfers',          page:'transfers'   },
   { href:'/billing',     label:'Billing',            page:'billing'     },
@@ -59,6 +60,7 @@ const ICONS = {
   scouting:    <Search {...iconProps} />,
   contracts:   <ClipboardList {...iconProps} />,
   reports:     <BarChart3 {...iconProps} />,
+  activity:    <Activity {...iconProps} />,
   settings:    <Settings {...iconProps} />,
   billing:     <CreditCard {...iconProps} />,
   transfers:   <ArrowLeftRight {...iconProps} />,

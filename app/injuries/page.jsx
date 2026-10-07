@@ -20,8 +20,8 @@ const SEVERITY_STYLE = {
   Severe:   { bg:'#FDEDEC', color:'#C0392B', dot:'#E74C3C' },
 }
 
-// Roles that can create / edit / delete injury records
-const MEDICAL_ROLES = ['admin','superadmin','physio','sports_scientist','medical']
+// Roles that can create / edit injury records (medical staff only)
+const MEDICAL_ROLES = ['superadmin','physio','sports_scientist','medical']
 
 function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
 
@@ -172,6 +172,8 @@ export default function InjuriesPage() {
   const userRole = currentUser?.role || 'staff'
   const isPhysio = userRole === 'physio' || userRole === 'superadmin' || currentUser?.staff_type === 'physio' || currentUser?.staff_type === 'medical' || currentUser?.staff_type === 'sports_scientist'
   const isAdmin = userRole === 'admin' || userRole === 'superadmin'
+  // Admin can VIEW and DELETE but NOT create/edit — medical staff own the data entry
+  const isAdminReadOnly = userRole === 'admin'
   const canViewRehab = isPhysio || isAdmin
 
   const filtered  = filter === 'All' ? injuries : injuries.filter(i => i.status === filter)
@@ -211,8 +213,13 @@ export default function InjuriesPage() {
             </button>
           )}
         </div>
-
-        {/* ── Top Tabs (Visible to Physios and Admins only; hidden from other staff) ── */}
+          {/* Admin read-only notice on injury register */}
+          {isAdminReadOnly && activeTab === 'register' && (
+            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:16, color:'#0369A1', fontSize:13, fontWeight:600 }}>
+              <span style={{ fontSize:16 }}>👁</span>
+              <span><strong>View-Only Mode</strong> — Medical records are logged and updated by physiotherapy staff. You can view all records and delete if necessary.</span>
+            </div>
+          )}
         {canViewRehab && (
           <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, overflowX: 'auto' }}>
             <button
@@ -329,11 +336,13 @@ export default function InjuriesPage() {
                       {/* Injury */}
                       <div>
                         <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
-                        <div style={{ fontSize:10.5, color:'var(--text3)', marginTop:3 }}>
-                          <span>⏱ Logged: <strong>{fmtDateTime(inj.logged_at || inj.created_at)}</strong>{inj.logged_profile?.full_name ? ` by ${inj.logged_profile.full_name}` : ''}</span>
-                          {inj.updated_at && (
-                            <span style={{ marginLeft:6 }}>• Updated: <strong>{fmtDateTime(inj.updated_at)}</strong>{inj.updated_profile?.full_name ? ` by ${inj.updated_profile.full_name}` : ''}</span>
-                          )}
+                        <div style={{ fontSize:10.5, color:'var(--text3)', marginTop:3, display:'flex', alignItems:'center', gap:4 }}>
+                          <span style={{ opacity:0.55 }}>✍</span>
+                          <span>
+                            {inj.updated_profile?.full_name || inj.logged_profile?.full_name || 'Staff'}
+                            {' · '}
+                            {fmtDateTime(inj.updated_at || inj.logged_at || inj.created_at)}
+                          </span>
                         </div>
                       </div>
 

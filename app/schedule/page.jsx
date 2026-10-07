@@ -31,10 +31,12 @@ export default function SchedulePage() {
   const [deleting,   setDeleting]   = useState(null)
   const [view,       setView]       = useState('month')
   const [teamId,     setTeamId]     = useState(null)
+  const [currentUser, setCurrentUser] = useState(null)
   const [smsStatus,  setSmsStatus]  = useState(null) // {sent, failed, total} | null
 
   const fetchData = useCallback(async () => {
-    const { teamId: currentTeamId } = await getTenantProfile()
+    const { profile, teamId: currentTeamId } = await getTenantProfile('id,full_name,role')
+    setCurrentUser(profile)
     setTeamId(currentTeamId)
     const [{ data: s }, { data: c }, { data: a }] = await Promise.all([
       scopeTeam(supabase.from('training_sessions').select('*'), currentTeamId).order('date', { ascending: true }),
@@ -130,6 +132,8 @@ export default function SchedulePage() {
     return diff >= 0 && diff <= 7
   }).sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time))
 
+  const isAdminReadOnly = currentUser?.role === 'admin'
+
   return (
     <Layout>
       <style>{`
@@ -152,7 +156,13 @@ export default function SchedulePage() {
 
       <div className="sch-outer">
         <PageHeader label="Training Schedule" title="Schedule" subtitle="Manage and track all training sessions"
-          action={<button className="btn-blue" onClick={() => openAdd()}>+ New Session</button>}/>
+          action={!isAdminReadOnly && <button className="btn-blue" onClick={() => openAdd()}>+ New Session</button>}/>
+        {isAdminReadOnly && (
+          <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:20, color:'#0369A1', fontSize:13, fontWeight:600 }}>
+            <span style={{ fontSize:16 }}>👁</span>
+            <span><strong>View-Only Mode</strong> — Training sessions are managed by coaches. You can view the full schedule and session details.</span>
+          </div>
+        )}
 
         <div className="sch-nav">
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
@@ -185,14 +195,14 @@ export default function SchedulePage() {
                     const isTod = isToday(year, month, day)
                     const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
                     return (
-                      <div key={day} className="cal-cell" onClick={() => openAdd(dateStr)}
-                        style={{ minHeight:100, borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'6px', cursor:'pointer', background:isTod?'#E8F4FF':'' }}
+                      <div key={day} className="cal-cell" onClick={() => !isAdminReadOnly && openAdd(dateStr)}
+                        style={{ minHeight:100, borderRight:'1px solid var(--border)', borderBottom:'1px solid var(--border)', padding:'6px', cursor:isAdminReadOnly?'default':'pointer', background:isTod?'#E8F4FF':'' }}
                         onMouseEnter={e=>e.currentTarget.style.background=isTod?'#d4ebff':'var(--surface2)'}
                         onMouseLeave={e=>e.currentTarget.style.background=isTod?'#E8F4FF':''}>
                         <div style={{ width:24, height:24, borderRadius:'50%', background:isTod?'#0D9488':'transparent', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:isTod?800:500, color:isTod?'#fff':'var(--text)', marginBottom:3 }}>{day}</div>
                         {daySessions.slice(0,2).map(s => (
-                          <div key={s.id} onClick={e=>{e.stopPropagation();openEdit(s)}}
-                            style={{ fontSize:9, fontWeight:600, background:(COLORS[s.type]||'#4A90E2')+'20', color:COLORS[s.type]||'#4A90E2', padding:'1px 4px', borderRadius:3, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', borderLeft:`2px solid ${COLORS[s.type]||'#4A90E2'}`, cursor:'pointer' }}>
+                          <div key={s.id} onClick={e=>{e.stopPropagation(); if(!isAdminReadOnly) openEdit(s)}}
+                            style={{ fontSize:9, fontWeight:600, background:(COLORS[s.type]||'#4A90E2')+'20', color:COLORS[s.type]||'#4A90E2', padding:'1px 4px', borderRadius:3, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', borderLeft:`2px solid ${COLORS[s.type]||'#4A90E2'}`, cursor:isAdminReadOnly?'default':'pointer' }}>
                             {s.time} {s.title}
                           </div>
                         ))}
@@ -227,10 +237,11 @@ export default function SchedulePage() {
                       <div className="list-hide" style={{ fontSize:12, color:'var(--text2)' }}>{coach?.name?.replace('Coach ','') || '—'}</div>
                       <div style={{ fontSize:12, color:'var(--text2)', fontWeight:600 }}>{s.duration}m</div>
                       <div style={{ display:'flex', gap:5 }}>
-                        <button onClick={() => openEdit(s)} style={{ background:'#F0FDFA', color:'#0D9488', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer' }}>Edit</button>
-                        <button onClick={() => handleDelete(s.id)} disabled={deleting===s.id} style={{ background:'var(--danger-light)', color:'var(--danger)', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer', opacity:deleting===s.id?0.5:1 }}>
+                        {!isAdminReadOnly && <button onClick={() => openEdit(s)} style={{ background:'#F0FDFA', color:'#0D9488', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer' }}>Edit</button>}
+                        {!isAdminReadOnly && <button onClick={() => handleDelete(s.id)} disabled={deleting===s.id} style={{ background:'var(--danger-light)', color:'var(--danger)', border:'none', padding:'4px 9px', borderRadius:'var(--r-sm)', fontSize:11, fontWeight:600, cursor:'pointer', opacity:deleting===s.id?0.5:1 }}>
                           {deleting===s.id?'…':'Del'}
-                        </button>
+                        </button>}
+                        {isAdminReadOnly && <span style={{ fontSize:9, color:'#94A3B8', fontWeight:600 }}>View only</span>}
                       </div>
                     </div>
                   )

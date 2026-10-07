@@ -578,9 +578,16 @@ export default function RehabilitationNotes({
                           <Calendar size={11} /> Session: {new Date(n.session_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </span>
                         <span>•</span>
-                        <span>⏱ Logged: <strong>{new Date(n.created_at || n.session_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></span>
-                        <span>•</span>
-                        <span>Author: <strong>{n.author_name || 'Physio'}</strong> ({n.author_role || 'Medical Staff'})</span>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          <span style={{ opacity: 0.55 }}>✍</span>
+                          <span>
+                            {n.author_name || 'Medical Staff'}
+                            {' · '}
+                            {new Date(n.created_at || n.session_date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            {' · '}
+                            {new Date(n.created_at || n.session_date).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </span>
                       </div>
                     </div>
                   </div>

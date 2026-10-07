@@ -30,13 +30,15 @@ export default function PerformancePage(){
   const [form,         setForm]        = useState(EMPTY)
   const [selAth,       setSelAth]      = useState('all')
   const [teamId,       setTeamId]      = useState(null)
+  const [currentUser,  setCurrentUser] = useState(null)
   const [unpublished,  setUnpublished] = useState([])  // unnotified stat rows
   const [publishing,   setPublishing]  = useState(false)
   const [publishMsg,   setPublishMsg]  = useState('')
 
   const fetchData=useCallback(async()=>{
     setLoading(true)
-    const { teamId: currentTeamId } = await getTenantProfile()
+    const { profile, teamId: currentTeamId } = await getTenantProfile('id,full_name,role')
+    setCurrentUser(profile)
     setTeamId(currentTeamId)
     const [{data:s},{data:a}]=await Promise.all([
       scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url,status,back_number)'), currentTeamId).order('match_date',{ascending:false}),
@@ -184,11 +186,20 @@ export default function PerformancePage(){
     return{...a,goals:as.reduce((x,s)=>x+(s.goals||0),0),assists:as.reduce((x,s)=>x+(s.assists||0),0),matches:as.length,avgRating:as.length?(as.reduce((x,s)=>x+parseFloat(s.rating||0),0)/as.length).toFixed(1):0}
   }).filter(a=>a.matches>0).sort((a,b)=>b.goals-a.goals).slice(0,5)
 
+  // Admin (non-superadmin) has read-only access — coaches/analysts log match stats
+  const isAdminReadOnly = currentUser?.role === 'admin'
+
   return(
     <Layout>
       <div className="page-outer">
         <PageHeader label="Analytics" title="Performance" subtitle="Match stats, xG, xA and player analytics"
-          action={<button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>
+          action={!isAdminReadOnly && <button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>
+        {isAdminReadOnly && (
+          <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:20, color:'#0369A1', fontSize:13, fontWeight:600 }}>
+            <span style={{ fontSize:16 }}>👁</span>
+            <span><strong>View-Only Mode</strong> — Performance stats are logged by coaches and analysts. You can view and export all data.</span>
+          </div>
+        )}
 
         {/* ── Publish & Notify All banner ── */}
         {unpublished.length > 0 && (
@@ -377,8 +388,9 @@ export default function PerformancePage(){
                 <span style={{ fontSize:9,color:'var(--text3)' }}>/10</span>
               </div>
               <div style={{ display:'flex',gap:4 }}>
-                <button onClick={()=>openEdit(s)} style={{ background:'#F0FDFA',color:'#0D9488',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Edit</button>
-                <button onClick={()=>handleDelete(s.id)} disabled={deleting===s.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',opacity:deleting===s.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===s.id?'…':'Del'}</button>
+                {!isAdminReadOnly && <button onClick={()=>openEdit(s)} style={{ background:'#F0FDFA',color:'#0D9488',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Edit</button>}
+                {!isAdminReadOnly && <button onClick={()=>handleDelete(s.id)} disabled={deleting===s.id} style={{ background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'3px 8px',borderRadius:'var(--r-sm)',fontSize:10,fontWeight:600,cursor:'pointer',opacity:deleting===s.id?0.5:1,fontFamily:'var(--font)' }}>{deleting===s.id?'…':'Del'}</button>}
+                {isAdminReadOnly && <span style={{ fontSize:9, color:'#94A3B8', fontWeight:600 }}>View only</span>}
               </div>
             </div>
           ))}

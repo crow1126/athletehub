@@ -10,7 +10,7 @@ update public.teams
 set 
   moolre_vas_key = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ2YXNpZCI6MTMxMjAsImV4cCI6MTk1NjUyNzk5OX0.woIRGPdPX01MihjwzGViTKijuJLhOgxjOtLyOGCw2q4',
   sms_sender_id = 'YAFC'
-where id = '324cd849-5c62-4278-9594-97e606439402' or ilike(name, '%young apostle%');
+where id = '0dbe3f49-4dfb-4ec5-a78d-ff629749359f' or id = '324cd849-5c62-4278-9594-97e606439402' or ilike(name, '%young apostle%');
 
 -- Seed custom SMS package for Kotoko SC
 update public.teams

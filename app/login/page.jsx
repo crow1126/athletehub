@@ -52,9 +52,25 @@ export default function LoginPage() {
 
   const [clubLogo,   setClubLogo]  = useState(null)
   const [logoPreview, setLogoPreview] = useState('')
+  const [logoDragActive, setLogoDragActive] = useState(false)
   const [showPass,   setShowPass]  = useState(false)
   const [loading,    setLoading]   = useState(false)
   const [error,      setError]     = useState('')
+
+  const handleLogoFile = (file) => {
+    if (!file) return
+    if (!file.type || !file.type.startsWith('image/')) {
+      setError('Please upload a valid image file (PNG, JPG, SVG, WebP).')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Logo must be under 2MB.')
+      return
+    }
+    setError('')
+    setClubLogo(file)
+    setLogoPreview(URL.createObjectURL(file))
+  }
   const [success,    setSuccess]   = useState('')
   const [needsVerification, setNeedsVerification] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
@@ -579,39 +595,187 @@ export default function LoginPage() {
 
 
                   <div>
-                    <label className="auth-field-label">
-                      Club Logo
-                      <span style={{ marginLeft: 6, fontWeight: 700, textTransform: 'none', letterSpacing: 0, fontSize: 10, color: '#DC2626', background: '#FEF2F2', border: '1px solid #FECACA', padding: '1px 6px', borderRadius: 4 }}>Required</span>
-                    </label>
-                    <div style={{ border: `1.5px dashed ${logoPreview ? '#0D9488' : '#FBBF24'}`, borderRadius: 12, padding: '14px 16px', background: logoPreview ? '#F0FDFA' : '#FFFBEB', display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s' }}>
-                      <div style={{ width: 56, height: 56, borderRadius: 10, background: logoPreview ? 'transparent' : '#FEF3C7', border: `2px solid ${logoPreview ? '#0D9488' : '#FCD34D'}`, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
-                        {logoPreview
-                          ? <img src={logoPreview} alt="Club Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          : <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="#D97706" opacity="0.5"/><circle cx="12" cy="12" r="10" stroke="#D97706" strokeWidth="1.5" fill="none"/><path d="M8 12l2.5 2.5L16 9" stroke="#D97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0"/><text x="12" y="14" textAnchor="middle" fontSize="9" fill="#D97706" fontWeight="bold">LOGO</text></svg>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <label className="auth-field-label" style={{ margin: 0 }}>Club Crest / Badge</label>
+                      <span style={{ fontWeight: 700, fontSize: 10, color: '#0F766E', background: '#CCFBF1', border: '1px solid #99F6E4', padding: '2px 8px', borderRadius: 99, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                        Required
+                      </span>
+                    </div>
+
+                    <div
+                      onDragEnter={e => { e.preventDefault(); e.stopPropagation(); setLogoDragActive(true) }}
+                      onDragLeave={e => { e.preventDefault(); e.stopPropagation(); setLogoDragActive(false) }}
+                      onDragOver={e => { e.preventDefault(); e.stopPropagation(); setLogoDragActive(true) }}
+                      onDrop={e => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setLogoDragActive(false)
+                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                          handleLogoFile(e.dataTransfer.files[0])
                         }
+                      }}
+                      style={{
+                        position: 'relative',
+                        border: logoPreview
+                          ? '1.5px solid #0D9488'
+                          : logoDragActive
+                            ? '2px dashed #0D9488'
+                            : '1.5px dashed #CBD5E1',
+                        borderRadius: 14,
+                        padding: logoPreview ? '14px 16px' : '18px 16px',
+                        background: logoPreview
+                          ? 'linear-gradient(135deg, #F0FDFA 0%, #FFFFFF 100%)'
+                          : logoDragActive
+                            ? '#F0FDFA'
+                            : '#F8FAFC',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 16,
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        boxShadow: logoPreview ? '0 4px 16px rgba(13,148,136,0.08)' : 'none'
+                      }}
+                    >
+                      {/* Logo Preview or Crest Silhouette */}
+                      <div
+                        style={{
+                          width: logoPreview ? 64 : 54,
+                          height: logoPreview ? 64 : 54,
+                          borderRadius: 14,
+                          background: logoPreview ? '#FFFFFF' : '#EEF2F6',
+                          border: logoPreview ? '2px solid #0D9488' : '1.5px dashed #CBD5E1',
+                          overflow: 'hidden',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: logoPreview ? 4 : 0,
+                          boxShadow: logoPreview ? '0 4px 14px rgba(13,148,136,0.18)' : 'inset 0 1px 2px rgba(0,0,0,0.04)',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {logoPreview ? (
+                          <img
+                            src={logoPreview}
+                            alt="Club Crest"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                          />
+                        ) : (
+                          <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z" stroke="#94A3B8" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                            <path d="M12 8v5M10 10.5l2-2.5 2 2.5" stroke="#0D9488" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        )}
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <p style={{ margin: '0 0 6px', fontSize: 12.5, fontWeight: 700, color: logoPreview ? '#0F766E' : '#92400E' }}>
-                          {logoPreview ? '✓ Club logo uploaded' : 'Upload your club crest or badge'}
-                        </p>
-                        <p style={{ margin: '0 0 8px', fontSize: 11, color: '#94A3B8', lineHeight: 1.4 }}>
-                          {logoPreview ? 'Logo will appear on reports, PDFs and your dashboard.' : 'This is required. It appears on all club reports and documents.'}
-                        </p>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <label htmlFor="signup-logo" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: logoPreview ? '#F0FDFA' : '#0D9488', color: logoPreview ? '#0D9488' : '#fff', border: logoPreview ? '1px solid #0D9488' : 'none', padding: '7px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s', boxShadow: logoPreview ? 'none' : '0 2px 8px rgba(13,148,136,0.3)' }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            {logoPreview ? 'Change Logo' : 'Upload Club Logo'}
-                          </label>
-                          <input id="signup-logo" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
-                            const f = e.target.files[0]
-                            if (!f) return
-                            if (f.size > 2 * 1024 * 1024) { setError('Logo must be under 2MB.'); return }
-                            setClubLogo(f)
-                            setLogoPreview(URL.createObjectURL(f))
-                          }} />
-                          {logoPreview && <button type="button" onClick={() => { setClubLogo(null); setLogoPreview('') }} style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Remove</button>}
-                        </div>
-                        {!logoPreview && <p style={{ margin: '6px 0 0', fontSize: 11, color: '#DC2626', fontWeight: 600 }}>⚠ You cannot create an account without a club logo.</p>}
+
+                      {/* Info & Action Area */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {logoPreview ? (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 3 }}>
+                              <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>
+                                {clubLogo?.name || 'Club Crest Attached'}
+                              </span>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: '#0F766E', background: '#CCFBF1', padding: '1px 7px', borderRadius: 99 }}>
+                                ✓ Attached
+                              </span>
+                            </div>
+                            <p style={{ margin: '0 0 10px', fontSize: 11, color: '#64748B', lineHeight: 1.4 }}>
+                              {clubLogo ? `${Math.round(clubLogo.size / 1024)} KB · Ready for match reports, ID cards & PDFs` : 'Official badge configured for this account'}
+                            </p>
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <label
+                                htmlFor="signup-logo"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: '#FFFFFF',
+                                  color: '#0F766E',
+                                  border: '1px solid #CCFBF1',
+                                  padding: '5px 12px',
+                                  borderRadius: 8,
+                                  fontSize: 11.5,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s',
+                                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                                }}
+                              >
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                </svg>
+                                Change
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => { setClubLogo(null); setLogoPreview('') }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#DC2626',
+                                  fontSize: 11.5,
+                                  fontWeight: 600,
+                                  cursor: 'pointer',
+                                  padding: '5px 8px',
+                                  borderRadius: 6,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 4
+                                }}
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <p style={{ margin: '0 0 3px', fontSize: 12.5, fontWeight: 700, color: '#0F172A' }}>
+                              Upload Club Crest or Badge
+                            </p>
+                            <p style={{ margin: '0 0 10px', fontSize: 11, color: '#64748B', lineHeight: 1.4 }}>
+                              Drag & drop image here, or browse from device
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                              <label
+                                htmlFor="signup-logo"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: 'linear-gradient(135deg, #0D9488, #0F766E)',
+                                  color: '#FFFFFF',
+                                  border: 'none',
+                                  padding: '7px 14px',
+                                  borderRadius: 8,
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  cursor: 'pointer',
+                                  boxShadow: '0 2px 8px rgba(13,148,136,0.25)',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+                                </svg>
+                                Browse Crest
+                              </label>
+                              <span style={{ fontSize: 10.5, color: '#94A3B8', fontWeight: 600 }}>
+                                PNG, JPG, SVG up to 2MB
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        <input
+                          id="signup-logo"
+                          type="file"
+                          accept="image/*"
+                          style={{ display: 'none' }}
+                          onChange={e => {
+                            if (e.target.files && e.target.files[0]) {
+                              handleLogoFile(e.target.files[0])
+                            }
+                          }}
+                        />
                       </div>
                     </div>
                   </div>

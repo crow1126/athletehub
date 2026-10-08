@@ -110,12 +110,47 @@ const STATS = [
   { value: '96%', label: 'Satisfaction Rate' },
 ]
 
-const LOGOS = [
-  { name: 'GFA', style: { fontWeight: 900, fontSize: 22, letterSpacing: '-0.03em' } },
-  { name: 'CAF', style: { fontWeight: 800, fontSize: 20, letterSpacing: '0.08em' } },
-  { name: 'Premier League', style: { fontWeight: 700, fontSize: 15 } },
-  { name: 'Accra Lions', style: { fontWeight: 800, fontSize: 17 } },
-  { name: 'Asante Kotoko SC', style: { fontWeight: 800, fontSize: 16 } },
+const MOVING_PARTNERS = [
+  {
+    name: 'Young Apostles FC',
+    tag: 'Ghana Premier League Club',
+    logo: '/young-apostles-logo.png',
+    badge: 'Premier League',
+  },
+  {
+    name: 'Ghana Premier League',
+    tag: 'Official Top Flight Division',
+    logo: '/ghana-premier-league-logo.png',
+    badge: 'Competition',
+  },
+  {
+    name: 'Asante Kotoko SC',
+    tag: 'Registered Elite Club',
+    badge: 'GPL Giant',
+    initials: 'AKSC',
+    bg: '#DC2626',
+  },
+  {
+    name: 'Ghana Football Association',
+    tag: 'National Governing Body',
+    badge: 'GFA',
+    initials: 'GFA',
+    bg: '#0F766E',
+  },
+  {
+    name: 'Accra Lions FC',
+    tag: 'Ghana Premier League Club',
+    badge: 'Premier League',
+    initials: 'ALFC',
+    bg: '#0284C7',
+  },
+  {
+    name: 'CAF African Football',
+    tag: 'Continental Federation',
+    badge: 'CAF',
+    initials: 'CAF',
+    bg: '#D97706',
+  },
 ]
 
 const FAQS = [
@@ -490,6 +525,54 @@ export default function LandingPage() {
           text-decoration: none;
         }
         .nav-pricing-btn:hover { color: #0F172A; }
+
+        /* ── SMART NAV DEMO BUTTON ── */
+        .smart-nav-demo-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          background: #F0FDFA;
+          color: #0F766E;
+          border: 1.5px solid #99F6E4;
+          border-radius: 999px;
+          padding: 7px 16px;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          font-family: inherit;
+          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 1px 3px rgba(13, 148, 136, 0.08);
+          position: relative;
+        }
+        .smart-nav-demo-btn:hover {
+          background: #CCFBF1;
+          border-color: #5EEAD4;
+          color: #0F766E;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(13, 148, 136, 0.18);
+        }
+        .smart-demo-dot-pulse {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #0D9488;
+          box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
+          animation: pulseTealDot 2s infinite;
+        }
+        @keyframes pulseTealDot {
+          0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7); }
+          70% { box-shadow: 0 0 0 6px rgba(13, 148, 136, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
+        }
+        .smart-badge-micro {
+          font-size: 9px;
+          font-weight: 800;
+          background: #0D9488;
+          color: #FFFFFF;
+          padding: 1px 6px;
+          border-radius: 999px;
+          letter-spacing: 0.04em;
+        }
         .nav-cta {
           background: #0F172A; color: #FFFFFF;
           border: none; border-radius: 99px;
@@ -673,6 +756,90 @@ export default function LandingPage() {
         }
         .btn-outline:hover { border-color: #94A3B8; background: #F8FAFC; transform: translateY(-2px); }
 
+        /* ── SMART HERO DEMO BUTTON ── */
+        .smart-hero-demo-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          background: linear-gradient(135deg, #0F766E 0%, #0D9488 50%, #14B8A6 100%);
+          color: #FFFFFF;
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          border-radius: 999px;
+          padding: 8px 24px 8px 14px;
+          cursor: pointer;
+          font-family: inherit;
+          text-align: left;
+          box-shadow: 0 8px 24px rgba(13, 148, 136, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+          transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        .smart-hero-demo-btn::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 65%);
+          opacity: 0;
+          transition: opacity 0.3s;
+          pointer-events: none;
+        }
+        .smart-hero-demo-btn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 34px rgba(13, 148, 136, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.45);
+          border-color: rgba(255, 255, 255, 0.45);
+        }
+        .smart-hero-demo-btn:hover::before {
+          opacity: 1;
+        }
+        .smart-demo-icon-wrap {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.18);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+          backdrop-filter: blur(4px);
+          transition: transform 0.2s;
+        }
+        .smart-hero-demo-btn:hover .smart-demo-icon-wrap {
+          transform: scale(1.08) rotate(-4deg);
+          background: rgba(255, 255, 255, 0.26);
+        }
+        .smart-hero-demo-text {
+          display: flex;
+          flex-direction: column;
+          gap: 1px;
+        }
+        .smart-demo-main-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 14.5px;
+          font-weight: 800;
+          letter-spacing: -0.01em;
+        }
+        .smart-demo-pill {
+          font-size: 9.5px;
+          font-weight: 800;
+          background: rgba(255, 255, 255, 0.22);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          padding: 1px 7px;
+          border-radius: 999px;
+          letter-spacing: 0.05em;
+        }
+        .smart-demo-subtext {
+          font-size: 11px;
+          color: rgba(255, 255, 255, 0.88);
+          font-weight: 500;
+          letter-spacing: 0.01em;
+        }
+
         /* ── HERO IMAGE BOX ── */
         .hero-visual {
           position: relative;
@@ -755,6 +922,129 @@ export default function LandingPage() {
         .feat-desc  { font-size: 13px; color: #64748B; line-height: 1.7; }
         .feat-link { color: #0D9488; text-decoration: underline; font-weight: 600; }
         .feat-link:hover { color: #0F766E; }
+
+        /* ── MOVING PARTNERS & LEAGUES TICKER ── */
+        .partner-marquee-section {
+          width: 100%;
+          overflow: hidden;
+          background: #090E17;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          padding: 32px 0 28px;
+          position: relative;
+        }
+        .partner-marquee-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-bottom: 20px;
+          padding: 0 20px;
+        }
+        .marquee-live-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: #14B8A6;
+          box-shadow: 0 0 8px #14B8A6;
+          animation: pulseTealDot 2s infinite;
+        }
+        .partner-marquee-title {
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: #2DD4BF;
+        }
+        .marquee-track-wrapper {
+          display: flex;
+          width: 100%;
+          overflow: hidden;
+          position: relative;
+          mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+        }
+        .marquee-track {
+          display: flex;
+          align-items: center;
+          gap: 18px;
+          width: max-content;
+          animation: marqueeContinuous 30s linear infinite;
+          will-change: transform;
+        }
+        .marquee-track:hover {
+          animation-play-state: paused;
+        }
+        @keyframes marqueeContinuous {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .marquee-card {
+          display: inline-flex;
+          align-items: center;
+          gap: 14px;
+          padding: 10px 22px 10px 14px;
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          white-space: nowrap;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          user-select: none;
+        }
+        .marquee-card:hover {
+          background: rgba(13, 148, 136, 0.16);
+          border-color: rgba(45, 212, 191, 0.45);
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+        .marquee-logo-frame {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: #FFFFFF;
+          border: 1.5px solid rgba(255, 255, 255, 0.8);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+          flex-shrink: 0;
+          overflow: hidden;
+        }
+        .marquee-logo-img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+        }
+        .marquee-info {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+        .marquee-name {
+          font-size: 14px;
+          font-weight: 800;
+          color: #FFFFFF;
+          letter-spacing: -0.01em;
+        }
+        .marquee-badge-pill {
+          font-size: 9.5px;
+          font-weight: 800;
+          background: rgba(20, 184, 166, 0.2);
+          border: 1px solid rgba(20, 184, 166, 0.35);
+          color: #2DD4BF;
+          padding: 1px 7px;
+          border-radius: 999px;
+          letter-spacing: 0.03em;
+        }
+        .marquee-tag {
+          font-size: 11px;
+          font-weight: 500;
+          color: #94A3B8;
+          letter-spacing: 0.01em;
+        }
 
         /* ── STATS BAND ── */
         .stats-band {
@@ -1525,7 +1815,7 @@ export default function LandingPage() {
         @media (max-width: 900px) {
           .nav-links-center { display: none; }
           .nav-hamburger { display: block; }
-          .nav-pricing-btn { display: none; }
+          .nav-pricing-btn, .smart-nav-demo-btn { display: none; }
           .nav-cta { display: none; }
           .features-grid { grid-template-columns: repeat(2,1fr); }
           .pricing-grid { grid-template-columns: 1fr; max-width: 480px; }
@@ -1758,13 +2048,18 @@ export default function LandingPage() {
             <button 
               type="button" 
               className="btn-demo-menu" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: '#F0FDFA', border: '1.5px solid #99F6E4', color: '#0F766E' }}
               onClick={() => { setMenuOpen(false); setDemoModalOpen(true); }}
             >
-              <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
-                <rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/>
-                <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+              <span className="smart-demo-dot-pulse" />
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
-              Book 1-on-1 Demo
+              <span>Book 1-on-1 Demo</span>
+              <span className="smart-badge-micro">LIVE</span>
             </button>
           </div>
 
@@ -1803,18 +2098,19 @@ export default function LandingPage() {
 
         <div className="nav-right">
           <button 
-            className="nav-pricing-btn" 
-            style={{ 
-              color: '#0D9488', 
-              background: '#F0FDFA', 
-              border: '1.5px solid #CCFBF1', 
-              borderRadius: 99, 
-              padding: '6px 16px', 
-              fontWeight: 700 
-            }} 
+            className="smart-nav-demo-btn" 
             onClick={() => setDemoModalOpen(true)}
+            title="Book a live 1-on-1 walkthrough"
           >
-            Book Demo
+            <span className="smart-demo-dot-pulse" />
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <span>Book Demo</span>
+            <span className="smart-badge-micro">LIVE</span>
           </button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
@@ -1842,14 +2138,25 @@ export default function LandingPage() {
           </Link>
           <button 
             onClick={() => setDemoModalOpen(true)}
-            className="btn-primary" 
-            style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', border: 'none', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.25)', gap: 8 }}
+            className="smart-hero-demo-btn"
+            title="Schedule a personalized 1-on-1 walkthrough"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="4" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="2"/>
-              <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-            Book 1-on-1 Demo
+            <div className="smart-demo-icon-wrap">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
+              </svg>
+            </div>
+            <div className="smart-hero-demo-text">
+              <div className="smart-demo-main-row">
+                <span>Book 1-on-1 Demo</span>
+                <span className="smart-demo-pill">15 MIN</span>
+              </div>
+              <span className="smart-demo-subtext">Live walkthrough & instant setup</span>
+            </div>
           </button>
           {!isElectron && (
             <a 
@@ -1895,6 +2202,38 @@ export default function LandingPage() {
                 <div className="feat-icon">{f.icon}</div>
                 <div className="feat-title">{f.title}</div>
                 <div className="feat-desc">{f.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── MOVING PARTNERS & LEAGUES TICKER ── */}
+      <section className="partner-marquee-section">
+        <div className="partner-marquee-header">
+          <span className="marquee-live-dot" />
+          <span className="partner-marquee-title">Official Clubs & Competitions on ApexTrack GH</span>
+        </div>
+        <div className="marquee-track-wrapper">
+          <div className="marquee-track">
+            {[...MOVING_PARTNERS, ...MOVING_PARTNERS].map((item, idx) => (
+              <div key={`${item.name}-${idx}`} className="marquee-card">
+                <div className="marquee-logo-frame">
+                  {item.logo ? (
+                    <img src={item.logo} alt={item.name} className="marquee-logo-img" />
+                  ) : (
+                    <span style={{ fontSize: 13, fontWeight: 900, color: item.bg || '#0D9488' }}>
+                      {item.initials}
+                    </span>
+                  )}
+                </div>
+                <div className="marquee-info">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span className="marquee-name">{item.name}</span>
+                    {item.badge && <span className="marquee-badge-pill">{item.badge}</span>}
+                  </div>
+                  <span className="marquee-tag">{item.tag}</span>
+                </div>
               </div>
             ))}
           </div>

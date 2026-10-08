@@ -212,9 +212,6 @@ export default function SuperadminPage() {
   const [newClub, setNewClub] = useState('')
   const [addingAdmin, setAddingAdmin] = useState(false)
 
-  const [inspectModal, setInspectModal] = useState(false)
-  const [inspectSearch, setInspectSearch] = useState('')
-
   // Subscription management modal state
   const [subModal, setSubModal] = useState(false)
   const [subTeam, setSubTeam] = useState(null)
@@ -1000,9 +997,6 @@ export default function SuperadminPage() {
                 <Btn variant="primary" onClick={() => { setAddModal(true); setMobileNav(false) }} style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
                   + Provision Admin
                 </Btn>
-                <Btn onClick={() => { setInspectModal(true); setMobileNav(false) }} style={{ width:'100%', justifyContent:'center', padding:'10px 14px', background:'#0F766E', color:'#fff', border:'none' }}>
-                  Admin Suite ▾
-                </Btn>
                 <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
                   Sign Out
                 </Btn>
@@ -1080,9 +1074,6 @@ export default function SuperadminPage() {
               </a>
               <Btn variant="primary" onClick={() => setAddModal(true)} className="sa-provision-btn" style={{ fontSize:12 }}>
                 + Provision Admin
-              </Btn>
-              <Btn onClick={() => setInspectModal(true)} style={{ fontSize:12, background:'#0F766E', color:'#fff', border:'none' }}>
-                Admin Suite ▾
               </Btn>
               <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ fontSize:12 }}>
                 Sign Out
@@ -1281,34 +1272,6 @@ export default function SuperadminPage() {
                                 title="Manage Club Plan & Limits"
                               >
                                 💳 Plan
-                              </button>
-
-                              {/* Inspect Workspace Action */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  const targetId = matchedTeam?.id || firstUserWithTeam?.team_id || teams.find(t => t.name?.toLowerCase() === group.club_name?.toLowerCase())?.id
-                                  setSuperadminActiveTeam(targetId || null)
-                                  router.push('/dashboard')
-                                }}
-                                style={{
-                                  fontSize:11,
-                                  fontWeight:700,
-                                  background:'#0F766E',
-                                  color:'#FFFFFF',
-                                  padding:'5px 12px',
-                                  borderRadius:8,
-                                  border:'none',
-                                  cursor:'pointer',
-                                  flexShrink:0,
-                                  transition:'opacity 0.15s',
-                                  boxShadow:'0 2px 6px rgba(15,118,110,0.25)',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
-                                onMouseLeave={e => e.currentTarget.style.opacity = '1'}
-                                title="Inspect this club's Admin Suite"
-                              >
-                                Inspect &rarr;
                               </button>
 
                               {/* User count badge */}
@@ -1594,14 +1557,8 @@ export default function SuperadminPage() {
                                   </Btn>
                                 </div>
                                 <div style={{ display:'flex', gap:6 }}>
-                                  <Btn variant="primary" onClick={() => {
-                                    setSuperadminActiveTeam(t.id)
-                                    router.push('/dashboard')
-                                  }} style={{ fontSize:11, flex:1, justifyContent:'center' }}>
-                                    Inspect Workspace →
-                                  </Btn>
-                                  <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, padding:'7px 12px' }} disabled={acting} title="Wipe Team">
-                                    Wipe
+                                  <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, padding:'7px 12px', flex:1, justifyContent:'center' }} disabled={acting} title="Wipe Team">
+                                    Wipe Team
                                   </Btn>
                                 </div>
                               </div>
@@ -2130,95 +2087,6 @@ export default function SuperadminPage() {
               <Btn variant="primary" onClick={handleAddAdmin} disabled={addingAdmin} style={{ flex:2, justifyContent:'center' }}>
                 {addingAdmin?'Provisioning…':'Provision Account'}
               </Btn>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* INSPECT WORKSPACE MODAL */}
-      {inspectModal && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', backdropFilter:'blur(8px)', zIndex:500, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-          <div className="sa-card" style={{ width:'100%', maxWidth:500, display:'flex', flexDirection:'column', gap:16 }}>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #f1f5f9', paddingBottom:12 }}>
-              <div>
-                <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Inspect Club Workspace</h3>
-                <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>Select a registered club to inspect its admin workspace</p>
-              </div>
-              <button onClick={() => setInspectModal(false)} style={{ background:'none', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
-            </div>
-
-            {/* Club Search and List */}
-            <div>
-              <label style={{ display:'block', fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
-                Select Club to Inspect
-              </label>
-              <input
-                className="sa-custom-input"
-                type="text"
-                placeholder="Search registered clubs by name or code…"
-                value={inspectSearch}
-                onChange={e => setInspectSearch(e.target.value)}
-                style={{ marginBottom:10 }}
-              />
-
-              <div style={{ maxHeight:200, overflowY:'auto', display:'flex', flexDirection:'column', gap:6, paddingRight:4 }}>
-                {activeTeams
-                  .filter(t => !inspectSearch || t.name?.toLowerCase().includes(inspectSearch.toLowerCase()) || t.short_name?.toLowerCase().includes(inspectSearch.toLowerCase()))
-                  .map(t => {
-                    const teamUsers = getTeamUsers(t.id)
-                    const admin = teamUsers.find(p => p.role === 'admin')
-                    const sub = getSubForTeam(t.id)
-                    const subBadge = getSubBadge(sub)
-
-                    return (
-                      <div
-                        key={t.id}
-                        onClick={() => {
-                          setSuperadminActiveTeam(t.id)
-                          setInspectModal(false)
-                          router.push('/dashboard')
-                        }}
-                        style={{
-                          display:'flex',
-                          alignItems:'center',
-                          justifyContent:'space-between',
-                          padding:'10px 12px',
-                          borderRadius:10,
-                          border:'1px solid #E2E8F0',
-                          background:'#fff',
-                          cursor:'pointer',
-                          transition:'all 0.15s',
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#99F6E4' }}
-                        onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.borderColor = '#E2E8F0' }}
-                      >
-                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0, flex:1 }}>
-                          <ClubLogoImg url={t.logo_url} name={t.name} size={32} />
-                          <div style={{ minWidth:0, flex:1 }}>
-                            <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                              {t.name}
-                            </div>
-                            <div style={{ fontSize:10, color:'#64748B' }}>
-                              Admin: {admin?.full_name || 'Unassigned'} · CODE: {t.short_name}
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ display:'flex', alignItems:'center', gap:8, flexShrink:0 }}>
-                          {subBadge && (
-                            <span style={{ fontSize:9, fontWeight:700, background:subBadge.bg, color:subBadge.color, padding:'2px 6px', borderRadius:99 }}>
-                              {subBadge.label}
-                            </span>
-                          )}
-                          <span style={{ fontSize:11, fontWeight:700, color:'#0D9488' }}>Inspect &rarr;</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-              </div>
-            </div>
-
-            <div style={{ borderTop:'1px solid #f1f5f9', paddingTop:12, display:'flex', justifyContent:'flex-end' }}>
-              <Btn onClick={() => setInspectModal(false)}>Close</Btn>
             </div>
           </div>
         </div>

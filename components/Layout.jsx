@@ -1054,67 +1054,6 @@ export default function Layout({ children }) {
 
         <NotificationPromptBanner />
 
-        {/* SUPERADMIN WORKSPACE INSPECTION BAR */}
-        {role === 'superadmin' && (
-          <div style={{
-            background: '#0F172A',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            padding: '8px 24px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: 10,
-            fontSize: 12,
-            color: '#E2E8F0',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-          }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 5,
-                fontWeight: 800,
-                color: '#FDE047',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-                fontSize: 11
-              }}>
-                🔍 Workspace Inspection
-              </span>
-
-              <span style={{ color: '#64748B' }}>|</span>
-
-              <span>
-                Active Club: <strong style={{ color: '#FFFFFF' }}>{teamName}</strong>
-              </span>
-            </div>
-
-            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <span style={{ fontSize:11, color:'#94A3B8', fontFamily:'monospace' }}>
-                Team ID: {profile?.team_id ? `${profile.team_id.slice(0,8)}...` : 'NONE'}
-              </span>
-
-              <Link
-                href="/superadmin"
-                style={{
-                  color: '#94A3B8',
-                  textDecoration: 'none',
-                  fontSize: 11,
-                  fontWeight: 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 3
-                }}
-                onMouseEnter={e => e.currentTarget.style.color = '#FFFFFF'}
-                onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
-              >
-                Exit to Superadmin &rarr;
-              </Link>
-            </div>
-          </div>
-        )}
-
         <main style={{ flex:1, minWidth:0, width:'100%', overflowX:'hidden' }}>{children}</main>
       </div>
 

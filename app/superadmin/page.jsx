@@ -5,69 +5,171 @@ import { supabase } from '@/lib/supabase'
 import { setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
 
 // ── ICONS ──
-const IconUsers = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconUsers = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
     <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
   </svg>
 )
-const IconClubs = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconUser = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+  </svg>
+)
+const IconClubs = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 10v6M2 10v6" /><path d="M6 10h12" /><path d="M12 22V2M12 2l10 8H2L12 2z" />
   </svg>
 )
-const IconMaintenance = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconMaintenance = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
     <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 )
-const IconMenu = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconMenu = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
   </svg>
 )
-const IconClose = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconClose = ({ size = 22 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
   </svg>
 )
-const IconCreditCard = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+const IconCreditCard = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="1" y="4" width="22" height="16" rx="2" ry="2" /><line x1="1" y1="10" x2="23" y2="10" />
   </svg>
 )
-const IconCamera = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+const IconCamera = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
     <circle cx="12" cy="13" r="4" />
   </svg>
 )
-const IconCheckCircle = () => (
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+const IconCheckCircle = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
   </svg>
 )
-const IconBarChart = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconBarChart = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
   </svg>
 )
-const IconLink = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconLink = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
     <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
   </svg>
 )
-const IconGlobe = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconGlobe = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="12" cy="12" r="10" />
     <line x1="2" y1="12" x2="22" y2="12" />
     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
   </svg>
 )
-const IconMapPin = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const IconMapPin = ({ size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
+  </svg>
+)
+const IconDatabase = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+  </svg>
+)
+const IconAlertTriangle = ({ size = 14, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+    <line x1="12" y1="9" x2="12" y2="13"/>
+    <line x1="12" y1="17" x2="12.01" y2="17"/>
+  </svg>
+)
+const IconTable = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M3 15h18"/><path d="M9 3v18"/><path d="M15 3v18"/>
+  </svg>
+)
+const IconSettings = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+    <circle cx="12" cy="12" r="3"/>
+  </svg>
+)
+const IconRefresh = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+  </svg>
+)
+const IconCopy = ({ size = 11 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+  </svg>
+)
+const IconCrown = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>
+  </svg>
+)
+const IconTrash = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+    <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+  </svg>
+)
+const IconZap = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+  </svg>
+)
+const IconSearch = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+)
+const IconCalendar = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+  </svg>
+)
+const IconFileText = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 2 2h12a2 2 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+  </svg>
+)
+const IconArrowRight = ({ size = 12 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+  </svg>
+)
+const IconDownload = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+  </svg>
+)
+const IconPlus = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+)
+const IconShieldCheck = ({ size = 13, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
+  </svg>
+)
+const IconLogOut = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+  </svg>
+)
+const IconActivity = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
   </svg>
 )
 
@@ -155,7 +257,9 @@ function Toast({ toast }) {
   const isErr = toast.type === 'error'
   return (
     <div style={{ position:'fixed', bottom:24, right:24, zIndex:9999, background:isErr?'#7f1d1d':'#064e3b', color:isErr?'#fca5a5':'#6ee7b7', padding:'12px 20px', borderRadius:12, fontSize:13, fontWeight:700, boxShadow:'0 10px 30px rgba(0,0,0,0.15)', maxWidth:340, border:`1px solid ${isErr?'#ef444440':'#10b98140'}`, display:'flex', alignItems:'center', gap:10 }}>
-      <span style={{ color:isErr?'#ef4444':'#10b981', fontSize:16 }}>{isErr?'':'✓'}</span>
+      <span style={{ color:isErr?'#ef4444':'#10b981', display:'flex', alignItems:'center' }}>
+        {isErr ? <IconAlertTriangle size={16} color="#ef4444" /> : <IconCheckCircle size={16} color="#10b981" />}
+      </span>
       <span>{toast.msg}</span>
     </div>
   )
@@ -1092,10 +1196,10 @@ export default function SuperadminPage() {
             <div style={{ borderTop:'1px solid #e2e8f0', marginTop:8, paddingTop:12 }}>
               <div className="sa-mobile-provision" style={{ display:'none', gap:8, flexDirection:'column' }}>
                 <Btn variant="primary" onClick={() => { setAddModal(true); setMobileNav(false) }} style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
-                  + Provision Admin
+                  <IconPlus size={14} /> Provision Admin
                 </Btn>
                 <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ width:'100%', justifyContent:'center', padding:'10px 14px' }}>
-                  Sign Out
+                  <IconLogOut size={14} /> Sign Out
                 </Btn>
               </div>
             </div>
@@ -1166,14 +1270,14 @@ export default function SuperadminPage() {
             <div className="sa-header-btns" style={{ display:'flex', alignItems:'center', gap:8 }}>
               <a href="/api/download-logo" download style={{ textDecoration:'none' }}>
                 <Btn style={{ fontSize:12, background:'#F0FDFA', color:'#0D9488', border:'1px solid #CCFBF1' }}>
-                  ↓ Download Logo
+                  <IconDownload size={13} /> Download Logo
                 </Btn>
               </a>
               <Btn variant="primary" onClick={() => setAddModal(true)} className="sa-provision-btn" style={{ fontSize:12 }}>
-                + Provision Admin
+                <IconPlus size={13} /> Provision Admin
               </Btn>
               <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ fontSize:12 }}>
-                Sign Out
+                <IconLogOut size={13} /> Sign Out
               </Btn>
             </div>
           </header>
@@ -1209,7 +1313,7 @@ export default function SuperadminPage() {
                   <div className="sa-filter-row">
                     <div style={{ position:'relative', flex:'1 1 240px', maxWidth:340 }}>
                       <input className="sa-custom-input" placeholder="Search name, email, or club…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft:36 }} />
-                      <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:14 }}></span>
+                      <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', display:'flex', alignItems:'center' }}><IconSearch size={14} /></span>
                     </div>
                     <div className="sa-filter-btns">
                       {['all','pending','approved','rejected'].map(f => (
@@ -1340,7 +1444,7 @@ export default function SuperadminPage() {
                                 onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1' }}
                                 title="Upload or Change Club Logo"
                               >
-                                <IconCamera /> Logo
+                                <IconCamera size={13} /> Logo
                               </button>
 
                               {/* Manage Plan Button - Always Available */}
@@ -1368,7 +1472,7 @@ export default function SuperadminPage() {
                                 onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
                                 title="Manage Club Plan & Limits"
                               >
-                                Plan
+                                <IconCreditCard size={13} /> Plan
                               </button>
 
                               {/* User count badge */}
@@ -1392,7 +1496,7 @@ export default function SuperadminPage() {
                                       <div style={{ fontSize:10, color:'#0d9488', fontFamily:'monospace', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
                                         <span>ID: {p.id}</span>
                                         <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.id); showToast('Copied User ID!') }}
-                                          style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID"></button>
+                                          style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:10, padding:0, display:'inline-flex', alignItems:'center', gap:2 }} title="Copy User ID"><IconCopy size={11} /> Copy</button>
                                       </div>
                                     </div>
                                     {/* Status */}
@@ -1428,7 +1532,7 @@ export default function SuperadminPage() {
                             style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background: expandedUser === '__orphans__' ? '#fff5f5' : '#fff', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.background='#fff5f5'}
                             onMouseLeave={e => e.currentTarget.style.background=expandedUser === '__orphans__' ? '#fff5f5' : '#fff'}>
-                            <div style={{ width:42, height:42, borderRadius:'50%', background:'#ffe4e6', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}></div>
+                            <div style={{ width:42, height:42, borderRadius:'50%', background:'#ffe4e6', display:'flex', alignItems:'center', justifyContent:'center', color:'#e11d48', flexShrink:0 }}><IconAlertTriangle size={20} color="#e11d48" /></div>
                             <div style={{ flex:1 }}>
                               <div style={{ fontWeight:800, fontSize:15, color:'#e11d48' }}>Orphaned / No Club Assigned</div>
                               <div style={{ fontSize:11, color:'#f87171', marginTop:2 }}>{orphans.length} account{orphans.length !== 1 ? 's' : ''} — no club linked, may need cleanup</div>
@@ -1451,7 +1555,7 @@ export default function SuperadminPage() {
                                     <div style={{ fontSize:10, color:'#e11d48', fontFamily:'monospace', marginTop:2, display:'flex', alignItems:'center', gap:4 }}>
                                       <span>ID: {p.id}</span>
                                       <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(p.id); showToast('Copied User ID!') }}
-                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#f87171', fontSize:10, padding:0, display:'inline-block' }} title="Copy User ID"></button>
+                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#f87171', fontSize:10, padding:0, display:'inline-flex', alignItems:'center', gap:2 }} title="Copy User ID"><IconCopy size={11} /> Copy</button>
                                     </div>
                                   </div>
                                   <Pill status={p.registration_status || 'pending'} />
@@ -1650,7 +1754,7 @@ export default function SuperadminPage() {
                                     Unlimited
                                   </Btn>
                                   <Btn onClick={() => openLogoModal(t)} style={{ fontSize:11, padding:'7px 10px', background:'#f8fafc', borderColor:'#e2e8f0', color:'#475569', fontWeight:700 }} title="Upload or Change Club Logo">
-                                    <IconCamera /> Logo
+                                    <IconCamera size={13} /> Logo
                                   </Btn>
                                 </div>
                                 <div style={{ display:'flex', gap:6 }}>
@@ -1715,11 +1819,11 @@ export default function SuperadminPage() {
                                 <div style={{ display:'flex', alignItems:'center', gap:6, minWidth:0 }}>
                                   <span style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }} title={t.id}>{t.id}</span>
                                   <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(t.id); showToast('Copied Team ID!') }}
-                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0 }} title="Copy Team ID"></button>
+                                    style={{ background:'none', border:'none', cursor:'pointer', color:'#94a3b8', fontSize:11, padding:0, display:'inline-flex', alignItems:'center', gap:2 }} title="Copy Team ID"><IconCopy size={11} /> Copy</button>
                                 </div>
                               </div>
                               <Btn variant="danger" onClick={() => deleteTeamDirect(t.id, t.name)} style={{ fontSize:11, width:'100%', justifyContent:'center' }} disabled={acting}>
-                                Wipe Team
+                                <IconTrash size={13} /> Wipe Team
                               </Btn>
                             </div>
                           </div>
@@ -1751,7 +1855,7 @@ export default function SuperadminPage() {
                       </span>
                     </div>
                     <Btn onClick={loadClicks} disabled={analyticsLoading} variant="primary" style={{ fontSize:12, padding:'6px 14px' }}>
-                      {analyticsLoading ? 'Refreshing...' : '↻ Refresh Data'}
+                      {analyticsLoading ? 'Refreshing...' : <><IconRefresh size={13} /> Refresh Data</>}
                     </Btn>
                   </div>
 
@@ -2009,7 +2113,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span></span>
+                        <IconDatabase size={14} />
                         <span>Team Database Hub</span>
                         <span style={{ fontSize:10, background: dbViewMode==='team'?'rgba(255,255,255,0.25)':'#e2e8f0', color: dbViewMode==='team'?'#fff':'#475569', borderRadius:99, padding:'1px 6px' }}>{teams.length}</span>
                       </button>
@@ -2023,7 +2127,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span></span>
+                        <IconAlertTriangle size={14} />
                         <span>Unassigned &amp; Orphan Roots</span>
                         {totalOrphans > 0 && (
                           <span style={{ fontSize:10, background: dbViewMode==='orphans'?'rgba(255,255,255,0.25)':'#ffe4e6', color: dbViewMode==='orphans'?'#fff':'#e11d48', borderRadius:99, padding:'1px 6px', fontWeight:800 }}>
@@ -2041,7 +2145,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span></span>
+                        <IconTable size={14} />
                         <span>Raw Table Inspector</span>
                       </button>
 
@@ -2054,14 +2158,14 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span></span>
+                        <IconSettings size={14} />
                         <span>System Maintenance &amp; Tools</span>
                       </button>
                     </div>
 
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <Btn onClick={() => { loadProfiles(); loadTeams(); if(dbViewMode==='raw') loadTable(dbTable) }} style={{ padding:'6px 12px', fontSize:11 }}>
-                        ↻ Sync All Roots
+                        <><IconRefresh size={13} /> Sync All Roots</>
                       </Btn>
                     </div>
                   </div>
@@ -2111,11 +2215,11 @@ export default function SuperadminPage() {
                                     {t.name}
                                   </div>
                                   <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3 }}>
-                                    <span style={{ fontSize:10, color:'#0d9488', fontWeight:700 }}>
-                                      {tAthletes.length}
+                                    <span style={{ fontSize:10, color:'#0d9488', fontWeight:700, display:'inline-flex', alignItems:'center', gap:3 }}>
+                                      <IconUser size={11} /> {tAthletes.length}
                                     </span>
-                                    <span style={{ fontSize:10, color:'#64748b', fontWeight:600 }}>
-                                      {tStaff.length}
+                                    <span style={{ fontSize:10, color:'#64748b', fontWeight:600, display:'inline-flex', alignItems:'center', gap:3 }}>
+                                      <IconUsers size={11} /> {tStaff.length}
                                     </span>
                                     <span style={{ fontSize:9, background:tBadge.bg, color:tBadge.color, borderRadius:4, padding:'1px 5px', fontWeight:700 }}>
                                       {tBadge.plan}
@@ -2148,7 +2252,7 @@ export default function SuperadminPage() {
                                       {currentTeam.short_name || 'CLUB'}
                                     </span>
                                     <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, background:'#d1fae5', color:'#059669', padding:'2px 8px', borderRadius:99 }}>
-                                      Verified Club Roots
+                                      <IconShieldCheck size={12} color="#059669" /> Verified Club Roots
                                     </span>
                                   </div>
 
@@ -2158,9 +2262,9 @@ export default function SuperadminPage() {
                                       <span style={{ fontWeight:700, color:'#0f172a' }}>{currentTeam.id}</span>
                                       <button
                                         onClick={() => { navigator.clipboard.writeText(currentTeam.id); showToast('Copied Team UUID!') }}
-                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#0d9488', fontSize:11, padding:0, fontWeight:700 }}
+                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#0d9488', fontSize:11, padding:0, fontWeight:700, display:'inline-flex', alignItems:'center', gap:2 }}
                                         title="Copy Team ID">
-                                        Copy
+                                        <IconCopy size={11} /> Copy
                                       </button>
                                     </span>
                                     <span style={{ fontSize:11, color:'#64748b' }}>
@@ -2173,16 +2277,16 @@ export default function SuperadminPage() {
                               {/* Quick Team Roots Actions */}
                               <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                                 <Btn onClick={() => openSubModal(currentTeam)} style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', border:'1px solid #99F6E4' }}>
-                                  Edit Subscription
+                                  <IconCreditCard size={13} /> Edit Subscription
                                 </Btn>
                                 <Btn onClick={() => openLogoModal(currentTeam)} style={{ fontSize:11 }}>
-                                  Update Logo
+                                  <IconCamera size={13} /> Update Logo
                                 </Btn>
                                 <Btn onClick={() => handleQuickUnlimited(currentTeam.id, currentTeam.name)} style={{ fontSize:11, background:'#FEF3C7', color:'#92400E', border:'1px solid #F59E0B' }}>
-                                  Grant VIP
+                                  <IconCrown size={13} /> Grant VIP
                                 </Btn>
                                 <Btn onClick={() => deleteTeamDirect(currentTeam.id, currentTeam.name)} variant="danger" style={{ fontSize:11 }}>
-                                  Wipe Team &amp; Roots
+                                  <IconTrash size={13} /> Wipe Team &amp; Roots
                                 </Btn>
                               </div>
                             </div>
@@ -2190,25 +2294,25 @@ export default function SuperadminPage() {
                             {/* 4 Connected Database Metrics */}
                             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:12, marginTop:14 }}>
                               <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
-                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Athletes Database</div>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}><IconUser size={12} /> Athletes Database</div>
                                 <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>{teamAthletes.length}</div>
                                 <div style={{ fontSize:11, color:'#0d9488', fontWeight:600 }}>Active registered players</div>
                               </div>
 
                               <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
-                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Staff &amp; Admins</div>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}><IconUsers size={12} /> Staff &amp; Admins</div>
                                 <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>{teamStaff.length}</div>
                                 <div style={{ fontSize:11, color:'#2563eb', fontWeight:600 }}>Authorized accounts</div>
                               </div>
 
                               <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
-                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Subscription Status</div>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}><IconCreditCard size={12} /> Subscription Status</div>
                                 <div style={{ fontSize:16, fontWeight:900, color:subBadge.color, marginTop:4 }}>{subBadge.plan}</div>
                                 <div style={{ fontSize:11, color:'#64748b' }}>{subBadge.end !== '—' ? `Ends ${subBadge.end}` : 'Unlimited access'}</div>
                               </div>
 
                               <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
-                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Contracts &amp; Medical</div>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}><IconFileText size={12} /> Contracts &amp; Medical</div>
                                 <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>
                                   {teamContracts.length} <span style={{ fontSize:12, fontWeight:500, color:'#64748b' }}>ctrs</span> · {teamInjuries.length} <span style={{ fontSize:12, fontWeight:500, color:'#64748b' }}>inj</span>
                                 </div>
@@ -2244,7 +2348,7 @@ export default function SuperadminPage() {
                                     cursor: 'pointer',
                                     transition: 'all 0.15s',
                                   }}>
-                                  {tab.label}
+                                  <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>{tab.icon} {tab.label}</span>
                                 </button>
                               ))}
                             </div>
@@ -2261,7 +2365,7 @@ export default function SuperadminPage() {
                                       onChange={e => setDbTeamSearch(e.target.value)}
                                       style={{ paddingLeft:32, fontSize:12 }}
                                     />
-                                    <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:13 }}></span>
+                                    <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', display:'flex', alignItems:'center' }}><IconSearch size={14} /></span>
                                   </div>
                                   <span style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
                                     Showing {filteredAthletes.length} of {teamAthletes.length} athletes
@@ -2343,7 +2447,7 @@ export default function SuperadminPage() {
                                                     setReassignModal(true)
                                                   }}
                                                   style={{ fontSize:10, padding:'3px 8px' }}>
-                                                  Move Club
+                                                  <IconArrowRight size={11} /> Move Club
                                                 </Btn>
                                                 <Btn
                                                   variant="danger"
@@ -2418,7 +2522,7 @@ export default function SuperadminPage() {
                                                     setReassignModal(true)
                                                   }}
                                                   style={{ fontSize:10, padding:'3px 8px' }}>
-                                                  Move Club
+                                                  <IconArrowRight size={11} /> Move Club
                                                 </Btn>
                                                 <Btn
                                                   variant="danger"
@@ -2455,10 +2559,10 @@ export default function SuperadminPage() {
                                     </div>
                                     <div style={{ marginTop:14, display:'flex', gap:8, flexWrap:'wrap' }}>
                                       <Btn onClick={() => openSubModal(currentTeam)} style={{ fontSize:11, background:'#0d9488', color:'#fff', border:'none' }}>
-                                        Modify Plan Limits
+                                        <IconCreditCard size={13} /> Modify Plan Limits
                                       </Btn>
                                       <Btn onClick={() => handleQuickUnlimited(currentTeam.id, currentTeam.name)} style={{ fontSize:11, background:'#FEF3C7', color:'#92400E', border:'1px solid #F59E0B' }}>
-                                        Grant Unlimited VIP
+                                        <IconCrown size={13} /> Grant Unlimited VIP
                                       </Btn>
                                     </div>
                                   </div>
@@ -2595,7 +2699,7 @@ export default function SuperadminPage() {
                     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                       {totalOrphans === 0 ? (
                         <div className="sa-card" style={{ padding:40, textAlign:'center', background:'#f0fdf4', border:'1.5px solid #bbf7d0' }}>
-                          <div style={{ fontSize:32, marginBottom:10 }}></div>
+                          <div style={{ display:'flex', justifyContent:'center', marginBottom:10, color:'#166534' }}><IconShieldCheck size={36} color="#166534" /></div>
                           <h3 style={{ fontSize:16, fontWeight:800, color:'#166534' }}>All Roots are Perfectly Healthy!</h3>
                           <p style={{ fontSize:13, color:'#15803d', marginTop:4 }}>
                             Every single athlete and user account in the database is correctly linked to a verified team. No orphans found.
@@ -2620,8 +2724,8 @@ export default function SuperadminPage() {
                           {/* Orphan Athletes */}
                           {orphanAthletes.length > 0 && (
                             <div className="sa-card">
-                              <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>
-                                Unassigned Athletes ({orphanAthletes.length})
+                              <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
+                                <IconAlertTriangle size={15} color="#e11d48" /> Unassigned Athletes ({orphanAthletes.length})
                               </h3>
                               <div className="sa-table-wrap">
                                 <table className="sa-table">
@@ -2654,7 +2758,7 @@ export default function SuperadminPage() {
                                                 setReassignModal(true)
                                               }}
                                               style={{ fontSize:10, padding:'3px 8px', background:'#f0fdfa', color:'#0d9488', border:'1px solid #99f6e4' }}>
-                                              + Link to Team
+                                              <IconPlus size={11} /> Link to Team
                                             </Btn>
                                             <Btn
                                               variant="danger"
@@ -2676,8 +2780,8 @@ export default function SuperadminPage() {
                           {/* Orphan Profiles */}
                           {orphanProfiles.length > 0 && (
                             <div className="sa-card">
-                              <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>
-                                Unassigned Accounts ({orphanProfiles.length})
+                              <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
+                                <IconAlertTriangle size={15} color="#e11d48" /> Unassigned Accounts ({orphanProfiles.length})
                               </h3>
                               <div className="sa-table-wrap">
                                 <table className="sa-table">
@@ -2708,7 +2812,7 @@ export default function SuperadminPage() {
                                                 setReassignModal(true)
                                               }}
                                               style={{ fontSize:10, padding:'3px 8px', background:'#f0fdfa', color:'#0d9488', border:'1px solid #99f6e4' }}>
-                                              + Link to Team
+                                              <IconPlus size={11} /> Link to Team
                                             </Btn>
                                             <Btn
                                               variant="danger"
@@ -2752,7 +2856,7 @@ export default function SuperadminPage() {
                             ))}
                           </select>
                         </div>
-                        <Btn onClick={() => loadTable(dbTable)} style={{ padding:'5px 14px', fontSize:11 }}>↻ Refresh Table</Btn>
+                        <Btn onClick={() => loadTable(dbTable)} style={{ padding:'5px 14px', fontSize:11 }}><IconRefresh size={12} /> Refresh Table</Btn>
                       </div>
 
                       {dbLoading ? (
@@ -2902,7 +3006,7 @@ export default function SuperadminPage() {
                         {/* Delete User by Selection or ID */}
                         <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
                           <h2 style={{ fontSize:14, fontWeight:800, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                            Delete User Roots &amp; Auth
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><IconTrash size={15} /> Delete User Roots &amp; Auth</span>
                           </h2>
                           <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
                             Purge an administrator or coach and wipe their Auth account.
@@ -2931,7 +3035,7 @@ export default function SuperadminPage() {
                         {/* Delete Team by Selection or ID */}
                         <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
                           <h2 style={{ fontSize:14, fontWeight:800, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                            Delete Team, Athletes &amp; Roots
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><IconTrash size={15} /> Delete Team, Athletes &amp; Roots</span>
                           </h2>
                           <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
                             Purge a club completely — all athletes, contracts, coaches, subscriptions, and profiles.
@@ -2960,7 +3064,7 @@ export default function SuperadminPage() {
                         {/* Table & System Cleanup */}
                         <div className="sa-card">
                           <h2 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                            Table &amp; System Cleanup
+                            <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><IconSettings size={15} /> Table &amp; System Cleanup</span>
                           </h2>
                           <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
                             Wipe specific table data or trigger a system-wide clean (superadmin preserved).
@@ -2973,10 +3077,10 @@ export default function SuperadminPage() {
                               ))}
                             </select>
                             <Btn variant="danger" onClick={() => handleClearTable(selectedClearTable)} disabled={clearingTable} style={{ fontSize:11 }}>
-                              {clearingTable?'Clearing…':'Clear Table'}
+                              {clearingTable?'Clearing…':<><IconTrash size={12} /> Clear Table</>}
                             </Btn>
                             <Btn variant="danger" onClick={handleClearAll} disabled={clearingAll} style={{ fontSize:11, background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }}>
-                              Nuclear Wipe
+                              <><IconTrash size={12} /> Nuclear Wipe</>
                             </Btn>
                           </div>
                         </div>
@@ -3052,8 +3156,8 @@ export default function SuperadminPage() {
 
             {/* Quick 1-Click Action Presets */}
             <div>
-              <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
-                Quick Presets
+              <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8, display:'flex', alignItems:'center', gap:5 }}>
+                <IconZap size={13} /> Quick Presets
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:8 }}>
                 
@@ -3075,7 +3179,7 @@ export default function SuperadminPage() {
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
                 >
                   <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:800, color:'#92400E' }}>
-                    <span>Unlimited Captain</span>
+                    <span style={{ display:'inline-flex', alignItems:'center', gap:5 }}><IconCrown size={14} /> Unlimited Captain</span>
                   </div>
                   <div style={{ fontSize:10, color:'#B45309', marginTop:4, lineHeight:1.3 }}>
                     Unlimited athletes &amp; staff · Lifetime validity (2099)
@@ -3109,8 +3213,8 @@ export default function SuperadminPage() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = '#0D9488'; e.currentTarget.style.background = '#F0FDFA' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.background = '#F8FAFC' }}
                 >
-                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A' }}>
-                    30-Day Trial
+                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A', display:'flex', alignItems:'center', gap:5 }}>
+                    <IconCalendar size={13} /> 30-Day Trial
                   </div>
                   <div style={{ fontSize:10, color:'#64748B', marginTop:4, lineHeight:1.3 }}>
                     Full platform trial · 30-day countdown
@@ -3144,8 +3248,8 @@ export default function SuperadminPage() {
                   onMouseEnter={e => { e.currentTarget.style.borderColor = '#0D9488'; e.currentTarget.style.background = '#F0FDFA' }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.background = '#F8FAFC' }}
                 >
-                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A' }}>
-                    Starting XI
+                  <div style={{ fontSize:12, fontWeight:800, color:'#0F172A', display:'flex', alignItems:'center', gap:5 }}>
+                    <IconActivity size={13} /> Starting XI
                   </div>
                   <div style={{ fontSize:10, color:'#64748B', marginTop:4, lineHeight:1.3 }}>
                     40 athletes limit · 1 month validity
@@ -3294,7 +3398,7 @@ export default function SuperadminPage() {
                       }}
                       style={{ background:'#FEF3C7', border:'1px solid #FDE68A', borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:800, color:'#92400E', cursor:'pointer' }}
                     >
-                      Lifetime (2099)
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><IconCrown size={11} /> Lifetime (2099)</span>
                     </button>
                   </div>
                 </div>
@@ -3500,7 +3604,7 @@ export default function SuperadminPage() {
             <div style={{ display:'flex', gap:8, borderTop:'1px solid #f1f5f9', paddingTop:14 }}>
               <Btn onClick={() => setReassignModal(false)} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
               <Btn variant="primary" onClick={handleReassignItem} disabled={acting || !targetReassignTeamId} style={{ flex:2, justifyContent:'center' }}>
-                {acting ? 'Reassigning…' : 'Confirm Move →'}
+                {acting ? 'Reassigning…' : <><IconArrowRight size={12} /> Confirm Move</>}
               </Btn>
             </div>
           </div>

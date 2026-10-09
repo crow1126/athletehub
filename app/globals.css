@@ -486,12 +486,28 @@ body {
     display: none !important;
   }
 
+  /* Disable horizontal scroll on tables — collapse to cards instead */
+  .table-scroll-wrap {
+    overflow-x: visible !important;
+  }
+
+  .table-desktop-inner {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
   .logins-table-row {
     display: flex !important;
     flex-direction: column !important;
-    gap: 6px !important;
+    gap: 8px !important;
     padding: 14px 16px !important;
     border-radius: 0 !important;
+  }
+
+  /* Each cell in the logins row becomes a labelled field */
+  .logins-table-row > div {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
   .users-table-row {
@@ -501,9 +517,20 @@ body {
     padding: 14px 16px !important;
   }
 
-  /* Users table: each grid row becomes a card row */
+  /* Each cell in the users row becomes a labelled field */
   .users-table-row > div {
     width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* Action buttons in table rows wrap and fill width on mobile */
+  .users-table-row .gm-btn,
+  .logins-table-row .gm-btn {
+    width: auto !important;
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 8px 12px !important;
   }
 
   /* Make settings content buttons full-width on mobile */
@@ -511,6 +538,8 @@ body {
     width: 100% !important;
     justify-content: center !important;
   }
+
+
 
   /* Superadmin desktop title hidden on mobile */
   .sa-desktop-title {

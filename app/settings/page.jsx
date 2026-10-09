@@ -631,7 +631,7 @@ export default function SettingsPage() {
 
           @media (max-width: 768px) {
             .settings-wrap { display:flex; flex-direction:column; gap:16px; }
-            .settings-content { padding:16px; width:100%; box-sizing:border-box; min-width:0; }
+            .settings-content { padding:16px; width:100%; box-sizing:border-box; min-width:0; overflow-x:hidden; }
             .settings-tabs-card { width:100%; margin-bottom:8px; padding:8px 10px!important; box-sizing:border-box; }
             .settings-profile-header { display:none!important; }
             .settings-tabs-list { display:flex!important; flex-direction:row!important; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:8px; padding:4px 2px; scroll-behavior:smooth; scrollbar-width:none; }
@@ -641,6 +641,8 @@ export default function SettingsPage() {
             .settings-section-header .gm-btn { width:100%!important; justify-content:center!important; }
             .settings-sub-header { display:flex!important; flex-direction:column!important; align-items:flex-start!important; gap:4px!important; }
             .issue-grid, .recover-grid { grid-template-columns: 1fr!important; gap: 10px!important; }
+            .table-scroll-wrap { overflow-x:visible!important; }
+            .table-desktop-inner { min-width:0!important; width:100%!important; }
           }
         `}</style>
 
@@ -1055,8 +1057,8 @@ export default function SettingsPage() {
                   <div style={{ padding:'28px',textAlign:'center',background:'var(--surface2)',borderRadius:'var(--r-lg)',color:'var(--text3)',fontSize:14,fontStyle:'italic',border:'1px solid var(--border)',marginTop:12 }}>No athletes registered yet. Please register athletes in the Athletes tab first.</div>
                 ) : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:12 }}>
-                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-                      <div style={{ minWidth:680 }}>
+                    <div className="table-scroll-wrap" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <div className="table-desktop-inner" style={{ minWidth:680 }}>
                         <div className="logins-table-header" style={{ display:'grid',gridTemplateColumns:'1.4fr 1.2fr 1.4fr 0.9fr 1.5fr',gap:8,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
                           {['Athlete','Phone (SMS)','Username / Email','Status','Actions'].map(h=>(
                             <div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>
@@ -1449,8 +1451,8 @@ export default function SettingsPage() {
                 <MsgBox m={msg}/>
                 {allUsers.length===0 ? <p style={{ fontSize:13,color:'var(--text3)',fontStyle:'italic',marginTop:12 }}>No users yet.</p> : (
                   <div style={{ border:'1px solid var(--border)',borderRadius:'var(--r-lg)',overflow:'hidden',marginTop:msg.text?12:0 }}>
-                    <div style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
-                      <div style={{ minWidth:580 }}>
+                    <div className="table-scroll-wrap" style={{ overflowX:'auto', WebkitOverflowScrolling:'touch' }}>
+                      <div className="table-desktop-inner" style={{ minWidth:580 }}>
                         <div className="users-table-header" style={{ display:'grid',gridTemplateColumns:'1.5fr 1.7fr 1.1fr 0.8fr 1.4fr',gap:8,padding:'12px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
                           {['Name','Email','Role','Status','Action'].map(h=><div key={h} style={{ fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase' }}>{h}</div>)}
                         </div>

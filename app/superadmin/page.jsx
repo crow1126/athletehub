@@ -1092,10 +1092,10 @@ export default function SuperadminPage() {
           height:68px;background:rgba(255,255,255,0.92);backdrop-filter:blur(8px);
           border-bottom:1px solid #D4EDDE;
           display:flex;align-items:center;justify-content:space-between;
-          padding:0 28px;position:sticky;top:0;z-index:70;
+          padding:0 28px;position:sticky;top:0;z-index:70;gap:12px;
         }
         
-        .sa-main{flex:1;padding:28px 32px;overflow-y:auto;animation:fadeIn 0.3s ease;}
+        .sa-main{flex:1;padding:28px 32px;overflow-y:auto;animation:fadeIn 0.3s ease;min-width:0;}
         
         .sa-nav-btn{
           width:100%;display:flex;align-items:center;gap:12px;padding:11px 16px;
@@ -1177,6 +1177,31 @@ export default function SuperadminPage() {
           .sa-table-wrap{margin:0 -4px}
           .sa-table{min-width:600px}
         }
+
+        /* Mid-screen squeeze fix */
+        @media(max-width:1024px) and (min-width:769px){
+          .sa-main{padding:20px 20px}
+          .sa-header{padding:0 20px}
+        }
+
+        /* Stat grid — responsive */
+        .sa-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+        @media(max-width:960px){.sa-stat-grid{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:480px){.sa-stat-grid{grid-template-columns:1fr 1fr}}
+
+        /* Club card header responsiveness */
+        .sa-club-badge-row{display:flex;align-items:center;gap:6px;flex-shrink:0;flex-wrap:wrap}
+        @media(max-width:540px){
+          .sa-club-badge-row{flex-wrap:wrap;justify-content:flex-end}
+        }
+
+        /* Section title */
+        .sa-section-title{font-size:16px;font-weight:800;color:#0F2218;letter-spacing:-0.01em}
+        @media(max-width:480px){.sa-section-title{font-size:14px}}
+
+        /* Header btn label — hide text on smaller screens */
+        .sa-header-btn-label{display:inline}
+        @media(max-width:900px){.sa-header-btn-label{display:none}}
       `}</style>
 
       <Toast toast={toast} />

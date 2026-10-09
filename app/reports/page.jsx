@@ -63,6 +63,42 @@ async function getApexTrackLogoBase64() {
 const LOCAL_STORAGE_REHAB_KEY = 'apextrack_rehab_notes_fallback'
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MOBILE-SAFE FILE DOWNLOAD
+// iOS WKWebView and Android WebView block <a download> and URL.createObjectURL
+// clicks. The safe pattern is: open the blob URL in a new tab, which triggers
+// the system share/save sheet on native, or the browser download on desktop.
+// ─────────────────────────────────────────────────────────────────────────────
+function mobileSafeDownload(blob, filename) {
+  const url = URL.createObjectURL(blob)
+  const ua  = (navigator.userAgent || '').toLowerCase()
+  const isIOS = /iphone|ipad|ipod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  const isAndroid = /android/.test(ua)
+  const isCapacitor = typeof window !== 'undefined' && !!(window.Capacitor)
+
+  if (isIOS || (isAndroid && isCapacitor)) {
+    // Open in new tab — triggers system download/share sheet
+    const a = document.createElement('a')
+    a.href = url
+    a.target = '_blank'
+    a.rel = 'noopener noreferrer'
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  } else {
+    // Standard desktop / Android browser download
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  // Delay revoke so the tab/browser has time to start the download
+  setTimeout(() => URL.revokeObjectURL(url), 5000)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SHARED DATE FORMATTER — used in JSX previews AND PDF generators
 // ─────────────────────────────────────────────────────────────────────────────
 function fmtDate(d) {
@@ -1230,7 +1266,7 @@ export default function ReportsPage() {
       const safeAthlete = (athlete.name || 'Player').replace(/\s+/g, '_')
       const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
       const filename = `${safeAthlete}_Performance_Dossier_${safePeriod}.pdf`
-      doc.save(filename)
+      mobileSafeDownload(new Blob([doc.output('arraybuffer')], { type: 'application/pdf' }), filename)
       setStatusMsg({ text: `Performance Dossier downloaded as "${filename}"`, type: 'success' })
       setTimeout(() => setStatusMsg({ text: '', type: '' }), 6000)
     } catch (err) {
@@ -1261,15 +1297,8 @@ export default function ReportsPage() {
         throw new Error(errMsg)
       }
       const blob   = await res.blob()
-      const url    = URL.createObjectURL(blob)
-      const link   = document.createElement('a')
       const period = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
-      link.href     = url
-      link.download = `ApexTrack_${period}_${reportId}_report.xlsx`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(url)
+      mobileSafeDownload(blob, `ApexTrack_${period}_${reportId}_report.xlsx`)
       const cardTitle = ADMIN_REPORT_CARDS.find(r => r.id === reportId)?.title || 'Report'
       setStatusMsg({ text: `"${cardTitle}" downloaded successfully!`, type: 'success' })
       setTimeout(() => setStatusMsg({ text: '', type: '' }), 5000)
@@ -1340,7 +1369,7 @@ export default function ReportsPage() {
         filename = `${safeName}_Squad_Medical_Report_${safePeriod}.pdf`
       }
 
-      doc.save(filename)
+      mobileSafeDownload(new Blob([doc.output('arraybuffer')], { type: 'application/pdf' }), filename)
 
       setStatusMsg({
         text: `Report successfully downloaded as "${filename}"`,

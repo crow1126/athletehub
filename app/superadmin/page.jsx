@@ -427,7 +427,7 @@ export default function SuperadminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to upload logo')
 
-      showToast(`⚡ Club logo updated for ${logoTarget.name}!`)
+      showToast(`Club logo updated for ${logoTarget.name}!`)
       setLogoModal(false)
       loadTeams()
       loadProfiles()
@@ -500,7 +500,7 @@ export default function SuperadminPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Failed to update subscription')
-      showToast(`⚡ Granted Unlimited Captain Access to ${teamName || clubName || 'Team'}!`)
+      showToast(`Granted Unlimited Captain Access to ${teamName || clubName || 'Team'}!`)
       loadTeams()
       loadProfiles()
       if (subModal) setSubModal(false)
@@ -553,15 +553,15 @@ export default function SuperadminPage() {
     if (!val) return null
     if (colName === 'team_id' || (colName === 'id' && dbTable === 'teams')) {
       const team = teams.find(t => t.id === val)
-      return team ? { name: team.name, icon: '🛡️', type: 'team', logo: team.logo_url } : null
+      return team ? { name: team.name, icon: '', type: 'team', logo: team.logo_url } : null
     }
     if (colName === 'profile_id' || colName === 'user_id' || colName === 'admin_id' || (colName === 'id' && dbTable === 'profiles')) {
       const p = profiles.find(x => x.id === val)
-      return p ? { name: p.full_name || p.email, icon: '👤', type: 'profile', club: p.club_name } : null
+      return p ? { name: p.full_name || p.email, icon: '', type: 'profile', club: p.club_name } : null
     }
     if (colName === 'athlete_id' || (colName === 'id' && dbTable === 'athletes')) {
       const a = athletes.find(x => x.id === val)
-      return a ? { name: a.name, icon: '🏃', type: 'athlete' } : null
+      return a ? { name: a.name, icon: '', type: 'athlete' } : null
     }
     return null
   }
@@ -1368,7 +1368,7 @@ export default function SuperadminPage() {
                                 onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
                                 title="Manage Club Plan & Limits"
                               >
-                                💳 Plan
+                                Plan
                               </button>
 
                               {/* User count badge */}
@@ -1404,10 +1404,10 @@ export default function SuperadminPage() {
                                     {/* Actions */}
                                     <div style={{ display:'flex', gap:5, flexShrink:0, alignItems:'center' }}>
                                       {p.registration_status !== 'approved' && (
-                                        <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✓ Approve</Btn>
+                                        <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>Approve</Btn>
                                       )}
                                       {p.registration_status !== 'rejected' && (
-                                        <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✕ Reject</Btn>
+                                        <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>Reject</Btn>
                                       )}
                                       <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>Delete</Btn>
                                     </div>
@@ -1460,10 +1460,10 @@ export default function SuperadminPage() {
                                   </Btn>
                                   <div style={{ display:'flex', gap:5, flexShrink:0 }}>
                                     {p.registration_status !== 'approved' && (
-                                      <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✓ Approve</Btn>
+                                      <Btn onClick={() => handleApprove(p)} variant="success" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>Approve</Btn>
                                     )}
                                     {p.registration_status !== 'rejected' && (
-                                      <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>✕ Reject</Btn>
+                                      <Btn onClick={() => handleReject(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px' }} disabled={acting}>Reject</Btn>
                                     )}
                                     <Btn onClick={() => handleDeleteUser(p)} variant="danger" style={{ fontSize:10, padding:'3px 8px', background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }} disabled={acting}>Delete</Btn>
                                   </div>
@@ -1644,10 +1644,10 @@ export default function SuperadminPage() {
                                 </div>
                                 <div style={{ display:'flex', gap:6, marginTop:4 }}>
                                   <Btn onClick={() => openSubModal(t)} style={{ fontSize:11, flex:1, justifyContent:'center', background:'#f0fdfa', borderColor:'#99f6e4', color:'#0f766e', fontWeight:700 }}>
-                                    💳 Manage Plan
+                                    Manage Plan
                                   </Btn>
                                   <Btn onClick={() => handleQuickUnlimited(t.id, t.name, t.name)} disabled={subSaving} style={{ fontSize:11, padding:'7px 10px', background:'#fef3c7', borderColor:'#fde68a', color:'#b45309', fontWeight:700 }} title="Grant 100-Yr Unlimited Captain Plan">
-                                    ⚡ Unlimited
+                                    Unlimited
                                   </Btn>
                                   <Btn onClick={() => openLogoModal(t)} style={{ fontSize:11, padding:'7px 10px', background:'#f8fafc', borderColor:'#e2e8f0', color:'#475569', fontWeight:700 }} title="Upload or Change Club Logo">
                                     <IconCamera /> Logo
@@ -2009,7 +2009,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span>🛡️</span>
+                        <span></span>
                         <span>Team Database Hub</span>
                         <span style={{ fontSize:10, background: dbViewMode==='team'?'rgba(255,255,255,0.25)':'#e2e8f0', color: dbViewMode==='team'?'#fff':'#475569', borderRadius:99, padding:'1px 6px' }}>{teams.length}</span>
                       </button>
@@ -2023,7 +2023,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span>⚠️</span>
+                        <span></span>
                         <span>Unassigned &amp; Orphan Roots</span>
                         {totalOrphans > 0 && (
                           <span style={{ fontSize:10, background: dbViewMode==='orphans'?'rgba(255,255,255,0.25)':'#ffe4e6', color: dbViewMode==='orphans'?'#fff':'#e11d48', borderRadius:99, padding:'1px 6px', fontWeight:800 }}>
@@ -2041,7 +2041,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span>🗄️</span>
+                        <span></span>
                         <span>Raw Table Inspector</span>
                       </button>
 
@@ -2054,7 +2054,7 @@ export default function SuperadminPage() {
                           borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
                           cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
                         }}>
-                        <span>⚙️</span>
+                        <span></span>
                         <span>System Maintenance &amp; Tools</span>
                       </button>
                     </div>
@@ -2112,10 +2112,10 @@ export default function SuperadminPage() {
                                   </div>
                                   <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3 }}>
                                     <span style={{ fontSize:10, color:'#0d9488', fontWeight:700 }}>
-                                      🏃 {tAthletes.length}
+                                      {tAthletes.length}
                                     </span>
                                     <span style={{ fontSize:10, color:'#64748b', fontWeight:600 }}>
-                                      👔 {tStaff.length}
+                                      {tStaff.length}
                                     </span>
                                     <span style={{ fontSize:9, background:tBadge.bg, color:tBadge.color, borderRadius:4, padding:'1px 5px', fontWeight:700 }}>
                                       {tBadge.plan}
@@ -2148,7 +2148,7 @@ export default function SuperadminPage() {
                                       {currentTeam.short_name || 'CLUB'}
                                     </span>
                                     <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, background:'#d1fae5', color:'#059669', padding:'2px 8px', borderRadius:99 }}>
-                                      <span>✓</span> Verified Club Roots
+                                      Verified Club Roots
                                     </span>
                                   </div>
 
@@ -2160,7 +2160,7 @@ export default function SuperadminPage() {
                                         onClick={() => { navigator.clipboard.writeText(currentTeam.id); showToast('Copied Team UUID!') }}
                                         style={{ background:'none', border:'none', cursor:'pointer', color:'#0d9488', fontSize:11, padding:0, fontWeight:700 }}
                                         title="Copy Team ID">
-                                        📋 Copy
+                                        Copy
                                       </button>
                                     </span>
                                     <span style={{ fontSize:11, color:'#64748b' }}>
@@ -2173,16 +2173,16 @@ export default function SuperadminPage() {
                               {/* Quick Team Roots Actions */}
                               <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                                 <Btn onClick={() => openSubModal(currentTeam)} style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', border:'1px solid #99F6E4' }}>
-                                  💳 Edit Subscription
+                                  Edit Subscription
                                 </Btn>
                                 <Btn onClick={() => openLogoModal(currentTeam)} style={{ fontSize:11 }}>
-                                  🖼️ Update Logo
+                                  Update Logo
                                 </Btn>
                                 <Btn onClick={() => handleQuickUnlimited(currentTeam.id, currentTeam.name)} style={{ fontSize:11, background:'#FEF3C7', color:'#92400E', border:'1px solid #F59E0B' }}>
-                                  👑 Grant VIP
+                                  Grant VIP
                                 </Btn>
                                 <Btn onClick={() => deleteTeamDirect(currentTeam.id, currentTeam.name)} variant="danger" style={{ fontSize:11 }}>
-                                  🗑️ Wipe Team &amp; Roots
+                                  Wipe Team &amp; Roots
                                 </Btn>
                               </div>
                             </div>
@@ -2224,10 +2224,10 @@ export default function SuperadminPage() {
                             {/* Sub-tab Navigation */}
                             <div style={{ display:'flex', borderBottom:'1px solid #e2e8f0', background:'#f8fafc', padding:'6px 12px', gap:6, flexWrap:'wrap' }}>
                               {[
-                                { id:'athletes', label:`🏃 Athletes Database (${teamAthletes.length})` },
-                                { id:'staff', label:`👔 Staff & Admin Database (${teamStaff.length})` },
-                                { id:'subscription', label:`💳 Subscription & Quotas` },
-                                { id:'records', label:`📋 Contracts & Injuries (${teamContracts.length + teamInjuries.length})` },
+                                { id:'athletes', label:`Athletes Database (${teamAthletes.length})` },
+                                { id:'staff', label:`Staff & Admin Database (${teamStaff.length})` },
+                                { id:'subscription', label:`Subscription & Quotas` },
+                                { id:'records', label:`Contracts & Injuries (${teamContracts.length + teamInjuries.length})` },
                               ].map(tab => (
                                 <button
                                   key={tab.id}
@@ -2261,7 +2261,7 @@ export default function SuperadminPage() {
                                       onChange={e => setDbTeamSearch(e.target.value)}
                                       style={{ paddingLeft:32, fontSize:12 }}
                                     />
-                                    <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:13 }}>🔍</span>
+                                    <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:13 }}></span>
                                   </div>
                                   <span style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
                                     Showing {filteredAthletes.length} of {teamAthletes.length} athletes
@@ -2458,7 +2458,7 @@ export default function SuperadminPage() {
                                         Modify Plan Limits
                                       </Btn>
                                       <Btn onClick={() => handleQuickUnlimited(currentTeam.id, currentTeam.name)} style={{ fontSize:11, background:'#FEF3C7', color:'#92400E', border:'1px solid #F59E0B' }}>
-                                        👑 Grant Unlimited VIP
+                                        Grant Unlimited VIP
                                       </Btn>
                                     </div>
                                   </div>
@@ -2496,7 +2496,7 @@ export default function SuperadminPage() {
 
                                     {currentSub?.notes && (
                                       <div style={{ fontSize:11, color:'#64748b', background:'#fff', padding:'8px 12px', borderRadius:8, border:'1px solid #e2e8f0' }}>
-                                        📝 <strong>Admin Notes:</strong> {currentSub.notes}
+                                        <strong>Admin Notes:</strong> {currentSub.notes}
                                       </div>
                                     )}
                                   </div>
@@ -2595,7 +2595,7 @@ export default function SuperadminPage() {
                     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
                       {totalOrphans === 0 ? (
                         <div className="sa-card" style={{ padding:40, textAlign:'center', background:'#f0fdf4', border:'1.5px solid #bbf7d0' }}>
-                          <div style={{ fontSize:32, marginBottom:10 }}>🛡️</div>
+                          <div style={{ fontSize:32, marginBottom:10 }}></div>
                           <h3 style={{ fontSize:16, fontWeight:800, color:'#166534' }}>All Roots are Perfectly Healthy!</h3>
                           <p style={{ fontSize:13, color:'#15803d', marginTop:4 }}>
                             Every single athlete and user account in the database is correctly linked to a verified team. No orphans found.
@@ -2621,7 +2621,7 @@ export default function SuperadminPage() {
                           {orphanAthletes.length > 0 && (
                             <div className="sa-card">
                               <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>
-                                🏃 Unassigned Athletes ({orphanAthletes.length})
+                                Unassigned Athletes ({orphanAthletes.length})
                               </h3>
                               <div className="sa-table-wrap">
                                 <table className="sa-table">
@@ -2677,7 +2677,7 @@ export default function SuperadminPage() {
                           {orphanProfiles.length > 0 && (
                             <div className="sa-card">
                               <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>
-                                👤 Unassigned Accounts ({orphanProfiles.length})
+                                Unassigned Accounts ({orphanProfiles.length})
                               </h3>
                               <div className="sa-table-wrap">
                                 <table className="sa-table">
@@ -2746,7 +2746,7 @@ export default function SuperadminPage() {
                           <span style={{ fontSize:10, fontWeight:700, color:'#64748b', letterSpacing:'0.06em', marginLeft:8 }}>FILTER TEAM:</span>
                           <select value={filterRawTeamId} onChange={e => setFilterRawTeamId(e.target.value)}
                             style={{ padding:'6px 12px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, fontSize:12, color:'#0f172a', outline:'none', fontWeight:600 }}>
-                            <option value="all">🌐 All Teams (No filter)</option>
+                            <option value="all">All Teams (No filter)</option>
                             {teams.map(t => (
                               <option key={t.id} value={t.id}>{t.name}</option>
                             ))}
@@ -2902,7 +2902,7 @@ export default function SuperadminPage() {
                         {/* Delete User by Selection or ID */}
                         <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
                           <h2 style={{ fontSize:14, fontWeight:800, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                            🗑️ Delete User Roots &amp; Auth
+                            Delete User Roots &amp; Auth
                           </h2>
                           <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
                             Purge an administrator or coach and wipe their Auth account.
@@ -2931,7 +2931,7 @@ export default function SuperadminPage() {
                         {/* Delete Team by Selection or ID */}
                         <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
                           <h2 style={{ fontSize:14, fontWeight:800, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                            🗑️ Delete Team, Athletes &amp; Roots
+                            Delete Team, Athletes &amp; Roots
                           </h2>
                           <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
                             Purge a club completely — all athletes, contracts, coaches, subscriptions, and profiles.
@@ -2960,7 +2960,7 @@ export default function SuperadminPage() {
                         {/* Table & System Cleanup */}
                         <div className="sa-card">
                           <h2 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                            🧹 Table &amp; System Cleanup
+                            Table &amp; System Cleanup
                           </h2>
                           <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
                             Wipe specific table data or trigger a system-wide clean (superadmin preserved).
@@ -3053,7 +3053,7 @@ export default function SuperadminPage() {
             {/* Quick 1-Click Action Presets */}
             <div>
               <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8 }}>
-                ⚡ Quick Presets
+                Quick Presets
               </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:8 }}>
                 
@@ -3075,7 +3075,7 @@ export default function SuperadminPage() {
                   onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none' }}
                 >
                   <div style={{ display:'flex', alignItems:'center', gap:6, fontSize:13, fontWeight:800, color:'#92400E' }}>
-                    <span>👑 Unlimited Captain</span>
+                    <span>Unlimited Captain</span>
                   </div>
                   <div style={{ fontSize:10, color:'#B45309', marginTop:4, lineHeight:1.3 }}>
                     Unlimited athletes &amp; staff · Lifetime validity (2099)
@@ -3110,7 +3110,7 @@ export default function SuperadminPage() {
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.background = '#F8FAFC' }}
                 >
                   <div style={{ fontSize:12, fontWeight:800, color:'#0F172A' }}>
-                    🚀 30-Day Trial
+                    30-Day Trial
                   </div>
                   <div style={{ fontSize:10, color:'#64748B', marginTop:4, lineHeight:1.3 }}>
                     Full platform trial · 30-day countdown
@@ -3145,7 +3145,7 @@ export default function SuperadminPage() {
                   onMouseLeave={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.background = '#F8FAFC' }}
                 >
                   <div style={{ fontSize:12, fontWeight:800, color:'#0F172A' }}>
-                    ⚽ Starting XI
+                    Starting XI
                   </div>
                   <div style={{ fontSize:10, color:'#64748B', marginTop:4, lineHeight:1.3 }}>
                     40 athletes limit · 1 month validity
@@ -3228,7 +3228,7 @@ export default function SuperadminPage() {
                     placeholder="e.g. 40 or 999999"
                   />
                   <span style={{ fontSize:10, color:'#94a3b8', marginTop:3, display:'block' }}>
-                    {Number(subAthleteLimit) >= 999 ? '♾️ Unlimited Athlete Profiles' : `Up to ${subAthleteLimit} Athletes`}
+                    {Number(subAthleteLimit) >= 999 ? 'Unlimited Athlete Profiles' : `Up to ${subAthleteLimit} Athletes`}
                   </span>
                 </div>
 
@@ -3253,7 +3253,7 @@ export default function SuperadminPage() {
                     placeholder="e.g. 15 or 99999"
                   />
                   <span style={{ fontSize:10, color:'#94a3b8', marginTop:3, display:'block' }}>
-                    {Number(subStaffLimit) >= 99 ? '♾️ Unlimited Staff Accounts' : `Up to ${subStaffLimit} Staff`}
+                    {Number(subStaffLimit) >= 99 ? 'Unlimited Staff Accounts' : `Up to ${subStaffLimit} Staff`}
                   </span>
                 </div>
               </div>
@@ -3294,7 +3294,7 @@ export default function SuperadminPage() {
                       }}
                       style={{ background:'#FEF3C7', border:'1px solid #FDE68A', borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:800, color:'#92400E', cursor:'pointer' }}
                     >
-                      👑 Lifetime (2099)
+                      Lifetime (2099)
                     </button>
                   </div>
                 </div>

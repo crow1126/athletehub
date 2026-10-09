@@ -113,43 +113,27 @@ const STATS = [
 const MOVING_PARTNERS = [
   {
     name: 'Young Apostles FC',
-    tag: 'Ghana Premier League Club',
     logo: '/young-apostles-logo.png',
-    badge: 'Premier League',
-  },
-  {
-    name: 'Ghana Premier League',
-    tag: 'Official Top Flight Division',
-    logo: '/ghana-premier-league-logo.png',
-    badge: 'Competition',
-  },
-  {
-    name: 'Asante Kotoko SC',
-    tag: 'Registered Elite Club',
-    badge: 'GPL Giant',
-    initials: 'AKSC',
-    bg: '#DC2626',
   },
   {
     name: 'Ghana Football Association',
-    tag: 'National Governing Body',
-    badge: 'GFA',
-    initials: 'GFA',
-    bg: '#0F766E',
+    logo: '/gfa-logo.svg',
   },
   {
-    name: 'Accra Lions FC',
-    tag: 'Ghana Premier League Club',
-    badge: 'Premier League',
-    initials: 'ALFC',
-    bg: '#0284C7',
+    name: 'Ghana Premier League',
+    logo: '/ghana-premier-league-logo.png',
   },
   {
-    name: 'CAF African Football',
-    tag: 'Continental Federation',
-    badge: 'CAF',
-    initials: 'CAF',
-    bg: '#D97706',
+    name: 'Young Apostles FC',
+    logo: '/young-apostles-logo.png',
+  },
+  {
+    name: 'Ghana Football Association',
+    logo: '/gfa-logo.svg',
+  },
+  {
+    name: 'Ghana Premier League',
+    logo: '/ghana-premier-league-logo.png',
   },
 ]
 
@@ -526,53 +510,29 @@ export default function LandingPage() {
         }
         .nav-pricing-btn:hover { color: #0F172A; }
 
-        /* ── SMART NAV DEMO BUTTON ── */
+        /* ── NAV DEMO BUTTON ── */
         .smart-nav-demo-btn {
           display: inline-flex;
           align-items: center;
-          gap: 7px;
-          background: #F0FDFA;
-          color: #0F766E;
-          border: 1.5px solid #99F6E4;
-          border-radius: 999px;
-          padding: 7px 16px;
+          gap: 6px;
+          background: #0F172A;
+          color: #FFFFFF;
+          border: none;
+          border-radius: 8px;
+          padding: 9px 18px;
           font-size: 13px;
           font-weight: 700;
           cursor: pointer;
           font-family: inherit;
-          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-          box-shadow: 0 1px 3px rgba(13, 148, 136, 0.08);
-          position: relative;
+          transition: background 0.18s ease, transform 0.18s ease;
+          letter-spacing: 0.01em;
         }
         .smart-nav-demo-btn:hover {
-          background: #CCFBF1;
-          border-color: #5EEAD4;
-          color: #0F766E;
+          background: #1E293B;
           transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(13, 148, 136, 0.18);
         }
-        .smart-demo-dot-pulse {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #0D9488;
-          box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7);
-          animation: pulseTealDot 2s infinite;
-        }
-        @keyframes pulseTealDot {
-          0% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0.7); }
-          70% { box-shadow: 0 0 0 6px rgba(13, 148, 136, 0); }
-          100% { box-shadow: 0 0 0 0 rgba(13, 148, 136, 0); }
-        }
-        .smart-badge-micro {
-          font-size: 9px;
-          font-weight: 800;
-          background: #0D9488;
-          color: #FFFFFF;
-          padding: 1px 6px;
-          border-radius: 999px;
-          letter-spacing: 0.04em;
-        }
+        .smart-demo-dot-pulse { display: none; }
+        .smart-badge-micro { display: none; }
         .nav-cta {
           background: #0F172A; color: #FFFFFF;
           border: none; border-radius: 99px;
@@ -756,89 +716,40 @@ export default function LandingPage() {
         }
         .btn-outline:hover { border-color: #94A3B8; background: #F8FAFC; transform: translateY(-2px); }
 
-        /* ── SMART HERO DEMO BUTTON ── */
+        /* ── HERO DEMO BUTTON ── */
         .smart-hero-demo-btn {
           display: inline-flex;
           align-items: center;
-          gap: 12px;
-          background: linear-gradient(135deg, #0F766E 0%, #0D9488 50%, #14B8A6 100%);
+          gap: 10px;
+          background: #0D9488;
           color: #FFFFFF;
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          border-radius: 999px;
-          padding: 8px 24px 8px 14px;
+          border: none;
+          border-radius: 10px;
+          padding: 14px 28px;
           cursor: pointer;
           font-family: inherit;
-          text-align: left;
-          box-shadow: 0 8px 24px rgba(13, 148, 136, 0.28), inset 0 1px 1px rgba(255, 255, 255, 0.35);
-          transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
-          position: relative;
-          overflow: hidden;
-        }
-        .smart-hero-demo-btn::before {
-          content: '';
-          position: absolute;
-          top: -50%;
-          left: -50%;
-          width: 200%;
-          height: 200%;
-          background: radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 65%);
-          opacity: 0;
-          transition: opacity 0.3s;
-          pointer-events: none;
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: -0.01em;
+          transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+          box-shadow: 0 4px 16px rgba(13, 148, 136, 0.25);
         }
         .smart-hero-demo-btn:hover {
+          background: #0F766E;
           transform: translateY(-2px);
-          box-shadow: 0 14px 34px rgba(13, 148, 136, 0.38), inset 0 1px 1px rgba(255, 255, 255, 0.45);
-          border-color: rgba(255, 255, 255, 0.45);
+          box-shadow: 0 8px 24px rgba(13, 148, 136, 0.35);
         }
-        .smart-hero-demo-btn:hover::before {
-          opacity: 1;
-        }
-        .smart-demo-icon-wrap {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.18);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-          backdrop-filter: blur(4px);
-          transition: transform 0.2s;
-        }
-        .smart-hero-demo-btn:hover .smart-demo-icon-wrap {
-          transform: scale(1.08) rotate(-4deg);
-          background: rgba(255, 255, 255, 0.26);
-        }
-        .smart-hero-demo-text {
-          display: flex;
-          flex-direction: column;
-          gap: 1px;
-        }
+        .smart-demo-icon-wrap { display: none; }
+        .smart-hero-demo-text { display: contents; }
         .smart-demo-main-row {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           gap: 8px;
-          font-size: 14.5px;
-          font-weight: 800;
-          letter-spacing: -0.01em;
+          font-size: 15px;
+          font-weight: 700;
         }
-        .smart-demo-pill {
-          font-size: 9.5px;
-          font-weight: 800;
-          background: rgba(255, 255, 255, 0.22);
-          border: 1px solid rgba(255, 255, 255, 0.3);
-          padding: 1px 7px;
-          border-radius: 999px;
-          letter-spacing: 0.05em;
-        }
-        .smart-demo-subtext {
-          font-size: 11px;
-          color: rgba(255, 255, 255, 0.88);
-          font-weight: 500;
-          letter-spacing: 0.01em;
-        }
+        .smart-demo-pill { display: none; }
+        .smart-demo-subtext { display: none; }
 
         /* ── HERO IMAGE BOX ── */
         .hero-visual {
@@ -982,35 +893,28 @@ export default function LandingPage() {
         .marquee-card {
           display: inline-flex;
           align-items: center;
-          gap: 14px;
-          padding: 10px 22px 10px 14px;
-          border-radius: 999px;
-          background: rgba(255, 255, 255, 0.04);
+          justify-content: center;
+          padding: 10px;
+          border-radius: 14px;
+          background: rgba(255, 255, 255, 0.06);
           border: 1px solid rgba(255, 255, 255, 0.1);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          white-space: nowrap;
-          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.22s ease;
           user-select: none;
         }
         .marquee-card:hover {
-          background: rgba(13, 148, 136, 0.16);
-          border-color: rgba(45, 212, 191, 0.45);
+          background: rgba(255, 255, 255, 0.12);
+          border-color: rgba(255, 255, 255, 0.2);
           transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
         }
         .marquee-logo-frame {
-          width: 48px;
-          height: 48px;
-          border-radius: 50%;
+          width: 56px;
+          height: 56px;
+          border-radius: 12px;
           background: #FFFFFF;
-          border: 1.5px solid rgba(255, 255, 255, 0.8);
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 4px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-          flex-shrink: 0;
+          padding: 6px;
           overflow: hidden;
         }
         .marquee-logo-img {
@@ -1018,33 +922,10 @@ export default function LandingPage() {
           height: 100%;
           object-fit: contain;
         }
-        .marquee-info {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .marquee-name {
-          font-size: 14px;
-          font-weight: 800;
-          color: #FFFFFF;
-          letter-spacing: -0.01em;
-        }
-        .marquee-badge-pill {
-          font-size: 9.5px;
-          font-weight: 800;
-          background: rgba(20, 184, 166, 0.2);
-          border: 1px solid rgba(20, 184, 166, 0.35);
-          color: #2DD4BF;
-          padding: 1px 7px;
-          border-radius: 999px;
-          letter-spacing: 0.03em;
-        }
-        .marquee-tag {
-          font-size: 11px;
-          font-weight: 500;
-          color: #94A3B8;
-          letter-spacing: 0.01em;
-        }
+        .marquee-info { display: none; }
+        .marquee-name { display: none; }
+        .marquee-badge-pill { display: none; }
+        .marquee-tag { display: none; }
 
         /* ── STATS BAND ── */
         .stats-band {
@@ -2100,17 +1981,8 @@ export default function LandingPage() {
           <button 
             className="smart-nav-demo-btn" 
             onClick={() => setDemoModalOpen(true)}
-            title="Book a live 1-on-1 walkthrough"
           >
-            <span className="smart-demo-dot-pulse" />
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg>
-            <span>Book Demo</span>
-            <span className="smart-badge-micro">LIVE</span>
+            Book a Demo
           </button>
           <Link href="/login" className="nav-cta">Get Started</Link>
           <button className="nav-hamburger" onClick={() => setMenuOpen(true)}>
@@ -2139,24 +2011,8 @@ export default function LandingPage() {
           <button 
             onClick={() => setDemoModalOpen(true)}
             className="smart-hero-demo-btn"
-            title="Schedule a personalized 1-on-1 walkthrough"
           >
-            <div className="smart-demo-icon-wrap">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
-                <circle cx="12" cy="15" r="1.5" fill="currentColor"/>
-              </svg>
-            </div>
-            <div className="smart-hero-demo-text">
-              <div className="smart-demo-main-row">
-                <span>Book 1-on-1 Demo</span>
-                <span className="smart-demo-pill">15 MIN</span>
-              </div>
-              <span className="smart-demo-subtext">Live walkthrough & instant setup</span>
-            </div>
+            Book a Demo
           </button>
           {!isElectron && (
             <a 
@@ -2208,31 +2064,17 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── MOVING PARTNERS & LEAGUES TICKER ── */}
+      {/* ── OFFICIAL CLUBS LOGO STRIP ── */}
       <section className="partner-marquee-section">
         <div className="partner-marquee-header">
-          <span className="marquee-live-dot" />
-          <span className="partner-marquee-title">Official Clubs & Competitions on ApexTrack GH</span>
+          <span className="partner-marquee-title">Official Clubs on ApexTrack GH</span>
         </div>
         <div className="marquee-track-wrapper">
           <div className="marquee-track">
             {[...MOVING_PARTNERS, ...MOVING_PARTNERS].map((item, idx) => (
               <div key={`${item.name}-${idx}`} className="marquee-card">
                 <div className="marquee-logo-frame">
-                  {item.logo ? (
-                    <img src={item.logo} alt={item.name} className="marquee-logo-img" />
-                  ) : (
-                    <span style={{ fontSize: 13, fontWeight: 900, color: item.bg || '#0D9488' }}>
-                      {item.initials}
-                    </span>
-                  )}
-                </div>
-                <div className="marquee-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span className="marquee-name">{item.name}</span>
-                    {item.badge && <span className="marquee-badge-pill">{item.badge}</span>}
-                  </div>
-                  <span className="marquee-tag">{item.tag}</span>
+                  <img src={item.logo} alt={item.name} className="marquee-logo-img" />
                 </div>
               </div>
             ))}
@@ -2495,17 +2337,41 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── PARTNERS & COMPANY SECTION ── */}
+      <section style={{
+        padding: '64px 48px',
+        background: '#F8FAFC',
+        borderTop: '1px solid #E2E8F0',
+      }}>
+        <div style={{ maxWidth: 1000, margin: '0 auto', textAlign: 'center' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#94A3B8', marginBottom: 32 }}>
+            Built by &amp; In partnership with
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 56, flexWrap: 'wrap' }}>
+            {/* Coreva Ltd */}
+            <a href="https://coreva-rouge.vercel.app/" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textDecoration: 'none', opacity: 0.75, transition: 'opacity 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '0.75'}
+            >
+              <img src="/coreva-logo.svg" alt="Coreva Ltd" style={{ height: 52, width: 'auto', objectFit: 'contain' }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', letterSpacing: '0.02em' }}>Coreva Ltd</span>
+            </a>
+            {/* Divider */}
+            <div style={{ width: 1, height: 56, background: '#E2E8F0' }} />
+            {/* Young Apostles FC */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <img src="/young-apostles-logo.png" alt="Young Apostles FC" style={{ height: 52, width: 'auto', objectFit: 'contain', opacity: 0.8 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#475569', letterSpacing: '0.02em' }}>Young Apostles FC</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── FOOTER ── */}
       <footer className="footer">
         <div className="footer-inner">
           <div className="footer-brand">Apex<span>Track GH</span></div>
           <div className="footer-links">
-            {!isElectron && (
-              <>
-                <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe" target="_blank" rel="noopener noreferrer" className="footer-link electron-hide">Download Windows (.exe)</a>
-                <a href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack.apk" target="_blank" rel="noopener noreferrer" download="ApexTrack.apk" className="footer-link electron-hide">Download Android (.apk)</a>
-              </>
-            )}
             <Link href="/privacy" className="footer-link">Privacy Policy</Link>
             <Link href="/terms" className="footer-link">Terms of Service</Link>
             <Link href="/security" className="footer-link">Security</Link>

@@ -631,11 +631,15 @@ export default function SettingsPage() {
 
           @media (max-width: 768px) {
             .settings-wrap { display:flex; flex-direction:column; gap:16px; }
-            .settings-content { padding:16px; width:100%; box-sizing:border-box; }
-            .settings-tabs-card { width:100%; margin-bottom:8px; padding:8px!important; }
+            .settings-content { padding:16px; width:100%; box-sizing:border-box; min-width:0; }
+            .settings-tabs-card { width:100%; margin-bottom:8px; padding:8px 10px!important; box-sizing:border-box; }
             .settings-profile-header { display:none!important; }
-            .settings-tabs-list { display:flex!important; flex-direction:row!important; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:8px; padding:4px 0; }
-            .settings-tab-btn { width:auto!important; white-space:nowrap; flex-shrink:0; text-align:center!important; margin-bottom:0!important; }
+            .settings-tabs-list { display:flex!important; flex-direction:row!important; overflow-x:auto; -webkit-overflow-scrolling:touch; gap:8px; padding:4px 2px; scroll-behavior:smooth; scrollbar-width:none; }
+            .settings-tabs-list::-webkit-scrollbar { display:none; }
+            .settings-tab-btn { width:auto!important; white-space:nowrap!important; flex-shrink:0!important; text-align:center!important; margin-bottom:0!important; }
+            .settings-section-header { display:flex!important; flex-direction:column!important; align-items:stretch!important; gap:12px!important; }
+            .settings-section-header .gm-btn { width:100%!important; justify-content:center!important; }
+            .settings-sub-header { display:flex!important; flex-direction:column!important; align-items:flex-start!important; gap:4px!important; }
             .issue-grid, .recover-grid { grid-template-columns: 1fr!important; gap: 10px!important; }
           }
         `}</style>
@@ -657,7 +661,7 @@ export default function SettingsPage() {
             <div className="settings-tabs-list" style={{ display:'flex',flexDirection:'column' }}>
               {TABS.map(t => (
                 <button key={t.id} onClick={() => { setTab(t.id); setMsg({ text:'',type:'' }); setIssueMsg({ text:'',type:'' }); setRecoverMsg({ text:'',type:'' }) }}
-                  className="settings-tab-btn"
+                  className={`settings-tab-btn${tab===t.id?' active':''}`}
                   style={{ width:'100%',padding:'10px 14px',background:tab===t.id?'#F0FDFA':'transparent',border:'none',borderRadius:'var(--r-md)',fontSize:13,fontWeight:tab===t.id?700:500,color:tab===t.id?'#0D9488':'var(--text2)',cursor:'pointer',textAlign:'left',transition:'var(--transition)',marginBottom:2,fontFamily:'var(--font)' }}>
                   {t.label}
                 </button>
@@ -726,7 +730,7 @@ export default function SettingsPage() {
             {/* ISSUE LOGINS */}
             {tab === 'logins' && isAdmin && (
               <div>
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
+                <div className="settings-section-header" style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
                   <div>
                     <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Issue Staff Logins</h2>
                     <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong></p>
@@ -829,7 +833,7 @@ export default function SettingsPage() {
                 )}
                 {!showIssueForm && <MsgBox m={issueMsg}/>}
 
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,marginTop:8 }}>
+                <div className="settings-sub-header" style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14,marginTop:8 }}>
                   <h3 style={{ fontSize:16,fontWeight:700,margin:0 }}>Issued Logins ({staffLogins.length})</h3>
                   <span style={{ fontSize:12,color:'var(--text3)' }}>{staffLogins.filter(l=>l.is_active).length} active · {staffLogins.filter(l=>!l.is_active).length} revoked</span>
                 </div>
@@ -961,7 +965,7 @@ export default function SettingsPage() {
             {/* PLAYER ACCOUNTS */}
             {tab === 'players' && isAdmin && (
               <div>
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
+                <div className="settings-section-header" style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
                   <div>
                     <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Player Accounts</h2>
                     <p style={{ fontSize:14,color:'var(--text3)' }}>Provision and manage logins for athletes in <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong></p>
@@ -1438,9 +1442,9 @@ export default function SettingsPage() {
             {/* USER MANAGEMENT */}
             {tab === 'users' && isAdmin && (
               <div>
-                <div style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20 }}>
+                <div className="settings-section-header" style={{ display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20 }}>
                   <div><h2 style={{ fontSize:20,fontWeight:700,marginBottom:4 }}>User Management</h2><p style={{ fontSize:13,color:'var(--text3)' }}>All users in: <strong>{profile?.teams?.name||'—'}</strong></p></div>
-                  <span style={{ fontSize:12,background:'#F0FDFA',color:'#0D9488',padding:'6px 14px',borderRadius:99,fontWeight:700 }}>{allUsers.length} users</span>
+                  <span style={{ fontSize:12,background:'#F0FDFA',color:'#0D9488',padding:'6px 14px',borderRadius:99,fontWeight:700,flexShrink:0 }}>{allUsers.length} users</span>
                 </div>
                 <MsgBox m={msg}/>
                 {allUsers.length===0 ? <p style={{ fontSize:13,color:'var(--text3)',fontStyle:'italic',marginTop:12 }}>No users yet.</p> : (

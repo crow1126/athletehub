@@ -401,16 +401,17 @@ body {
 
   .settings-tabs-card {
     overflow: visible !important;
-    padding: 8px !important;
+    padding: 8px 10px !important;
   }
 
   .settings-tabs-list {
     flex-direction: row !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch;
-    gap: 4px !important;
-    padding: 4px !important;
+    gap: 8px !important;
+    padding: 4px 2px !important;
     scrollbar-width: none !important;
+    scroll-behavior: smooth;
   }
 
   .settings-tabs-list::-webkit-scrollbar {
@@ -421,15 +422,56 @@ body {
     width: auto !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
-    padding: 8px 12px !important;
-    font-size: 12px !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    border-radius: 99px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--surface2, #F8FAFC) !important;
+    color: var(--text2) !important;
     margin-bottom: 0 !important;
+    transition: all 0.15s ease !important;
+  }
+
+  .settings-tab-btn.active {
+    background: #0D9488 !important;
+    color: #ffffff !important;
+    border-color: #0D9488 !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 6px rgba(13, 148, 136, 0.25) !important;
   }
 
   .settings-content {
     padding: 16px !important;
     min-width: 0 !important;
     overflow-x: hidden !important;
+  }
+
+  .settings-section-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+    margin-bottom: 18px !important;
+  }
+
+  .settings-section-header > div,
+  .settings-section-header-text {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  .settings-section-header .gm-btn,
+  .settings-section-header-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .settings-sub-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
   }
 
   .issue-grid,

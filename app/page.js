@@ -112,6 +112,10 @@ const STATS = [
 
 const MOVING_PARTNERS = [
   {
+    name: 'Ghana Premier League',
+    logo: '/ghana-premier-league.png',
+  },
+  {
     name: 'Young Apostles FC',
     logo: '/young-apostles-logo.png',
   },
@@ -822,10 +826,10 @@ export default function LandingPage() {
         .partner-marquee-section {
           width: 100%;
           overflow: hidden;
-          background: #F1F5F9;
-          border-top: 1px solid #E2E8F0;
-          border-bottom: 1px solid #E2E8F0;
-          padding: 40px 0 36px;
+          background: #EAECF0;
+          border-top: 1px solid #D0D5DD;
+          border-bottom: 1px solid #D0D5DD;
+          padding: 44px 0;
           position: relative;
         }
         .partner-marquee-header {
@@ -833,16 +837,16 @@ export default function LandingPage() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          margin-bottom: 28px;
+          margin-bottom: 24px;
           padding: 0 20px;
         }
         .marquee-live-dot { display: none; }
         .partner-marquee-title {
           font-size: 11px;
           font-weight: 700;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: #94A3B8;
+          color: #475467;
         }
         .marquee-track-wrapper {
           display: flex;
@@ -855,7 +859,7 @@ export default function LandingPage() {
         .marquee-track {
           display: flex;
           align-items: center;
-          gap: 18px;
+          gap: 72px;
           width: max-content;
           animation: marqueeContinuous 30s linear infinite;
           will-change: transform;
@@ -871,31 +875,36 @@ export default function LandingPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 12px;
-          border-radius: 20px;
-          background: #FFFFFF;
-          border: 1px solid #E2E8F0;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-          transition: all 0.22s ease;
+          padding: 0;
+          background: transparent;
+          border: none;
+          box-shadow: none;
+          transition: transform 0.2s ease, opacity 0.2s ease;
           user-select: none;
+          flex-shrink: 0;
         }
         .marquee-card:hover {
-          border-color: #CBD5E1;
-          box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-          transform: translateY(-2px);
+          transform: scale(1.06);
         }
         .marquee-logo-frame {
-          width: 80px;
-          height: 80px;
+          height: 88px;
           display: flex;
           align-items: center;
           justify-content: center;
-          overflow: hidden;
         }
         .marquee-logo-img {
-          width: 100%;
-          height: 100%;
+          height: 88px;
+          max-height: 88px;
+          width: auto;
+          max-width: 240px;
           object-fit: contain;
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.06));
+        }
+        @media (max-width: 768px) {
+          .partner-marquee-section { padding: 32px 0; }
+          .marquee-track { gap: 40px; }
+          .marquee-logo-frame { height: 60px; }
+          .marquee-logo-img { height: 60px; max-height: 60px; max-width: 160px; }
         }
         .marquee-info { display: none; }
         .marquee-name { display: none; }
@@ -2042,11 +2051,11 @@ export default function LandingPage() {
       {/* ── OFFICIAL CLUBS LOGO STRIP ── */}
       <section className="partner-marquee-section">
         <div className="partner-marquee-header">
-          <span className="partner-marquee-title">Official Clubs on ApexTrack GH</span>
+          <span className="partner-marquee-title">Official Partners &amp; Leagues on ApexTrack GH</span>
         </div>
         <div className="marquee-track-wrapper">
           <div className="marquee-track">
-            {[...MOVING_PARTNERS, ...MOVING_PARTNERS].map((item, idx) => (
+            {[...MOVING_PARTNERS, ...MOVING_PARTNERS, ...MOVING_PARTNERS, ...MOVING_PARTNERS].map((item, idx) => (
               <div key={`${item.name}-${idx}`} className="marquee-card">
                 <div className="marquee-logo-frame">
                   <img src={item.logo} alt={item.name} className="marquee-logo-img" />

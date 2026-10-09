@@ -79,8 +79,8 @@ export async function GET(req) {
       result.clicks = data || []
     }
 
-    // Profiles
-    if (section === 'all' || section === 'profiles') {
+    // Profiles, Athletes & Roots
+    if (section === 'all' || section === 'profiles' || section === 'maintenance') {
       const { data, error } = await db
         .from('profiles')
         .select('id,full_name,email,club_name,role,is_active,registration_status,created_at,club_logo_url,phone,team_id')
@@ -88,16 +88,25 @@ export async function GET(req) {
       if (error) console.error('Profiles fetch error:', error.message)
       result.profiles = data || []
 
-      // Also return athletes list for client-side ID resolving
+      // Also return full athletes list for team databases and roots inspector
       const { data: athletes, error: athletesError } = await db
         .from('athletes')
-        .select('id,name,team_id')
+        .select('*')
+        .order('name', { ascending: true })
       if (athletesError) console.error('Athletes fetch error:', athletesError.message)
       result.athletes = athletes || []
+
+      // Return contracts and injuries for deep team roots overview
+      const [contractsRes, injuriesRes] = await Promise.all([
+        db.from('contracts').select('*').order('created_at', { ascending: false }).limit(200),
+        db.from('injuries').select('*').order('created_at', { ascending: false }).limit(200)
+      ])
+      result.contracts = contractsRes.data || []
+      result.injuries = injuriesRes.data || []
     }
 
     // Teams & Subscriptions & Profile reconciliation
-    if (section === 'all' || section === 'teams' || section === 'profiles') {
+    if (section === 'all' || section === 'teams' || section === 'profiles' || section === 'maintenance') {
       // 1. Fetch current teams and profiles
       const [teamsRes, profilesRaw] = await Promise.all([
         db.from('teams').select('*').order('created_at', { ascending: false }),

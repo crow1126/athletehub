@@ -111,6 +111,29 @@ function RoleBadge({ role }) {
   )
 }
 
+function PositionBadge({ pos }) {
+  const p = (pos || '—').toUpperCase()
+  const colors = {
+    GK: { bg: '#DBEAFE', color: '#1D4ED8' },
+    CB: { bg: '#EDE9FE', color: '#6D28D9' },
+    LB: { bg: '#EDE9FE', color: '#6D28D9' },
+    RB: { bg: '#EDE9FE', color: '#6D28D9' },
+    CDM: { bg: '#CCFBF1', color: '#0F766E' },
+    CM: { bg: '#D1FAE5', color: '#047857' },
+    CAM: { bg: '#FEF3C7', color: '#B45309' },
+    RW: { bg: '#FFEDD5', color: '#C2410C' },
+    LW: { bg: '#FFEDD5', color: '#C2410C' },
+    ST: { bg: '#FEE2E2', color: '#B91C1C' },
+    CF: { bg: '#FEE2E2', color: '#B91C1C' },
+  }
+  const meta = colors[p] || { bg: '#F1F5F9', color: '#475569' }
+  return (
+    <span style={{ display:'inline-block', background:meta.bg, color:meta.color, borderRadius:6, padding:'2px 8px', fontSize:10, fontWeight:800, letterSpacing:'0.04em' }}>
+      {p}
+    </span>
+  )
+}
+
 function Avatar({ name, size = 34 }) {
   const initials = (name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   return (
@@ -231,6 +254,18 @@ export default function SuperadminPage() {
   const [logoUrlInput, setLogoUrlInput] = useState('')
   const [logoSaving, setLogoSaving] = useState(false)
 
+  // Database & Roots Team-Centric States
+  const [contracts, setContracts] = useState([])
+  const [injuries, setInjuries] = useState([])
+  const [dbViewMode, setDbViewMode] = useState('team') // 'team' | 'orphans' | 'raw' | 'cleanup'
+  const [selectedDbTeamId, setSelectedDbTeamId] = useState(null)
+  const [dbTeamSubTab, setDbTeamSubTab] = useState('athletes') // 'athletes' | 'staff' | 'subscription' | 'records'
+  const [dbTeamSearch, setDbTeamSearch] = useState('')
+  const [filterRawTeamId, setFilterRawTeamId] = useState('all')
+  const [reassignModal, setReassignModal] = useState(false)
+  const [reassignTarget, setReassignTarget] = useState(null) // { type: 'athlete'|'profile', id, name, currentTeamId }
+  const [targetReassignTeamId, setTargetReassignTeamId] = useState('')
+
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
 
@@ -260,8 +295,15 @@ export default function SuperadminPage() {
       const data = await fetchWithAuth('/api/admin/superadmin-data?section=profiles')
       setProfiles(data.profiles || [])
       if (data.athletes) setAthletes(data.athletes)
-      if (data.teams) setTeams(data.teams)
+      if (data.teams) {
+        setTeams(data.teams)
+        if (!selectedDbTeamId && data.teams.length > 0) {
+          setSelectedDbTeamId(data.teams[0].id)
+        }
+      }
       if (data.subscriptions) setSubscriptions(data.subscriptions)
+      if (data.contracts) setContracts(data.contracts)
+      if (data.injuries) setInjuries(data.injuries)
     } catch (err) { showToast('Failed to load profiles: ' + err.message, 'error') }
     finally { setLoading(false) }
   }, [fetchWithAuth])
@@ -511,15 +553,15 @@ export default function SuperadminPage() {
     if (!val) return null
     if (colName === 'team_id' || (colName === 'id' && dbTable === 'teams')) {
       const team = teams.find(t => t.id === val)
-      return team ? { name: team.name, icon: '', type: 'team' } : null
+      return team ? { name: team.name, icon: '🛡️', type: 'team', logo: team.logo_url } : null
     }
     if (colName === 'profile_id' || colName === 'user_id' || colName === 'admin_id' || (colName === 'id' && dbTable === 'profiles')) {
       const p = profiles.find(x => x.id === val)
-      return p ? { name: p.full_name || p.email, icon: '', type: 'profile', club: p.club_name } : null
+      return p ? { name: p.full_name || p.email, icon: '👤', type: 'profile', club: p.club_name } : null
     }
     if (colName === 'athlete_id' || (colName === 'id' && dbTable === 'athletes')) {
       const a = athletes.find(x => x.id === val)
-      return a ? { name: a.name, icon: '', type: 'athlete' } : null
+      return a ? { name: a.name, icon: '🏃', type: 'athlete' } : null
     }
     return null
   }
@@ -683,6 +725,61 @@ export default function SuperadminPage() {
       showToast(data.message || `Wiped team "${teamName}" successfully!`); loadProfiles(); loadTeams(); loadTable(dbTable)
     } catch (err) { showToast('Deletion failed: ' + err.message, 'error') }
     finally { setActing(false) }
+  }
+
+  async function handleDeleteAthleteDirect(athleteId, athleteName) {
+    if (!confirm(`Delete athlete "${athleteName}"? This will permanently wipe their record and associated stats.`)) return
+    setActing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/system-commands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ command: 'delete_athlete', athleteId })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete athlete')
+      showToast(`Athlete "${athleteName}" deleted successfully.`)
+      loadProfiles()
+      loadTeams()
+    } catch (err) {
+      showToast('Deletion failed: ' + err.message, 'error')
+    } finally {
+      setActing(false)
+    }
+  }
+
+  async function handleReassignItem() {
+    if (!reassignTarget || !targetReassignTeamId) return
+    const targetTeam = teams.find(t => t.id === targetReassignTeamId)
+    const newClubName = targetTeam ? targetTeam.name : ''
+    setActing(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const command = reassignTarget.type === 'athlete' ? 'reassign_athlete' : 'reassign_user'
+      const payload = {
+        command,
+        newTeamId: targetReassignTeamId,
+        newClubName,
+        ...(reassignTarget.type === 'athlete' ? { athleteId: reassignTarget.id } : { userId: reassignTarget.id })
+      }
+      const res = await fetch('/api/admin/system-commands', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify(payload)
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to reassign')
+      showToast(`Successfully linked ${reassignTarget.name} to ${newClubName}!`)
+      setReassignModal(false)
+      setReassignTarget(null)
+      loadProfiles()
+      loadTeams()
+    } catch (err) {
+      showToast('Reassignment failed: ' + err.message, 'error')
+    } finally {
+      setActing(false)
+    }
   }
 
   async function handleApprove(p) {
@@ -1857,207 +1954,1039 @@ export default function SuperadminPage() {
             })()}
 
             {/* ── DATABASE & ROOTS MAINTENANCE ── */}
-            {section === 'maintenance' && (
-              <div style={{ display:'flex', flexDirection:'column', gap:22 }}>
+            {section === 'maintenance' && (() => {
+              // Current team resolution
+              const currentTeam = teams.find(t => t.id === selectedDbTeamId) || activeTeams[0] || teams[0] || null
+              const currentSub = currentTeam ? getSubForTeam(currentTeam.id) : null
+              const subBadge = getSubBadge(currentSub)
 
-                <div className="sa-maint-grid">
-                  {/* Delete User by ID */}
-                  <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
-                    <h2 style={{ fontSize:13, fontWeight:700, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                      Delete User Roots &amp; Auth
-                    </h2>
-                    <p style={{ fontSize:12, color:'#64748b', marginBottom:14, lineHeight:1.6 }}>
-                      Purge an administrator and delete their Auth account using their User ID.
-                    </p>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <input className="sa-custom-input" placeholder="Paste User UUID…" value={targetUserId} onChange={e => setTargetUserId(e.target.value)} style={{ flex:1, fontSize:11 }} />
-                      <Btn variant="danger" onClick={handleDeleteUserById} disabled={deletingUserById} style={{ flexShrink:0 }}>
-                        {deletingUserById?'Deleting…':'Delete'}
-                      </Btn>
+              // Athletes for selected team
+              const teamAthletes = currentTeam 
+                ? athletes.filter(a => a.team_id === currentTeam.id || (currentTeam.name && a.club?.toLowerCase() === currentTeam.name.toLowerCase()))
+                : []
+
+              const filteredAthletes = teamAthletes.filter(a => {
+                if (!dbTeamSearch.trim()) return true
+                const q = dbTeamSearch.toLowerCase()
+                return a.name?.toLowerCase().includes(q) || a.position?.toLowerCase().includes(q) || String(a.back_number || '').includes(q) || a.phone?.includes(q)
+              })
+
+              // Staff / User accounts for selected team
+              const teamStaff = currentTeam
+                ? profiles.filter(p => p.team_id === currentTeam.id || (currentTeam.name && p.club_name?.toLowerCase() === currentTeam.name.toLowerCase()))
+                : []
+
+              // Contracts & Injuries for selected team
+              const teamContracts = currentTeam
+                ? contracts.filter(c => c.team_id === currentTeam.id || teamAthletes.some(a => a.id === c.athlete_id))
+                : []
+              const teamInjuries = currentTeam
+                ? injuries.filter(inj => inj.team_id === currentTeam.id || teamAthletes.some(a => a.id === inj.athlete_id))
+                : []
+
+              // Global Orphan Records (roots disconnected)
+              const orphanAthletes = athletes.filter(a => !a.team_id || !teams.some(t => t.id === a.team_id))
+              const orphanProfiles = profiles.filter(p => p.role !== 'superadmin' && (!p.team_id || !teams.some(t => t.id === p.team_id)))
+              const totalOrphans = orphanAthletes.length + orphanProfiles.length
+
+              // Raw DB filter
+              const filteredDbRows = filterRawTeamId === 'all'
+                ? dbRows
+                : dbRows.filter(r => r.team_id === filterRawTeamId || (dbTable === 'teams' && r.id === filterRawTeamId))
+
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+
+                  {/* Mode Bar */}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, flexWrap:'wrap', background:'#fff', border:'1px solid #e2e8f0', borderRadius:14, padding:'8px 12px', boxShadow:'0 1px 3px rgba(0,0,0,0.03)' }}>
+                    <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+                      <button
+                        onClick={() => setDbViewMode('team')}
+                        style={{
+                          background: dbViewMode==='team' ? '#0d9488' : '#f8fafc',
+                          color: dbViewMode==='team' ? '#fff' : '#475569',
+                          border: dbViewMode==='team' ? '1px solid #0d9488' : '1px solid #e2e8f0',
+                          borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
+                        }}>
+                        <span>🛡️</span>
+                        <span>Team Database Hub</span>
+                        <span style={{ fontSize:10, background: dbViewMode==='team'?'rgba(255,255,255,0.25)':'#e2e8f0', color: dbViewMode==='team'?'#fff':'#475569', borderRadius:99, padding:'1px 6px' }}>{teams.length}</span>
+                      </button>
+
+                      <button
+                        onClick={() => setDbViewMode('orphans')}
+                        style={{
+                          background: dbViewMode==='orphans' ? '#e11d48' : '#f8fafc',
+                          color: dbViewMode==='orphans' ? '#fff' : (totalOrphans > 0 ? '#e11d48' : '#475569'),
+                          border: dbViewMode==='orphans' ? '1px solid #e11d48' : (totalOrphans > 0 ? '1px solid #fecdd3' : '1px solid #e2e8f0'),
+                          borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
+                        }}>
+                        <span>⚠️</span>
+                        <span>Unassigned &amp; Orphan Roots</span>
+                        {totalOrphans > 0 && (
+                          <span style={{ fontSize:10, background: dbViewMode==='orphans'?'rgba(255,255,255,0.25)':'#ffe4e6', color: dbViewMode==='orphans'?'#fff':'#e11d48', borderRadius:99, padding:'1px 6px', fontWeight:800 }}>
+                            {totalOrphans}
+                          </span>
+                        )}
+                      </button>
+
+                      <button
+                        onClick={() => setDbViewMode('raw')}
+                        style={{
+                          background: dbViewMode==='raw' ? '#0f172a' : '#f8fafc',
+                          color: dbViewMode==='raw' ? '#fff' : '#475569',
+                          border: dbViewMode==='raw' ? '1px solid #0f172a' : '1px solid #e2e8f0',
+                          borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
+                        }}>
+                        <span>🗄️</span>
+                        <span>Raw Table Inspector</span>
+                      </button>
+
+                      <button
+                        onClick={() => setDbViewMode('cleanup')}
+                        style={{
+                          background: dbViewMode==='cleanup' ? '#fff1f2' : '#f8fafc',
+                          color: dbViewMode==='cleanup' ? '#e11d48' : '#64748b',
+                          border: dbViewMode==='cleanup' ? '1px solid #fecdd3' : '1px solid #e2e8f0',
+                          borderRadius: 8, padding: '7px 14px', fontSize: 12, fontWeight: 700,
+                          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s'
+                        }}>
+                        <span>⚙️</span>
+                        <span>System Maintenance &amp; Tools</span>
+                      </button>
                     </div>
-                  </div>
 
-                  {/* Delete Team by ID */}
-                  <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
-                    <h2 style={{ fontSize:13, fontWeight:700, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                      Delete Team, Athletes &amp; Roots
-                    </h2>
-                    <p style={{ fontSize:12, color:'#64748b', marginBottom:14, lineHeight:1.6 }}>
-                      Purge a team completely — athletes, contracts, coaches, subscriptions, profiles — by Team ID.
-                    </p>
-                    <div style={{ display:'flex', gap:8 }}>
-                      <input className="sa-custom-input" placeholder="Paste Team UUID…" value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ flex:1, fontSize:11 }} />
-                      <Btn variant="danger" onClick={handleDeleteTeamById} disabled={deletingTeamById} style={{ flexShrink:0 }}>
-                        {deletingTeamById?'Wiping…':'Wipe'}
-                      </Btn>
-                    </div>
-                  </div>
-
-                  {/* Table & System Cleanup */}
-                  <div className="sa-card">
-                    <h2 style={{ fontSize:13, fontWeight:700, color:'#0f172a', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
-                      Table &amp; System Cleanup
-                    </h2>
-                    <p style={{ fontSize:12, color:'#64748b', marginBottom:14, lineHeight:1.6 }}>
-                      Wipe specific table data or trigger a system-wide clean (superadmin preserved).
-                    </p>
-                    <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
-                      <select value={selectedClearTable} onChange={e => setSelectedClearTable(e.target.value)}
-                        style={{ flex:1, minWidth:120, padding:'8px 12px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, fontSize:12, color:'#0f172a', outline:'none' }}>
-                        {['athletes','coaches','injuries','contracts','transfers','subscriptions','teams','profiles'].map(t => (
-                          <option key={t} value={t}>{t}</option>
-                        ))}
-                      </select>
-                      <Btn variant="danger" onClick={() => handleClearTable(selectedClearTable)} disabled={clearingTable} style={{ fontSize:11 }}>
-                        {clearingTable?'Clearing…':'Clear Table'}
-                      </Btn>
-                      <Btn variant="danger" onClick={handleClearAll} disabled={clearingAll} style={{ fontSize:11, background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }}>
-                        Nuclear Wipe
-                      </Btn>
-                    </div>
-                  </div>
-                </div>
-
-                {/* DB Inspector */}
-                <div className="sa-card">
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, paddingBottom:12, borderBottom:'1px solid #f1f5f9', flexWrap:'wrap', gap:8 }}>
                     <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                      <span style={{ fontSize:10, fontWeight:700, color:'#64748b', letterSpacing:'0.06em' }}>DB INSPECTOR:</span>
-                      <select value={dbTable} onChange={e => setDbTable(e.target.value)}
-                        style={{ padding:'4px 10px', background:'#f0fdfa', border:'1px solid #99f6e4', borderRadius:6, fontSize:12, color:'#0d9488', outline:'none', fontFamily:'monospace', fontWeight:600 }}>
-                        {TABLES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                      <Btn onClick={() => { loadProfiles(); loadTeams(); if(dbViewMode==='raw') loadTable(dbTable) }} style={{ padding:'6px 12px', fontSize:11 }}>
+                        ↻ Sync All Roots
+                      </Btn>
                     </div>
-                    <Btn onClick={() => loadTable(dbTable)} style={{ padding:'4px 12px', fontSize:11 }}>↻ Refresh</Btn>
                   </div>
 
-                  {dbLoading ? (
-                    <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:13 }}>Reading database schema…</div>
-                  ) : dbRows.length === 0 ? (
-                    <div style={{ padding:32, textAlign:'center', color:'#94a3b8', fontSize:13 }}>Table is empty or columns unreadable.</div>
-                  ) : (
-                    <div className="sa-table-wrap">
-                      <table className="sa-table" style={{ minWidth:'auto' }}>
-                        <thead>
-                          <tr>
-                            {dbCols.map(c => (
-                              <th key={c} className="sa-th" style={{ whiteSpace:'nowrap', background: c==='full_name'||c==='name'?'#f0fdfa':undefined, color: c==='full_name'||c==='name'?'#0d9488':undefined }}>
-                                {c}
-                              </th>
-                            ))}
-                            <th className="sa-th" style={{ whiteSpace:'nowrap' }}>Root Status</th>
-                            {['profiles', 'teams', 'athletes'].includes(dbTable) && (
-                              <th className="sa-th" style={{ textAlign:'right', whiteSpace:'nowrap' }}>Direct Actions</th>
-                            )}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {dbRows.map((row, i) => {
-                            const rowStatus = getRowStatus(dbTable, row, profiles, teams)
-                            const isOrphan = rowStatus?.isOrphan
-                            const rowBg = isOrphan ? '#fff5f5' : ''
-                            
-                            return (
-                              <tr key={i}
-                                style={{ background: rowBg, borderLeft: isOrphan ? '4px solid #ef4444' : undefined }}
-                                onMouseEnter={e => e.currentTarget.style.background = isOrphan ? '#fee2e2' : '#f0fdfa'}
-                                onMouseLeave={e => e.currentTarget.style.background = rowBg}>
-                                {dbCols.map(c => {
-                                  const isName = c === 'full_name' || c === 'name'
-                                  const isId = c === 'id' || c?.endsWith('_id')
-                                  const isRole = c === 'role'
-                                  const val = row[c]
-                                  const resolved = isId ? resolveIdName(c, val) : null
+                  {/* ── MODE 1: TEAM DATABASE HUB ── */}
+                  {dbViewMode === 'team' && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
 
-                                  return (
-                                    <td key={c} className="sa-td" style={{ 
-                                      maxWidth: isName || resolved ? 240 : 160, 
-                                      overflow:'hidden', 
-                                      textOverflow:'ellipsis', 
-                                      whiteSpace:'nowrap', 
-                                      fontFamily: isId && !resolved ? 'monospace' : 'inherit', 
-                                      fontSize:11,
-                                      background: isName ? '#f0fdfa' : undefined,
-                                      color: val===null ? '#cbd5e1' : isName ? '#0f172a' : isId ? '#0d9488' : '#334155',
-                                      fontWeight: isName || resolved ? 700 : undefined,
-                                    }}>
-                                      {val === null ? (
-                                        <span style={{ fontStyle:'italic', color:'#cbd5e1' }}>null</span>
-                                      ) : isRole ? (
-                                        <RoleBadge role={String(val)} />
-                                      ) : resolved ? (
-                                        <span title={val} style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
-                                          <span style={{ color: '#0f172a', fontWeight: 700 }}>
-                                            {resolved.icon} {resolved.name}
-                                          </span>
-                                          {resolved.club && (
-                                            <span style={{ fontSize: 9, color: '#0d9488', fontWeight: 600 }}>
-                                              ({resolved.club})
-                                            </span>
-                                          )}
-                                          <span style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 400 }}>
-                                            {val.slice(0, 8)}…
-                                          </span>
-                                        </span>
-                                      ) : (
-                                        String(val)
-                                      )}
-                                    </td>
-                                  )
-                                })}
-                                {/* Root Status Column */}
-                                <td className="sa-td" style={{ whiteSpace:'nowrap' }}>
-                                  {rowStatus ? (
-                                    <span style={{ display:'inline-block', background: rowStatus.bg, color: rowStatus.color, borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>
-                                      {rowStatus.label}
+                      {/* Team Selector Row */}
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <span>Select Team to Inspect Connected Database &amp; Roots</span>
+                          <span style={{ color:'#0d9488', fontWeight:700 }}>{teams.length} clubs loaded</span>
+                        </div>
+
+                        <div style={{ display:'flex', gap:10, overflowX:'auto', paddingBottom:6, scrollbarWidth:'thin' }}>
+                          {teams.map(t => {
+                            const isSelected = (currentTeam?.id === t.id)
+                            const tAthletes = athletes.filter(a => a.team_id === t.id || (t.name && a.club?.toLowerCase() === t.name.toLowerCase()))
+                            const tStaff = profiles.filter(p => p.team_id === t.id || (t.name && p.club_name?.toLowerCase() === t.name.toLowerCase()))
+                            const tSub = getSubForTeam(t.id)
+                            const tBadge = getSubBadge(tSub)
+
+                            return (
+                              <div
+                                key={t.id}
+                                onClick={() => setSelectedDbTeamId(t.id)}
+                                style={{
+                                  flex: '0 0 240px',
+                                  background: isSelected ? '#F0FDFA' : '#fff',
+                                  border: isSelected ? '2px solid #0D9488' : '1px solid #e2e8f0',
+                                  borderRadius: 12,
+                                  padding: '12px 14px',
+                                  cursor: 'pointer',
+                                  boxShadow: isSelected ? '0 4px 14px rgba(13,148,136,0.15)' : '0 1px 3px rgba(0,0,0,0.03)',
+                                  transition: 'all 0.15s',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 12,
+                                }}
+                                onMouseEnter={e => { if(!isSelected) e.currentTarget.style.borderColor = '#99F6E4' }}
+                                onMouseLeave={e => { if(!isSelected) e.currentTarget.style.borderColor = '#e2e8f0' }}
+                              >
+                                <ClubLogoImg url={t.logo_url} name={t.name} size={42} />
+                                <div style={{ minWidth:0, flex:1 }}>
+                                  <div style={{ fontWeight:800, fontSize:13, color: isSelected ? '#0f766e' : '#0f172a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                                    {t.name}
+                                  </div>
+                                  <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:3 }}>
+                                    <span style={{ fontSize:10, color:'#0d9488', fontWeight:700 }}>
+                                      🏃 {tAthletes.length}
                                     </span>
-                                  ) : (
-                                    <span style={{ display:'inline-block', background: '#d1fae5', color: '#059669', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>
-                                      Healthy
+                                    <span style={{ fontSize:10, color:'#64748b', fontWeight:600 }}>
+                                      👔 {tStaff.length}
                                     </span>
-                                  )}
-                                </td>
-                                {/* Direct Actions Column */}
-                                {['profiles', 'teams', 'athletes'].includes(dbTable) && (
-                                  <td className="sa-td" style={{ textAlign:'right', whiteSpace:'nowrap' }}>
-                                    {dbTable === 'profiles' && row.role !== 'superadmin' && (
-                                      <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteUserDirect(row.id, row.full_name || row.email)} disabled={acting}>
-                                        Delete User
-                                      </Btn>
-                                    )}
-                                    {dbTable === 'teams' && (
-                                      <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteTeamDirect(row.id, row.name)} disabled={acting}>
-                                        Wipe Team
-                                      </Btn>
-                                    )}
-                                    {dbTable === 'athletes' && (
-                                      <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={async () => {
-                                        if (!confirm(`Delete athlete "${row.name}"? This will remove all associated database records.`)) return
-                                        setActing(true)
-                                        try {
-                                          const { error } = await supabase.from('athletes').delete().eq('id', row.id)
-                                          if (error) throw error
-                                          showToast(`Deleted athlete "${row.name}" successfully!`)
-                                          loadProfiles()
-                                          loadTable('athletes')
-                                        } catch (err) { showToast('Deletion failed: ' + err.message, 'error') }
-                                        finally { setActing(false) }
-                                      }} disabled={acting}>
-                                        Delete Athlete
-                                      </Btn>
-                                    )}
-                                  </td>
+                                    <span style={{ fontSize:9, background:tBadge.bg, color:tBadge.color, borderRadius:4, padding:'1px 5px', fontWeight:700 }}>
+                                      {tBadge.plan}
+                                    </span>
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <div style={{ width:8, height:8, borderRadius:'50%', background:'#0d9488', flexShrink:0 }} />
                                 )}
-                              </tr>
+                              </div>
                             )
                           })}
-                        </tbody>
-                      </table>
+                        </div>
+                      </div>
+
+                      {/* Selected Team Content */}
+                      {currentTeam ? (
+                        <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                          {/* Team Master Header Card */}
+                          <div className="sa-card" style={{ background:'linear-gradient(180deg, #FFFFFF, #F8FAFC)', border:'1.5px solid #CCFBF1' }}>
+                            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16, borderBottom:'1px solid #f1f5f9', paddingBottom:16 }}>
+                              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+                                <ClubLogoImg url={currentTeam.logo_url} name={currentTeam.name} size={56} />
+                                <div>
+                                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                                    <h1 style={{ fontSize:20, fontWeight:900, color:'#0f172a', margin:0 }}>
+                                      {currentTeam.name}
+                                    </h1>
+                                    <span style={{ fontSize:11, fontWeight:800, background:'#0F766E15', color:'#0F766E', padding:'2px 8px', borderRadius:6, border:'1px solid #0F766E30' }}>
+                                      {currentTeam.short_name || 'CLUB'}
+                                    </span>
+                                    <span style={{ display:'inline-flex', alignItems:'center', gap:4, fontSize:10, fontWeight:700, background:'#d1fae5', color:'#059669', padding:'2px 8px', borderRadius:99 }}>
+                                      <span>✓</span> Verified Club Roots
+                                    </span>
+                                  </div>
+
+                                  <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:6, flexWrap:'wrap' }}>
+                                    <span style={{ fontSize:11, color:'#64748b', fontFamily:'monospace', background:'#f1f5f9', padding:'2px 8px', borderRadius:6, display:'inline-flex', alignItems:'center', gap:6 }}>
+                                      <span>UUID:</span>
+                                      <span style={{ fontWeight:700, color:'#0f172a' }}>{currentTeam.id}</span>
+                                      <button
+                                        onClick={() => { navigator.clipboard.writeText(currentTeam.id); showToast('Copied Team UUID!') }}
+                                        style={{ background:'none', border:'none', cursor:'pointer', color:'#0d9488', fontSize:11, padding:0, fontWeight:700 }}
+                                        title="Copy Team ID">
+                                        📋 Copy
+                                      </button>
+                                    </span>
+                                    <span style={{ fontSize:11, color:'#64748b' }}>
+                                      Added: {new Date(currentTeam.created_at || Date.now()).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Quick Team Roots Actions */}
+                              <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                                <Btn onClick={() => openSubModal(currentTeam)} style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', border:'1px solid #99F6E4' }}>
+                                  💳 Edit Subscription
+                                </Btn>
+                                <Btn onClick={() => openLogoModal(currentTeam)} style={{ fontSize:11 }}>
+                                  🖼️ Update Logo
+                                </Btn>
+                                <Btn onClick={() => handleQuickUnlimited(currentTeam.id, currentTeam.name)} style={{ fontSize:11, background:'#FEF3C7', color:'#92400E', border:'1px solid #F59E0B' }}>
+                                  👑 Grant VIP
+                                </Btn>
+                                <Btn onClick={() => deleteTeamDirect(currentTeam.id, currentTeam.name)} variant="danger" style={{ fontSize:11 }}>
+                                  🗑️ Wipe Team &amp; Roots
+                                </Btn>
+                              </div>
+                            </div>
+
+                            {/* 4 Connected Database Metrics */}
+                            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:12, marginTop:14 }}>
+                              <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Athletes Database</div>
+                                <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>{teamAthletes.length}</div>
+                                <div style={{ fontSize:11, color:'#0d9488', fontWeight:600 }}>Active registered players</div>
+                              </div>
+
+                              <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Staff &amp; Admins</div>
+                                <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>{teamStaff.length}</div>
+                                <div style={{ fontSize:11, color:'#2563eb', fontWeight:600 }}>Authorized accounts</div>
+                              </div>
+
+                              <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Subscription Status</div>
+                                <div style={{ fontSize:16, fontWeight:900, color:subBadge.color, marginTop:4 }}>{subBadge.plan}</div>
+                                <div style={{ fontSize:11, color:'#64748b' }}>{subBadge.end !== '—' ? `Ends ${subBadge.end}` : 'Unlimited access'}</div>
+                              </div>
+
+                              <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Contracts &amp; Medical</div>
+                                <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>
+                                  {teamContracts.length} <span style={{ fontSize:12, fontWeight:500, color:'#64748b' }}>ctrs</span> · {teamInjuries.length} <span style={{ fontSize:12, fontWeight:500, color:'#64748b' }}>inj</span>
+                                </div>
+                                <div style={{ fontSize:11, color: teamInjuries.length > 0 ? '#e11d48' : '#059669', fontWeight:600 }}>
+                                  {teamInjuries.length > 0 ? `${teamInjuries.length} medical logs` : 'Squad healthy'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Connected Database Sub-Tabs */}
+                          <div className="sa-card" style={{ padding:0, overflow:'hidden' }}>
+                            {/* Sub-tab Navigation */}
+                            <div style={{ display:'flex', borderBottom:'1px solid #e2e8f0', background:'#f8fafc', padding:'6px 12px', gap:6, flexWrap:'wrap' }}>
+                              {[
+                                { id:'athletes', label:`🏃 Athletes Database (${teamAthletes.length})` },
+                                { id:'staff', label:`👔 Staff & Admin Database (${teamStaff.length})` },
+                                { id:'subscription', label:`💳 Subscription & Quotas` },
+                                { id:'records', label:`📋 Contracts & Injuries (${teamContracts.length + teamInjuries.length})` },
+                              ].map(tab => (
+                                <button
+                                  key={tab.id}
+                                  onClick={() => setDbTeamSubTab(tab.id)}
+                                  style={{
+                                    background: dbTeamSubTab===tab.id ? '#fff' : 'transparent',
+                                    color: dbTeamSubTab===tab.id ? '#0d9488' : '#64748b',
+                                    border: dbTeamSubTab===tab.id ? '1px solid #e2e8f0' : '1px solid transparent',
+                                    borderBottom: dbTeamSubTab===tab.id ? '2px solid #0d9488' : '1px solid transparent',
+                                    borderRadius: '8px 8px 0 0',
+                                    padding: '8px 16px',
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s',
+                                  }}>
+                                  {tab.label}
+                                </button>
+                              ))}
+                            </div>
+
+                            {/* SUB-TAB 1: ATHLETES */}
+                            {dbTeamSubTab === 'athletes' && (
+                              <div style={{ padding:18 }}>
+                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:10 }}>
+                                  <div style={{ position:'relative', minWidth:260 }}>
+                                    <input
+                                      className="sa-custom-input"
+                                      placeholder="Search athletes in this club by name, position, jersey #…"
+                                      value={dbTeamSearch}
+                                      onChange={e => setDbTeamSearch(e.target.value)}
+                                      style={{ paddingLeft:32, fontSize:12 }}
+                                    />
+                                    <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', fontSize:13 }}>🔍</span>
+                                  </div>
+                                  <span style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
+                                    Showing {filteredAthletes.length} of {teamAthletes.length} athletes
+                                  </span>
+                                </div>
+
+                                {filteredAthletes.length === 0 ? (
+                                  <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
+                                    {teamAthletes.length === 0 
+                                      ? `No athletes have been registered for ${currentTeam.name} yet.`
+                                      : 'No athletes match your search.'}
+                                  </div>
+                                ) : (
+                                  <div className="sa-table-wrap">
+                                    <table className="sa-table">
+                                      <thead>
+                                        <tr>
+                                          <th className="sa-th">Athlete Name</th>
+                                          <th className="sa-th">Position</th>
+                                          <th className="sa-th">Age</th>
+                                          <th className="sa-th">Status</th>
+                                          <th className="sa-th">Contact / Phone</th>
+                                          <th className="sa-th">Registered</th>
+                                          <th className="sa-th" style={{ textAlign:'right' }}>Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {filteredAthletes.map(a => (
+                                          <tr key={a.id} style={{ transition:'background 0.15s' }}>
+                                            <td className="sa-td">
+                                              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                                {a.photo_url ? (
+                                                  <img src={a.photo_url} alt={a.name} style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover', border:'1px solid #e2e8f0' }} onError={e => e.target.style.display='none'} />
+                                                ) : (
+                                                  <Avatar name={a.name} size={32} />
+                                                )}
+                                                <div>
+                                                  <div style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>{a.name}</div>
+                                                  <div style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace' }}>{a.id.slice(0, 8)}…</div>
+                                                </div>
+                                                {a.back_number && (
+                                                  <span style={{ fontSize:10, fontWeight:800, background:'#f1f5f9', color:'#475569', borderRadius:4, padding:'1px 5px' }}>
+                                                    #{a.back_number}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            </td>
+                                            <td className="sa-td">
+                                              <PositionBadge pos={a.position} />
+                                            </td>
+                                            <td className="sa-td" style={{ fontSize:12, color:'#334155' }}>
+                                              {a.age ? `${a.age} yrs` : '—'}
+                                            </td>
+                                            <td className="sa-td">
+                                              <span style={{
+                                                display:'inline-block',
+                                                padding:'2px 8px',
+                                                borderRadius:99,
+                                                fontSize:10,
+                                                fontWeight:700,
+                                                background: a.status==='Injured' ? '#FEE2E2' : a.status==='Suspended' ? '#FEF3C7' : '#D1FAE5',
+                                                color: a.status==='Injured' ? '#DC2626' : a.status==='Suspended' ? '#D97706' : '#059669',
+                                              }}>
+                                                {a.status || 'Active'}
+                                              </span>
+                                            </td>
+                                            <td className="sa-td" style={{ fontSize:12, color:'#64748b', fontFamily:'monospace' }}>
+                                              {a.phone || '—'}
+                                            </td>
+                                            <td className="sa-td" style={{ fontSize:11, color:'#64748b' }}>
+                                              {a.created_at ? new Date(a.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}
+                                            </td>
+                                            <td className="sa-td" style={{ textAlign:'right' }}>
+                                              <div style={{ display:'inline-flex', gap:6 }}>
+                                                <Btn
+                                                  onClick={() => {
+                                                    setReassignTarget({ type:'athlete', id:a.id, name:a.name, currentTeamId:currentTeam.id })
+                                                    setTargetReassignTeamId('')
+                                                    setReassignModal(true)
+                                                  }}
+                                                  style={{ fontSize:10, padding:'3px 8px' }}>
+                                                  Move Club
+                                                </Btn>
+                                                <Btn
+                                                  variant="danger"
+                                                  onClick={() => handleDeleteAthleteDirect(a.id, a.name)}
+                                                  style={{ fontSize:10, padding:'3px 8px' }}
+                                                  disabled={acting}>
+                                                  Delete
+                                                </Btn>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* SUB-TAB 2: STAFF & ACCOUNTS */}
+                            {dbTeamSubTab === 'staff' && (
+                              <div style={{ padding:18 }}>
+                                {teamStaff.length === 0 ? (
+                                  <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
+                                    No user accounts or staff are linked to {currentTeam.name}.
+                                  </div>
+                                ) : (
+                                  <div className="sa-table-wrap">
+                                    <table className="sa-table">
+                                      <thead>
+                                        <tr>
+                                          <th className="sa-th">Staff Member</th>
+                                          <th className="sa-th">Email</th>
+                                          <th className="sa-th">Assigned Role</th>
+                                          <th className="sa-th">Status</th>
+                                          <th className="sa-th">Access</th>
+                                          <th className="sa-th" style={{ textAlign:'right' }}>Actions</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {teamStaff.map(p => (
+                                          <tr key={p.id} style={{ transition:'background 0.15s' }}>
+                                            <td className="sa-td">
+                                              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                                <Avatar name={p.full_name} size={32} />
+                                                <div>
+                                                  <div style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>{p.full_name || '—'}</div>
+                                                  <div style={{ fontSize:10, color:'#94a3b8', fontFamily:'monospace' }}>{p.id.slice(0, 8)}…</div>
+                                                </div>
+                                              </div>
+                                            </td>
+                                            <td className="sa-td" style={{ fontSize:12, color:'#334155', fontFamily:'monospace' }}>
+                                              {p.email}
+                                            </td>
+                                            <td className="sa-td">
+                                              <RoleBadge role={p.role || 'admin'} />
+                                            </td>
+                                            <td className="sa-td">
+                                              <Pill status={p.registration_status || 'pending'} />
+                                            </td>
+                                            <td className="sa-td">
+                                              <Btn onClick={() => toggleActive(p)} variant={p.is_active?'success':'danger'} style={{ fontSize:10, padding:'3px 8px' }}>
+                                                {p.is_active ? 'Active' : 'Blocked'}
+                                              </Btn>
+                                            </td>
+                                            <td className="sa-td" style={{ textAlign:'right' }}>
+                                              <div style={{ display:'inline-flex', gap:6 }}>
+                                                <Btn
+                                                  onClick={() => {
+                                                    setReassignTarget({ type:'profile', id:p.id, name:p.full_name||p.email, currentTeamId:currentTeam.id })
+                                                    setTargetReassignTeamId('')
+                                                    setReassignModal(true)
+                                                  }}
+                                                  style={{ fontSize:10, padding:'3px 8px' }}>
+                                                  Move Club
+                                                </Btn>
+                                                <Btn
+                                                  variant="danger"
+                                                  onClick={() => deleteUserDirect(p.id, p.full_name || p.email)}
+                                                  style={{ fontSize:10, padding:'3px 8px' }}
+                                                  disabled={acting}>
+                                                  Delete
+                                                </Btn>
+                                              </div>
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* SUB-TAB 3: SUBSCRIPTION & QUOTAS */}
+                            {dbTeamSubTab === 'subscription' && (
+                              <div style={{ padding:22, display:'flex', flexDirection:'column', gap:18 }}>
+                                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(260px, 1fr))', gap:16 }}>
+                                  <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:18 }}>
+                                    <div style={{ fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase' }}>Current Plan Tier</div>
+                                    <div style={{ display:'flex', alignItems:'center', gap:10, marginTop:6 }}>
+                                      <span style={{ fontSize:22, fontWeight:900, color:'#0f172a' }}>{subBadge.plan}</span>
+                                      <span style={{ background:subBadge.bg, color:subBadge.color, fontSize:11, fontWeight:800, borderRadius:99, padding:'2px 10px' }}>
+                                        {subBadge.label}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize:12, color:'#64748b', marginTop:8 }}>
+                                      Expiry: <strong style={{ color:'#0f172a' }}>{subBadge.end}</strong> {subBadge.days !== null ? `(${subBadge.days} days remaining)` : ''}
+                                    </div>
+                                    <div style={{ marginTop:14, display:'flex', gap:8, flexWrap:'wrap' }}>
+                                      <Btn onClick={() => openSubModal(currentTeam)} style={{ fontSize:11, background:'#0d9488', color:'#fff', border:'none' }}>
+                                        Modify Plan Limits
+                                      </Btn>
+                                      <Btn onClick={() => handleQuickUnlimited(currentTeam.id, currentTeam.name)} style={{ fontSize:11, background:'#FEF3C7', color:'#92400E', border:'1px solid #F59E0B' }}>
+                                        👑 Grant Unlimited VIP
+                                      </Btn>
+                                    </div>
+                                  </div>
+
+                                  <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:18, display:'flex', flexDirection:'column', gap:14 }}>
+                                    <div>
+                                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:4 }}>
+                                        <span>Athlete Capacity Usage</span>
+                                        <span>{teamAthletes.length} / {currentSub?.athlete_limit >= 999 ? 'Unlimited' : (currentSub?.athlete_limit || 999)}</span>
+                                      </div>
+                                      <div style={{ height:8, borderRadius:99, background:'#e2e8f0', overflow:'hidden' }}>
+                                        <div style={{
+                                          height:'100%',
+                                          width: `${Math.min(100, Math.round((teamAthletes.length / (currentSub?.athlete_limit || 999)) * 100))}%`,
+                                          background: '#0d9488',
+                                          borderRadius: 99
+                                        }} />
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, fontWeight:700, color:'#0f172a', marginBottom:4 }}>
+                                        <span>Staff Seats Usage</span>
+                                        <span>{teamStaff.length} / {currentSub?.staff_limit >= 99 ? 'Unlimited' : (currentSub?.staff_limit || 99)}</span>
+                                      </div>
+                                      <div style={{ height:8, borderRadius:99, background:'#e2e8f0', overflow:'hidden' }}>
+                                        <div style={{
+                                          height:'100%',
+                                          width: `${Math.min(100, Math.round((teamStaff.length / (currentSub?.staff_limit || 99)) * 100))}%`,
+                                          background: '#2563eb',
+                                          borderRadius: 99
+                                        }} />
+                                      </div>
+                                    </div>
+
+                                    {currentSub?.notes && (
+                                      <div style={{ fontSize:11, color:'#64748b', background:'#fff', padding:'8px 12px', borderRadius:8, border:'1px solid #e2e8f0' }}>
+                                        📝 <strong>Admin Notes:</strong> {currentSub.notes}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* SUB-TAB 4: CONTRACTS & INJURIES */}
+                            {dbTeamSubTab === 'records' && (
+                              <div style={{ padding:20, display:'flex', flexDirection:'column', gap:20 }}>
+                                <div>
+                                  <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:10 }}>Contracts Log ({teamContracts.length})</h3>
+                                  {teamContracts.length === 0 ? (
+                                    <div style={{ padding:20, textAlign:'center', color:'#94a3b8', fontSize:12, background:'#f8fafc', borderRadius:8 }}>
+                                      No contracts on file for this team.
+                                    </div>
+                                  ) : (
+                                    <div className="sa-table-wrap">
+                                      <table className="sa-table">
+                                        <thead>
+                                          <tr>
+                                            <th className="sa-th">Player</th>
+                                            <th className="sa-th">Contract Status</th>
+                                            <th className="sa-th">Period</th>
+                                            <th className="sa-th">Salary</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {teamContracts.map(c => {
+                                            const ath = athletes.find(a => a.id === c.athlete_id)
+                                            return (
+                                              <tr key={c.id}>
+                                                <td className="sa-td" style={{ fontWeight:700, color:'#0f172a' }}>{ath?.name || c.athlete_id?.slice(0,8)}</td>
+                                                <td className="sa-td"><span style={{ background:'#d1fae5', color:'#059669', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>{c.status || 'Active'}</span></td>
+                                                <td className="sa-td" style={{ fontSize:11, color:'#64748b' }}>{c.start_date || '—'} → {c.end_date || '—'}</td>
+                                                <td className="sa-td" style={{ fontSize:11, fontWeight:700, color:'#0f172a' }}>{c.salary ? `GHS ${c.salary}` : '—'}</td>
+                                              </tr>
+                                            )
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div>
+                                  <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:10 }}>Medical &amp; Injury Logs ({teamInjuries.length})</h3>
+                                  {teamInjuries.length === 0 ? (
+                                    <div style={{ padding:20, textAlign:'center', color:'#94a3b8', fontSize:12, background:'#f8fafc', borderRadius:8 }}>
+                                      Squad is fully fit! No medical injuries recorded.
+                                    </div>
+                                  ) : (
+                                    <div className="sa-table-wrap">
+                                      <table className="sa-table">
+                                        <thead>
+                                          <tr>
+                                            <th className="sa-th">Player</th>
+                                            <th className="sa-th">Injury Type</th>
+                                            <th className="sa-th">Severity</th>
+                                            <th className="sa-th">Status</th>
+                                            <th className="sa-th">Recovery Target</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {teamInjuries.map(inj => {
+                                            const ath = athletes.find(a => a.id === inj.athlete_id)
+                                            return (
+                                              <tr key={inj.id}>
+                                                <td className="sa-td" style={{ fontWeight:700, color:'#0f172a' }}>{ath?.name || inj.athlete_id?.slice(0,8)}</td>
+                                                <td className="sa-td" style={{ fontSize:12, color:'#e11d48', fontWeight:600 }}>{inj.injury_type || 'Injury'}</td>
+                                                <td className="sa-td" style={{ fontSize:11, color:'#64748b' }}>{inj.severity || 'Moderate'}</td>
+                                                <td className="sa-td"><span style={{ background:'#fee2e2', color:'#dc2626', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>{inj.status || 'Under Treatment'}</span></td>
+                                                <td className="sa-td" style={{ fontSize:11, color:'#64748b' }}>{inj.recovery_date || 'TBD'}</td>
+                                              </tr>
+                                            )
+                                          })}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="sa-card" style={{ padding:48, textAlign:'center', color:'#94a3b8' }}>
+                          No team selected. Click on a club above to inspect its database.
+                        </div>
+                      )}
                     </div>
                   )}
+
+                  {/* ── MODE 2: UNASSIGNED & ORPHAN ROOTS ── */}
+                  {dbViewMode === 'orphans' && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                      {totalOrphans === 0 ? (
+                        <div className="sa-card" style={{ padding:40, textAlign:'center', background:'#f0fdf4', border:'1.5px solid #bbf7d0' }}>
+                          <div style={{ fontSize:32, marginBottom:10 }}>🛡️</div>
+                          <h3 style={{ fontSize:16, fontWeight:800, color:'#166534' }}>All Roots are Perfectly Healthy!</h3>
+                          <p style={{ fontSize:13, color:'#15803d', marginTop:4 }}>
+                            Every single athlete and user account in the database is correctly linked to a verified team. No orphans found.
+                          </p>
+                        </div>
+                      ) : (
+                        <>
+                          <div style={{ background:'#fff1f2', border:'1px solid #fecdd3', borderRadius:12, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:10 }}>
+                            <div>
+                              <div style={{ fontSize:14, fontWeight:800, color:'#be123c' }}>
+                                Found {totalOrphans} Disconnected Records
+                              </div>
+                              <div style={{ fontSize:12, color:'#9f1239', marginTop:2 }}>
+                                {orphanAthletes.length} unassigned athlete{orphanAthletes.length!==1?'s':''} · {orphanProfiles.length} unassigned user account{orphanProfiles.length!==1?'s':''}
+                              </div>
+                            </div>
+                            <span style={{ fontSize:11, color:'#64748b' }}>
+                              You can link them to a team in 1 click or remove them.
+                            </span>
+                          </div>
+
+                          {/* Orphan Athletes */}
+                          {orphanAthletes.length > 0 && (
+                            <div className="sa-card">
+                              <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>
+                                🏃 Unassigned Athletes ({orphanAthletes.length})
+                              </h3>
+                              <div className="sa-table-wrap">
+                                <table className="sa-table">
+                                  <thead>
+                                    <tr>
+                                      <th className="sa-th">Athlete Name</th>
+                                      <th className="sa-th">Position</th>
+                                      <th className="sa-th">Age</th>
+                                      <th className="sa-th">Phone</th>
+                                      <th className="sa-th">Current Team ID</th>
+                                      <th className="sa-th" style={{ textAlign:'right' }}>Fix Root</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {orphanAthletes.map(a => (
+                                      <tr key={a.id}>
+                                        <td className="sa-td" style={{ fontWeight:700, color:'#0f172a' }}>{a.name}</td>
+                                        <td className="sa-td"><PositionBadge pos={a.position} /></td>
+                                        <td className="sa-td">{a.age || '—'}</td>
+                                        <td className="sa-td" style={{ fontFamily:'monospace', fontSize:11 }}>{a.phone || '—'}</td>
+                                        <td className="sa-td" style={{ fontFamily:'monospace', fontSize:10, color:'#e11d48' }}>
+                                          {a.team_id ? a.team_id.slice(0, 8) + '… (Missing Team)' : 'null (Unassigned)'}
+                                        </td>
+                                        <td className="sa-td" style={{ textAlign:'right' }}>
+                                          <div style={{ display:'inline-flex', gap:6 }}>
+                                            <Btn
+                                              onClick={() => {
+                                                setReassignTarget({ type:'athlete', id:a.id, name:a.name })
+                                                setTargetReassignTeamId('')
+                                                setReassignModal(true)
+                                              }}
+                                              style={{ fontSize:10, padding:'3px 8px', background:'#f0fdfa', color:'#0d9488', border:'1px solid #99f6e4' }}>
+                                              + Link to Team
+                                            </Btn>
+                                            <Btn
+                                              variant="danger"
+                                              onClick={() => handleDeleteAthleteDirect(a.id, a.name)}
+                                              style={{ fontSize:10, padding:'3px 8px' }}
+                                              disabled={acting}>
+                                              Delete
+                                            </Btn>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Orphan Profiles */}
+                          {orphanProfiles.length > 0 && (
+                            <div className="sa-card">
+                              <h3 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:12 }}>
+                                👤 Unassigned Accounts ({orphanProfiles.length})
+                              </h3>
+                              <div className="sa-table-wrap">
+                                <table className="sa-table">
+                                  <thead>
+                                    <tr>
+                                      <th className="sa-th">Account Name</th>
+                                      <th className="sa-th">Email</th>
+                                      <th className="sa-th">Role</th>
+                                      <th className="sa-th">Team Root Status</th>
+                                      <th className="sa-th" style={{ textAlign:'right' }}>Fix Root</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {orphanProfiles.map(p => (
+                                      <tr key={p.id}>
+                                        <td className="sa-td" style={{ fontWeight:700, color:'#0f172a' }}>{p.full_name || '—'}</td>
+                                        <td className="sa-td" style={{ fontFamily:'monospace', fontSize:11 }}>{p.email}</td>
+                                        <td className="sa-td"><RoleBadge role={p.role || 'admin'} /></td>
+                                        <td className="sa-td" style={{ fontSize:11, color:'#e11d48' }}>
+                                          {p.club_name ? `Club "${p.club_name}" unlinked` : 'No team assigned'}
+                                        </td>
+                                        <td className="sa-td" style={{ textAlign:'right' }}>
+                                          <div style={{ display:'inline-flex', gap:6 }}>
+                                            <Btn
+                                              onClick={() => {
+                                                setReassignTarget({ type:'profile', id:p.id, name:p.full_name||p.email })
+                                                setTargetReassignTeamId('')
+                                                setReassignModal(true)
+                                              }}
+                                              style={{ fontSize:10, padding:'3px 8px', background:'#f0fdfa', color:'#0d9488', border:'1px solid #99f6e4' }}>
+                                              + Link to Team
+                                            </Btn>
+                                            <Btn
+                                              variant="danger"
+                                              onClick={() => deleteUserDirect(p.id, p.full_name || p.email)}
+                                              style={{ fontSize:10, padding:'3px 8px' }}
+                                              disabled={acting}>
+                                              Delete
+                                            </Btn>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── MODE 3: RAW TABLE INSPECTOR ── */}
+                  {dbViewMode === 'raw' && (
+                    <div className="sa-card">
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, paddingBottom:12, borderBottom:'1px solid #f1f5f9', flexWrap:'wrap', gap:10 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                          <span style={{ fontSize:10, fontWeight:700, color:'#64748b', letterSpacing:'0.06em' }}>INSPECT TABLE:</span>
+                          <select value={dbTable} onChange={e => setDbTable(e.target.value)}
+                            style={{ padding:'6px 12px', background:'#f0fdfa', border:'1px solid #99f6e4', borderRadius:8, fontSize:12, color:'#0d9488', outline:'none', fontFamily:'monospace', fontWeight:700 }}>
+                            {TABLES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+
+                          {/* Filter by Team */}
+                          <span style={{ fontSize:10, fontWeight:700, color:'#64748b', letterSpacing:'0.06em', marginLeft:8 }}>FILTER TEAM:</span>
+                          <select value={filterRawTeamId} onChange={e => setFilterRawTeamId(e.target.value)}
+                            style={{ padding:'6px 12px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, fontSize:12, color:'#0f172a', outline:'none', fontWeight:600 }}>
+                            <option value="all">🌐 All Teams (No filter)</option>
+                            {teams.map(t => (
+                              <option key={t.id} value={t.id}>{t.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <Btn onClick={() => loadTable(dbTable)} style={{ padding:'5px 14px', fontSize:11 }}>↻ Refresh Table</Btn>
+                      </div>
+
+                      {dbLoading ? (
+                        <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>Reading table schema…</div>
+                      ) : filteredDbRows.length === 0 ? (
+                        <div style={{ padding:40, textAlign:'center', color:'#94a3b8', fontSize:13 }}>
+                          {dbRows.length === 0 ? 'Table is empty or columns unreadable.' : 'No rows match the selected team filter.'}
+                        </div>
+                      ) : (
+                        <div className="sa-table-wrap">
+                          <table className="sa-table" style={{ minWidth:'auto' }}>
+                            <thead>
+                              <tr>
+                                <th className="sa-th" style={{ background:'#F0FDFA', color:'#0D9488', fontWeight:800 }}>Resolved Team / Club</th>
+                                {dbCols.map(c => (
+                                  <th key={c} className="sa-th" style={{ whiteSpace:'nowrap', background: c==='full_name'||c==='name'?'#f8fafc':undefined }}>
+                                    {c}
+                                  </th>
+                                ))}
+                                <th className="sa-th" style={{ whiteSpace:'nowrap' }}>Root Status</th>
+                                {['profiles', 'teams', 'athletes'].includes(dbTable) && (
+                                  <th className="sa-th" style={{ textAlign:'right', whiteSpace:'nowrap' }}>Direct Actions</th>
+                                )}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredDbRows.map((row, i) => {
+                                const rowStatus = getRowStatus(dbTable, row, profiles, teams)
+                                const isOrphan = rowStatus?.isOrphan
+                                const rowBg = isOrphan ? '#fff5f5' : ''
+                                
+                                // Resolve team name
+                                const rowTeamId = row.team_id || (dbTable === 'teams' ? row.id : null)
+                                const matchingTeam = rowTeamId ? teams.find(t => t.id === rowTeamId) : (row.club_name ? teams.find(t => t.name?.toLowerCase() === row.club_name.toLowerCase()) : null)
+
+                                return (
+                                  <tr key={i}
+                                    style={{ background: rowBg, borderLeft: isOrphan ? '4px solid #ef4444' : undefined }}
+                                    onMouseEnter={e => e.currentTarget.style.background = isOrphan ? '#fee2e2' : '#f0fdfa'}
+                                    onMouseLeave={e => e.currentTarget.style.background = rowBg}>
+                                    
+                                    {/* Dedicated Resolved Team Column */}
+                                    <td className="sa-td" style={{ background:'#F0FDFA20', whiteSpace:'nowrap' }}>
+                                      {matchingTeam ? (
+                                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                          <ClubLogoImg url={matchingTeam.logo_url} name={matchingTeam.name} size={24} />
+                                          <span style={{ fontWeight:700, color:'#0F766E', fontSize:12 }}>{matchingTeam.name}</span>
+                                        </div>
+                                      ) : row.club_name || row.club ? (
+                                        <span style={{ fontWeight:600, color:'#64748B', fontSize:12 }}>{row.club_name || row.club}</span>
+                                      ) : (
+                                        <span style={{ fontStyle:'italic', color:'#CBD5E1', fontSize:11 }}>No team</span>
+                                      )}
+                                    </td>
+
+                                    {dbCols.map(c => {
+                                      const isName = c === 'full_name' || c === 'name'
+                                      const isId = c === 'id' || c?.endsWith('_id')
+                                      const isRole = c === 'role'
+                                      const val = row[c]
+                                      const resolved = isId ? resolveIdName(c, val) : null
+
+                                      return (
+                                        <td key={c} className="sa-td" style={{ 
+                                          maxWidth: isName || resolved ? 240 : 160, 
+                                          overflow:'hidden', 
+                                          textOverflow:'ellipsis', 
+                                          whiteSpace:'nowrap', 
+                                          fontFamily: isId && !resolved ? 'monospace' : 'inherit', 
+                                          fontSize:11,
+                                          background: isName ? '#f8fafc' : undefined,
+                                          color: val===null ? '#cbd5e1' : isName ? '#0f172a' : isId ? '#0d9488' : '#334155',
+                                          fontWeight: isName || resolved ? 700 : undefined,
+                                        }}>
+                                          {val === null ? (
+                                            <span style={{ fontStyle:'italic', color:'#cbd5e1' }}>null</span>
+                                          ) : isRole ? (
+                                            <RoleBadge role={String(val)} />
+                                          ) : resolved ? (
+                                            <span title={val} style={{ display: 'inline-flex', flexDirection: 'column', gap: 2 }}>
+                                              <span style={{ color: '#0f172a', fontWeight: 700 }}>
+                                                {resolved.icon} {resolved.name}
+                                              </span>
+                                              {resolved.club && (
+                                                <span style={{ fontSize: 9, color: '#0d9488', fontWeight: 600 }}>
+                                                  ({resolved.club})
+                                                </span>
+                                              )}
+                                              <span style={{ fontSize: 9, color: '#94a3b8', fontFamily: 'monospace', fontWeight: 400 }}>
+                                                {val.slice(0, 8)}…
+                                              </span>
+                                            </span>
+                                          ) : (
+                                            String(val)
+                                          )}
+                                        </td>
+                                      )
+                                    })}
+
+                                    {/* Root Status Column */}
+                                    <td className="sa-td" style={{ whiteSpace:'nowrap' }}>
+                                      {rowStatus ? (
+                                        <span style={{ display:'inline-block', background: rowStatus.bg, color: rowStatus.color, borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>
+                                          {rowStatus.label}
+                                        </span>
+                                      ) : (
+                                        <span style={{ display:'inline-block', background: '#d1fae5', color: '#059669', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>
+                                          Healthy
+                                        </span>
+                                      )}
+                                    </td>
+
+                                    {/* Direct Actions Column */}
+                                    {['profiles', 'teams', 'athletes'].includes(dbTable) && (
+                                      <td className="sa-td" style={{ textAlign:'right', whiteSpace:'nowrap' }}>
+                                        {dbTable === 'profiles' && row.role !== 'superadmin' && (
+                                          <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteUserDirect(row.id, row.full_name || row.email)} disabled={acting}>
+                                            Delete User
+                                          </Btn>
+                                        )}
+                                        {dbTable === 'teams' && (
+                                          <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => deleteTeamDirect(row.id, row.name)} disabled={acting}>
+                                            Wipe Team
+                                          </Btn>
+                                        )}
+                                        {dbTable === 'athletes' && (
+                                          <Btn variant="danger" style={{ padding: '3px 8px', fontSize: 10 }} onClick={() => handleDeleteAthleteDirect(row.id, row.name)} disabled={acting}>
+                                            Delete Athlete
+                                          </Btn>
+                                        )}
+                                      </td>
+                                    )}
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── MODE 4: SYSTEM MAINTENANCE & CLEANUP ── */}
+                  {dbViewMode === 'cleanup' && (
+                    <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+                      <div className="sa-maint-grid">
+                        {/* Delete User by Selection or ID */}
+                        <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
+                          <h2 style={{ fontSize:14, fontWeight:800, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
+                            🗑️ Delete User Roots &amp; Auth
+                          </h2>
+                          <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
+                            Purge an administrator or coach and wipe their Auth account.
+                          </p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                            <select
+                              value={targetUserId}
+                              onChange={e => setTargetUserId(e.target.value)}
+                              style={{ width:'100%', padding:'8px 12px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, fontSize:12, color:'#0f172a', outline:'none' }}>
+                              <option value="">— Select an account to delete —</option>
+                              {profiles.filter(p => p.role !== 'superadmin').map(p => (
+                                <option key={p.id} value={p.id}>
+                                  {p.full_name || p.email} ({p.club_name || 'No club'}) - {p.email}
+                                </option>
+                              ))}
+                            </select>
+                            <div style={{ display:'flex', gap:8 }}>
+                              <input className="sa-custom-input" placeholder="Or paste User UUID manually…" value={targetUserId} onChange={e => setTargetUserId(e.target.value)} style={{ flex:1, fontSize:11 }} />
+                              <Btn variant="danger" onClick={handleDeleteUserById} disabled={deletingUserById || !targetUserId.trim()} style={{ flexShrink:0 }}>
+                                {deletingUserById?'Deleting…':'Delete User'}
+                              </Btn>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Delete Team by Selection or ID */}
+                        <div className="sa-card" style={{ border:'1px solid #fecdd3' }}>
+                          <h2 style={{ fontSize:14, fontWeight:800, color:'#e11d48', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
+                            🗑️ Delete Team, Athletes &amp; Roots
+                          </h2>
+                          <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
+                            Purge a club completely — all athletes, contracts, coaches, subscriptions, and profiles.
+                          </p>
+                          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                            <select
+                              value={targetTeamId}
+                              onChange={e => setTargetTeamId(e.target.value)}
+                              style={{ width:'100%', padding:'8px 12px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, fontSize:12, color:'#0f172a', outline:'none' }}>
+                              <option value="">— Select a team to wipe —</option>
+                              {teams.map(t => (
+                                <option key={t.id} value={t.id}>
+                                  {t.name} ({t.short_name || 'CLUB'}) - ID: {t.id.slice(0, 8)}…
+                                </option>
+                              ))}
+                            </select>
+                            <div style={{ display:'flex', gap:8 }}>
+                              <input className="sa-custom-input" placeholder="Or paste Team UUID manually…" value={targetTeamId} onChange={e => setTargetTeamId(e.target.value)} style={{ flex:1, fontSize:11 }} />
+                              <Btn variant="danger" onClick={handleDeleteTeamById} disabled={deletingTeamById || !targetTeamId.trim()} style={{ flexShrink:0 }}>
+                                {deletingTeamById?'Wiping…':'Wipe Team'}
+                              </Btn>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Table & System Cleanup */}
+                        <div className="sa-card">
+                          <h2 style={{ fontSize:14, fontWeight:800, color:'#0f172a', marginBottom:6, display:'flex', alignItems:'center', gap:6 }}>
+                            🧹 Table &amp; System Cleanup
+                          </h2>
+                          <p style={{ fontSize:12, color:'#64748b', marginBottom:12, lineHeight:1.5 }}>
+                            Wipe specific table data or trigger a system-wide clean (superadmin preserved).
+                          </p>
+                          <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                            <select value={selectedClearTable} onChange={e => setSelectedClearTable(e.target.value)}
+                              style={{ flex:1, minWidth:120, padding:'8px 12px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:8, fontSize:12, color:'#0f172a', outline:'none' }}>
+                              {['athletes','coaches','injuries','contracts','transfers','subscriptions','teams','profiles'].map(t => (
+                                <option key={t} value={t}>{t}</option>
+                              ))}
+                            </select>
+                            <Btn variant="danger" onClick={() => handleClearTable(selectedClearTable)} disabled={clearingTable} style={{ fontSize:11 }}>
+                              {clearingTable?'Clearing…':'Clear Table'}
+                            </Btn>
+                            <Btn variant="danger" onClick={handleClearAll} disabled={clearingAll} style={{ fontSize:11, background:'#7f1d1d', color:'#fecaca', border:'1px solid #991b1b40' }}>
+                              Nuclear Wipe
+                            </Btn>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
           </main>
         </div>
@@ -2533,6 +3462,47 @@ export default function SuperadminPage() {
                 </Btn>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* REASSIGN TEAM MODAL */}
+      {reassignModal && reassignTarget && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(8px)', zIndex:700, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:440, display:'flex', flexDirection:'column', gap:16, border:'1.5px solid #0d9488', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #f1f5f9', paddingBottom:12 }}>
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>
+                  Reassign {reassignTarget.type === 'athlete' ? 'Athlete' : 'User'} to Team
+                </h3>
+                <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>
+                  Move <strong>{reassignTarget.name}</strong> to a different club database
+                </p>
+              </div>
+              <button onClick={() => setReassignModal(false)} style={{ background:'none', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer' }}>×</button>
+            </div>
+
+            <div>
+              <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:6 }}>
+                Target Club / Team
+              </label>
+              <select
+                value={targetReassignTeamId}
+                onChange={e => setTargetReassignTeamId(e.target.value)}
+                style={{ width:'100%', padding:'10px 14px', background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, fontSize:13, color:'#0f172a', outline:'none' }}>
+                <option value="">— Select destination team —</option>
+                {teams.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.short_name || 'CLUB'})</option>
+                ))}
+              </select>
+            </div>
+
+            <div style={{ display:'flex', gap:8, borderTop:'1px solid #f1f5f9', paddingTop:14 }}>
+              <Btn onClick={() => setReassignModal(false)} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
+              <Btn variant="primary" onClick={handleReassignItem} disabled={acting || !targetReassignTeamId} style={{ flex:2, justifyContent:'center' }}>
+                {acting ? 'Reassigning…' : 'Confirm Move →'}
+              </Btn>
+            </div>
           </div>
         </div>
       )}

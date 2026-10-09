@@ -16,7 +16,7 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forbidden: Superadmin privilege required' }, { status: 403 })
     }
 
-    const { command, tableName, userId, teamId } = await req.json()
+    const { command, tableName, userId, teamId, athleteId, newTeamId, newClubName } = await req.json()
 
     if (!command) {
       return NextResponse.json({ error: 'command parameter is required' }, { status: 400 })
@@ -304,6 +304,45 @@ export async function POST(req) {
         success: true,
         message: `Team "${teamData.name}" and all associated roots data (athletes, contracts, coaches, subscriptions) were successfully deleted. Preserved superadmin.`
       })
+    }
+
+    if (command === 'delete_athlete') {
+      if (!athleteId) {
+        return NextResponse.json({ error: 'athleteId parameter is required' }, { status: 400 })
+      }
+      // Purge dependent child records
+      await Promise.all([
+        db.from('performance_stats').delete().eq('athlete_id', athleteId),
+        db.from('injuries').delete().eq('athlete_id', athleteId),
+        db.from('scouting_reports').delete().eq('athlete_id', athleteId),
+        db.from('contracts').delete().eq('athlete_id', athleteId),
+        db.from('transfers').delete().eq('athlete_id', athleteId),
+      ])
+      const { error: delErr } = await db.from('athletes').delete().eq('id', athleteId)
+      if (delErr) return NextResponse.json({ error: delErr.message }, { status: 500 })
+      return NextResponse.json({ success: true, message: 'Athlete deleted successfully.' })
+    }
+
+    if (command === 'reassign_athlete') {
+      if (!athleteId || !newTeamId) {
+        return NextResponse.json({ error: 'athleteId and newTeamId are required' }, { status: 400 })
+      }
+      const updateData = { team_id: newTeamId }
+      if (newClubName) updateData.club = newClubName
+      const { error: updErr } = await db.from('athletes').update(updateData).eq('id', athleteId)
+      if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
+      return NextResponse.json({ success: true, message: 'Athlete reassigned to team successfully.' })
+    }
+
+    if (command === 'reassign_user') {
+      if (!userId || !newTeamId) {
+        return NextResponse.json({ error: 'userId and newTeamId are required' }, { status: 400 })
+      }
+      const updateData = { team_id: newTeamId }
+      if (newClubName) updateData.club_name = newClubName
+      const { error: updErr } = await db.from('profiles').update(updateData).eq('id', userId)
+      if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
+      return NextResponse.json({ success: true, message: 'User reassigned to team successfully.' })
     }
 
     return NextResponse.json({ error: 'Invalid command' }, { status: 400 })

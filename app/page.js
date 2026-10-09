@@ -119,22 +119,6 @@ const MOVING_PARTNERS = [
     name: 'Ghana Football Association',
     logo: '/gfa-logo.svg',
   },
-  {
-    name: 'Ghana Premier League',
-    logo: '/ghana-premier-league-logo.png',
-  },
-  {
-    name: 'Young Apostles FC',
-    logo: '/young-apostles-logo.png',
-  },
-  {
-    name: 'Ghana Football Association',
-    logo: '/gfa-logo.svg',
-  },
-  {
-    name: 'Ghana Premier League',
-    logo: '/ghana-premier-league-logo.png',
-  },
 ]
 
 const FAQS = [
@@ -838,10 +822,10 @@ export default function LandingPage() {
         .partner-marquee-section {
           width: 100%;
           overflow: hidden;
-          background: #090E17;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-          padding: 32px 0 28px;
+          background: #F1F5F9;
+          border-top: 1px solid #E2E8F0;
+          border-bottom: 1px solid #E2E8F0;
+          padding: 40px 0 36px;
           position: relative;
         }
         .partner-marquee-header {
@@ -849,23 +833,16 @@ export default function LandingPage() {
           align-items: center;
           justify-content: center;
           gap: 10px;
-          margin-bottom: 20px;
+          margin-bottom: 28px;
           padding: 0 20px;
         }
-        .marquee-live-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: #14B8A6;
-          box-shadow: 0 0 8px #14B8A6;
-          animation: pulseTealDot 2s infinite;
-        }
+        .marquee-live-dot { display: none; }
         .partner-marquee-title {
           font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.16em;
+          font-weight: 700;
+          letter-spacing: 0.12em;
           text-transform: uppercase;
-          color: #2DD4BF;
+          color: #94A3B8;
         }
         .marquee-track-wrapper {
           display: flex;
@@ -894,27 +871,25 @@ export default function LandingPage() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          padding: 10px;
-          border-radius: 14px;
-          background: rgba(255, 255, 255, 0.06);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          padding: 12px;
+          border-radius: 20px;
+          background: #FFFFFF;
+          border: 1px solid #E2E8F0;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.06);
           transition: all 0.22s ease;
           user-select: none;
         }
         .marquee-card:hover {
-          background: rgba(255, 255, 255, 0.12);
-          border-color: rgba(255, 255, 255, 0.2);
+          border-color: #CBD5E1;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.1);
           transform: translateY(-2px);
         }
         .marquee-logo-frame {
-          width: 56px;
-          height: 56px;
-          border-radius: 12px;
-          background: #FFFFFF;
+          width: 80px;
+          height: 80px;
           display: flex;
           align-items: center;
           justify-content: center;
-          padding: 6px;
           overflow: hidden;
         }
         .marquee-logo-img {
@@ -2082,17 +2057,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── STATS BAND ── */}
-      <div className="stats-band">
-        <div className="stats-grid">
-          {STATS.map(s => (
-            <div key={s.label} className="stat-col">
-              <div className="stat-val">{s.value}</div>
-              <div className="stat-lbl">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
+
 
       {/* ── PRICING SECTION ── */}
       <section className="pricing-section" id="pricing">

@@ -434,7 +434,7 @@ export default function ScoutingPage(){
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M8 1.5v13M1.5 8h13" stroke="currentColor" strokeWidth="1.5"/></svg>
               Global Scouting Network Results (Found on Transfermarkt)
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(320px,1fr))', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16 }}>
               {searchResultsGlobal.map((gp, i) => (
                 <div key={i} className="card" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #0F766E', background: '#F0FDF4' }}>
                   <div style={{ padding: '16px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -490,7 +490,7 @@ export default function ScoutingPage(){
         {/* Cards grid */}
         {loading?(<div style={{padding:'60px',textAlign:'center'}}><div style={{width:32,height:32,border:'4px solid #F0FDFA',borderTopColor:'#0D9488',borderRadius:'50%',animation:'spin 0.7s linear infinite',margin:'0 auto'}}/></div>
         ):(
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))',gap:16}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))',gap:16}}>
             {filtered.length===0?<div style={{gridColumn:'1/-1',padding:'48px',textAlign:'center',color:'var(--text3)',background:'var(--surface)',borderRadius:'var(--r-xl)',border:'1px solid var(--border)'}}>No local reports found.</div>
             :filtered.map(r=>{
               const sc=STATUS_COLORS[r.status]||STATUS_COLORS.Watching

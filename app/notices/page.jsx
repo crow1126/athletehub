@@ -545,7 +545,17 @@ export default function NoticeBoardPage() {
 
   return (
     <LayoutComponent>
-      <div style={{ maxWidth: 1180, margin: '0 auto', padding: '24px 20px 48px' }}>
+      <style>{`
+        .notices-wrap { max-width: 1180px; margin: 0 auto; padding: 24px 20px 48px; }
+        .notices-hero { padding: 28px 32px; }
+        .modal-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media(max-width: 640px) {
+          .notices-wrap { padding: 14px 12px 32px !important; }
+          .notices-hero { padding: 18px 16px !important; border-radius: 14px !important; gap: 14px !important; }
+          .modal-form-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
+      <div className="notices-wrap">
 
         {/* Toast */}
         {toast && (
@@ -556,7 +566,7 @@ export default function NoticeBoardPage() {
         )}
 
         {/* ── HEADER BANNER ── */}
-        <div style={{ background: 'linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #14B8A6 100%)', borderRadius: 20, padding: '28px 32px', color: '#FFFFFF', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, marginBottom: 24 }}>
+        <div className="notices-hero" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #0D9488 60%, #14B8A6 100%)', borderRadius: 20, color: '#FFFFFF', boxShadow: '0 8px 24px rgba(13, 148, 136, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20, marginBottom: 24 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -756,7 +766,7 @@ export default function NoticeBoardPage() {
                   <div style={{ fontSize: 12, fontWeight: 800, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
                     <Calendar size={13} /> Match Details
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="modal-form-grid">
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={labelStyle}>Opponent Team Name *</label>
                       <input type="text" placeholder="e.g. Accra Hearts of Oak SC" value={mdOpponent} onChange={e => setMdOpponent(e.target.value)} style={inputStyle} />
@@ -987,7 +997,7 @@ export default function NoticeBoardPage() {
               </div>
 
               <form onSubmit={handleCreateNotice} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16, maxHeight: '80vh', overflowY: 'auto' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div className="modal-form-grid">
                   <div>
                     <label style={labelStyle}>Category</label>
                     <select value={category} onChange={e => setCategory(e.target.value)} style={inputStyle}>

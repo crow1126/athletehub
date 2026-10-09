@@ -111,7 +111,17 @@ export default function AthleteProfilePage() {
 
   return (
     <Layout>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 24px 48px', width: '100%', minWidth: 0, overflowX: 'hidden' }}>
+      <style>{`
+        .ath-profile-wrap { max-width: 1200px; margin: 0 auto; padding: 24px 24px 48px; width: 100%; min-width: 0; overflow-x: hidden; }
+        .ath-profile-hero { padding: 28px 32px; }
+        .ath-stat-pills { grid-template-columns: repeat(4, 1fr); }
+        @media(max-width: 768px) {
+          .ath-profile-wrap { padding: 16px 12px 32px !important; }
+          .ath-profile-hero { padding: 18px 16px !important; }
+          .ath-stat-pills { grid-template-columns: repeat(2, 1fr) !important; max-width: 100% !important; }
+        }
+      `}</style>
+      <div className="ath-profile-wrap">
 
         {/* ── Top Navigation Bar ── */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
@@ -163,10 +173,9 @@ export default function AthleteProfilePage() {
         </div>
 
         {/* ── HERO PROFILE HEADER ── */}
-        <div style={{
+        <div className="ath-profile-hero" style={{
           background: 'linear-gradient(135deg, #022C22 0%, #064E3B 50%, #047857 100%)',
           borderRadius: 20,
-          padding: '28px 32px',
           color: '#FFFFFF',
           position: 'relative',
           overflow: 'hidden',
@@ -236,7 +245,7 @@ export default function AthleteProfilePage() {
             </div>
 
             {/* KPI Stat Pills */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, width: '100%', maxWidth: 440, marginTop: 12 }}>
+            <div className="ath-stat-pills" style={{ display: 'grid', gap: 10, width: '100%', maxWidth: 440, marginTop: 12 }}>
               <div style={{ background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '10px 12px', textAlign: 'center' }}>
                 <div style={{ fontSize: 20, fontWeight: 900, color: '#34D399' }}>{totalMatches}</div>
                 <div style={{ fontSize: 10, color: '#A7F3D0', fontWeight: 700, textTransform: 'uppercase' }}>Matches</div>

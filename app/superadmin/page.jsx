@@ -1394,7 +1394,7 @@ export default function SuperadminPage() {
                             {/* Club header row — click to expand/collapse */}
                             <button
                               onClick={() => setExpandedUser(isOpen ? null : group.club_name)}
-                              style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background:headerBg, border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
+                              style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'12px 16px', background:headerBg, border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s', flexWrap:'wrap' }}
                               onMouseEnter={e => e.currentTarget.style.background='#f0fdfa'}
                               onMouseLeave={e => e.currentTarget.style.background=headerBg}>
                               <div
@@ -1414,95 +1414,97 @@ export default function SuperadminPage() {
                                 <div style={{ fontWeight:800, fontSize:15, color:'#0f172a', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{group.club_name}</div>
                                 <div style={{ fontSize:11, color:'#64748b', marginTop:2 }}>{group.users.length} user{group.users.length !== 1 ? 's' : ''} attached</div>
                               </div>
-                              {/* Subscription status indicator */}
-                              {clubSubBadge && (
-                                <span
+                              <div className="sa-club-badge-row" style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginLeft:'auto' }}>
+                                {/* Subscription status indicator */}
+                                {clubSubBadge && (
+                                  <span
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openSubModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
+                                    }}
+                                    title="Click to Manage Plan & Limits"
+                                    style={{
+                                      fontSize:10,
+                                      fontWeight:700,
+                                      background:clubSubBadge.bg,
+                                      color:clubSubBadge.color,
+                                      padding:'3px 8px',
+                                      borderRadius:99,
+                                      flexShrink:0,
+                                      border:`1px solid ${clubSubBadge.color}30`,
+                                      display:'inline-flex',
+                                      alignItems:'center',
+                                      gap:4,
+                                      cursor:'pointer'
+                                    }}
+                                  >
+                                    <IconCreditCard />{clubSubBadge.label}
+                                  </span>
+                                )}
+                                {/* Aggregate status indicators */}
+                                {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Pending</span>}
+                                {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 8px', borderRadius:99, flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}><IconCheckCircle /> Approved</span>}
+                                
+                                {/* Logo Button */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    openLogoModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
+                                  }}
+                                  style={{
+                                    fontSize:11,
+                                    fontWeight:700,
+                                    background:'#F8FAFC',
+                                    color:'#334155',
+                                    border:'1px solid #CBD5E1',
+                                    padding:'5px 9px',
+                                    borderRadius:8,
+                                    cursor:'pointer',
+                                    flexShrink:0,
+                                    display:'inline-flex',
+                                    alignItems:'center',
+                                    gap:4,
+                                    transition:'all 0.15s',
+                                  }}
+                                  onMouseEnter={e => { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.borderColor = '#94A3B8' }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1' }}
+                                  title="Upload or Change Club Logo"
+                                >
+                                  <IconCamera size={13} /> Logo
+                                </button>
+
+                                {/* Manage Plan Button - Always Available */}
+                                <button
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     openSubModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
                                   }}
-                                  title="Click to Manage Plan & Limits"
                                   style={{
-                                    fontSize:10,
+                                    fontSize:11,
                                     fontWeight:700,
-                                    background:clubSubBadge.bg,
-                                    color:clubSubBadge.color,
-                                    padding:'3px 8px',
-                                    borderRadius:99,
+                                    background:'#F0FDFA',
+                                    color:'#0F766E',
+                                    border:'1px solid #99F6E4',
+                                    padding:'5px 10px',
+                                    borderRadius:8,
+                                    cursor:'pointer',
                                     flexShrink:0,
-                                    border:`1px solid ${clubSubBadge.color}30`,
                                     display:'inline-flex',
                                     alignItems:'center',
                                     gap:4,
-                                    cursor:'pointer'
+                                    transition:'background 0.15s',
                                   }}
+                                  onMouseEnter={e => e.currentTarget.style.background = '#CCFBF1'}
+                                  onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
+                                  title="Manage Club Plan & Limits"
                                 >
-                                  <IconCreditCard />{clubSubBadge.label}
-                                </span>
-                              )}
-                              {/* Aggregate status indicators */}
-                              {hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#FEF3C7', color:'#D97706', padding:'3px 10px', borderRadius:99, flexShrink:0 }}>Pending</span>}
-                              {allApproved && !hasPending && <span style={{ fontSize:10, fontWeight:700, background:'#D1FAE5', color:'#059669', padding:'3px 8px', borderRadius:99, flexShrink:0, display:'inline-flex', alignItems:'center', gap:4 }}><IconCheckCircle /> Approved</span>}
-                              
-                              {/* Logo Button */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openLogoModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
-                                }}
-                                style={{
-                                  fontSize:11,
-                                  fontWeight:700,
-                                  background:'#F8FAFC',
-                                  color:'#334155',
-                                  border:'1px solid #CBD5E1',
-                                  padding:'5px 9px',
-                                  borderRadius:8,
-                                  cursor:'pointer',
-                                  flexShrink:0,
-                                  display:'inline-flex',
-                                  alignItems:'center',
-                                  gap:4,
-                                  transition:'all 0.15s',
-                                }}
-                                onMouseEnter={e => { e.currentTarget.style.background = '#F1F5F9'; e.currentTarget.style.borderColor = '#94A3B8' }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#CBD5E1' }}
-                                title="Upload or Change Club Logo"
-                              >
-                                <IconCamera size={13} /> Logo
-                              </button>
+                                  <IconCreditCard size={13} /> Plan
+                                </button>
 
-                              {/* Manage Plan Button - Always Available */}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  openSubModal(matchedTeam || { club_name: group.club_name, logo: group.logo })
-                                }}
-                                style={{
-                                  fontSize:11,
-                                  fontWeight:700,
-                                  background:'#F0FDFA',
-                                  color:'#0F766E',
-                                  border:'1px solid #99F6E4',
-                                  padding:'5px 10px',
-                                  borderRadius:8,
-                                  cursor:'pointer',
-                                  flexShrink:0,
-                                  display:'inline-flex',
-                                  alignItems:'center',
-                                  gap:4,
-                                  transition:'background 0.15s',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#CCFBF1'}
-                                onMouseLeave={e => e.currentTarget.style.background = '#F0FDFA'}
-                                title="Manage Club Plan & Limits"
-                              >
-                                <IconCreditCard size={13} /> Plan
-                              </button>
-
-                              {/* User count badge */}
-                              <span style={{ fontSize:12, fontWeight:800, background:'#f1f5f9', color:'#334155', borderRadius:99, padding:'2px 10px', flexShrink:0, minWidth:28, textAlign:'center' }}>{group.users.length}</span>
-                              <span style={{ color:'#94a3b8', fontSize:14, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
+                                {/* User count badge */}
+                                <span style={{ fontSize:12, fontWeight:800, background:'#f1f5f9', color:'#334155', borderRadius:99, padding:'2px 10px', flexShrink:0, minWidth:28, textAlign:'center' }}>{group.users.length}</span>
+                                <span style={{ color:'#94a3b8', fontSize:14, transition:'transform 0.2s', transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', flexShrink:0 }}>▾</span>
+                              </div>
                             </button>
 
                             {/* Expanded: all users in this club */}
@@ -1554,7 +1556,7 @@ export default function SuperadminPage() {
                           {/* Orphan header */}
                           <button
                             onClick={() => setExpandedUser(expandedUser === '__orphans__' ? null : '__orphans__')}
-                            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background: expandedUser === '__orphans__' ? '#fff5f5' : '#fff', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s' }}
+                            style={{ width:'100%', display:'flex', alignItems:'center', gap:14, padding:'14px 18px', background: expandedUser === '__orphans__' ? '#fff5f5' : '#fff', border:'none', cursor:'pointer', textAlign:'left', transition:'background 0.15s', flexWrap:'wrap' }}
                             onMouseEnter={e => e.currentTarget.style.background='#fff5f5'}
                             onMouseLeave={e => e.currentTarget.style.background=expandedUser === '__orphans__' ? '#fff5f5' : '#fff'}>
                             <div style={{ width:42, height:42, borderRadius:'50%', background:'#ffe4e6', display:'flex', alignItems:'center', justifyContent:'center', color:'#e11d48', flexShrink:0 }}><IconAlertTriangle size={20} color="#e11d48" /></div>

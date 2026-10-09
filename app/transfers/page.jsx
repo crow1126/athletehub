@@ -369,12 +369,14 @@ export default function TransfersPage() {
 
         {/* Transfer list */}
         <div className="card" style={{padding:0,overflow:'hidden'}}>
-          {/* Header */}
-          <div style={{display:'grid',gridTemplateColumns:'2fr 1.2fr 1.8fr 1.2fr 1fr 0.8fr',gap:8,padding:'11px 20px',background:'var(--surface2)',borderBottom:'1px solid var(--border)'}}>
-            {['Player','Type','Movement','Date','Fee',''].map(h=>(
-              <div key={h} style={{fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{h}</div>
-            ))}
-          </div>
+          <div className="table-scroll-wrap">
+            <div className="table-scroll-inner table-scroll-wide">
+              {/* Header */}
+              <div style={{display:'grid',gridTemplateColumns:'2fr 1.2fr 1.8fr 1.2fr 1fr 0.8fr',gap:8,padding:'11px 20px',background:'var(--surface2)',borderBottom:'1px solid var(--border)'}}>
+                {['Player','Type','Movement','Date','Fee',''].map(h=>(
+                  <div key={h} style={{fontSize:10,fontWeight:700,color:'var(--text3)',letterSpacing:'0.08em',textTransform:'uppercase'}}>{h}</div>
+                ))}
+              </div>
 
           {filtered.length===0?(
             <div style={{padding:'40px',textAlign:'center',color:'var(--text3)',fontSize:13}}>
@@ -434,6 +436,8 @@ export default function TransfersPage() {
               </div>
             )
           })}
+            </div>
+          </div>
         </div>
 
         <div style={{marginTop:16,padding:'12px 16px',background:'#F0FDFA',borderRadius:'var(--r-md)',border:'1px solid var(--border)',fontSize:12,color:'var(--text2)',lineHeight:1.7}}>

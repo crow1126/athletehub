@@ -152,6 +152,16 @@ const IconDownload = ({ size = 13 }) => (
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
   </svg>
 )
+const IconUpload = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+  </svg>
+)
+const IconMessageSquare = ({ size = 13 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+)
 const IconPlus = ({ size = 13 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -369,6 +379,12 @@ export default function SuperadminPage() {
   const [reassignModal, setReassignModal] = useState(false)
   const [reassignTarget, setReassignTarget] = useState(null) // { type: 'athlete'|'profile', id, name, currentTeamId }
   const [targetReassignTeamId, setTargetReassignTeamId] = useState('')
+  const [athletePhoneFilter, setAthletePhoneFilter] = useState('all') // 'all' | 'with_phone' | 'missing_phone'
+  const [backupLoading, setBackupLoading] = useState(false)
+  const [restoreModal, setRestoreModal] = useState(false)
+  const [restoreJson, setRestoreJson] = useState(null)
+  const [restoreSummary, setRestoreSummary] = useState(null)
+  const [restoring, setRestoring] = useState(false)
 
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
@@ -650,6 +666,83 @@ export default function SuperadminPage() {
       showToast(err.message, 'error')
     } finally {
       setSubSaving(false)
+    }
+  }
+
+  const handleExportBackup = async (teamId = null) => {
+    setBackupLoading(true)
+    try {
+      const url = teamId
+        ? `/api/admin/backup/export?team_id=${teamId}`
+        : `/api/admin/backup/export?all=true`
+      const data = await fetchWithAuth(url)
+      const jsonStr = JSON.stringify(data, null, 2)
+      const blob = new Blob([jsonStr], { type: 'application/json' })
+      const filename = teamId
+        ? `ApexTrack_Backup_${(data.metadata?.team_name || 'club').replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.json`
+        : `ApexTrack_Full_MultiTenant_Backup_${new Date().toISOString().slice(0, 10)}.json`
+
+      const { mobileSafeDownload } = await import('@/lib/pdfDownload')
+      await mobileSafeDownload(blob, filename)
+      showToast('Backup generated and downloaded successfully!')
+    } catch (err) {
+      showToast('Backup failed: ' + err.message, 'error')
+    } finally {
+      setBackupLoading(false)
+    }
+  }
+
+  const handleSelectRestoreFile = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const parsed = JSON.parse(event.target.result)
+        if (!parsed.records) throw new Error('Invalid ApexTrack backup file format (missing records key)')
+        setRestoreJson(parsed)
+        const counts = {
+          teams: parsed.records.teams?.length || 0,
+          athletes: parsed.records.athletes?.length || 0,
+          profiles: parsed.records.profiles?.length || 0,
+          contracts: parsed.records.contracts?.length || 0,
+          injuries: parsed.records.injuries?.length || 0,
+          training_sessions: parsed.records.training_sessions?.length || 0,
+          notices: parsed.records.notices?.length || 0,
+        }
+        setRestoreSummary(counts)
+        setRestoreModal(true)
+      } catch (err) {
+        showToast('Error reading backup file: ' + err.message, 'error')
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  const handleExecuteRestore = async () => {
+    if (!restoreJson) return
+    setRestoring(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No active session')
+      const res = await fetch('/api/admin/backup/restore', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify(restoreJson)
+      })
+      const result = await res.json()
+      if (!res.ok) throw new Error(result.error || 'Restore failed')
+      showToast('Backup restored successfully into database!')
+      setRestoreModal(false)
+      setRestoreJson(null)
+      loadProfiles()
+    } catch (err) {
+      showToast('Restore failed: ' + err.message, 'error')
+    } finally {
+      setRestoring(false)
     }
   }
 
@@ -2096,7 +2189,12 @@ export default function SuperadminPage() {
                 ? athletes.filter(a => a.team_id === currentTeam.id || (currentTeam.name && a.club?.toLowerCase() === currentTeam.name.toLowerCase()))
                 : []
 
+              const withPhoneCount = teamAthletes.filter(a => !!a.phone).length
+              const missingPhoneCount = teamAthletes.length - withPhoneCount
+
               const filteredAthletes = teamAthletes.filter(a => {
+                if (athletePhoneFilter === 'with_phone' && !a.phone) return false
+                if (athletePhoneFilter === 'missing_phone' && a.phone) return false
                 if (!dbTeamSearch.trim()) return true
                 const q = dbTeamSearch.toLowerCase()
                 return a.name?.toLowerCase().includes(q) || a.position?.toLowerCase().includes(q) || String(a.back_number || '').includes(q) || a.phone?.includes(q)
@@ -2318,8 +2416,8 @@ export default function SuperadminPage() {
                               </div>
                             </div>
 
-                            {/* 4 Connected Database Metrics */}
-                            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(170px, 1fr))', gap:12, marginTop:14 }}>
+                            {/* 5 Connected Database Metrics */}
+                            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:12, marginTop:14 }}>
                               <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
                                 <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}><IconUser size={12} /> Athletes Database</div>
                                 <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', marginTop:2 }}>{teamAthletes.length}</div>
@@ -2347,6 +2445,19 @@ export default function SuperadminPage() {
                                   {teamInjuries.length > 0 ? `${teamInjuries.length} medical logs` : 'Squad healthy'}
                                 </div>
                               </div>
+
+                              <div style={{ background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, padding:'12px 16px' }}>
+                                <div style={{ fontSize:10, fontWeight:700, color:'#64748b', textTransform:'uppercase', display:'flex', alignItems:'center', gap:5 }}>
+                                  <IconMessageSquare size={12} /> SMS Gateway
+                                </div>
+                                <div style={{ fontSize:15, fontWeight:900, color: (currentTeam?.name?.toLowerCase().includes('young apostle') || currentTeam?.short_name === 'YAFC') ? '#059669' : '#2563eb', marginTop:4 }}>
+                                  {(currentTeam?.name?.toLowerCase().includes('young apostle') || currentTeam?.short_name === 'YAFC') ? 'YAFC Dedicated' : 'ApexTrack Master'}
+                                </div>
+                                <div style={{ fontSize:11, color:'#64748b', display:'flex', alignItems:'center', gap:4, marginTop:2 }}>
+                                  <span style={{ width:7, height:7, borderRadius:'50%', background:'#10b981', display:'inline-block' }} />
+                                  <span>Live Delivery Active</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
 
@@ -2359,6 +2470,7 @@ export default function SuperadminPage() {
                                 { id:'staff', label:`Staff & Admin Database (${teamStaff.length})` },
                                 { id:'subscription', label:`Subscription & Quotas` },
                                 { id:'records', label:`Contracts & Injuries (${teamContracts.length + teamInjuries.length})` },
+                                { id:'backup', label:`Backup & Recovery Hub` },
                               ].map(tab => (
                                 <button
                                   key={tab.id}
@@ -2384,16 +2496,46 @@ export default function SuperadminPage() {
                             {dbTeamSubTab === 'athletes' && (
                               <div style={{ padding:18 }}>
                                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:10 }}>
-                                  <div style={{ position:'relative', minWidth:260 }}>
-                                    <input
-                                      className="sa-custom-input"
-                                      placeholder="Search athletes in this club by name, position, jersey #…"
-                                      value={dbTeamSearch}
-                                      onChange={e => setDbTeamSearch(e.target.value)}
-                                      style={{ paddingLeft:32, fontSize:12 }}
-                                    />
-                                    <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', display:'flex', alignItems:'center' }}><IconSearch size={14} /></span>
+                                  <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                                    <div style={{ position:'relative', minWidth:260 }}>
+                                      <input
+                                        className="sa-custom-input"
+                                        placeholder="Search athletes in this club by name, position, jersey #…"
+                                        value={dbTeamSearch}
+                                        onChange={e => setDbTeamSearch(e.target.value)}
+                                        style={{ paddingLeft:32, fontSize:12 }}
+                                      />
+                                      <span style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', display:'flex', alignItems:'center' }}><IconSearch size={14} /></span>
+                                    </div>
+
+                                    {/* Phone Filter Toggle Pills */}
+                                    <div style={{ display:'flex', gap:6, alignItems:'center', flexWrap:'wrap' }}>
+                                      {[
+                                        { id: 'all', label: `All (${teamAthletes.length})` },
+                                        { id: 'with_phone', label: `With Phone (${withPhoneCount})`, color: '#059669', bg: '#D1FAE5' },
+                                        { id: 'missing_phone', label: `Missing Phone (${missingPhoneCount})`, color: '#DC2626', bg: '#FEE2E2' },
+                                      ].map(filter => (
+                                        <button
+                                          key={filter.id}
+                                          type="button"
+                                          onClick={() => setAthletePhoneFilter(filter.id)}
+                                          style={{
+                                            padding: '4px 10px',
+                                            borderRadius: 20,
+                                            fontSize: 11,
+                                            fontWeight: 700,
+                                            cursor: 'pointer',
+                                            border: athletePhoneFilter === filter.id ? `1.5px solid ${filter.color || '#0d9488'}` : '1px solid #e2e8f0',
+                                            background: athletePhoneFilter === filter.id ? (filter.bg || '#F0FDFA') : '#fff',
+                                            color: athletePhoneFilter === filter.id ? (filter.color || '#0F766E') : '#64748B',
+                                            transition: 'all 0.15s',
+                                          }}>
+                                          {filter.label}
+                                        </button>
+                                      ))}
+                                    </div>
                                   </div>
+
                                   <span style={{ fontSize:12, color:'#64748b', fontWeight:600 }}>
                                     Showing {filteredAthletes.length} of {teamAthletes.length} athletes
                                   </span>
@@ -2459,8 +2601,24 @@ export default function SuperadminPage() {
                                                 {a.status || 'Active'}
                                               </span>
                                             </td>
-                                            <td className="sa-td" style={{ fontSize:12, color:'#64748b', fontFamily:'monospace' }}>
-                                              {a.phone || '—'}
+                                            <td className="sa-td" style={{ fontSize:12, fontFamily:'monospace' }}>
+                                              {a.phone ? (
+                                                <span style={{ color:'#0f172a', fontWeight:600 }}>{a.phone}</span>
+                                              ) : (
+                                                <span style={{
+                                                  display:'inline-flex',
+                                                  alignItems:'center',
+                                                  gap:4,
+                                                  background:'#FEE2E2',
+                                                  color:'#DC2626',
+                                                  borderRadius:4,
+                                                  padding:'2px 6px',
+                                                  fontSize:10,
+                                                  fontWeight:700
+                                                }}>
+                                                  No Phone
+                                                </span>
+                                              )}
                                             </td>
                                             <td className="sa-td" style={{ fontSize:11, color:'#64748b' }}>
                                               {a.created_at ? new Date(a.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}
@@ -2708,6 +2866,90 @@ export default function SuperadminPage() {
                                       </table>
                                     </div>
                                   )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* SUB-TAB 5: MULTI-TENANT BACKUP & DISASTER RECOVERY */}
+                            {dbTeamSubTab === 'backup' && (
+                              <div style={{ padding:24, display:'flex', flexDirection:'column', gap:20 }}>
+                                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:12 }}>
+                                  <div>
+                                    <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a', display:'flex', alignItems:'center', gap:8 }}>
+                                      <IconDatabase size={18} color="#0d9488" />
+                                      Multi-Tenant Backup &amp; Disaster Recovery Hub
+                                    </h3>
+                                    <p style={{ fontSize:13, color:'#64748b', marginTop:4, maxWidth:620 }}>
+                                      Export full encrypted JSON snapshots for individual clubs or entire platform databases. Restore snapshots safely to recover lost records or clone tenant data.
+                                    </p>
+                                  </div>
+
+                                  <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                                    <label style={{
+                                      background:'#fff',
+                                      color:'#0f172a',
+                                      border:'1.5px solid #cbd5e1',
+                                      borderRadius:8,
+                                      padding:'8px 14px',
+                                      fontSize:12,
+                                      fontWeight:700,
+                                      cursor:'pointer',
+                                      display:'inline-flex',
+                                      alignItems:'center',
+                                      gap:6,
+                                      boxShadow:'0 1px 2px rgba(0,0,0,0.05)'
+                                    }}>
+                                      <IconUpload size={14} color="#0d9488" />
+                                      <span>Upload &amp; Restore Snapshot</span>
+                                      <input type="file" accept=".json" onChange={handleSelectRestoreFile} style={{ display:'none' }} />
+                                    </label>
+                                  </div>
+                                </div>
+
+                                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:16, marginTop:6 }}>
+                                  {/* Card 1: Selected Club Backup */}
+                                  <div style={{ background:'#fff', border:'1.5px solid #ccfbf1', borderRadius:14, padding:20, display:'flex', flexDirection:'column', justifyContent:'space-between', gap:16, boxShadow:'0 2px 8px rgba(13,148,136,0.06)' }}>
+                                    <div>
+                                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                                        <span style={{ fontSize:11, fontWeight:800, textTransform:'uppercase', color:'#0d9488', letterSpacing:'0.06em' }}>Tenant-Level Snapshot</span>
+                                        <span style={{ background:'#f0fdfa', color:'#0f766e', border:'1px solid #99f6e4', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>Single Club</span>
+                                      </div>
+                                      <h4 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>{currentTeam.name}</h4>
+                                      <p style={{ fontSize:12, color:'#64748b', marginTop:4 }}>
+                                        Includes {teamAthletes.length} athletes, {teamStaff.length} staff accounts, {teamContracts.length} contracts, {teamInjuries.length} injury records, and full media asset manifests.
+                                      </p>
+                                    </div>
+
+                                    <Btn
+                                      onClick={() => handleExportBackup(currentTeam.id)}
+                                      disabled={backupLoading}
+                                      style={{ width:'100%', justifyContent:'center', background:'#0d9488', color:'#fff', border:'none', padding:'10px 14px', fontWeight:700, gap:8 }}>
+                                      <IconDownload size={14} />
+                                      {backupLoading ? 'Generating Snapshot…' : `Download ${currentTeam.short_name || 'Club'} Backup (.json)`}
+                                    </Btn>
+                                  </div>
+
+                                  {/* Card 2: Full Multi-Tenant System Backup */}
+                                  <div style={{ background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:14, padding:20, display:'flex', flexDirection:'column', justifyContent:'space-between', gap:16, boxShadow:'0 2px 8px rgba(0,0,0,0.04)' }}>
+                                    <div>
+                                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                                        <span style={{ fontSize:11, fontWeight:800, textTransform:'uppercase', color:'#2563eb', letterSpacing:'0.06em' }}>Platform-Wide Snapshot</span>
+                                        <span style={{ background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe', borderRadius:99, padding:'2px 8px', fontSize:10, fontWeight:700 }}>All Clubs</span>
+                                      </div>
+                                      <h4 style={{ fontSize:16, fontWeight:800, color:'#0f172a' }}>Entire System Database</h4>
+                                      <p style={{ fontSize:12, color:'#64748b', marginTop:4 }}>
+                                        Complete archive of all {teams.length} clubs, {athletes.length} registered athletes, {profiles.length} platform users, and global relational database states.
+                                      </p>
+                                    </div>
+
+                                    <Btn
+                                      onClick={() => handleExportBackup(null)}
+                                      disabled={backupLoading}
+                                      style={{ width:'100%', justifyContent:'center', background:'#0f172a', color:'#fff', border:'none', padding:'10px 14px', fontWeight:700, gap:8 }}>
+                                      <IconDownload size={14} />
+                                      {backupLoading ? 'Generating Snapshot…' : 'Download Complete Platform Backup (.json)'}
+                                    </Btn>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -3632,6 +3874,52 @@ export default function SuperadminPage() {
               <Btn onClick={() => setReassignModal(false)} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
               <Btn variant="primary" onClick={handleReassignItem} disabled={acting || !targetReassignTeamId} style={{ flex:2, justifyContent:'center' }}>
                 {acting ? 'Reassigning…' : <><IconArrowRight size={12} /> Confirm Move</>}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESTORE BACKUP MODAL */}
+      {restoreModal && restoreJson && restoreSummary && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(8px)', zIndex:700, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:500, display:'flex', flexDirection:'column', gap:16, border:'1.5px solid #0d9488', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #f1f5f9', paddingBottom:12 }}>
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:800, color:'#0f172a', display:'flex', alignItems:'center', gap:6 }}>
+                  <IconDatabase size={16} color="#0d9488" />
+                  Confirm Backup Snapshot Restoration
+                </h3>
+                <p style={{ fontSize:12, color:'#64748b', marginTop:2 }}>
+                  Snapshot exported on: <strong>{new Date(restoreJson.export_date).toLocaleString('en-GB')}</strong>
+                </p>
+              </div>
+              <button onClick={() => setRestoreModal(false)} style={{ background:'none', border:'none', color:'#94a3b8', fontSize:20, cursor:'pointer' }}>×</button>
+            </div>
+
+            <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:10, padding:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:'#334155', marginBottom:8 }}>
+                Records identified for safe restoration:
+              </div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:8, fontSize:12, color:'#475569' }}>
+                <div>• Clubs/Teams: <strong>{restoreSummary.teams}</strong></div>
+                <div>• Athletes: <strong>{restoreSummary.athletes}</strong></div>
+                <div>• Staff Profiles: <strong>{restoreSummary.profiles}</strong></div>
+                <div>• Contracts: <strong>{restoreSummary.contracts}</strong></div>
+                <div>• Injuries: <strong>{restoreSummary.injuries}</strong></div>
+                <div>• Training Sessions: <strong>{restoreSummary.training_sessions}</strong></div>
+                <div>• Notice Board: <strong>{restoreSummary.notices}</strong></div>
+              </div>
+            </div>
+
+            <div style={{ fontSize:11, color:'#dc2626', background:'#fef2f2', border:'1px solid #fecdd3', padding:'8px 12px', borderRadius:8 }}>
+              ⚠️ Records will be safely merged and updated. Existing database records with matching IDs will be overwritten with snapshot data.
+            </div>
+
+            <div style={{ display:'flex', gap:8, borderTop:'1px solid #f1f5f9', paddingTop:14 }}>
+              <Btn onClick={() => setRestoreModal(false)} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
+              <Btn variant="primary" onClick={handleExecuteRestore} disabled={restoring} style={{ flex:2, justifyContent:'center', background:'#0d9488', color:'#fff', fontWeight:700 }}>
+                {restoring ? 'Restoring Database…' : 'Proceed with Restoration →'}
               </Btn>
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   EXPECTED_FIELDS,
 } from '@/lib/parseAthletes'
 import { fetchWithAuth } from '@/lib/tenant'
+import { mobileSafeDownload } from '@/lib/pdfDownload'
 
 // ─── Shared style tokens (matches athletes/page.jsx palette) ──────────────────
 const TEAL       = '#0F766E'
@@ -697,6 +698,16 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
                   id="bulk-template-download"
                   href="/templates/athlete-import-template.csv"
                   download="athlete-import-template.csv"
+                  onClick={async (e) => {
+                    e.preventDefault()
+                    try {
+                      const res = await fetch('/templates/athlete-import-template.csv')
+                      const blob = await res.blob()
+                      await mobileSafeDownload(blob, 'athlete-import-template.csv')
+                    } catch {
+                      window.location.href = '/templates/athlete-import-template.csv'
+                    }
+                  }}
                   style={{ ...btn.base, ...btn.ghost, textDecoration: 'none', fontSize: 12 }}
                 >
                   ⬇ Download Template

@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { mobileSafeDownload } from '@/lib/pdfDownload'
 import {
   Activity, HeartPulse, TrendingUp, CalendarDays, Users, Search,
   Megaphone, ShieldAlert, FileText, Download, Filter, RefreshCw,
@@ -414,7 +415,7 @@ export default function AdminActivityLogPage() {
   }, [activities])
 
   // Export to CSV
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (filteredActivities.length === 0) return
     const headers = ['Timestamp', 'Date', 'Time', 'Staff/Player Name', 'Role', 'Module', 'Action', 'Target', 'Details']
     const rows = filteredActivities.map(a => [
@@ -429,14 +430,8 @@ export default function AdminActivityLogPage() {
       `"${(a.details || '').replace(/"/g, '""')}"`,
     ])
 
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement('a')
-    link.setAttribute('href', encodedUri)
-    link.setAttribute('download', `ApextrackGH_Activity_Log_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+    await mobileSafeDownload(csv, `ApextrackGH_Activity_Log_${new Date().toISOString().slice(0, 10)}.csv`)
   }
 
   const isAdminOrSuper = currentUser?.role === 'admin' || currentUser?.role === 'superadmin'

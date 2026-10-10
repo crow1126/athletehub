@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { payFetch } from '@/lib/payFetch'
 import { generatePayrollReceiptPDF, generateSingleReceiptPDF } from '@/lib/pdfReceipt'
+import { mobileSafeDownload } from '@/lib/pdfDownload'
 
 const C = {
   text: '#0B1E14',
@@ -191,7 +192,7 @@ export default function PayrollRunDetailPage({ params }) {
     load(teamId)
   }
 
-  function exportCSV() {
+  async function exportCSV() {
     const rows = [
       ['name', 'phone', 'amount', 'narration'],
       ...items.map(item => [
@@ -202,13 +203,7 @@ export default function PayrollRunDetailPage({ params }) {
       ])
     ]
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `payroll-${run.description.replace(/\s+/g, '-').toLowerCase()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+    await mobileSafeDownload(csv, `payroll-${(run.description || 'export').replace(/\s+/g, '-').toLowerCase()}.csv`)
   }
 
   async function downloadPDF() {

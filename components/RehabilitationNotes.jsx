@@ -579,7 +579,7 @@ export default function RehabilitationNotes({
                         </span>
                         <span>•</span>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          <span style={{ opacity: 0.55 }}>✍</span>
+                          <Edit3 size={11} style={{ opacity: 0.65 }} />
                           <span>
                             {n.author_name || 'Medical Staff'}
                             {' · '}
@@ -796,7 +796,7 @@ export default function RehabilitationNotes({
                     <option value="">Select player…</option>
                     {athletes.map(a => (
                       <option key={a.id} value={a.id}>
-                        {a.name} ({a.position || 'Player'}) {a.status === 'Injured' ? '⚠️ Injured' : ''}
+                        {a.name} ({a.position || 'Player'}){a.status === 'Injured' ? ' [Injured]' : ''}
                       </option>
                     ))}
                   </select>

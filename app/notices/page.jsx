@@ -8,7 +8,7 @@ import {
   Megaphone, Plus, Pin, Trash2, Send, Radio, Users, CheckCircle2,
   AlertCircle, Trophy, Calendar, HeartPulse, Search, MessageSquare,
   Clock, RefreshCw, X, MapPin, Layers, Check, FileText, ChevronDown,
-  ShieldAlert, Swords,
+  ShieldAlert, Swords, Ban,
 } from 'lucide-react'
 
 const CATEGORIES = [
@@ -823,7 +823,7 @@ export default function NoticeBoardPage() {
                 {/* ── SUSPENDED PLAYERS WARNING ── */}
                 {suspendedAthletes.length > 0 && (
                   <div style={{ background: '#FEF9E7', border: '1.5px solid #FDE68A', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 15 }}>🚫</span>
+                    <Ban size={15} color="#92400E" style={{ flexShrink: 0 }} />
                     <span style={{ fontSize: 12, fontWeight: 700, color: '#92400E' }}>
                       {suspendedAthletes.length} player{suspendedAthletes.length > 1 ? 's are' : ' is'} suspended (red card / disciplinary ban) and cannot be selected: {suspendedAthletes.map(a => `${getPlayerName(a)}${a.back_number ? ' #' + a.back_number : ''}`).join(', ')}.
                     </span>

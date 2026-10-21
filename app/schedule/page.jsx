@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { IconPin, IconMobile, IconMailOff } from '@/lib/icons'
+import { Eye } from 'lucide-react'
 
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
@@ -159,7 +160,7 @@ export default function SchedulePage() {
           action={!isAdminReadOnly && <button className="btn-blue" onClick={() => openAdd()}>+ New Session</button>}/>
         {isAdminReadOnly && (
           <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:20, color:'#0369A1', fontSize:13, fontWeight:600 }}>
-            <span style={{ fontSize:16 }}>👁</span>
+            <Eye size={16} style={{ flexShrink: 0 }} />
             <span><strong>View-Only Mode</strong> — Training sessions are managed by coaches. You can view the full schedule and session details.</span>
           </div>
         )}

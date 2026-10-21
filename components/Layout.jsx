@@ -14,7 +14,8 @@ import NotificationPromptBanner from '@/components/NotificationPromptBanner'
 import {
   LayoutDashboard, Users, ShieldCheck, ShieldAlert, CalendarDays, HeartPulse, TrendingUp, 
   Search, ClipboardList, BarChart3, Settings, ArrowLeftRight, CreditCard,
-  Wallet, Menu, X, Bell, ChevronDown, Building2, Megaphone, Activity
+  Wallet, Menu, X, Bell, ChevronDown, Building2, Megaphone, Activity,
+  CheckCircle2, BellOff
 } from 'lucide-react'
 
 const ALL_NAV = [
@@ -235,8 +236,12 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
               gap: 8,
               fontSize: 11,
             }}>
-              <span style={{ color: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#166534' : C.text2, fontWeight: 600 }}>
-                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✅ Push Alerts Active' : '🔔 Push Alerts Off'}
+              <span style={{ color: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#166534' : C.text2, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? (
+                  <><CheckCircle2 size={13} color="#16a34a" /> Push Alerts Active</>
+                ) : (
+                  <><BellOff size={13} color={C.text3} /> Push Alerts Off</>
+                )}
               </span>
               {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? (
                 <button

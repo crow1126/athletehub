@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { KeyRound, Trash2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
@@ -843,7 +844,7 @@ export default function SettingsPage() {
 
                 {staffLogins.length === 0 ? (
                   <div style={{ padding:'36px',textAlign:'center',background:'#F8FAFC',borderRadius:16,color:'#64748B',fontSize:14,border:'1px dashed #CBD5E1',marginTop:12 }}>
-                    <div style={{ fontSize:32,marginBottom:8 }}>🔑</div>
+                    <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}><KeyRound size={36} color="#94A3B8" /></div>
                     No logins issued yet. Use the button above to issue your first staff login.
                   </div>
                 ) : (
@@ -1106,7 +1107,7 @@ export default function SettingsPage() {
                                       onMouseLeave={e=>{ e.currentTarget.style.background='none' }}
                                       title="Permanently delete player credentials"
                                     >
-                                      🗑 Delete
+                                      <Trash2 size={12} /> Delete
                                     </button>
                                   </div>
                                 ) : (
@@ -1495,7 +1496,7 @@ export default function SettingsPage() {
                                   onMouseLeave={e=>{ e.currentTarget.style.background='none' }}
                                   title="Permanently delete user account and credentials"
                                 >
-                                  🗑 Delete
+                                  <Trash2 size={12} /> Delete
                                 </button>
                               )}
                             </div>

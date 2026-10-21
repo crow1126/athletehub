@@ -17,6 +17,10 @@ import {
 } from '@/lib/parseAthletes'
 import { fetchWithAuth } from '@/lib/tenant'
 import { mobileSafeDownload } from '@/lib/pdfDownload'
+import {
+  Check, X as IconX, AlertTriangle, UploadCloud, Sparkles, Columns,
+  Zap, Save, Edit2, FileSpreadsheet, Settings, CheckCircle2
+} from 'lucide-react'
 
 // ─── Shared style tokens (matches athletes/page.jsx palette) ──────────────────
 const TEAL       = '#0F766E'
@@ -48,9 +52,9 @@ const btn = {
 }
 
 // ─── Tiny status icons ────────────────────────────────────────────────────────
-function IconOk()   { return <span style={{ color: GREEN,  fontSize: 16, lineHeight: 1 }}>✓</span> }
-function IconErr()  { return <span style={{ color: RED,    fontSize: 16, lineHeight: 1 }}>✗</span> }
-function IconWarn() { return <span style={{ color: ORANGE, fontSize: 14, lineHeight: 1 }}>⚠</span> }
+function IconOk()   { return <Check size={14} style={{ color: GREEN, flexShrink: 0 }} /> }
+function IconErr()  { return <IconX size={14} style={{ color: RED, flexShrink: 0 }} /> }
+function IconWarn() { return <AlertTriangle size={14} style={{ color: ORANGE, flexShrink: 0 }} /> }
 
 // ─── Drop-zone ────────────────────────────────────────────────────────────────
 function DropZone({ onFile, disabled }) {
@@ -84,7 +88,9 @@ function DropZone({ onFile, disabled }) {
         transition: 'border-color 0.2s, background 0.2s',
       }}
     >
-      <div style={{ fontSize: 36, marginBottom: 8 }}>📂</div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 10 }}>
+        <UploadCloud size={40} color={TEAL_MID} />
+      </div>
       <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: SLATE }}>
         {dragging ? 'Release to upload' : 'Drop your CSV or Excel file here'}
       </p>
@@ -136,8 +142,12 @@ function ColumnMappingView({
         border: `1px solid ${hasAiSuggestions ? PURPLE_BRD : TEAL_LIGHT}`,
         borderRadius: 12, padding: '12px 16px',
       }}>
-        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: hasAiSuggestions ? PURPLE : TEAL }}>
-          {hasAiSuggestions ? '✨ AI Column Matching Applied' : '📋 Match Columns to Profile Fields'}
+        <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: hasAiSuggestions ? PURPLE : TEAL, display: 'flex', alignItems: 'center', gap: 6 }}>
+          {hasAiSuggestions ? (
+            <><Sparkles size={14} /> AI Column Matching Applied</>
+          ) : (
+            <><Columns size={14} /> Match Columns to Profile Fields</>
+          )}
         </p>
         <p style={{ margin: '4px 0 0', fontSize: 12, color: SLATE, lineHeight: 1.4 }}>
           {hasAiSuggestions
@@ -203,23 +213,23 @@ function ColumnMappingView({
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                 {/* Badge */}
                 {source === 'local' && selectedHeader && (
-                  <span style={{ background: TEAL_BG, color: TEAL, border: `1px solid ${TEAL_LIGHT}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                    ⚡ Auto-matched
+                  <span style={{ background: TEAL_BG, color: TEAL, border: `1px solid ${TEAL_LIGHT}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Zap size={11} /> Auto-matched
                   </span>
                 )}
                 {source === 'ai' && selectedHeader && (
-                  <span style={{ background: PURPLE_BG, color: PURPLE, border: `1px solid ${PURPLE_BRD}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                    ✨ AI suggested
+                  <span style={{ background: PURPLE_BG, color: PURPLE, border: `1px solid ${PURPLE_BRD}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Sparkles size={11} /> AI suggested
                   </span>
                 )}
                 {source === 'saved' && selectedHeader && (
-                  <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700 }}>
-                    💾 Saved
+                  <span style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE', padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Save size={11} /> Saved
                   </span>
                 )}
                 {source === 'manual' && selectedHeader && (
-                  <span style={{ background: '#F1F5F9', color: SLATE, border: `1px solid ${BORDER}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600 }}>
-                    ✎ Selected
+                  <span style={{ background: '#F1F5F9', color: SLATE, border: `1px solid ${BORDER}`, padding: '3px 8px', borderRadius: 6, fontSize: 11, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <Edit2 size={11} /> Selected
                   </span>
                 )}
                 {!selectedHeader && (
@@ -647,8 +657,9 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
               Bulk Athlete Upload
             </h2>
             {fileName && view !== 'idle' && (
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>
-                📄 {fileName} {fileHeaders.length > 0 ? `(${fileHeaders.length} columns detected)` : ''}
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <FileSpreadsheet size={13} />
+                <span>{fileName} {fileHeaders.length > 0 ? `(${fileHeaders.length} columns detected)` : ''}</span>
               </p>
             )}
           </div>
@@ -758,7 +769,10 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
               {/* Saved mapping banner if used */}
               {usedSavedMapping && (
                 <div style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', borderRadius: 10, padding: '8px 14px', fontSize: 12, color: '#1D4ED8', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                  <span>💾 Automatically used your saved column mapping for this team format.</span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Save size={13} />
+                    <span>Automatically used your saved column mapping for this team format.</span>
+                  </span>
                   <button
                     id="bulk-upload-edit-mapping-saved"
                     onClick={() => setView('mapping')}
@@ -792,9 +806,9 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
                   id="bulk-upload-edit-mapping"
                   onClick={() => setView('mapping')}
                   disabled={view === 'importing'}
-                  style={{ ...btn.base, ...btn.ghost, fontSize: 12, padding: '6px 12px' }}
+                  style={{ ...btn.base, ...btn.ghost, fontSize: 12, padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
                 >
-                  ⚙ Edit Mapping
+                  <Settings size={13} /> Edit Mapping
                 </button>
               </div>
 
@@ -834,8 +848,12 @@ export default function BulkAthleteUpload({ teamId, onClose, onSuccess }) {
           {/* ── RESULT ── */}
           {view === 'result' && result && (
             <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 12 }}>
-                {(result.added > 0 || result.updated > 0) ? '🎉' : '⚠️'}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                {(result.added > 0 || result.updated > 0) ? (
+                  <CheckCircle2 size={48} color={GREEN} />
+                ) : (
+                  <AlertTriangle size={48} color={ORANGE} />
+                )}
               </div>
               <h3 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 800, color: SLATE }}>
                 Import complete

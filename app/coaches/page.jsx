@@ -7,6 +7,7 @@ import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { Check, AlertTriangle, FileEdit } from 'lucide-react'
 
 
 const currency = v => v ? `GHS ${parseFloat(v).toLocaleString('en-GH', { minimumFractionDigits: 2 })}` : '—'
@@ -507,10 +508,10 @@ export default function CoachesPage() {
                   borderRadius:10, padding:'9px 14px' }}>
                   <span style={{ fontSize:12, fontWeight:600, color: hasDraft && !draftSavedAt ? '#92400E' : '#0F766E', display:'flex', alignItems:'center', gap:6 }}>
                     {draftSavedAt
-                      ? <>✓ Draft auto-saved at {draftSavedAt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</>
+                      ? <><Check size={13} color="#059669" /> Draft auto-saved at {draftSavedAt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</>
                       : hasDraft
-                        ? <>⚠ Restored unsaved draft — continue where you left off</>
-                        : <>📝 Auto-save enabled — changes saved automatically</>}
+                        ? <><AlertTriangle size={13} color="#D97706" /> Restored unsaved draft — continue where you left off</>
+                        : <><FileEdit size={13} color="#0D9488" /> Auto-save enabled — changes saved automatically</>}
                   </span>
                   {(draftSavedAt || hasDraft) && (
                     <button onClick={clearStaffDraft} style={{ fontSize:11, fontWeight:700, color:'#64748B', background:'none', border:'1px solid var(--border)', borderRadius:6, padding:'3px 10px', cursor:'pointer', fontFamily:'var(--font)' }}>

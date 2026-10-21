@@ -9,7 +9,7 @@ import { mobileSafeDownload } from '@/lib/pdfDownload'
 import {
   Activity, HeartPulse, TrendingUp, CalendarDays, Users, Search,
   Megaphone, ShieldAlert, FileText, Download, Filter, RefreshCw,
-  Clock, CheckCircle2, ChevronRight, UserCheck
+  Clock, CheckCircle2, ChevronRight, UserCheck, Edit3
 } from 'lucide-react'
 
 // Map roles to friendly labels & badge styling
@@ -784,7 +784,7 @@ export default function AdminActivityLogPage() {
                             fontSize: 11, color: 'var(--text3)'
                           }}>
                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                              <span style={{ opacity: 0.6 }}>✍</span>
+                              <Edit3 size={11} style={{ opacity: 0.7 }} />
                               <strong>{item.actorName || 'Staff Member'}</strong>
                             </span>
                             <span>•</span>

@@ -1,6 +1,13 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   allowedDevOrigins: ['10.244.248.115'],
+
+  // Explicitly set Turbopack root to current project directory
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
 
   // Limit concurrent build workers to prevent OOM on machines with limited RAM/swap
   experimental: {

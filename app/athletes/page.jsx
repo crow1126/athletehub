@@ -8,7 +8,7 @@ import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 import BulkAthleteUpload from '@/components/BulkAthleteUpload'
 
 import Link from 'next/link'
-import { FileText } from 'lucide-react'
+import { FileText, CheckCircle2, AlertTriangle, Check, FileEdit, X } from 'lucide-react'
 
 const POSITION_GROUPS = {
   'Goalkeeper':  ['GK'],
@@ -416,7 +416,11 @@ export default function AthletesPage() {
         {/* Bulk import result banner */}
         {bulkResult && (
           <div style={{ display:'flex', alignItems:'center', gap:10, background: (bulkResult.added > 0 || bulkResult.updated > 0) ? '#ECFDF5' : '#FEF3C7', border:`1px solid ${(bulkResult.added > 0 || bulkResult.updated > 0) ? '#A7F3D0' : '#FCD34D'}`, borderRadius:12, padding:'12px 18px', marginBottom:18, flexWrap:'wrap' }}>
-            <span style={{ fontSize:20 }}>{(bulkResult.added > 0 || bulkResult.updated > 0) ? '✅' : '⚠️'}</span>
+            {(bulkResult.added > 0 || bulkResult.updated > 0) ? (
+              <CheckCircle2 size={18} color="#059669" style={{ flexShrink: 0 }} />
+            ) : (
+              <AlertTriangle size={18} color="#D97706" style={{ flexShrink: 0 }} />
+            )}
             <span style={{ fontWeight:700, fontSize:14, color: (bulkResult.added > 0 || bulkResult.updated > 0) ? '#059669' : '#B45309' }}>
               {bulkResult.added > 0 && `${bulkResult.added} athlete${bulkResult.added !== 1 ? 's' : ''} added`}
               {bulkResult.added > 0 && bulkResult.updated > 0 && ', '}
@@ -450,8 +454,8 @@ export default function AthletesPage() {
           </select>
           {(search||posFilter||statFilter) && (
             <button onClick={()=>{setSearch('');setPosFilter('');setStatFilter('')}}
-              style={{ ...inp, width:'auto', cursor:'pointer', background:'#F1F5F9', fontWeight:600, color:'#334155' }}>
-              ✕ Clear
+              style={{ ...inp, width:'auto', cursor:'pointer', background:'#F1F5F9', fontWeight:600, color:'#334155', display:'flex', alignItems:'center', gap:4 }}>
+              <X size={13} /> Clear
             </button>
           )}
         </div>
@@ -526,10 +530,10 @@ export default function AthletesPage() {
                   borderRadius:10, padding:'9px 14px' }}>
                   <span style={{ fontSize:12, fontWeight:600, color: hasDraft && !draftSavedAt ? '#92400E' : '#0F766E', display:'flex', alignItems:'center', gap:6 }}>
                     {draftSavedAt
-                      ? <>✓ Draft auto-saved at {draftSavedAt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</>
+                      ? <><Check size={13} color="#059669" /> Draft auto-saved at {draftSavedAt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</>
                       : hasDraft
-                        ? <>⚠ Restored unsaved draft — continue where you left off</>
-                        : <>📝 Auto-save enabled — changes saved automatically</>}
+                        ? <><AlertTriangle size={13} color="#D97706" /> Restored unsaved draft — continue where you left off</>
+                        : <><FileEdit size={13} color="#0D9488" /> Auto-save enabled — changes saved automatically</>}
                   </span>
                   {(draftSavedAt || hasDraft) && (
                     <button onClick={clearDraft} style={{ fontSize:11, fontWeight:700, color:'#64748B', background:'none', border:'1px solid #E2E8F0', borderRadius:6, padding:'3px 10px', cursor:'pointer', fontFamily:'var(--font)' }}>

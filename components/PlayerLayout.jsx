@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
 import { triggerNotificationAlert, requestNotificationPermission, sendTestNotificationToSelf } from '@/lib/notifications'
 import NotificationPromptBanner from '@/components/NotificationPromptBanner'
-import { User, Zap, Calendar, LogOut, Bell, Megaphone } from 'lucide-react'
+import { User, Zap, Calendar, LogOut, Bell, Megaphone, CheckCircle2, BellOff } from 'lucide-react'
 
 const NAV_ITEMS = [
   { href: '/player-hub', label: 'My Profile', icon: <User size={20} strokeWidth={2} /> },
@@ -168,8 +168,12 @@ function BellButton({ notifications, unreadCount, onToggle, panelOpen, panelRef,
               gap: 8,
               fontSize: 11,
             }}>
-              <span style={{ color: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#166534' : C.text2, fontWeight: 600 }}>
-                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '✅ Push Alerts Active' : '🔔 Push Alerts Off'}
+              <span style={{ color: typeof Notification !== 'undefined' && Notification.permission === 'granted' ? '#166534' : C.text2, fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? (
+                  <><CheckCircle2 size={13} color="#16a34a" /> Push Alerts Active</>
+                ) : (
+                  <><BellOff size={13} color={C.text3} /> Push Alerts Off</>
+                )}
               </span>
               {typeof Notification !== 'undefined' && Notification.permission === 'granted' ? (
                 <button

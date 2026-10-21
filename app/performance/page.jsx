@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { Eye, Ban, ShieldAlert } from 'lucide-react'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
 function initials(n){ return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -98,7 +99,7 @@ export default function PerformancePage(){
 
     let finalNotes = form.notes || ''
     if (form.red_card) {
-      const banText = `[🔴 Red Card: Suspended for ${form.suspension_games || 1} match${(parseInt(form.suspension_games) || 1) > 1 ? 'es' : ''}]`
+      const banText = `[Red Card: Suspended for ${form.suspension_games || 1} match${(parseInt(form.suspension_games) || 1) > 1 ? 'es' : ''}]`
       if (!finalNotes.includes('Red Card')) {
         finalNotes = finalNotes ? `${banText} ${finalNotes}` : banText
       }
@@ -196,7 +197,7 @@ export default function PerformancePage(){
           action={!isAdminReadOnly && <button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>
         {isAdminReadOnly && (
           <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:20, color:'#0369A1', fontSize:13, fontWeight:600 }}>
-            <span style={{ fontSize:16 }}>👁</span>
+            <Eye size={16} style={{ flexShrink: 0 }} />
             <span><strong>View-Only Mode</strong> — Performance stats are logged by coaches and analysts. You can view and export all data.</span>
           </div>
         )}
@@ -272,8 +273,8 @@ export default function PerformancePage(){
               flexWrap: 'wrap',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
-                  🚫
+                <div style={{ width: 34, height: 34, borderRadius: 8, background: '#FEF3C7', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ban size={18} />
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: '#92400E' }}>
@@ -455,8 +456,9 @@ export default function PerformancePage(){
                       onChange={e => setForm(f => ({ ...f, red_card: e.target.checked, update_status_suspended: e.target.checked }))}
                       style={{ width: 18, height: 18, accentColor: '#E11D48', cursor: 'pointer' }}
                     />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: form.red_card ? '#BE123C' : '#334155', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      🟥 Red Card / Match Suspension
+                    <span style={{ fontSize: 13, fontWeight: 700, color: form.red_card ? '#BE123C' : '#334155', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ width: 12, height: 16, background: '#DC2626', borderRadius: 2, display: 'inline-block', boxShadow: '0 1px 3px rgba(220,38,38,0.4)' }} />
+                      Red Card / Match Suspension
                     </span>
                   </label>
                   {form.red_card && (

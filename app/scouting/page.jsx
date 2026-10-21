@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { Sparkles, Lightbulb } from 'lucide-react'
 
 const POSITIONS=['Forward','Midfielder','Defender','Goalkeeper']
 const STATUS_OPTS=['Watching','Recommended','Rejected','Signed']
@@ -266,8 +267,8 @@ export default function ScoutingPage(){
                 </>
               ) : (
                 <>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                  AI Lookup ✨
+                  <Sparkles size={14} />
+                  AI Lookup
                 </>
               )}
             </button>
@@ -326,8 +327,8 @@ export default function ScoutingPage(){
                 boxShadow: '0 4px 12px rgba(245, 158, 11, 0.05)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                  <div style={{ background: '#FEF3C7', color: '#D97706', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 16, flexShrink: 0 }}>
-                    💡
+                  <div style={{ background: '#FEF3C7', color: '#D97706', width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Lightbulb size={16} />
                   </div>
                   <div style={{ flex: 1 }}>
                     <h4 style={{ margin: '0 0 6px 0', fontSize: 13, fontWeight: 800, color: '#92400E' }}>

@@ -4,7 +4,8 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { mobileSafeDownload } from '@/lib/pdfDownload'
+import { mobileSafeDownload, openDownloadWindow, mobileSafeDownloadIntoWindow } from '@/lib/pdfDownload'
+import { getBase64ImageFromUrl, getApexTrackLogoBase64 } from '@/lib/pdfLogos'
 
 import {
   Users, HeartPulse, Trophy, CalendarDays, ShieldCheck,
@@ -33,33 +34,9 @@ const ANALYST_REPORT_CARDS = [
 ]
 
 // ─────────────────────────────────────────────────────────────────────────────
-// IMAGE HELPER FOR PDF GENERATION
 // ─────────────────────────────────────────────────────────────────────────────
-async function getBase64ImageFromUrl(imageUrl) {
-  if (!imageUrl) return null
-  try {
-    const res = await fetch(imageUrl, { mode: 'cors' })
-    if (!res.ok) return null
-    const blob = await res.blob()
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result)
-      reader.onerror = () => resolve(null)
-      reader.readAsDataURL(blob)
-    })
-  } catch (e) {
-    console.warn('Could not load image for PDF:', imageUrl, e)
-    return null
-  }
-}
-
-async function getApexTrackLogoBase64() {
-  let base64 = await getBase64ImageFromUrl('/logo.png')
-  if (!base64) {
-    base64 = await getBase64ImageFromUrl('/icons/icon-192.png')
-  }
-  return base64
-}
+// Logo helpers are imported from @/lib/pdfLogos (shared with physioReport.js)
+// ─────────────────────────────────────────────────────────────────────────────
 
 const LOCAL_STORAGE_REHAB_KEY = 'apextrack_rehab_notes_fallback'
 
@@ -84,449 +61,33 @@ function cleanPdfText(str) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. PLAYER-SPECIFIC CLINICAL & REHABILITATION DOSSIER (PDF)
-// Full medical detail: Profile + Photo, Team Logo, ApexTrack GH Logo, Rehabilitation Plan, Diagnostics, Logs
+// 1. SPORTS INJURY DIAGNOSIS AND REHABILITATION PLAN (INDIVIDUAL PHYSIOTHERAPY REPORT)
+// Full clinical detail: Profile + Photo, Team Logo, ApexTrack Logo, 9-Section Medical Framework
 // ─────────────────────────────────────────────────────────────────────────────
 async function buildPlayerClinicalDossierPDF({ data, selectedAthlete, period }) {
-  const { default: jsPDF } = await import('jspdf')
-  const { default: autoTable } = await import('jspdf-autotable')
-
-  const { meta, kpis, injuries = [], rehabNotes = [] } = data
+  const { buildPhysiotherapyReportPDF } = await import('@/lib/physioReport')
+  const { meta, injuries = [], rehabNotes = [] } = data
   const ath = selectedAthlete || (data.athletes && data.athletes[0]) || {}
+  const activeInjury = injuries.find(i => i.athlete_id === ath.id) || injuries[0] || null
 
-  // 1. Preload Logos & Player Photo
-  const [siteLogoBase64, teamLogoBase64, playerPhotoBase64] = await Promise.all([
-    getApexTrackLogoBase64(),
-    meta.clubLogoUrl ? getBase64ImageFromUrl(meta.clubLogoUrl) : null,
-    ath.photo_url ? getBase64ImageFromUrl(ath.photo_url) : null,
-  ])
-
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const PW  = doc.internal.pageSize.getWidth()   // 210
-  const PH  = doc.internal.pageSize.getHeight()  // 297
-
-  const NAVY    = [15,  23,  42]    // #0F172A
-  const TEAL    = [13, 148, 136]    // #0D9488
-  const SLATE   = [51,  65,  85]    // #334155
-  const GREEN   = [22, 163,  74]    // #16A34A
-  const AMBER   = [217, 119,  6]    // #D97706
-  const WHITE   = [255, 255, 255]
-  const LIGHT   = [248, 250, 252]   // #F8FAFC
-  const BORDER  = [226, 232, 240]   // #E2E8F0
-  const TEXT    = [15,  23,  42]    // #0F172A
-  const TEXT2   = [100, 116, 139]   // #64748B
-
-
-  let y = 0
-
-  // ── Top Header Banner (33mm) ──
-  doc.setFillColor(...NAVY)
-  doc.rect(0, 0, PW, 33, 'F')
-
-  // Dual Accent line at bottom of header
-  doc.setFillColor(...TEAL)
-  doc.rect(0, 32, PW * 0.65, 1.0, 'F')
-  doc.setFillColor(45, 212, 191) // Teal-300 bright
-  doc.rect(PW * 0.65, 32, PW * 0.35, 1.0, 'F')
-
-  // ── Left Side: Team Logo & Classy Badge Pill ──
-  let leftContentX = 12
-  if (teamLogoBase64) {
+  let customPlan = null
+  if (typeof window !== 'undefined') {
     try {
-      doc.setFillColor(...WHITE)
-      doc.roundedRect(12, 5.2, 21, 21, 2, 2, 'F')
-      doc.addImage(teamLogoBase64, 'PNG', 13, 6.2, 19, 19)
-      leftContentX = 37
-    } catch (_e) { /* fallback */ }
+      const raw = localStorage.getItem(`apextrack_physio_plan_${ath.id}`)
+      if (raw) customPlan = JSON.parse(raw)
+    } catch (_e) {}
   }
 
-  // Classy Teal Capsule Badge: "PLAYER CLINICAL DOSSIER" (No Red UI)
-  const badgeW = 46
-  const badgeH = 5.6
-  doc.setFillColor(15, 118, 110) // Rich Teal-700
-  doc.roundedRect(leftContentX, 5.2, badgeW, badgeH, 1.4, 1.4, 'F')
-  doc.setDrawColor(45, 212, 191) // Teal-300
-  doc.setLineWidth(0.25)
-  doc.roundedRect(leftContentX, 5.2, badgeW, badgeH, 1.4, 1.4, 'D')
-
-  doc.setTextColor(...WHITE)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(6.5)
-  doc.text('PLAYER CLINICAL DOSSIER', leftContentX + (badgeW / 2), 9.0, { align: 'center' })
-
-  // Club Name
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10.5)
-  doc.setTextColor(...WHITE)
-  doc.text((meta.clubName || 'CLUB').toUpperCase(), leftContentX, 17.5)
-
-  // Department Subtitle
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(6.5)
-  doc.setTextColor(45, 212, 191) // Teal-300
-  doc.text('SPORTS MEDICINE & PHYSIOTHERAPY UNIT', leftContentX, 23.5)
-
-  // ── Right Side: Small Visible ApexTrack GH Logo + Report Title & Athlete Name ──
-  const logoBoxW = 15
-  const logoBoxH = 15
-  const logoBoxX = PW - 26
-  const logoBoxY = 5.2
-
-  if (siteLogoBase64) {
-    try {
-      doc.setFillColor(255, 255, 255)
-      doc.roundedRect(logoBoxX, logoBoxY, logoBoxW, logoBoxH, 2, 2, 'F')
-      doc.setDrawColor(45, 212, 191)
-      doc.setLineWidth(0.3)
-      doc.roundedRect(logoBoxX, logoBoxY, logoBoxW, logoBoxH, 2, 2, 'D')
-      doc.addImage(siteLogoBase64, 'PNG', logoBoxX + 1, logoBoxY + 1, logoBoxW - 2, logoBoxH - 2)
-
-      // Brand caption underneath logo
-      doc.setFont('helvetica', 'bold')
-      doc.setFontSize(5.5)
-      doc.setTextColor(45, 212, 191) // Teal-300
-      doc.text('ApexTrack GH', logoBoxX + (logoBoxW / 2), logoBoxY + logoBoxH + 4.2, { align: 'center' })
-    } catch (_e) { /* fallback */ }
-  }
-
-  const rightTextX = siteLogoBase64 ? logoBoxX - 4 : PW - 12
-
-  // Title
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.setTextColor(...WHITE)
-  doc.text('MEDICAL & REHABILITATION REPORT', rightTextX, 10.0, { align: 'right' })
-
-  // Athlete Name (Distinguished high-contrast typography)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.setTextColor(45, 212, 191) // Teal-300
-  doc.text((ath.name || 'ATHLETE').toUpperCase(), rightTextX, 17.0, { align: 'right' })
-
-  // Subtitle / Confidential stamp
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(6.5)
-  doc.setTextColor(203, 213, 225) // Slate-300
-  doc.text(`CONFIDENTIAL MEDICAL RECORD  •  ${period}`, rightTextX, 23.5, { align: 'right' })
-
-  y = 40
-
-  // ── 1. Athlete Clinical Baseline (With Player Photo) ──
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(...NAVY)
-  doc.text('1. ATHLETE CLINICAL PROFILE & BASELINE', 12, y)
-  y += 4
-
-  const photoWidth  = 26
-  const photoHeight = 32
-  const photoX      = 12
-  const photoY      = y
-
-  // Draw Photo Container Box
-  doc.setFillColor(...LIGHT)
-  doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 2, 2, 'F')
-  doc.setDrawColor(...BORDER)
-  doc.setLineWidth(0.3)
-  doc.roundedRect(photoX, photoY, photoWidth, photoHeight, 2, 2, 'D')
-
-  if (playerPhotoBase64) {
-    try {
-      doc.addImage(playerPhotoBase64, 'JPEG', photoX + 1, photoY + 1, photoWidth - 2, photoHeight - 2)
-    } catch (_e) {
-      // Fallback text if corrupted
-      doc.setTextColor(...TEXT2)
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'bold')
-      doc.text('ATHLETE', photoX + photoWidth/2, photoY + 14, { align: 'center' })
-      doc.text('PHOTO', photoX + photoWidth/2, photoY + 19, { align: 'center' })
-    }
-  } else {
-    doc.setFillColor(241, 245, 249)
-    doc.roundedRect(photoX + 2, photoY + 2, photoWidth - 4, photoHeight - 4, 1.5, 1.5, 'F')
-    doc.setTextColor(...TEXT2)
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'bold')
-    doc.text((ath.name || 'ATHLETE').split(' ').map(w=>w[0]).join('').slice(0, 3) || 'ATH', photoX + photoWidth/2, photoY + 14, { align: 'center' })
-    doc.setFontSize(6.5)
-    doc.setFont('helvetica', 'normal')
-    doc.text('No Photo', photoX + photoWidth/2, photoY + 20, { align: 'center' })
-  }
-
-  // Baseline table alongside the player photo
-  const tableX = photoX + photoWidth + 4
-  const tableW = PW - tableX - 12
-
-  autoTable(doc, {
-    startY: photoY,
-    margin: { left: tableX, right: 12 },
-    tableWidth: tableW,
-    head: [['Field', 'Clinical Record', 'Field', 'Clinical Record']],
-    body: [
-      ['Full Name',       ath.name || '—',                      'Squad Number',   ath.back_number ? `#${ath.back_number}` : '—'],
-      ['Position',        ath.position || '—',                   'Nationality',    ath.nationality || 'Ghana'],
-      ['Date of Birth',   fmtDate(ath.date_of_birth),            'Age',            ath.age ? `${ath.age} yrs` : '—'],
-      ['Height / Weight', `${ath.height ? ath.height + ' cm' : '—'} / ${ath.weight ? ath.weight + ' kg' : '—'}`, 'Preferred Foot', ath.preferred_foot || 'Right'],
-      ['Current Status',  ath.status || 'Active',                'Match Fitness',  ath.status === 'Injured' ? 'In Rehabilitation' : 'Cleared / Match Fit'],
-      ['Attending Physio', meta.generatedBy || 'Physiotherapist', 'Report Issued',  fmtDate(meta.generatedAt)],
-    ],
-    styles: { fontSize: 7.2, cellPadding: 1.8, font: 'helvetica' },
-    headStyles: { fillColor: NAVY, textColor: WHITE, fontStyle: 'bold', fontSize: 7.2 },
-    alternateRowStyles: { fillColor: LIGHT },
-    columnStyles: {
-      0: { fontStyle: 'bold', textColor: TEXT2, cellWidth: tableW * 0.22 },
-      1: { cellWidth: tableW * 0.28 },
-      2: { fontStyle: 'bold', textColor: TEXT2, cellWidth: tableW * 0.22 },
-      3: { cellWidth: tableW * 0.28 },
-    },
-    tableLineColor: BORDER,
-    tableLineWidth: 0.2,
+  return await buildPhysiotherapyReportPDF({
+    athlete: ath,
+    injury: activeInjury,
+    rehabNotes,
+    customPlan,
+    meta,
+    period,
   })
-
-  y = Math.max(photoY + photoHeight, doc.lastAutoTable.finalY) + 6
-
-  // ── 2. Active Rehabilitation Plan & Clinical Protocols ──
-  if (y > PH - 70) { doc.addPage(); y = 18 }
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(...NAVY)
-  doc.text(`2. REHABILITATION PLAN & CLINICAL PROTOCOLS (${rehabNotes.length} session record${rehabNotes.length === 1 ? '' : 's'})`, 12, y)
-  y += 4
-
-  // Highlight Box: Latest Prescribed Rehabilitation Plan (Structured Table - No text overlap)
-  const latestRehab = rehabNotes[0]
-  const activeInjuryWithNotes = !latestRehab ? injuries.find(i => i.notes && i.notes.trim()) : null
-
-  if (latestRehab) {
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 12, right: 12 },
-      head: [[
-        { content: 'CURRENT REHABILITATION STRATEGY & ACTIVE PLAN', colSpan: 3 }
-      ]],
-      body: [
-        [
-          { content: `Active Phase:\n${latestRehab.rehab_phase || 'Phase 1 - Acute Protection'}`, styles: { fontStyle: 'bold', textColor: TEAL } },
-          { content: `Pain Scale:\n${latestRehab.pain_level ?? 0} / 10`, styles: { halign: 'center', fontStyle: 'bold', textColor: NAVY } },
-          { content: `RTP Status:\n${latestRehab.clearance_status || 'In Rehab'}`, styles: { halign: 'right', fontStyle: 'bold', textColor: latestRehab.clearance_status === 'Full Match Clearance' ? GREEN : AMBER } },
-        ],
-        [
-          { content: `Prescribed Protocol & Modalities:\n${cleanPdfText(latestRehab.treatment_summary) || 'Ongoing clinical protocols'}`, colSpan: 3, styles: { textColor: TEXT, fontStyle: 'normal' } }
-        ],
-        ...(latestRehab.clinical_notes ? [
-          [{ content: `Clinical Notes & Exercise Progression:\n${cleanPdfText(latestRehab.clinical_notes)}`, colSpan: 3, styles: { textColor: SLATE, fontStyle: 'normal' } }]
-        ] : []),
-        ...(latestRehab.target_milestone ? [
-          [{ content: `Milestone Target: ${cleanPdfText(latestRehab.target_milestone)}`, colSpan: 3, styles: { fontStyle: 'bold', textColor: TEAL } }]
-        ] : [])
-      ],
-      styles: { fontSize: 7.2, cellPadding: 2.8, overflow: 'linebreak', lineColor: [153, 246, 228], lineWidth: 0.2 },
-      headStyles: { fillColor: [240, 253, 250], textColor: NAVY, fontStyle: 'bold', fontSize: 7.8, lineColor: TEAL, lineWidth: 0.3 },
-      bodyStyles: { fillColor: WHITE },
-      columnStyles: {
-        0: { cellWidth: 80 },
-        1: { cellWidth: 50 },
-        2: { cellWidth: 56 },
-      }
-    })
-    y = doc.lastAutoTable.finalY + 6
-  } else if (activeInjuryWithNotes) {
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 12, right: 12 },
-      head: [[
-        { content: `INJURY TREATMENT PROTOCOL & CLINICAL NOTES: ${(activeInjuryWithNotes.injury_type || 'INJURY').toUpperCase()}`, colSpan: 3 }
-      ]],
-      body: [
-        [
-          { content: `Severity:\n${activeInjuryWithNotes.severity || 'Mild'}`, styles: { fontStyle: 'bold', textColor: NAVY } },
-          { content: `Status:\n${activeInjuryWithNotes.status || 'Active'}`, styles: { halign: 'center', fontStyle: 'bold', textColor: activeInjuryWithNotes.status === 'Active' ? AMBER : GREEN } },
-          { content: `Expected Return:\n${fmtDate(activeInjuryWithNotes.expected_return)}`, styles: { halign: 'right', fontStyle: 'bold', textColor: NAVY } },
-        ],
-        [
-          { content: `Clinical Protocol & Treatment Notes:\n${cleanPdfText(activeInjuryWithNotes.notes)}`, colSpan: 3, styles: { textColor: TEXT, fontStyle: 'normal' } }
-        ]
-      ],
-      styles: { fontSize: 7.2, cellPadding: 2.8, overflow: 'linebreak', lineColor: [254, 215, 170], lineWidth: 0.2 },
-      headStyles: { fillColor: [254, 243, 199], textColor: NAVY, fontStyle: 'bold', fontSize: 7.8, lineColor: AMBER, lineWidth: 0.3 },
-      bodyStyles: { fillColor: WHITE },
-      columnStyles: {
-        0: { cellWidth: 62 },
-        1: { cellWidth: 62 },
-        2: { cellWidth: 62 },
-      }
-    })
-    y = doc.lastAutoTable.finalY + 6
-  }
-
-  // Full Longitudinal Table of Rehab Sessions
-  if (rehabNotes.length === 0) {
-    if (!activeInjuryWithNotes) {
-      doc.setFont('helvetica', 'italic')
-      doc.setFontSize(7.8)
-      doc.setTextColor(...TEXT2)
-      doc.text('No rehabilitation session records logged for this athlete yet.', 12, y + 4)
-      y += 10
-    }
-  } else {
-    const rehabRows = rehabNotes.map((r, idx) => [
-      idx + 1,
-      fmtDate(r.session_date),
-      `${r.rehab_phase || '—'}\n[${r.clearance_status || 'In Rehab'}]`,
-      `${r.pain_level ?? 0}/10`,
-      cleanPdfText(r.treatment_summary) || '—',
-      `${cleanPdfText(r.clinical_notes) || '—'}${r.target_milestone ? `\n\nTarget: ${cleanPdfText(r.target_milestone)}` : ''}`,
-    ])
-
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 12, right: 12 },
-      head: [['#', 'Date', 'Rehab Phase & Status', 'Pain', 'Prescribed Treatment / Modalities', 'Clinical Notes & Milestone Target']],
-      body: rehabRows,
-      styles: { fontSize: 6.8, cellPadding: 2.5, overflow: 'linebreak' },
-      headStyles: { fillColor: SLATE, textColor: WHITE, fontStyle: 'bold', fontSize: 7.0 },
-      alternateRowStyles: { fillColor: LIGHT },
-      columnStyles: {
-        0: { cellWidth: 7, halign: 'center' },
-        1: { cellWidth: 22 },
-        2: { cellWidth: 38, fontStyle: 'bold' },
-        3: { cellWidth: 13, halign: 'center' },
-        4: { cellWidth: 52 },
-        5: { cellWidth: 54 },
-      },
-      didParseCell: (data) => {
-        if (data.column.index === 2 && data.section === 'body') {
-          const cs = String(data.cell.raw || '')
-          if (cs.includes('Full Match Clearance')) { data.cell.styles.textColor = [22, 163, 74] }
-          else if (cs.includes('In Rehab'))        { data.cell.styles.textColor = [217, 119, 6] }
-        }
-      },
-      tableLineColor: BORDER,
-      tableLineWidth: 0.2,
-    })
-    y = doc.lastAutoTable.finalY + 7
-  }
-
-  // ── 3. Injury Incidents & Diagnostics ──
-  if (y > PH - 60) { doc.addPage(); y = 18 }
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(9)
-  doc.setTextColor(...NAVY)
-  doc.text(`3. INJURY INCIDENTS & DIAGNOSTIC REGISTER (${injuries.length} incident${injuries.length === 1 ? '' : 's'})`, 12, y)
-  y += 4
-
-  if (injuries.length === 0) {
-    doc.setFont('helvetica', 'italic')
-    doc.setFontSize(7.8)
-    doc.setTextColor(...GREEN)
-    doc.text('✔ No injury incidents recorded for this athlete.', 12, y + 3)
-    y += 10
-  } else {
-    const injuryRows = injuries.map((inj, idx) => {
-      let daysLost = '—'
-      if (inj.date_of_injury) {
-        const start = new Date(inj.date_of_injury)
-        const end   = inj.expected_return ? new Date(inj.expected_return) : new Date()
-        const diff  = Math.ceil((end - start) / 86400000)
-        daysLost = diff >= 0 ? `${diff} days` : '—'
-      }
-      return [
-        idx + 1,
-        cleanPdfText(inj.injury_type) || '—',
-        cleanPdfText(inj.severity) || '—',
-        fmtDate(inj.date_of_injury),
-        fmtDate(inj.expected_return),
-        daysLost,
-        inj.status || '—',
-        cleanPdfText(inj.notes) || '—',
-      ]
-    })
-
-    autoTable(doc, {
-      startY: y,
-      margin: { left: 12, right: 12 },
-      head: [['#', 'Diagnosis / Injury Type', 'Severity', 'Date Injured', 'Expected Return', 'Days Lost', 'Status', 'Clinical Notes & Mechanism']],
-      body: injuryRows,
-      styles: { fontSize: 6.8, cellPadding: 2.2, overflow: 'linebreak' },
-      headStyles: { fillColor: NAVY, textColor: WHITE, fontStyle: 'bold', fontSize: 7 },
-      alternateRowStyles: { fillColor: LIGHT },
-      columnStyles: {
-        0: { cellWidth: 6, halign: 'center' },
-        1: { cellWidth: 32, fontStyle: 'bold' },
-        2: { cellWidth: 16 },
-        3: { cellWidth: 20 },
-        4: { cellWidth: 20 },
-        5: { cellWidth: 16, halign: 'center' },
-        6: { cellWidth: 18 },
-        7: { cellWidth: 58 },
-      },
-      didParseCell: (data) => {
-        if (data.column.index === 6 && data.section === 'body') {
-          if (data.cell.raw === 'Active')    { data.cell.styles.textColor = [217, 119, 6]; data.cell.styles.fontStyle = 'bold' }
-          if (data.cell.raw === 'Recovered') { data.cell.styles.textColor = [22, 163, 74]; data.cell.styles.fontStyle = 'bold' }
-        }
-      },
-      tableLineColor: BORDER,
-      tableLineWidth: 0.2,
-    })
-    y = doc.lastAutoTable.finalY + 7
-  }
-
-  // ── 4. Clinical Declaration & Sign-off Box ──
-  if (y > PH - 48) { doc.addPage(); y = 18 }
-
-  doc.setDrawColor(...TEAL)
-  doc.setLineWidth(0.4)
-  doc.roundedRect(12, y, PW - 24, 22, 2, 2, 'D')
-
-  doc.setFillColor(...TEAL)
-  doc.roundedRect(12, y, 3.5, 22, 1.5, 1.5, 'F')
-  doc.rect(14, y, 1.5, 22, 'F')
-
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(8)
-  doc.setTextColor(...NAVY)
-  doc.text('4. CLINICAL CLEARANCE & LEGAL DECLARATION', 19, y + 5)
-
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(7)
-  doc.setTextColor(...TEXT)
-  const declText = 'This clinical dossier contains confidential medical records. All rehabilitation protocols, pain progression, and Return-to-Play criteria are documented in accordance with sports physiotherapy standards.'
-  const declLines = doc.splitTextToSize(declText, PW - 38)
-  doc.text(declLines, 19, y + 10)
-
-  // Signature lines
-  y += 26
-  doc.setDrawColor(...BORDER)
-  doc.setLineWidth(0.3)
-  doc.line(12,  y + 4, 80,  y + 4)
-  doc.line(110, y + 4, 180, y + 4)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(6.8)
-  doc.setTextColor(...TEXT2)
-  doc.text('ATTENDING PHYSIOTHERAPIST / MEDICAL OFFICER', 12,  y + 8)
-  doc.text('DATE & CLINICAL STAMP',                        110, y + 8)
-
-  // Running footer on all pages
-  const totalPages = doc.getNumberOfPages()
-  for (let pg = 1; pg <= totalPages; pg++) {
-    doc.setPage(pg)
-    const ph = doc.internal.pageSize.getHeight()
-    doc.setFillColor(...NAVY)
-    doc.rect(0, ph - 11, PW, 11, 'F')
-    doc.setTextColor(...WHITE)
-    doc.setFont('helvetica', 'normal')
-    doc.setFontSize(7)
-    doc.text(
-      `${(meta.clubName || 'CLUB').toUpperCase()}  •  CLINICAL DOSSIER: ${(ath.name || 'ATHLETE').toUpperCase()}  •  ${period}  •  Page ${pg} of ${totalPages}`,
-      PW / 2, ph - 4.5, { align: 'center' }
-    )
-  }
-
-  return doc
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. PLAYER PERFORMANCE & MATCH ANALYTICS DOSSIER (PDF)
@@ -941,7 +502,7 @@ async function buildAdminGeneralMedicalPDF({ data, period }) {
     doc.setFont('helvetica', 'italic')
     doc.setFontSize(8)
     doc.setTextColor(...GREEN)
-    doc.text('✔ Excellent: No active injury cases recorded. Squad is at 100% availability.', 12, y + 3)
+    doc.text('All Clear: No active injury cases recorded. Squad is at 100% availability.', 12, y + 3)
     y += 10
   } else {
     const activeRows = activeInjuries.map((inj, idx) => {
@@ -1217,6 +778,8 @@ export default function ReportsPage() {
       setStatusMsg({ text: 'Please select an athlete first.', type: 'error' })
       return
     }
+    const isDesk = typeof window !== 'undefined' && !(/iphone|ipad|ipod|android/i.test(navigator.userAgent || ''))
+    const win = isDesk ? openDownloadWindow(`Performance & Match Analytics Dossier — ${athlete.name}`) : null
     const jobKey = `perf_${targetId}`
     setGenerating(jobKey)
     setStatusMsg({ text: '', type: '' })
@@ -1231,10 +794,15 @@ export default function ReportsPage() {
       const safeAthlete = (athlete.name || 'Player').replace(/\s+/g, '_')
       const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
       const filename = `${safeAthlete}_Performance_Dossier_${safePeriod}.pdf`
-      await mobileSafeDownload(doc, filename)
-      setStatusMsg({ text: `Performance Dossier downloaded as "${filename}"`, type: 'success' })
+      if (win) {
+        await mobileSafeDownloadIntoWindow(win, doc, filename)
+      } else {
+        await mobileSafeDownload(doc, filename)
+      }
+      setStatusMsg({ text: `Performance Dossier opened on desktop — review and save.`, type: 'success' })
       setTimeout(() => setStatusMsg({ text: '', type: '' }), 6000)
     } catch (err) {
+      if (win) try { win.close() } catch {}
       setStatusMsg({ text: 'PDF generation failed: ' + err.message, type: 'error' })
     }
     setGenerating(null)
@@ -1275,6 +843,13 @@ export default function ReportsPage() {
 
   // ── Medical PDF generator ────────────────────────────────────────────────
   async function generateMedicalPDF(reportScope) {
+    const isDesk = typeof window !== 'undefined' && !(/iphone|ipad|ipod|android/i.test(navigator.userAgent || ''))
+    const selectedAth = reportScope === 'player' ? (athletes.find(a => a.id === selectedPlayer) || athletes[0]) : null
+    const winTitle = reportScope === 'player'
+      ? `Physiotherapy & Rehabilitation Plan — ${selectedAth?.name || 'Athlete'}`
+      : 'Squad Medical & Clinical Health Report'
+    const win = isDesk ? openDownloadWindow(winTitle) : null
+
     const jobKey = `medical_${reportScope}`
     setGenerating(jobKey)
     setStatusMsg({ text: '', type: '' })
@@ -1312,7 +887,7 @@ export default function ReportsPage() {
       let filename
 
       if (reportScope === 'player') {
-        const selectedAth = athletes.find(a => a.id === selectedPlayer) || data.athletes[0]
+        const targetAth = athletes.find(a => a.id === selectedPlayer) || data.athletes[0]
         // Ensure data.rehabNotes incorporates any client-side / local notes for this player
         const playerRehabs = rehabNotes.filter(r => r.athlete_id === selectedPlayer)
         const combinedPlayerRehab = [...(data.rehabNotes || [])]
@@ -1323,10 +898,10 @@ export default function ReportsPage() {
         }
         data.rehabNotes = combinedPlayerRehab
 
-        doc = await buildPlayerClinicalDossierPDF({ data, selectedAthlete: selectedAth, period })
-        const safeAthlete = (selectedAth?.name || 'Player').replace(/\s+/g, '_')
+        doc = await buildPlayerClinicalDossierPDF({ data, selectedAthlete: targetAth, period })
+        const safeAthlete = (targetAth?.name || 'Player').replace(/\s+/g, '_')
         const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
-        filename = `${safeAthlete}_Clinical_Rehabilitation_Report_${safePeriod}.pdf`
+        filename = `${safeAthlete}_Physiotherapy_Rehab_Plan_${safePeriod}.pdf`
       } else {
         doc = await buildAdminGeneralMedicalPDF({ data, period })
         const safeName = (data.meta?.clubName || 'Club').replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -1334,14 +909,19 @@ export default function ReportsPage() {
         filename = `${safeName}_Squad_Medical_Report_${safePeriod}.pdf`
       }
 
-      await mobileSafeDownload(doc, filename)
+      if (win) {
+        await mobileSafeDownloadIntoWindow(win, doc, filename)
+      } else {
+        await mobileSafeDownload(doc, filename)
+      }
 
       setStatusMsg({
-        text: `Report successfully downloaded as "${filename}"`,
+        text: `Clinical report opened on desktop — review and save.`,
         type: 'success',
       })
       setTimeout(() => setStatusMsg({ text: '', type: '' }), 6000)
     } catch (err) {
+      if (win) try { win.close() } catch {}
       setStatusMsg({ text: 'PDF generation failed: ' + err.message, type: 'error' })
     }
     setGenerating(null)
@@ -1605,7 +1185,9 @@ export default function ReportsPage() {
 
                 {injuries.filter(i => i.status === 'Active').length === 0 ? (
                   <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:14, padding:'28px 20px', textAlign:'center', color:'#166534' }}>
-                    <div style={{ fontSize:32, marginBottom:6 }}>✅</div>
+                    <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
+                      <CheckCircle2 size={36} color="#16a34a" />
+                    </div>
                     <div style={{ fontSize:15, fontWeight:800 }}>Squad Clean Bill of Health!</div>
                     <div style={{ fontSize:12.5, color:'#15803D', marginTop:4 }}>All squad athletes are currently match-fit with zero active injuries recorded.</div>
                   </div>
@@ -2065,8 +1647,8 @@ export default function ReportsPage() {
                 return (
                   <div key={card.id} className="card" style={{ padding:0, overflow:'hidden', border: card.featured ? `1.5px solid ${card.color}` : '1px solid var(--border)', background:'var(--surface)', borderRadius:12, display:'flex', flexDirection:'column' }}>
                     {card.featured && (
-                      <div style={{ background:card.color, padding:'4px 12px', fontSize:10.5, fontWeight:700, color:'#fff', letterSpacing:'0.06em', textTransform:'uppercase', textAlign:'center' }}>
-                        ★ Complete Club Overview
+                      <div style={{ background:card.color, padding:'4px 12px', fontSize:10.5, fontWeight:700, color:'#fff', letterSpacing:'0.06em', textTransform:'uppercase', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+                        <Star size={11} fill="currentColor" /> Complete Club Overview
                       </div>
                     )}
                     <div style={{ padding:'16px 18px', flex:1, display:'flex', gap:12 }}>

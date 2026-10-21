@@ -3,8 +3,9 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check, X, Activity, ClipboardList } from 'lucide-react'
+import { Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check, X, Activity, ClipboardList, Stethoscope, Eye } from 'lucide-react'
 import RehabilitationNotes from '@/components/RehabilitationNotes'
+import PhysiotherapyReportModal from '@/components/PhysiotherapyReportModal'
 
 const EMPTY = {
   athlete_id:'', injury_type:'', severity:'Mild',
@@ -83,6 +84,7 @@ export default function InjuriesPage() {
   const [canEdit,     setCanEdit]     = useState(false)
   const [loading,     setLoading]     = useState(true)
   const [activeTab,   setActiveTab]   = useState('register')
+  const [physioModal, setPhysioModal] = useState({ open: false, athlete: null, injury: null })
 
   const fetchData = useCallback(async () => {
     const { profile: p, teamId: tid } = await getTenantProfile('id,full_name,role,team_id')
@@ -181,6 +183,7 @@ export default function InjuriesPage() {
   const recovCnt  = injuries.filter(i => i.status === 'Recovered').length
 
   return (
+    <>
     <Layout>
       <div className="page-outer">
 
@@ -216,7 +219,7 @@ export default function InjuriesPage() {
           {/* Admin read-only notice on injury register */}
           {isAdminReadOnly && activeTab === 'register' && (
             <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:16, color:'#0369A1', fontSize:13, fontWeight:600 }}>
-              <span style={{ fontSize:16 }}>👁</span>
+              <Eye size={16} style={{ flexShrink: 0 }} />
               <span><strong>View-Only Mode</strong> — Medical records are logged and updated by physiotherapy staff. You can view all records and delete if necessary.</span>
             </div>
           )}
@@ -337,7 +340,7 @@ export default function InjuriesPage() {
                       <div>
                         <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
                         <div style={{ fontSize:10.5, color:'var(--text3)', marginTop:3, display:'flex', alignItems:'center', gap:4 }}>
-                          <span style={{ opacity:0.55 }}>✍</span>
+                          <Pencil size={11} style={{ opacity:0.65 }} />
                           <span>
                             {inj.updated_profile?.full_name || inj.logged_profile?.full_name || 'Staff'}
                             {' · '}
@@ -360,13 +363,22 @@ export default function InjuriesPage() {
                         {fmtDate(inj.expected_return)}
                       </div>
 
-                      {/* Actions — only for canEdit */}
+                          {/* Actions — only for canEdit */}
                       {canEdit && (
                         <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                           <button onClick={() => openEdit(inj)} title="Edit" style={{ background:'#F0FDFA', color:'#0D9488', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
                             <Pencil size={13}/>
                           </button>
-                          {isAct && (
+                          {isPhysio && (
+                            <button
+                              onClick={() => setPhysioModal({ open: true, athlete: inj.athletes || { id: inj.athlete_id, name: inj.athletes?.name || '—', position: inj.athletes?.position, photo_url: inj.athletes?.photo_url }, injury: inj })}
+                              title="Open Physiotherapy Report & Rehab Plan"
+                              style={{ background:'#EFF6FF', color:'#2563EB', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}
+                            >
+                              <Stethoscope size={13}/>
+                            </button>
+                          )}
+                          {inj.status === 'Active' && (
                             <button onClick={() => markRecovered(inj.id, inj.athlete_id)} title="Mark Recovered" style={{ background:'#E8F8EE', color:'#1B7A3E', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
                               <Check size={13}/>
                             </button>
@@ -459,5 +471,18 @@ export default function InjuriesPage() {
         </div>
       )}
     </Layout>
+
+    {physioModal.open && (
+      <PhysiotherapyReportModal
+        isOpen={physioModal.open}
+        onClose={() => setPhysioModal({ open: false, athlete: null, injury: null })}
+        athlete={physioModal.athlete}
+        injury={physioModal.injury}
+        rehabNotes={[]}
+        teamId={teamId}
+        currentUser={currentUser}
+      />
+    )}
+    </>
   )
 }

@@ -271,13 +271,13 @@ export default function Dashboard() {
       `}</style>
 
       {/* ── Hero banner ── */}
-      <div className="dash-hero" style={{ background: 'linear-gradient(135deg, #022C22 0%, #064E3B 45%, #047857 100%)', position: 'relative', overflow: 'hidden', borderRadius: '0 0 20px 20px', boxShadow: '0 8px 32px rgba(2, 44, 34, 0.2)' }}>
-        <div style={{ position: 'absolute', top: -100, right: -50, width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(52, 211, 153, 0.2) 0%, transparent 70%)' }} />
-        <div style={{ position: 'absolute', bottom: -50, left: 100, width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%)' }} />
+      <div className="dash-hero" style={{ background: 'linear-gradient(135deg, #0F766E 0%, #0D9488 50%, #14B8A6 100%)', position: 'relative', overflow: 'hidden', borderRadius: '0 0 20px 20px', boxShadow: '0 6px 24px rgba(13, 148, 136, 0.18)' }}>
+        <div style={{ position: 'absolute', top: -80, right: -40, width: 360, height: 360, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)' }} />
+        <div style={{ position: 'absolute', bottom: -40, left: 80, width: 260, height: 260, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)' }} />
 
         <div style={{ position: 'relative', maxWidth: 1280, margin: '0 auto', width: '100%' }}>
-          <div style={{ fontSize: 13, color: '#ECFDF5', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#34D399', display: 'inline-block' }} />
+          <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.85)', fontWeight: 600, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#CCFBF1', display: 'inline-block' }} />
             {greet} · {today.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
           </div>
 
@@ -285,26 +285,26 @@ export default function Dashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
             {clubLogo && (
               <img src={clubLogo} alt={clubName || 'Club'}
-                style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: '#FFFFFF', border: '2px solid rgba(255,255,255,0.4)', padding: 4, flexShrink: 0, boxShadow: '0 4px 14px rgba(0,0,0,0.2)' }}
+                style={{ width: 56, height: 56, borderRadius: 14, objectFit: 'contain', background: 'rgba(255,255,255,0.95)', border: '2px solid rgba(255,255,255,0.6)', padding: 4, flexShrink: 0, boxShadow: '0 4px 14px rgba(13,148,136,0.25)' }}
                 onError={e => e.target.style.display = 'none'}
               />
             )}
             <div>
               {clubName && (
-                <div style={{ fontSize: 13, color: '#A7F3D0', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
+                <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 4 }}>
                   {clubName}
                 </div>
               )}
-              <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>
-                Welcome, <span style={{ color: '#34D399', textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : (isPhysio ? 'Team Physio' : isAnalyst ? 'Performance Analyst' : 'Admin'))}</span>
+              <h1 style={{ fontSize: 26, fontWeight: 900, color: '#FFFFFF', letterSpacing: '-0.02em', textShadow: '0 1px 3px rgba(0,0,0,0.15)' }}>
+                Welcome, <span style={{ color: '#CCFBF1' }}>{profile?.full_name && profile.full_name !== 'Admin' ? profile.full_name : (profile?.email ? profile.email.split('@')[0] : (isPhysio ? 'Team Physio' : isAnalyst ? 'Performance Analyst' : 'Admin'))}</span>
               </h1>
               {isPhysio && (
-                <div style={{ fontSize: 12, color: '#A7F3D0', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Activity size={14} /> Physiotherapy &amp; Medical Dashboard
                 </div>
               )}
               {isAnalyst && (
-                <div style={{ fontSize: 12, color: '#A7F3D0', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', fontWeight: 700, marginTop: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <BarChart3 size={14} /> Performance &amp; Tactical Analysis Hub
                 </div>
               )}
@@ -312,14 +312,14 @@ export default function Dashboard() {
           </div>
 
           {isAnalyst ? (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(110,231,183,0.4)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-              <TrendingUp size={14} color="#34D399" />
-              <span style={{ fontSize: 12, color: '#F0FDF4', fontWeight: 700 }}>{performanceStats.length} Match logs · {uniqueMatchesCount} Fixture{uniqueMatchesCount === 1 ? '' : 's'} Evaluated</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)' }}>
+              <TrendingUp size={14} color="#CCFBF1" />
+              <span style={{ fontSize: 12, color: '#FFFFFF', fontWeight: 700 }}>{performanceStats.length} Match logs · {uniqueMatchesCount} Fixture{uniqueMatchesCount === 1 ? '' : 's'} Evaluated</span>
             </div>
           ) : todaySess.length > 0 ? (
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(110,231,183,0.4)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
-              <Flame size={14} color="#FFD700" />
-              <span style={{ fontSize: 12, color: '#F0FDF4', fontWeight: 700 }}>{todaySess.length} session{todaySess.length > 1 ? 's' : ''} today</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 99, padding: '6px 14px', backdropFilter: 'blur(8px)' }}>
+              <Flame size={14} color="#FEF3C7" />
+              <span style={{ fontSize: 12, color: '#FFFFFF', fontWeight: 700 }}>{todaySess.length} session{todaySess.length > 1 ? 's' : ''} today</span>
             </div>
           ) : null}
         </div>
@@ -367,71 +367,61 @@ export default function Dashboard() {
                 </Link>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {notices.map((n, idx) => {
                   const isMatchday = n.category === 'matchday'
                   const isUrgent = n.category === 'urgent'
+                  const dotColor = isUrgent ? '#DC2626' : isMatchday ? '#059669' : '#0D9488'
 
                   return (
                     <Link
                       key={n.id}
                       href="/notices"
                       style={{
-                        padding: '12px 18px',
+                        padding: '10px 18px',
                         borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
                         display: 'flex',
-                        flexDirection: 'column',
-                        gap: 3,
-                        background: isUrgent ? '#FFFDFD' : isMatchday ? '#FAFDFB' : '#FFFFFF',
+                        alignItems: 'center',
+                        gap: 10,
                         textDecoration: 'none',
                         transition: 'background 0.15s',
                         minWidth: 0,
                       }}
                       onMouseEnter={e => e.currentTarget.style.background = '#F8FAFC'}
-                      onMouseLeave={e => e.currentTarget.style.background = isUrgent ? '#FFFDFD' : isMatchday ? '#FAFDFB' : '#FFFFFF'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flexWrap: 'wrap' }}>
-                          {n.is_pinned && (
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 6px', borderRadius: 4 }}>
-                              <Pin size={9} /> PINNED
-                            </span>
-                          )}
-                          <span style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            fontSize: 9,
-                            fontWeight: 800,
-                            background: isMatchday ? '#ECFDF5' : isUrgent ? '#FEE2E2' : '#F0FDFA',
-                            color: isMatchday ? '#059669' : isUrgent ? '#DC2626' : '#0D9488',
-                            padding: '2px 7px',
-                            borderRadius: 4,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                          }}>
-                            {isMatchday ? <ClipboardList size={10} /> : <Megaphone size={10} />}
-                            {n.category}
+                      {/* Status dot */}
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0, boxShadow: `0 0 0 2px ${dotColor}22` }} />
+
+                      {/* Title */}
+                      <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                        {n.title}
+                      </span>
+
+                      {/* Indicators row */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                        {n.is_pinned && (
+                          <span style={{ fontSize: 9, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 6px', borderRadius: 4 }}>
+                            <Pin size={9} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />PIN
                           </span>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {n.title}
+                        )}
+                        <span style={{
+                          fontSize: 9, fontWeight: 800,
+                          background: isMatchday ? '#ECFDF5' : isUrgent ? '#FEE2E2' : '#F0FDFA',
+                          color: dotColor,
+                          padding: '2px 7px', borderRadius: 4,
+                          textTransform: 'uppercase', letterSpacing: '0.04em',
+                        }}>
+                          {n.category}
+                        </span>
+                        {n.sms_sent && (
+                          <span style={{ fontSize: 9, fontWeight: 800, background: '#ECFDF5', color: '#059669', padding: '2px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <Radio size={9} /> {n.sms_count || 0}
                           </span>
-                        </div>
+                        )}
                         <span style={{ fontSize: 10, color: '#94A3B8', whiteSpace: 'nowrap' }}>
                           {new Date(n.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                         </span>
-                      </div>
-
-                      {/* Structured Preview */}
-                      {renderNoticeContent(n)}
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 10, color: '#64748B', marginTop: 4 }}>
-                        <span>By <strong>{n.author_name || 'Coach'}</strong></span>
-                        {n.sms_sent && (
-                          <span style={{ color: '#059669', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 3 }}>
-                            <Radio size={10} /> SMS sent ({n.sms_count || 0})
-                          </span>
-                        )}
                       </div>
                     </Link>
                   )
@@ -781,42 +771,37 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Sports Injury Diagnosis & Rehabilitation Hub (physio only) ── */}
+      {/* ── Rehab Hub indicator (physio only) ── */}
       {canViewRehab && (
         <div className="fade-up dash-rehab-wrap" style={{ maxWidth: 1280, margin: '20px auto 0', padding: '0 32px', boxSizing: 'border-box' }}>
-          <div className="card" style={{ padding: '20px 24px', borderRadius: 16, border: '1.5px solid #CCFBF1', background: '#FFFFFF' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #0F766E, #0D9488)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Stethoscope size={20} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Sports Injury Diagnosis &amp; Rehabilitation Hub</h3>
-                  <div style={{ fontSize: 12, color: '#0D9488', fontWeight: 600, marginTop: 2 }}>
-                    {activeInj.length} active player{activeInj.length === 1 ? '' : 's'} in rehabilitation · 9-section individual clinical framework
-                  </div>
-                </div>
+          <Link href="/injuries" style={{ textDecoration: 'none', display: 'block' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 18px', borderRadius: 12, background: '#F0FDFA', border: '1.5px solid #CCFBF1', transition: 'all 0.15s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#E0FAF5'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(13,148,136,0.1)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = '#F0FDFA'; e.currentTarget.style.boxShadow = 'none' }}
+            >
+              <div style={{ width: 34, height: 34, borderRadius: 9, background: '#0D9488', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Stethoscope size={16} />
               </div>
-              <Link
-                href="/injuries"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 8,
-                  background: 'linear-gradient(135deg, #0F766E, #0D9488)',
-                  color: '#fff',
-                  padding: '9px 18px',
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontWeight: 800,
-                  textDecoration: 'none',
-                  boxShadow: '0 2px 8px rgba(13,148,136,0.3)',
-                }}
-              >
-                <span>Open Medical &amp; Physio Hub →</span>
-              </Link>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: '#0F172A' }}>Medical &amp; Rehab Hub</span>
+                <span style={{ fontSize: 12, color: '#64748B', marginLeft: 8 }}>View rehabilitation records &amp; clinical notes</span>
+              </div>
+              {/* Indicators */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                {activeInj.length > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 800, background: '#FEE2E2', color: '#DC2626', padding: '3px 9px', borderRadius: 99, border: '1px solid #FECACA' }}>
+                    <HeartPulse size={11} /> {activeInj.length} active
+                  </span>
+                )}
+                {recoveredCount > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 800, background: '#DCFCE7', color: '#15803D', padding: '3px 9px', borderRadius: 99, border: '1px solid #BBF7D0' }}>
+                    <ShieldCheck size={11} /> {recoveredCount} cleared
+                  </span>
+                )}
+                <span style={{ fontSize: 12, color: '#0D9488', fontWeight: 700 }}>Open →</span>
+              </div>
             </div>
-          </div>
+          </Link>
         </div>
       )}
 

@@ -3,17 +3,16 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
-import { Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check, X, Activity, ClipboardList, Stethoscope, Eye } from 'lucide-react'
-import RehabilitationNotes from '@/components/RehabilitationNotes'
+import {
+  Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check,
+  Stethoscope, Eye, Download, Activity, Clock
+} from 'lucide-react'
 import PhysiotherapyReportModal from '@/components/PhysiotherapyReportModal'
+import { buildPhysiotherapyReportPDF } from '@/lib/physioReport'
+import { openDownloadWindow, mobileSafeDownload, mobileSafeDownloadIntoWindow } from '@/lib/pdfDownload'
 
-const EMPTY = {
-  athlete_id:'', injury_type:'', severity:'Mild',
-  date_of_injury: new Date().toISOString().split('T')[0],
-  expected_return:'', notes:'', status:'Active',
-}
-const STATUS_OPTS   = ['Active','Recovered']
-const SEVERITY_OPTS = ['Mild','Moderate','Severe']
+// Roles that can create / edit injury records (medical staff only)
+const MEDICAL_ROLES = ['superadmin', 'physio', 'sports_scientist', 'medical']
 
 const SEVERITY_STYLE = {
   Mild:     { bg:'#E8F8EE', color:'#1B7A3E', dot:'#27AE60' },
@@ -21,69 +20,125 @@ const SEVERITY_STYLE = {
   Severe:   { bg:'#FDEDEC', color:'#C0392B', dot:'#E74C3C' },
 }
 
-// Roles that can create / edit injury records (medical staff only)
-const MEDICAL_ROLES = ['superadmin','physio','sports_scientist','medical']
+function initials(n) { return (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }
 
-function initials(n) { return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
-
-function Avatar({ ath, size=36 }) {
+function Avatar({ ath, size = 38 }) {
   const [err, setErr] = useState(false)
-  const colors = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
-  const bg = colors[(ath?.name?.charCodeAt(0)||0) % colors.length]
+  const colors = ['#0D9488', '#2563EB', '#D97706', '#7C3AED', '#E11D48', '#059669']
+  const bg = colors[(ath?.name?.charCodeAt(0) || 0) % colors.length]
   if (ath?.photo_url && !err) {
-    return <img src={ath.photo_url} alt={ath.name} onError={()=>setErr(true)}
-      style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'2px solid #E2E8F0' }}/>
+    return (
+      <img
+        src={ath.photo_url}
+        alt={ath.name}
+        onError={() => setErr(true)}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #E2E8F0' }}
+      />
+    )
   }
   return (
-    <div style={{ width:size, height:size, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize:size*0.32, fontWeight:800, color:'#fff', flexShrink:0 }}>
+    <div
+      style={{
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: bg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: size * 0.34,
+        fontWeight: 800,
+        color: '#fff',
+        flexShrink: 0,
+      }}
+    >
       {initials(ath?.name)}
     </div>
   )
 }
 
-function SeverityBadge({ severity }) {
-  const s = SEVERITY_STYLE[severity] || SEVERITY_STYLE.Mild
+function GradeBadge({ grade, severity }) {
+  const displayGrade = grade || (severity === 'Severe' ? 'Grade III' : severity === 'Moderate' ? 'Grade II' : 'Grade I')
+  const sevKey = displayGrade.includes('III') ? 'Severe' : displayGrade.includes('II') ? 'Moderate' : 'Mild'
+  const s = SEVERITY_STYLE[sevKey] || SEVERITY_STYLE.Mild
+
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5, background:s.bg, color:s.color,
-      padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700 }}>
-      <span style={{ width:6, height:6, borderRadius:'50%', background:s.dot, flexShrink:0 }}/>
-      {severity}
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 5,
+      background: s.bg,
+      color: s.color,
+      padding: '3px 9px',
+      borderRadius: 99,
+      fontSize: 11,
+      fontWeight: 700,
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: s.dot, flexShrink: 0 }} />
+      {displayGrade}
     </span>
   )
 }
 
-function StatusBadge({ status }) {
-  const isActive = status === 'Active'
+function StatusBadge({ status, plan }) {
+  const isRecovered = status === 'Recovered' || plan?.clinical_plan === 'Discharge / Cleared'
   return (
-    <span style={{ display:'inline-flex', alignItems:'center', gap:5,
-      background: isActive ? '#FDEDEC' : '#E8F8EE',
-      color: isActive ? '#C0392B' : '#1B7A3E',
-      padding:'3px 10px', borderRadius:99, fontSize:11, fontWeight:700 }}>
-      <span style={{ width:6, height:6, borderRadius:'50%', background: isActive ? '#E74C3C' : '#27AE60', flexShrink:0 }}/>
-      {status}
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 5,
+      background: isRecovered ? '#ECFDF5' : '#FEF2F2',
+      color: isRecovered ? '#059669' : '#DC2626',
+      border: `1px solid ${isRecovered ? '#A7F3D0' : '#FECACA'}`,
+      padding: '3px 10px',
+      borderRadius: 99,
+      fontSize: 11,
+      fontWeight: 800,
+      whiteSpace: 'nowrap',
+    }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isRecovered ? '#10B981' : '#EF4444', flexShrink: 0 }} />
+      {isRecovered ? 'Cleared / Match Fit' : 'In Rehabilitation'}
     </span>
   )
 }
 
-const inp = { width:'100%', padding:'10px 14px', background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:10,
-  fontSize:14, outline:'none', color:'#0F172A', fontFamily:'var(--font)', boxSizing:'border-box' }
-const lbl = { display:'block', fontSize:11, fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', color:'#64748B', marginBottom:5 }
+function getActivePhase(diag, isRecovered) {
+  if (isRecovered || diag?.clinical_plan === 'Discharge / Cleared') {
+    return { title: 'Full Match Clearance', badge: 'Discharged', bg: '#ECFDF5', color: '#059669' }
+  }
+  if (diag?.phase4?.status === 'In Progress') {
+    return { title: 'Phase 4: Return to Sport', badge: 'In Progress', bg: '#FAF5FF', color: '#7E22CE' }
+  }
+  if (diag?.phase3?.status === 'In Progress') {
+    return { title: 'Phase 3: Power & Agility', badge: 'In Progress', bg: '#EFF6FF', color: '#1D4ED8' }
+  }
+  if (diag?.phase2?.status === 'In Progress') {
+    return { title: 'Phase 2: Strength & Control', badge: 'In Progress', bg: '#F0FDFA', color: '#0F766E' }
+  }
+  if (diag?.phase1?.status === 'In Progress') {
+    return { title: 'Phase 1: Protect & Settle', badge: 'In Progress', bg: '#FFFBEB', color: '#B45309' }
+  }
+  return { title: diag?.phase2?.title || 'Phase 1: Protection & Settle', badge: 'Active', bg: '#F8FAFC', color: '#475569' }
+}
+
+function getPainSummary(diag) {
+  if (diag?.baseline && Array.isArray(diag.baseline) && diag.baseline.length > 0) {
+    const p = diag.baseline[0]?.injured || ''
+    if (p) return p.replace(/\s*\|\s*/g, ' · ')
+  }
+  return 'Pain 1-2/10 controlled'
+}
 
 export default function InjuriesPage() {
-  const [injuries,    setInjuries]    = useState([])
-  const [athletes,    setAthletes]    = useState([])
-  const [filter,      setFilter]      = useState('All')
-  const [showForm,    setShowForm]    = useState(false)
-  const [editId,      setEditId]      = useState(null)
-  const [saving,      setSaving]      = useState(false)
-  const [deleting,    setDeleting]    = useState(null)
-  const [form,        setForm]        = useState(EMPTY)
+  const [injuries, setInjuries] = useState([])
+  const [athletes, setAthletes] = useState([])
+  const [filter, setFilter] = useState('All')
+  const [deleting, setDeleting] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
-  const [teamId,      setTeamId]      = useState(null)
-  const [canEdit,     setCanEdit]     = useState(false)
-  const [loading,     setLoading]     = useState(true)
-  const [activeTab,   setActiveTab]   = useState('register')
+  const [teamId, setTeamId] = useState(null)
+  const [canEdit, setCanEdit] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [downloadingRow, setDownloadingRow] = useState(null)
   const [physioModal, setPhysioModal] = useState({ open: false, athlete: null, injury: null })
 
   const fetchData = useCallback(async () => {
@@ -96,64 +151,34 @@ export default function InjuriesPage() {
     if (!editAllowed && p?.id) {
       const { data: staffRow } = await supabase
         .from('coaches').select('staff_type').eq('user_id', p.id).maybeSingle()
-      if (staffRow && ['physio','sports_scientist','medical'].includes(staffRow.staff_type)) {
+      if (staffRow && ['physio', 'sports_scientist', 'medical'].includes(staffRow.staff_type)) {
         editAllowed = true
       }
     }
     setCanEdit(editAllowed)
 
     const { data: ath } = await scopeTeam(
-      supabase.from('athletes').select('id,name,position,photo_url'), tid
+      supabase.from('athletes').select('id,name,position,photo_url,back_number,nationality,phone,email,status'), tid
     ).order('name')
     setAthletes(ath || [])
 
     const { data: rows } = await scopeTeam(
-      supabase.from('injuries').select('*,athletes(name,position,id,photo_url),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)'), tid
+      supabase.from('injuries').select('*,athletes(name,position,id,photo_url,back_number,nationality,phone,email,status),logged_profile:logged_by(full_name),updated_profile:updated_by(full_name)'), tid
     ).order('date_of_injury', { ascending: false })
     setInjuries(rows || [])
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
-
-  const set = k => v => setForm(f => ({ ...f, [k]: v }))
-
-  function openAdd() { setEditId(null); setForm(EMPTY); setShowForm(true) }
-  function openEdit(inj) {
-    setEditId(inj.id)
-    setForm({ athlete_id:inj.athlete_id||'', injury_type:inj.injury_type||'', severity:inj.severity||'Mild',
-      date_of_injury:inj.date_of_injury||'', expected_return:inj.expected_return||'', notes:inj.notes||'', status:inj.status||'Active' })
-    setShowForm(true)
-  }
-
-  async function handleSave() {
-    if (!form.athlete_id) return alert('Select an athlete.')
-    if (!form.injury_type.trim()) return alert('Injury type required.')
-    if (!teamId) return alert('Your account is not assigned to a team.')
-    setSaving(true)
-    const now = new Date().toISOString(), userId = currentUser?.id || null
-    const base = { ...form, team_id: teamId }
-    if (editId) {
-      base.updated_by = userId; base.updated_at = now
-      const { error } = await scopeTeam(supabase.from('injuries').update(base).eq('id', editId), teamId)
-      if (error) alert(error.message)
-      else { setShowForm(false); fetchData() }
-    } else {
-      base.logged_by = userId; base.logged_at = now; base.status = 'Active'
-      const { error } = await supabase.from('injuries').insert([base])
-      if (!error) await scopeTeam(supabase.from('athletes').update({ status:'Injured' }).eq('id', form.athlete_id), teamId)
-      if (error) alert(error.message)
-      else { setShowForm(false); setForm(EMPTY); fetchData() }
-    }
-    setSaving(false)
-  }
+  useEffect(() => {
+    fetchData()
+  }, [fetchData])
 
   async function handleDelete(id) {
     if (!isAdmin) {
       alert('Permission Denied: Only club administrators can permanently delete medical injury records.')
       return
     }
-    if (!confirm('Are you sure you want to delete this injury record? This permanent action is strictly restricted to club administrators.')) return
+    if (!confirm('Are you sure you want to delete this clinical injury & rehabilitation record? This permanent action is strictly restricted to club administrators.')) return
     setDeleting(id)
     const { error } = await scopeTeam(supabase.from('injuries').delete().eq('id', id), teamId)
     if (error) alert('Delete failed: ' + error.message)
@@ -162,327 +187,431 @@ export default function InjuriesPage() {
   }
 
   async function markRecovered(id, athleteId) {
-    const update = { status:'Recovered', updated_by: currentUser?.id||null, updated_at: new Date().toISOString() }
+    const update = {
+      status: 'Recovered',
+      updated_by: currentUser?.id || null,
+      updated_at: new Date().toISOString()
+    }
     await scopeTeam(supabase.from('injuries').update(update).eq('id', id), teamId)
-    await scopeTeam(supabase.from('athletes').update({ status:'Active' }).eq('id', athleteId), teamId)
+    await scopeTeam(supabase.from('athletes').update({ status: 'Active' }).eq('id', athleteId), teamId)
     fetchData()
   }
 
-  const fmtDate = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
-  const fmtDateTime = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+  async function handleDownloadRowPDF(inj) {
+    const ath = inj.athletes || athletes.find(a => a.id === inj.athlete_id) || { name: 'Athlete', position: 'Player' }
+    setDownloadingRow(inj.id)
+    const isDesktop = typeof window !== 'undefined' && !(/iphone|ipad|ipod|android/i.test(navigator.userAgent || ''))
+    const win = isDesktop ? openDownloadWindow(`Physiotherapy Report — ${ath.name}`) : null
+
+    try {
+      const diag = inj.diagnosis_data || {}
+      const meta = {
+        clubName: ath.club || currentUser?.club_name || 'ApexTrack Football Club',
+        clubLogoUrl: currentUser?.club_logo_url || null,
+        generatedBy: inj.updated_profile?.full_name || inj.logged_profile?.full_name || currentUser?.full_name || 'Physiotherapist',
+        generatedAt: inj.updated_at || inj.logged_at || new Date().toISOString(),
+      }
+
+      const doc = await buildPhysiotherapyReportPDF({
+        athlete: ath,
+        injury: inj,
+        rehabNotes: [],
+        customPlan: Object.keys(diag).length > 0 ? diag : null,
+        meta,
+        period: `${new Date().getFullYear()} Season`,
+      })
+
+      const safeAthlete = (ath.name || 'Athlete').replace(/\s+/g, '_')
+      const filename = `${safeAthlete}_Physiotherapy_Rehab_Plan_${new Date().toISOString().slice(0, 10)}.pdf`
+
+      if (win) {
+        await mobileSafeDownloadIntoWindow(win, doc, filename)
+      } else {
+        await mobileSafeDownload(doc, filename)
+      }
+    } catch (err) {
+      if (win) try { win.close() } catch {}
+      alert('Failed to generate PDF: ' + err.message)
+    } finally {
+      setDownloadingRow(null)
+    }
+  }
+
+  const fmtDate = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const fmtDateTime = d => !d ? '—' : new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 
   const userRole = currentUser?.role || 'staff'
   const isPhysio = userRole === 'physio' || userRole === 'superadmin' || currentUser?.staff_type === 'physio' || currentUser?.staff_type === 'medical' || currentUser?.staff_type === 'sports_scientist'
   const isAdmin = userRole === 'admin' || userRole === 'superadmin'
-  // Admin can VIEW and DELETE but NOT create/edit — medical staff own the data entry
   const isAdminReadOnly = userRole === 'admin'
-  const canViewRehab = isPhysio || isAdmin
 
-  const filtered  = filter === 'All' ? injuries : injuries.filter(i => i.status === filter)
   const activeCnt = injuries.filter(i => i.status === 'Active').length
-  const recovCnt  = injuries.filter(i => i.status === 'Recovered').length
+  const recovCnt = injuries.filter(i => i.status === 'Recovered').length
+
+  const filtered = filter === 'All'
+    ? injuries
+    : filter === 'Active'
+    ? injuries.filter(i => i.status === 'Active')
+    : injuries.filter(i => i.status === 'Recovered')
 
   return (
     <>
-    <Layout>
-      <div className="page-outer">
+      <Layout>
+        <div className="page-outer">
 
-        {/* ── Header ── */}
-        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:14, marginBottom:20 }}>
-          <div>
-            <div style={{ fontSize:11, fontWeight:700, color:'#0D9488', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:4 }}>
-              Medical Records
-            </div>
-            <h1 style={{ fontSize:22, fontWeight:900, color:'var(--text)', margin:0, letterSpacing:'-0.02em' }}>
-              {activeTab === 'register' ? 'Injury Register' : 'Rehabilitation Notes'}
-            </h1>
-            <p style={{ fontSize:13, color:'var(--text3)', margin:'4px 0 0', fontWeight:500 }}>
-              {activeTab === 'register' ? (
-                <>
-                  {activeCnt} active · {recovCnt} recovered
-                  {!canEdit && <span style={{ marginLeft:8, background:'#F1F5F9', color:'#64748B', borderRadius:6, padding:'1px 8px', fontSize:11, fontWeight:700 }}>Read Only</span>}
-                </>
-              ) : (
-                <>
-                  Confidential recovery progress, pain scores, exercise protocols &amp; match clearance.
-                  {isAdmin && !isPhysio && <span style={{ marginLeft:8, background:'#FEF3C7', color:'#B45309', borderRadius:6, padding:'1px 8px', fontSize:11, fontWeight:700 }}>Admin Read-Only</span>}
-                </>
-              )}
-            </p>
-          </div>
-          {canEdit && activeTab === 'register' && (
-            <button onClick={openAdd} style={{ display:'flex', alignItems:'center', gap:7, background:'linear-gradient(135deg,#C0392B,#E74C3C)', color:'#fff', border:'none', borderRadius:10, padding:'10px 18px', fontSize:13, fontWeight:700, cursor:'pointer', boxShadow:'0 4px 12px rgba(231,76,60,0.3)', fontFamily:'var(--font)' }}>
-              <Plus size={15}/> Log Injury
-            </button>
-          )}
-        </div>
-          {/* Admin read-only notice on injury register */}
-          {isAdminReadOnly && activeTab === 'register' && (
-            <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:16, color:'#0369A1', fontSize:13, fontWeight:600 }}>
-              <Eye size={16} style={{ flexShrink: 0 }} />
-              <span><strong>View-Only Mode</strong> — Medical records are logged and updated by physiotherapy staff. You can view all records and delete if necessary.</span>
-            </div>
-          )}
-        {canViewRehab && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 10, overflowX: 'auto' }}>
-            <button
-              onClick={() => setActiveTab('register')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 16px',
-                borderRadius: 10,
-                border: 'none',
-                background: activeTab === 'register' ? '#0F766E' : 'var(--surface2)',
-                color: activeTab === 'register' ? '#FFFFFF' : 'var(--text2)',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              <ClipboardList size={15} />
-              <span>Injury Incidents Register ({injuries.length})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('rehab')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '8px 16px',
-                borderRadius: 10,
-                border: 'none',
-                background: activeTab === 'rehab' ? '#0F766E' : 'var(--surface2)',
-                color: activeTab === 'rehab' ? '#FFFFFF' : 'var(--text2)',
-                fontSize: 13,
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.15s',
-              }}
-            >
-              <Activity size={15} />
-              <span>Rehabilitation Notes &amp; Return-to-Play</span>
-              {isPhysio ? (
-                <span style={{ fontSize: 10, background: '#CCFBF1', color: '#0F766E', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>PHYSIO</span>
-              ) : (
-                <span style={{ fontSize: 10, background: '#FEF3C7', color: '#B45309', padding: '1px 6px', borderRadius: 4, fontWeight: 800 }}>READ-ONLY</span>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* ── REHABILITATION NOTES TAB ── */}
-        {activeTab === 'rehab' && canViewRehab ? (
-          <RehabilitationNotes currentUser={currentUser} teamId={teamId} />
-        ) : (
-          <>
-            {/* ── Stat pills ── */}
-            <div style={{ display:'flex', gap:12, marginBottom:22, flexWrap:'wrap' }}>
-              {[
-                { label:'Total', value:injuries.length, icon:<FileHeart size={16} color="#4A90E2"/>, color:'#4A90E2', bg:'#EBF4FF' },
-                { label:'Active', value:activeCnt, icon:<HeartOff size={16} color="#E74C3C"/>, color:'#E74C3C', bg:'#FDEDEC' },
-                { label:'Recovered', value:recovCnt, icon:<Heart size={16} color="#27AE60"/>, color:'#27AE60', bg:'#E8F8EE' },
-              ].map(s => (
-                <div key={s.label} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:12, padding:'10px 18px', minWidth:110 }}>
-                  <div style={{ width:34, height:34, borderRadius:10, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>{s.icon}</div>
-                  <div>
-                    <div style={{ fontSize:20, fontWeight:900, color:s.color, lineHeight:1 }}>{s.value}</div>
-                    <div style={{ fontSize:11, color:'var(--text3)', fontWeight:600, marginTop:2 }}>{s.label}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* ── Filter ── */}
-            <div style={{ display:'flex', gap:4, marginBottom:18, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:4, width:'fit-content' }}>
-              {['All','Active','Recovered'].map(f => (
-                <button key={f} onClick={() => setFilter(f)} style={{ padding:'7px 18px', background: filter===f ? (f==='Active'?'linear-gradient(135deg,#C0392B,#E74C3C)':'#0D9488') : 'transparent', border:'none', borderRadius:8, fontSize:12, fontWeight:600, color: filter===f ? '#fff' : 'var(--text2)', cursor:'pointer', fontFamily:'var(--font)', transition:'all 0.15s' }}>{f}</button>
-              ))}
-            </div>
-
-            {/* ── Injury Table ── */}
-            {loading ? (
-              <div style={{ padding:40, textAlign:'center', color:'var(--text3)', fontSize:13 }}>Loading…</div>
-            ) : filtered.length === 0 ? (
-              <div className="card" style={{ padding:'48px', textAlign:'center', color:'var(--text3)', fontSize:14 }}>
-                No injury records found.
+          {/* ── Header ── */}
+          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14, marginBottom: 20 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: '#0D9488', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+                Medical &amp; Physiotherapy Department
               </div>
-            ) : (
-              <div className="card" style={{ overflow:'hidden', padding:0 }}>
-                {/* Table Header */}
-                <div style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', background:'var(--surface2)', borderBottom:'1px solid var(--border)', padding:'10px 18px', gap:12 }}>
-                  {['Player','Injury','Severity','Status','Date Injured','Expected Return', canEdit ? 'Actions' : ''].filter(Boolean).map(h => (
-                    <div key={h} style={{ fontSize:10, fontWeight:800, color:'var(--text3)', textTransform:'uppercase', letterSpacing:'0.08em' }}>{h}</div>
-                  ))}
+              <h1 style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)', margin: 0, letterSpacing: '-0.02em' }}>
+                Sports Injury Diagnosis &amp; Rehabilitation Hub
+              </h1>
+              <p style={{ fontSize: 13, color: 'var(--text3)', margin: '4px 0 0', fontWeight: 500 }}>
+                Individual Physiotherapy Reports · 9-section clinical framework · Phase progressions &amp; clearance.
+                {!canEdit && (
+                  <span style={{ marginLeft: 8, background: '#F1F5F9', color: '#64748B', borderRadius: 6, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>
+                    Read Only
+                  </span>
+                )}
+              </p>
+            </div>
+
+            {canEdit && (
+              <button
+                onClick={() => setPhysioModal({ open: true, athlete: null, injury: null })}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: 'linear-gradient(135deg, #0F766E, #0D9488)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 10,
+                  padding: '10px 18px',
+                  fontSize: 13,
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 14px rgba(13,148,136,0.3)',
+                  fontFamily: 'var(--font)',
+                }}
+              >
+                <Plus size={16} />
+                <span>+ Log Injury &amp; Rehabilitation Plan</span>
+              </button>
+            )}
+          </div>
+
+          {/* Admin read-only notice */}
+          {isAdminReadOnly && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 10, padding: '10px 16px', marginBottom: 16, color: '#0369A1', fontSize: 13, fontWeight: 600 }}>
+              <Eye size={16} style={{ flexShrink: 0 }} />
+              <span><strong>View-Only Mode</strong> — Clinical diagnosis and rehabilitation plans are managed by physiotherapy staff. You can view, download official PDF reports, and manage records.</span>
+            </div>
+          )}
+
+          {/* ── Stat Counters ── */}
+          <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+            {[
+              { label: 'Total Clinical Plans', value: injuries.length, icon: <FileHeart size={16} color="#0D9488" />, color: '#0D9488', bg: '#F0FDFA' },
+              { label: 'In Rehabilitation', value: activeCnt, icon: <HeartOff size={16} color="#E11D48" />, color: '#E11D48', bg: '#FFF1F2' },
+              { label: 'Cleared / Match Ready', value: recovCnt, icon: <Heart size={16} color="#059669" />, color: '#059669', bg: '#ECFDF5' },
+            ].map(s => (
+              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 18px', minWidth: 140 }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {s.icon}
                 </div>
+                <div>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
 
-                {filtered.map((inj, i) => {
-                  const isAct = inj.status === 'Active'
-                  const isLast = i === filtered.length - 1
-                  return (
-                    <div key={inj.id} style={{ display:'grid', gridTemplateColumns: canEdit ? '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.2fr 96px' : '2fr 1.4fr 0.9fr 0.9fr 0.9fr 1.4fr', alignItems:'center', padding:'13px 18px', gap:12, borderBottom: isLast ? 'none' : '1px solid var(--border)', borderLeft: `3px solid ${isAct ? '#E74C3C' : '#27AE60'}`, transition:'background 0.12s' }}
-                      onMouseEnter={e => e.currentTarget.style.background='var(--surface2)'}
-                      onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+          {/* ── Filter Buttons ── */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 4, width: 'fit-content' }}>
+            {[
+              { id: 'All', label: `All Plans (${injuries.length})` },
+              { id: 'Active', label: `In Rehabilitation (${activeCnt})` },
+              { id: 'Recovered', label: `Cleared / Match Ready (${recovCnt})` },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => setFilter(f.id)}
+                style={{
+                  padding: '7px 16px',
+                  background: filter === f.id ? (f.id === 'Active' ? 'linear-gradient(135deg,#BE123C,#E11D48)' : '#0D9488') : 'transparent',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: filter === f.id ? '#fff' : 'var(--text2)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
 
-                      {/* Player */}
-                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        <Avatar ath={inj.athletes} size={34}/>
-                        <div>
-                          <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{inj.athletes?.name || '—'}</div>
-                          <div style={{ fontSize:11, color:'var(--text3)' }}>{inj.athletes?.position || ''}</div>
+          {/* ── Unified Injury & Rehabilitation Plans Table ── */}
+          {loading ? (
+            <div style={{ padding: 48, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>Loading clinical records…</div>
+          ) : filtered.length === 0 ? (
+            <div className="card" style={{ padding: '56px 24px', textAlign: 'center', color: 'var(--text3)', background: 'var(--surface)', borderRadius: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#F0FDFA', color: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                <Stethoscope size={22} />
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>No injury &amp; rehabilitation records found</div>
+              <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>
+                {canEdit ? 'Use the "+ Log Injury & Rehabilitation Plan" button above to document an athlete\'s diagnosis and 9-section plan.' : 'All athletes currently have a clean medical bill of health.'}
+              </div>
+            </div>
+          ) : (
+            <div className="card" style={{ overflow: 'hidden', padding: 0, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)' }}>
+              {/* Table Header */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 2fr 1.6fr 1.2fr 1.1fr 1.1fr 130px',
+                background: 'var(--surface2)',
+                borderBottom: '1px solid var(--border)',
+                padding: '12px 18px',
+                gap: 12,
+                fontSize: 10.5,
+                fontWeight: 800,
+                color: 'var(--text3)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.07em',
+              }}>
+                <div>Athlete</div>
+                <div>Diagnosis &amp; Stage</div>
+                <div>Current Rehab Phase</div>
+                <div>Baseline Pain</div>
+                <div>Clearance Status</div>
+                <div>Dates &amp; Review</div>
+                <div style={{ textAlign: 'right' }}>Actions</div>
+              </div>
+
+              {/* Rows */}
+              {filtered.map((inj, idx) => {
+                const ath = inj.athletes || athletes.find(a => a.id === inj.athlete_id) || { name: '—', position: 'Player' }
+                const diag = inj.diagnosis_data || {}
+                const isAct = inj.status === 'Active'
+                const isRecovered = inj.status === 'Recovered' || diag.clinical_plan === 'Discharge / Cleared'
+                const structure = diag.structure_and_side || inj.injury_type || 'Unspecified Injury'
+                const phase = getActivePhase(diag, isRecovered)
+                const pain = getPainSummary(diag)
+                const isLast = idx === filtered.length - 1
+
+                return (
+                  <div
+                    key={inj.id}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '2fr 2fr 1.6fr 1.2fr 1.1fr 1.1fr 130px',
+                      alignItems: 'center',
+                      padding: '14px 18px',
+                      gap: 12,
+                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                      borderLeft: `3px solid ${isRecovered ? '#10B981' : '#E11D48'}`,
+                      background: 'transparent',
+                      transition: 'background 0.12s',
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  >
+                    {/* 1. Athlete */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <Avatar ath={ath} size={36} />
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {ath.name}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                          #{ath.back_number || '—'} · {ath.position || 'Player'}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Injury */}
-                      <div>
-                        <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }} title={inj.injury_type}>{inj.injury_type}</div>
-                        <div style={{ fontSize:10.5, color:'var(--text3)', marginTop:3, display:'flex', alignItems:'center', gap:4 }}>
-                          <Pencil size={11} style={{ opacity:0.65 }} />
-                          <span>
-                            {inj.updated_profile?.full_name || inj.logged_profile?.full_name || 'Staff'}
-                            {' · '}
-                            {fmtDateTime(inj.updated_at || inj.logged_at || inj.created_at)}
-                          </span>
-                        </div>
+                    {/* 2. Diagnosis & Stage */}
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={structure}>
+                        {structure}
                       </div>
-
-                      {/* Severity */}
-                      <div><SeverityBadge severity={inj.severity}/></div>
-
-                      {/* Status */}
-                      <div><StatusBadge status={inj.status}/></div>
-
-                      {/* Date injured */}
-                      <div style={{ fontSize:12, color:'var(--text2)', fontWeight:500 }}>{fmtDate(inj.date_of_injury)}</div>
-
-                      {/* Return */}
-                      <div style={{ fontSize:12, color: inj.expected_return ? 'var(--text2)' : 'var(--text3)', fontWeight:500, fontStyle: inj.expected_return ? 'normal' : 'italic' }}>
-                        {fmtDate(inj.expected_return)}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                        <GradeBadge grade={diag.grade} severity={inj.severity} />
+                        <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>
+                          {diag.stage || 'Sub-acute'}
+                        </span>
                       </div>
+                    </div>
 
-                          {/* Actions — only for canEdit */}
+                    {/* 3. Current Rehab Phase */}
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: phase.color, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <Activity size={12} style={{ flexShrink: 0 }} />
+                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{phase.title}</span>
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
+                        {diag.phase2?.duration || 'Weeks 2 to 4'}
+                      </div>
+                    </div>
+
+                    {/* 4. Baseline Pain */}
+                    <div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>
+                        {pain}
+                      </div>
+                      <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
+                        Rest / Activity Score
+                      </div>
+                    </div>
+
+                    {/* 5. Clearance Status */}
+                    <div>
+                      <StatusBadge status={inj.status} plan={diag} />
+                    </div>
+
+                    {/* 6. Dates & Review */}
+                    <div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text2)', fontWeight: 600 }}>
+                        Injured: {fmtDate(inj.date_of_injury)}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, marginTop: 2 }}>
+                        Review: {fmtDate(diag.review_date || inj.expected_return)}
+                      </div>
+                    </div>
+
+                    {/* 7. Actions */}
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
+                      {/* Edit / Update Clinical Plan */}
                       {canEdit && (
-                        <div style={{ display:'flex', gap:6, alignItems:'center' }}>
-                          <button onClick={() => openEdit(inj)} title="Edit" style={{ background:'#F0FDFA', color:'#0D9488', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                            <Pencil size={13}/>
-                          </button>
-                          {isPhysio && (
-                            <button
-                              onClick={() => setPhysioModal({ open: true, athlete: inj.athletes || { id: inj.athlete_id, name: inj.athletes?.name || '—', position: inj.athletes?.position, photo_url: inj.athletes?.photo_url }, injury: inj })}
-                              title="Open Physiotherapy Report & Rehab Plan"
-                              style={{ background:'#EFF6FF', color:'#2563EB', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}
-                            >
-                              <Stethoscope size={13}/>
-                            </button>
-                          )}
-                          {inj.status === 'Active' && (
-                            <button onClick={() => markRecovered(inj.id, inj.athlete_id)} title="Mark Recovered" style={{ background:'#E8F8EE', color:'#1B7A3E', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center' }}>
-                              <Check size={13}/>
-                            </button>
-                          )}
-                          {isAdmin && (
-                            <button onClick={() => handleDelete(inj.id)} disabled={deleting===inj.id} title="Delete Record (Admin Only)" style={{ background:'#FEF2F2', color:'#E74C3C', border:'none', borderRadius:7, padding:'5px 8px', cursor:'pointer', display:'flex', alignItems:'center', opacity: deleting===inj.id ? 0.5 : 1 }}>
-                              <Trash2 size={13}/>
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => setPhysioModal({ open: true, athlete: ath, injury: inj })}
+                          title="Edit Clinical Diagnosis & Rehabilitation Plan"
+                          style={{
+                            background: '#F0FDFA',
+                            color: '#0D9488',
+                            border: '1px solid #CCFBF1',
+                            borderRadius: 7,
+                            padding: '6px 8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                      )}
+
+                      {/* Download Official PDF Dossier */}
+                      <button
+                        onClick={() => handleDownloadRowPDF(inj)}
+                        disabled={downloadingRow === inj.id}
+                        title="Download 9-Section Physiotherapy Report PDF (Desktop Preview)"
+                        style={{
+                          background: '#EFF6FF',
+                          color: '#2563EB',
+                          border: '1px solid #BFDBFE',
+                          borderRadius: 7,
+                          padding: '6px 8px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          opacity: downloadingRow === inj.id ? 0.6 : 1,
+                        }}
+                      >
+                        <Download size={13} />
+                      </button>
+
+                      {/* Quick Mark Recovered / Clear Player */}
+                      {canEdit && isAct && (
+                        <button
+                          onClick={() => markRecovered(inj.id, inj.athlete_id)}
+                          title="Clear Player & Return to Match Play"
+                          style={{
+                            background: '#ECFDF5',
+                            color: '#059669',
+                            border: '1px solid #A7F3D0',
+                            borderRadius: 7,
+                            padding: '6px 8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <Check size={13} />
+                        </button>
+                      )}
+
+                      {/* Delete (Admin only) */}
+                      {isAdmin && (
+                        <button
+                          onClick={() => handleDelete(inj.id)}
+                          disabled={deleting === inj.id}
+                          title="Permanently Delete Clinical Record (Admin Only)"
+                          style={{
+                            background: '#FEF2F2',
+                            color: '#DC2626',
+                            border: '1px solid #FECACA',
+                            borderRadius: 7,
+                            padding: '6px 8px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            opacity: deleting === inj.id ? 0.5 : 1,
+                          }}
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       )}
                     </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Notes tooltip row (shown when notes exist) */}
-            {filtered.some(i => i.notes) && (
-              <p style={{ fontSize:11, color:'var(--text3)', marginTop:10 }}>* Hover row or open edit to view notes.</p>
-            )}
-
-            {/* ── Read-only summary for non-medical staff ── */}
-            {!canEdit && (
-              <div style={{ marginTop:20, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:12, padding:'14px 18px', display:'flex', gap:10, alignItems:'flex-start' }}>
-                <HeartOff size={18} color="#D97706" style={{ flexShrink:0, marginTop:1 }}/>
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:'#92400E', marginBottom:3 }}>Medical Summary</div>
-                  <div style={{ fontSize:12, color:'#78350F', lineHeight:1.6 }}>
-                    {activeCnt > 0
-                      ? `${activeCnt} player${activeCnt > 1 ? 's are' : ' is'} currently listed as injured. Detailed medical records and editing are restricted to medical staff and admins.`
-                      : 'No active injuries at this time.'}
                   </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ── Modal (Edit / Add) ── only rendered for canEdit users ── */}
-      {showForm && canEdit && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.55)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
-          <div style={{ background:'#FFFFFF', borderRadius:18, width:'100%', maxWidth:500, maxHeight:'92vh', overflow:'auto', boxShadow:'0 25px 60px rgba(0,0,0,0.22)', border:'1px solid #E2E8F0' }}>
-            {/* Modal header */}
-            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)', padding:'18px 22px', display:'flex', justifyContent:'space-between', alignItems:'center', borderRadius:'18px 18px 0 0' }}>
-              <h2 style={{ fontSize:17, fontWeight:800, color:'#fff', margin:0 }}>{editId ? 'Edit Injury' : 'Log Injury'}</h2>
-              <button onClick={() => setShowForm(false)} style={{ background:'rgba(255,255,255,0.15)', border:'none', color:'#fff', width:32, height:32, borderRadius:'50%', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}><X size={16}/></button>
+                )
+              })}
             </div>
-            <div style={{ padding:22, display:'flex', flexDirection:'column', gap:15 }}>
-              <div>
-                <label style={lbl}>Athlete *</label>
-                <select value={form.athlete_id} onChange={e=>set('athlete_id')(e.target.value)} style={inp} disabled={!!editId}>
-                  <option value="">Select athlete…</option>
-                  {athletes.map(a => <option key={a.id} value={a.id}>{a.name} — {a.position}</option>)}
-                </select>
+          )}
+
+          {/* Clinician Documentation Note Footer */}
+          <div style={{ marginTop: 20, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: '#EFF6FF', color: '#2563EB', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Stethoscope size={16} />
               </div>
               <div>
-                <label style={lbl}>Injury Type *</label>
-                <input value={form.injury_type} onChange={e=>set('injury_type')(e.target.value)} placeholder="e.g. Hamstring Strain" style={inp} onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='#E2E8F0'}/>
-              </div>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-                <div>
-                  <label style={lbl}>Severity</label>
-                  <select value={form.severity} onChange={e=>set('severity')(e.target.value)} style={inp}>{SEVERITY_OPTS.map(s=><option key={s}>{s}</option>)}</select>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                  Unified Clinical Documentation
                 </div>
-                <div>
-                  <label style={lbl}>Status</label>
-                  <select value={form.status} onChange={e=>set('status')(e.target.value)} style={inp}>{STATUS_OPTS.map(s=><option key={s}>{s}</option>)}</select>
-                </div>
-                <div>
-                  <label style={lbl}>Date of Injury *</label>
-                  <input type="date" value={form.date_of_injury} onChange={e=>set('date_of_injury')(e.target.value)} style={inp}/>
-                </div>
-                <div>
-                  <label style={lbl}>Expected Return</label>
-                  <input type="date" value={form.expected_return} onChange={e=>set('expected_return')(e.target.value)} style={inp}/>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 2 }}>
+                  Every logged case contains the official 9-section diagnostic &amp; rehabilitation protocol. Updates automatically sync to athlete matchday eligibility and official PDF dossiers.
                 </div>
               </div>
-              <div>
-                <label style={lbl}>Notes / Treatment</label>
-                <textarea value={form.notes} onChange={e=>set('notes')(e.target.value)} rows={3} placeholder="Treatment notes, physio plan…" style={{ ...inp, resize:'vertical', lineHeight:1.5 }}/>
-              </div>
-              <div style={{ display:'flex', gap:10, paddingTop:4 }}>
-                <button onClick={() => setShowForm(false)} style={{ flex:1, background:'#F1F5F9', border:'1px solid #E2E8F0', color:'#334155', padding:'11px', borderRadius:10, fontSize:14, cursor:'pointer', fontWeight:700, fontFamily:'var(--font)' }}>Cancel</button>
-                <button onClick={handleSave} disabled={saving} style={{ flex:2, padding:'11px', background:'linear-gradient(135deg,#0F766E,#0D9488)', border:'none', color:'#fff', borderRadius:10, fontSize:14, cursor:'pointer', fontWeight:900, fontFamily:'var(--font)', opacity: saving ? 0.7 : 1 }}>{saving ? 'Saving…' : editId ? 'Save Changes' : 'Log Injury'}</button>
-              </div>
+            </div>
+            <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700 }}>
+              Official ApexTrack GH Medical Engine
             </div>
           </div>
         </div>
-      )}
-    </Layout>
+      </Layout>
 
-    {physioModal.open && (
-      <PhysiotherapyReportModal
-        isOpen={physioModal.open}
-        onClose={() => setPhysioModal({ open: false, athlete: null, injury: null })}
-        athlete={physioModal.athlete}
-        injury={physioModal.injury}
-        rehabNotes={[]}
-        teamId={teamId}
-        currentUser={currentUser}
-      />
-    )}
+      {/* ── Unified 9-Section Sports Injury Diagnosis & Rehabilitation Plan Modal ── */}
+      {physioModal.open && (
+        <PhysiotherapyReportModal
+          isOpen={physioModal.open}
+          onClose={() => setPhysioModal({ open: false, athlete: null, injury: null })}
+          athlete={physioModal.athlete}
+          athletes={athletes}
+          injury={physioModal.injury}
+          rehabNotes={[]}
+          teamId={teamId}
+          currentUser={currentUser}
+          onSaved={fetchData}
+        />
+      )}
     </>
   )
 }

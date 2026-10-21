@@ -8,8 +8,7 @@ import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
 
-import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock, Megaphone, Pin, Radio, Activity, Plus } from 'lucide-react'
-import RehabilitationNotes from '@/components/RehabilitationNotes'
+import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock, Megaphone, Pin, Radio, Activity, Plus, Stethoscope } from 'lucide-react'
 
 const AV_COLORS = ['#006A6A', '#008080', '#2D6B6B', '#5A9494', '#004F4F', '#5C3058']
 function initials(n) { return (n || '').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() }
@@ -782,14 +781,42 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Rehabilitation Hub — full-width below the grid (physio & admin only) ── */}
+      {/* ── Sports Injury Diagnosis & Rehabilitation Hub (physio only) ── */}
       {canViewRehab && (
-        <div className="fade-up dash-rehab-wrap" style={{ maxWidth: 1280, margin: '20px auto 0', boxSizing: 'border-box' }}>
-          <RehabilitationNotes
-            currentUser={profile}
-            teamId={teamId}
-            title={isPhysio ? 'Rehabilitation Hub & Clinical Notes' : 'Rehabilitation Notes (Physio Confidential — Read Only)'}
-          />
+        <div className="fade-up dash-rehab-wrap" style={{ maxWidth: 1280, margin: '20px auto 0', padding: '0 32px', boxSizing: 'border-box' }}>
+          <div className="card" style={{ padding: '20px 24px', borderRadius: 16, border: '1.5px solid #CCFBF1', background: '#FFFFFF' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #0F766E, #0D9488)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Stethoscope size={20} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0F172A', margin: 0 }}>Sports Injury Diagnosis &amp; Rehabilitation Hub</h3>
+                  <div style={{ fontSize: 12, color: '#0D9488', fontWeight: 600, marginTop: 2 }}>
+                    {activeInj.length} active player{activeInj.length === 1 ? '' : 's'} in rehabilitation · 9-section individual clinical framework
+                  </div>
+                </div>
+              </div>
+              <Link
+                href="/injuries"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  background: 'linear-gradient(135deg, #0F766E, #0D9488)',
+                  color: '#fff',
+                  padding: '9px 18px',
+                  borderRadius: 10,
+                  fontSize: 13,
+                  fontWeight: 800,
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 8px rgba(13,148,136,0.3)',
+                }}
+              >
+                <span>Open Medical &amp; Physio Hub →</span>
+              </Link>
+            </div>
+          </div>
         </div>
       )}
 

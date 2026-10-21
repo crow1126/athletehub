@@ -14,17 +14,24 @@ import { mobileSafeDownload, openDownloadWindow, mobileSafeDownloadIntoWindow } 
 export default function PhysiotherapyReportModal({
   isOpen,
   onClose,
-  athlete,
+  athlete = null,
+  athletes = [],
   injury = null,
   rehabNotes = [],
   teamId,
   currentUser,
+  onSaved = null,
 }) {
+  const [selectedAthlete, setSelectedAthlete] = useState(athlete)
   const [plan, setPlan] = useState(DEFAULT_PHYSIO_TEMPLATE)
   const [activeSection, setActiveSection] = useState('1')
   const [saving, setSaving] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
+
+  useEffect(() => {
+    setSelectedAthlete(athlete)
+  }, [athlete])
 
   // Load plan data on open
   useEffect(() => {
@@ -38,14 +45,18 @@ export default function PhysiotherapyReportModal({
         report_date: new Date().toISOString().split('T')[0],
       }
 
-      // 2. Pre-fill from active injury
+      // 2. Pre-fill from active injury / diagnosis_data
       if (injury) {
         if (injury.injury_type) merged.structure_and_side = injury.injury_type
         if (injury.severity) {
           merged.grade = injury.severity === 'Severe' ? 'Grade III' : (injury.severity === 'Moderate' ? 'Grade II' : 'Grade I')
         }
         if (injury.date_of_injury) merged.date_of_injury = injury.date_of_injury
+        if (injury.expected_return) merged.review_date = injury.expected_return
         if (injury.notes) merged.clinical_impression = injury.notes
+        if (injury.diagnosis_data && typeof injury.diagnosis_data === 'object') {
+          merged = { ...merged, ...injury.diagnosis_data }
+        }
       }
 
       // 3. Pre-fill from latest rehab note
@@ -95,9 +106,10 @@ export default function PhysiotherapyReportModal({
     }
 
     loadPlan()
-  }, [isOpen, athlete, injury, rehabNotes, teamId, currentUser])
+  }, [isOpen, athlete, selectedAthlete, injury, rehabNotes, teamId, currentUser])
 
-  if (!isOpen || !athlete) return null
+  if (!isOpen) return null
+  const currentAth = selectedAthlete || athlete
 
   const updateField = (key, val) => setPlan(prev => ({ ...prev, [key]: val }))
 
@@ -145,19 +157,74 @@ export default function PhysiotherapyReportModal({
   }
 
   async function handleSave() {
+    if (!currentAth?.id) {
+      alert('Please select an athlete from the squad roster to assign this clinical diagnosis and rehabilitation plan.')
+      return
+    }
     setSaving(true)
     setSaveSuccess(false)
     try {
       // 1. Cache to localStorage for instant local retrieval
-      localStorage.setItem(`apextrack_physio_plan_${athlete.id}`, JSON.stringify(plan))
+      localStorage.setItem(`apextrack_physio_plan_${currentAth.id}`, JSON.stringify(plan))
 
-      // 2. Save to Supabase physiotherapy_plans table if available
+      const isRecovered = plan.clinical_plan === 'Discharge / Cleared'
+      const statusVal = isRecovered ? 'Recovered' : 'Active'
+      const severityVal = plan.grade === 'Grade III' ? 'Severe' : (plan.grade === 'Grade II' ? 'Moderate' : 'Mild')
+      let savedInjuryId = injury?.id || null
+
+      // 2. Insert or Update injuries table in Supabase
       if (teamId) {
+        if (savedInjuryId) {
+          // Edit existing injury
+          const { error: updErr } = await scopeTeam(
+            supabase.from('injuries').update({
+              injury_type: plan.structure_and_side || 'Sports Injury',
+              severity: severityVal,
+              date_of_injury: plan.date_of_injury || new Date().toISOString().split('T')[0],
+              expected_return: plan.review_date || null,
+              notes: plan.clinical_impression || '',
+              status: statusVal,
+              diagnosis_data: plan,
+              updated_by: currentUser?.id || null,
+              updated_at: new Date().toISOString(),
+            }).eq('id', savedInjuryId),
+            teamId
+          )
+          if (updErr) console.warn('[handleSave] injury update warn:', updErr)
+        } else {
+          // Create new injury
+          const { data: newInj, error: insErr } = await supabase.from('injuries').insert([{
+            team_id: teamId,
+            athlete_id: currentAth.id,
+            injury_type: plan.structure_and_side || 'Sports Injury',
+            severity: severityVal,
+            date_of_injury: plan.date_of_injury || new Date().toISOString().split('T')[0],
+            expected_return: plan.review_date || null,
+            notes: plan.clinical_impression || '',
+            status: 'Active',
+            diagnosis_data: plan,
+            logged_by: currentUser?.id || null,
+            logged_at: new Date().toISOString(),
+          }]).select('id').maybeSingle()
+
+          if (insErr) console.warn('[handleSave] injury insert warn:', insErr)
+          if (newInj?.id) savedInjuryId = newInj.id
+        }
+
+        // 3. Update athlete status in athletes table
+        await scopeTeam(
+          supabase.from('athletes').update({
+            status: isRecovered ? 'Active' : 'Injured',
+          }).eq('id', currentAth.id),
+          teamId
+        )
+
+        // 4. Save to dedicated physiotherapy_plans table
         try {
           await supabase.from('physiotherapy_plans').insert([{
             team_id: teamId,
-            athlete_id: athlete.id,
-            injury_id: injury?.id || null,
+            athlete_id: currentAth.id,
+            injury_id: savedInjuryId,
             report_date: plan.report_date || new Date().toISOString().split('T')[0],
             plan_data: plan,
             author_id: currentUser?.id || null,
@@ -165,12 +232,16 @@ export default function PhysiotherapyReportModal({
             author_role: currentUser?.role || 'physio',
           }])
         } catch (_dbErr) {
-          // table might not exist yet; cached in localStorage
+          // table might not exist yet; cached in localStorage & injuries.diagnosis_data
         }
       }
 
       setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 4000)
+      if (onSaved) onSaved()
+      setTimeout(() => {
+        setSaveSuccess(false)
+        onClose()
+      }, 1000)
     } catch (err) {
       alert('Failed saving plan: ' + err.message)
     } finally {
@@ -179,20 +250,24 @@ export default function PhysiotherapyReportModal({
   }
 
   async function handleDownloadPDF() {
+    if (!currentAth?.id) {
+      alert('Please select an athlete to export the physiotherapy PDF dossier.')
+      return
+    }
     setDownloading(true)
     const isDesktop = typeof window !== 'undefined' && !(/iphone|ipad|ipod|android/i.test(navigator.userAgent || ''))
-    const win = isDesktop ? openDownloadWindow(`Physiotherapy Report — ${athlete.name}`) : null
+    const win = isDesktop ? openDownloadWindow(`Physiotherapy Report — ${currentAth.name}`) : null
 
     try {
       const meta = {
-        clubName: athlete.club || currentUser?.club_name || 'ApexTrack Football Club',
+        clubName: currentAth.club || currentUser?.club_name || 'ApexTrack Football Club',
         clubLogoUrl: currentUser?.club_logo_url || null,
         generatedBy: currentUser?.full_name || plan.therapist_name || 'Physiotherapist',
         generatedAt: plan.report_date || new Date().toISOString(),
       }
 
       const doc = await buildPhysiotherapyReportPDF({
-        athlete,
+        athlete: currentAth,
         injury: injury || { injury_type: plan.structure_and_side, severity: plan.grade, date_of_injury: plan.date_of_injury, notes: plan.clinical_impression },
         rehabNotes,
         customPlan: plan,
@@ -200,7 +275,7 @@ export default function PhysiotherapyReportModal({
         period: `${new Date().getFullYear()} Season`,
       })
 
-      const safeAthlete = (athlete.name || 'Athlete').replace(/\s+/g, '_')
+      const safeAthlete = (currentAth.name || 'Athlete').replace(/\s+/g, '_')
       const filename = `${safeAthlete}_Physiotherapy_Rehab_Plan_${new Date().toISOString().slice(0, 10)}.pdf`
 
       if (win) {
@@ -302,7 +377,7 @@ export default function PhysiotherapyReportModal({
                 SPORTS INJURY DIAGNOSIS AND REHABILITATION PLAN
               </div>
               <h2 style={{ fontSize: 18, fontWeight: 900, margin: '2px 0 0', letterSpacing: '-0.01em' }}>
-                Individual Physiotherapy Report: {athlete.name}
+                {injury ? `Clinical Dossier: ${currentAth?.name || 'Athlete'}` : `New Injury & Rehabilitation Plan${currentAth?.name ? `: ${currentAth.name}` : ''}`}
               </h2>
             </div>
           </div>
@@ -414,29 +489,51 @@ export default function PhysiotherapyReportModal({
           {/* ── SECTION 1: Patient Details ── */}
           {activeSection === '1' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#F8FAFC', padding: 16, borderRadius: 12, border: '1px solid #E2E8F0' }}>
-                {athlete.photo_url ? (
-                  <img src={athlete.photo_url} alt={athlete.name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #0D9488' }} />
-                ) : (
-                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#0D9488', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 900 }}>
-                    {(athlete.name || 'A').slice(0, 2).toUpperCase()}
-                  </div>
-                )}
-                <div>
-                  <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#0F172A' }}>{athlete.name}</h3>
-                  <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
-                    Squad #{athlete.back_number || '—'} · {athlete.position || 'Player'} · {athlete.nationality || 'Ghana'}
-                  </div>
-                  <div style={{ fontSize: 12, color: '#0D9488', fontWeight: 700, marginTop: 4 }}>
-                    Current Status: {athlete.status === 'Injured' ? 'In Rehabilitation' : 'Cleared / Active'}
+              {/* Athlete selector if not fixed */}
+              {!athlete && athletes.length > 0 && (
+                <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 12, padding: '14px 18px' }}>
+                  <label style={{ ...lbl, color: '#1E40AF', fontSize: 11, marginBottom: 6 }}>Select Squad Athlete to Diagnose &amp; Log *</label>
+                  <select
+                    value={currentAth?.id || ''}
+                    onChange={e => {
+                      const found = athletes.find(a => a.id === e.target.value)
+                      setSelectedAthlete(found || null)
+                    }}
+                    style={{ ...inp, background: '#FFFFFF', border: '1.5px solid #3B82F6', fontWeight: 700, fontSize: 14 }}
+                  >
+                    <option value="">Choose squad athlete…</option>
+                    {athletes.map(a => (
+                      <option key={a.id} value={a.id}>{a.name} — #{a.back_number || '—'} ({a.position || 'Player'})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {currentAth && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, background: '#F8FAFC', padding: 16, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                  {currentAth.photo_url ? (
+                    <img src={currentAth.photo_url} alt={currentAth.name} style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', border: '2px solid #0D9488' }} />
+                  ) : (
+                    <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#0D9488', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 900 }}>
+                      {(currentAth.name || 'A').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div>
+                    <h3 style={{ fontSize: 18, fontWeight: 800, margin: 0, color: '#0F172A' }}>{currentAth.name}</h3>
+                    <div style={{ fontSize: 13, color: '#64748B', marginTop: 2 }}>
+                      Squad #{currentAth.back_number || '—'} · {currentAth.position || 'Player'} · {currentAth.nationality || 'Ghana'}
+                    </div>
+                    <div style={{ fontSize: 12, color: '#0D9488', fontWeight: 700, marginTop: 4 }}>
+                      Current Status: {currentAth.status === 'Injured' ? 'In Rehabilitation' : 'Cleared / Active'}
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
                 <div>
                   <label style={lbl}>Sport &amp; Position</label>
-                  <input style={inp} value={`Football · ${athlete.position || 'Player'}`} readOnly />
+                  <input style={inp} value={`Football · ${currentAth?.position || 'Player'}`} readOnly />
                 </div>
                 <div>
                   <label style={lbl}>Athlete Level</label>
@@ -457,7 +554,7 @@ export default function PhysiotherapyReportModal({
                 </div>
                 <div>
                   <label style={lbl}>Patient ID / Contact</label>
-                  <input style={inp} value={`${athlete.phone || ''} ${athlete.email ? `(${athlete.email})` : ''}`} readOnly />
+                  <input style={inp} value={`${currentAth?.phone || ''} ${currentAth?.email ? `(${currentAth?.email})` : ''}`} readOnly />
                 </div>
                 <div>
                   <label style={lbl}>Age / Sex</label>

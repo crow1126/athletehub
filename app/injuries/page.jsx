@@ -256,6 +256,57 @@ export default function InjuriesPage() {
 
   return (
     <>
+      {/* ── Responsive Styles ── */}
+      <style>{`
+        .inj-outer { }
+        .inj-stat-row { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+        .inj-stat-card { display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:10px 18px; min-width:140px; flex:1; }
+        .inj-filter-bar { display:flex; gap:6px; margin-bottom:16px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:4px; width:fit-content; max-width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        .inj-filter-bar::-webkit-scrollbar { display:none; }
+        .inj-table-wrap { overflow:hidden; padding:0; border-radius:14px; border:1px solid var(--border); background:var(--surface); }
+        .inj-th { display:grid; grid-template-columns:2fr 2fr 1.6fr 1.2fr 1.1fr 1.1fr 130px; background:var(--surface2); border-bottom:1px solid var(--border); padding:12px 18px; gap:12px; font-size:10.5px; font-weight:800; color:var(--text3); text-transform:uppercase; letter-spacing:0.07em; }
+        .inj-tr { display:grid; grid-template-columns:2fr 2fr 1.6fr 1.2fr 1.1fr 1.1fr 130px; align-items:center; padding:14px 18px; gap:12px; border-bottom:1px solid var(--border); background:transparent; transition:background 0.12s; }
+        .inj-tr:last-child { border-bottom:none; }
+        .inj-tr:hover { background:var(--surface2); }
+        .inj-card { display:none; }
+        /* ── Physio Modal responsive ── */
+        @media(min-width:769px) {
+          .physio-modal-inner { border-radius:20px !important; height:92vh !important; align-self:center !important; margin:16px !important; }
+          .physio-pdf-label::before { content:"Open & Download PDF"; }
+          .physio-pdf-label { font-size:0; }
+          .physio-pdf-label::before { font-size:12px; }
+        }
+        @media(max-width:768px) {
+          .inj-stat-row { gap:8px; }
+          .inj-stat-card { padding:10px 12px; min-width:0; }
+          .inj-th { display:none !important; }
+          .inj-tr { display:none !important; }
+          .inj-table-wrap { border-radius:12px; }
+          .inj-card {
+            display:flex;
+            flex-direction:column;
+            gap:0;
+          }
+          .inj-card-row {
+            background:var(--surface);
+            border-bottom:1px solid var(--border);
+            padding:14px 14px;
+            border-left-width:3px;
+            border-left-style:solid;
+          }
+          .inj-card-row:last-child { border-bottom:none; }
+          .inj-card-header { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+          .inj-card-name { font-size:14px; font-weight:800; color:var(--text); }
+          .inj-card-sub { font-size:11px; color:var(--text3); margin-top:1px; }
+          .inj-card-pills { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px; align-items:center; }
+          .inj-card-detail { font-size:12px; color:var(--text2); margin-bottom:2px; }
+          .inj-card-detail strong { color:var(--text); }
+          .inj-card-actions { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+          .inj-card-actions button { min-width:40px; min-height:40px; display:flex; align-items:center; justify-content:center; border-radius:10px; flex:1; gap:6px; font-size:12px; font-weight:700; cursor:pointer; }
+          .physio-modal-inner { border-radius:20px 20px 0 0 !important; height:95vh !important; width:100% !important; max-width:100% !important; }
+          .physio-pdf-label { display:none; }
+        }
+      `}</style>
       <Layout>
         <div className="page-outer">
 
@@ -312,13 +363,13 @@ export default function InjuriesPage() {
           )}
 
           {/* ── Stat Counters ── */}
-          <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <div className="inj-stat-row">
             {[
               { label: 'Total Clinical Plans', value: injuries.length, icon: <FileHeart size={16} color="#0D9488" />, color: '#0D9488', bg: '#F0FDFA' },
               { label: 'In Rehabilitation', value: activeCnt, icon: <HeartOff size={16} color="#E11D48" />, color: '#E11D48', bg: '#FFF1F2' },
               { label: 'Cleared / Match Ready', value: recovCnt, icon: <Heart size={16} color="#059669" />, color: '#059669', bg: '#ECFDF5' },
             ].map(s => (
-              <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 18px', minWidth: 140 }}>
+              <div key={s.label} className="inj-stat-card">
                 <div style={{ width: 34, height: 34, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   {s.icon}
                 </div>
@@ -331,7 +382,7 @@ export default function InjuriesPage() {
           </div>
 
           {/* ── Filter Buttons ── */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: 4, width: 'fit-content' }}>
+          <div className="inj-filter-bar">
             {[
               { id: 'All', label: `All Plans (${injuries.length})` },
               { id: 'Active', label: `In Rehabilitation (${activeCnt})` },
@@ -341,7 +392,7 @@ export default function InjuriesPage() {
                 key={f.id}
                 onClick={() => setFilter(f.id)}
                 style={{
-                  padding: '7px 16px',
+                  padding: '7px 14px',
                   background: filter === f.id ? (f.id === 'Active' ? 'linear-gradient(135deg,#BE123C,#E11D48)' : '#0D9488') : 'transparent',
                   border: 'none',
                   borderRadius: 8,
@@ -351,6 +402,7 @@ export default function InjuriesPage() {
                   cursor: 'pointer',
                   fontFamily: 'var(--font)',
                   transition: 'all 0.15s',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 {f.label}
@@ -372,21 +424,9 @@ export default function InjuriesPage() {
               </div>
             </div>
           ) : (
-            <div className="card" style={{ overflow: 'hidden', padding: 0, borderRadius: 14, border: '1px solid var(--border)', background: 'var(--surface)' }}>
-              {/* Table Header */}
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 2fr 1.6fr 1.2fr 1.1fr 1.1fr 130px',
-                background: 'var(--surface2)',
-                borderBottom: '1px solid var(--border)',
-                padding: '12px 18px',
-                gap: 12,
-                fontSize: 10.5,
-                fontWeight: 800,
-                color: 'var(--text3)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.07em',
-              }}>
+            <div className="inj-table-wrap">
+              {/* Table Header – desktop only */}
+              <div className="inj-th">
                 <div>Athlete</div>
                 <div>Diagnosis &amp; Stage</div>
                 <div>Current Rehab Phase</div>
@@ -406,169 +446,195 @@ export default function InjuriesPage() {
                 const phase = getActivePhase(diag, isRecovered)
                 const pain = getPainSummary(diag)
                 const isLast = idx === filtered.length - 1
+                const borderColor = isRecovered ? '#10B981' : '#E11D48'
 
                 return (
-                  <div
-                    key={inj.id}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: '2fr 2fr 1.6fr 1.2fr 1.1fr 1.1fr 130px',
-                      alignItems: 'center',
-                      padding: '14px 18px',
-                      gap: 12,
-                      borderBottom: isLast ? 'none' : '1px solid var(--border)',
-                      borderLeft: `3px solid ${isRecovered ? '#10B981' : '#E11D48'}`,
-                      background: 'transparent',
-                      transition: 'background 0.12s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    {/* 1. Athlete */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <Avatar ath={ath} size={36} />
+                  <div key={inj.id}>
+                    {/* ── Desktop Grid Row ── */}
+                    <div
+                      className="inj-tr"
+                      style={{
+                        borderBottom: isLast ? 'none' : '1px solid var(--border)',
+                        borderLeft: `3px solid ${borderColor}`,
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                    >
+                      {/* 1. Athlete */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Avatar ath={ath} size={36} />
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ath.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                            #{ath.back_number || '—'} · {ath.position || 'Player'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. Diagnosis & Stage */}
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {ath.name}
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={structure}>
+                          {structure}
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--text3)' }}>
-                          #{ath.back_number || '—'} · {ath.position || 'Player'}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                          <GradeBadge grade={diag.grade} severity={inj.severity} />
+                          <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>
+                            {diag.stage || 'Sub-acute'}
+                          </span>
                         </div>
+                      </div>
+
+                      {/* 3. Current Rehab Phase */}
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: phase.color, display: 'flex', alignItems: 'center', gap: 5 }}>
+                          <Activity size={12} style={{ flexShrink: 0 }} />
+                          <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{phase.title}</span>
+                        </div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
+                          {diag.phase2?.duration || 'Weeks 2 to 4'}
+                        </div>
+                      </div>
+
+                      {/* 4. Baseline Pain */}
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>
+                          {pain}
+                        </div>
+                        <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
+                          Rest / Activity Score
+                        </div>
+                      </div>
+
+                      {/* 5. Clearance Status */}
+                      <div>
+                        <StatusBadge status={inj.status} plan={diag} />
+                      </div>
+
+                      {/* 6. Dates & Review */}
+                      <div>
+                        <div style={{ fontSize: 11.5, color: 'var(--text2)', fontWeight: 600 }}>
+                          Injured: {fmtDate(inj.date_of_injury)}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, marginTop: 2 }}>
+                          Review: {fmtDate(diag.review_date || inj.expected_return)}
+                        </div>
+                      </div>
+
+                      {/* 7. Actions */}
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
+                        {canEdit && (
+                          <button
+                            onClick={() => setPhysioModal({ open: true, athlete: ath, injury: inj })}
+                            title="Edit Clinical Diagnosis & Rehabilitation Plan"
+                            style={{ background: '#F0FDFA', color: '#0D9488', border: '1px solid #CCFBF1', borderRadius: 7, padding: '6px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                          >
+                            <Pencil size={13} />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDownloadRowPDF(inj)}
+                          disabled={downloadingRow === inj.id}
+                          title="Download 9-Section Physiotherapy Report PDF"
+                          style={{ background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', borderRadius: 7, padding: '6px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        >
+                          <Download size={13} />
+                        </button>
+                        {!isRecovered && canEdit && (
+                          <button
+                            onClick={() => markRecovered(inj.id, ath.id)}
+                            title="Mark as Cleared / Recovered"
+                            style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', borderRadius: 7, padding: '6px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                          >
+                            <Check size={13} />
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(inj.id)}
+                            title="Permanently Delete Clinical Record (Admin Only)"
+                            style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: 7, padding: '6px 8px', cursor: 'pointer', display: 'flex', alignItems: 'center', opacity: deleting === inj.id ? 0.5 : 1 }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
                       </div>
                     </div>
 
-                    {/* 2. Diagnosis & Stage */}
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={structure}>
-                        {structure}
+                    {/* ── Mobile Card ── */}
+                    <div
+                      className="inj-card-row inj-card"
+                      style={{ borderLeftColor: borderColor }}
+                    >
+                      {/* Card Header: Avatar + Name + Status */}
+                      <div className="inj-card-header">
+                        <Avatar ath={ath} size={44} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="inj-card-name">{ath.name}</div>
+                          <div className="inj-card-sub">#{ath.back_number || '—'} · {ath.position || 'Player'}</div>
+                        </div>
+                        <StatusBadge status={inj.status} plan={diag} />
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+
+                      {/* Injury + Grade + Stage */}
+                      <div className="inj-card-pills">
                         <GradeBadge grade={diag.grade} severity={inj.severity} />
-                        <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 4, padding: '1px 6px', fontWeight: 600 }}>
+                        <span style={{ fontSize: 11, color: 'var(--text3)', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 7px', fontWeight: 600 }}>
                           {diag.stage || 'Sub-acute'}
                         </span>
                       </div>
-                    </div>
+                      <div className="inj-card-detail" style={{ marginBottom: 6 }}>
+                        <strong>{structure}</strong>
+                      </div>
 
-                    {/* 3. Current Rehab Phase */}
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: phase.color, display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <Activity size={12} style={{ flexShrink: 0 }} />
-                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{phase.title}</span>
+                      {/* Phase + Pain */}
+                      <div className="inj-card-detail">
+                        <Activity size={11} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4, color: phase.color }} />
+                        <span style={{ color: phase.color, fontWeight: 700 }}>{phase.title}</span>
                       </div>
-                      <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
-                        {diag.phase2?.duration || 'Weeks 2 to 4'}
-                      </div>
-                    </div>
+                      <div className="inj-card-detail">Pain: <strong>{pain}</strong></div>
 
-                    {/* 4. Baseline Pain */}
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: '#334155' }}>
-                        {pain}
+                      {/* Dates */}
+                      <div className="inj-card-detail" style={{ marginTop: 4 }}>
+                        Injured: {fmtDate(inj.date_of_injury)} &nbsp;·&nbsp;
+                        <span style={{ color: '#0D9488', fontWeight: 700 }}>Review: {fmtDate(diag.review_date || inj.expected_return)}</span>
                       </div>
-                      <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
-                        Rest / Activity Score
-                      </div>
-                    </div>
 
-                    {/* 5. Clearance Status */}
-                    <div>
-                      <StatusBadge status={inj.status} plan={diag} />
-                    </div>
-
-                    {/* 6. Dates & Review */}
-                    <div>
-                      <div style={{ fontSize: 11.5, color: 'var(--text2)', fontWeight: 600 }}>
-                        Injured: {fmtDate(inj.date_of_injury)}
-                      </div>
-                      <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, marginTop: 2 }}>
-                        Review: {fmtDate(diag.review_date || inj.expected_return)}
-                      </div>
-                    </div>
-
-                    {/* 7. Actions */}
-                    <div style={{ display: 'flex', gap: 6, alignItems: 'center', justifyContent: 'flex-end' }}>
-                      {/* Edit / Update Clinical Plan */}
-                      {canEdit && (
+                      {/* Action Buttons */}
+                      <div className="inj-card-actions">
+                        {canEdit && (
+                          <button
+                            onClick={() => setPhysioModal({ open: true, athlete: ath, injury: inj })}
+                            style={{ background: '#F0FDFA', color: '#0D9488', border: '1px solid #CCFBF1', fontFamily: 'var(--font)' }}
+                          >
+                            <Pencil size={14} /> Edit Plan
+                          </button>
+                        )}
                         <button
-                          onClick={() => setPhysioModal({ open: true, athlete: ath, injury: inj })}
-                          title="Edit Clinical Diagnosis & Rehabilitation Plan"
-                          style={{
-                            background: '#F0FDFA',
-                            color: '#0D9488',
-                            border: '1px solid #CCFBF1',
-                            borderRadius: 7,
-                            padding: '6px 8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
+                          onClick={() => handleDownloadRowPDF(inj)}
+                          disabled={downloadingRow === inj.id}
+                          style={{ background: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', fontFamily: 'var(--font)' }}
                         >
-                          <Pencil size={13} />
+                          <Download size={14} /> PDF
                         </button>
-                      )}
-
-                      {/* Download Official PDF Dossier */}
-                      <button
-                        onClick={() => handleDownloadRowPDF(inj)}
-                        disabled={downloadingRow === inj.id}
-                        title="Download 9-Section Physiotherapy Report PDF (Desktop Preview)"
-                        style={{
-                          background: '#EFF6FF',
-                          color: '#2563EB',
-                          border: '1px solid #BFDBFE',
-                          borderRadius: 7,
-                          padding: '6px 8px',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          opacity: downloadingRow === inj.id ? 0.6 : 1,
-                        }}
-                      >
-                        <Download size={13} />
-                      </button>
-
-                      {/* Quick Mark Recovered / Clear Player */}
-                      {canEdit && isAct && (
-                        <button
-                          onClick={() => markRecovered(inj.id, inj.athlete_id)}
-                          title="Clear Player & Return to Match Play"
-                          style={{
-                            background: '#ECFDF5',
-                            color: '#059669',
-                            border: '1px solid #A7F3D0',
-                            borderRadius: 7,
-                            padding: '6px 8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <Check size={13} />
-                        </button>
-                      )}
-
-                      {/* Delete (Admin only) */}
-                      {isAdmin && (
-                        <button
-                          onClick={() => handleDelete(inj.id)}
-                          disabled={deleting === inj.id}
-                          title="Permanently Delete Clinical Record (Admin Only)"
-                          style={{
-                            background: '#FEF2F2',
-                            color: '#DC2626',
-                            border: '1px solid #FECACA',
-                            borderRadius: 7,
-                            padding: '6px 8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            opacity: deleting === inj.id ? 0.5 : 1,
-                          }}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      )}
+                        {!isRecovered && canEdit && (
+                          <button
+                            onClick={() => markRecovered(inj.id, ath.id)}
+                            style={{ background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0', fontFamily: 'var(--font)' }}
+                          >
+                            <Check size={14} /> Cleared
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => handleDelete(inj.id)}
+                            style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', opacity: deleting === inj.id ? 0.5 : 1, fontFamily: 'var(--font)' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )

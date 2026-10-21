@@ -35,7 +35,7 @@ export default function PhysiotherapyReportModal({
 
   // Load plan data on open
   useEffect(() => {
-    if (!isOpen || !athlete) return
+    if (!isOpen) return
 
     async function loadPlan() {
       // 1. Start from default template
@@ -75,7 +75,7 @@ export default function PhysiotherapyReportModal({
 
       // 4. Check localStorage fallback
       try {
-        const local = localStorage.getItem(`apextrack_physio_plan_${athlete.id}`)
+        const local = athlete?.id ? localStorage.getItem(`apextrack_physio_plan_${athlete.id}`) : null
         if (local) {
           const parsed = JSON.parse(local)
           merged = { ...merged, ...parsed }
@@ -83,7 +83,7 @@ export default function PhysiotherapyReportModal({
       } catch (_e) {}
 
       // 5. Try fetching from Supabase physiotherapy_plans
-      if (teamId && athlete.id) {
+      if (teamId && athlete?.id) {
         try {
           const { data: dbPlan } = await scopeTeam(
             supabase.from('physiotherapy_plans')
@@ -333,16 +333,16 @@ export default function PhysiotherapyReportModal({
       backdropFilter: 'blur(6px)',
       zIndex: 99999,
       display: 'flex',
-      alignItems: 'center',
+      alignItems: 'flex-end',
       justifyContent: 'center',
-      padding: 16,
+      padding: 0,
     }}>
-      <div style={{
+      <div className="physio-modal-inner" style={{
         background: '#FFFFFF',
         width: '100%',
         maxWidth: 960,
         height: '92vh',
-        borderRadius: 20,
+        borderRadius: '20px 20px 0 0',
         boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)',
         display: 'flex',
         flexDirection: 'column',
@@ -353,11 +353,13 @@ export default function PhysiotherapyReportModal({
         <div style={{
           background: 'linear-gradient(135deg, #0F172A 0%, #134E4A 100%)',
           color: '#FFFFFF',
-          padding: '16px 24px',
+          padding: '14px 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '2px solid #0D9488',
+          flexWrap: 'wrap',
+          gap: 8,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
@@ -382,7 +384,7 @@ export default function PhysiotherapyReportModal({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
             {saveSuccess && (
               <span style={{ fontSize: 12, color: '#2DD4BF', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Check size={14} /> Saved!
@@ -412,6 +414,7 @@ export default function PhysiotherapyReportModal({
             <button
               onClick={handleDownloadPDF}
               disabled={downloading}
+              className="physio-pdf-btn"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -419,7 +422,7 @@ export default function PhysiotherapyReportModal({
                 background: 'linear-gradient(135deg, #0D9488, #0F766E)',
                 border: 'none',
                 borderRadius: 8,
-                padding: '8px 16px',
+                padding: '8px 14px',
                 color: '#FFFFFF',
                 fontSize: 12,
                 fontWeight: 800,
@@ -427,7 +430,7 @@ export default function PhysiotherapyReportModal({
                 boxShadow: '0 4px 12px rgba(13, 148, 136, 0.35)',
               }}
             >
-              <Download size={14} /> {downloading ? 'Preparing PDF…' : 'Open & Download PDF (Desktop)'}
+              <Download size={14} /> <span className="physio-pdf-label">{downloading ? 'Preparing…' : 'PDF'}</span>
             </button>
 
             <button
@@ -558,7 +561,7 @@ export default function PhysiotherapyReportModal({
                 </div>
                 <div>
                   <label style={lbl}>Age / Sex</label>
-                  <input style={inp} value={`${athlete.age ? `${athlete.age} yrs` : '—'} / ${athlete.sex || 'Male'}`} readOnly />
+                  <input style={inp} value={`${currentAth?.age ? `${currentAth.age} yrs` : '—'} / ${currentAth?.sex || currentAth?.gender || 'Male'}`} readOnly />
                 </div>
               </div>
             </div>
@@ -906,10 +909,12 @@ export default function PhysiotherapyReportModal({
         <div style={{
           background: '#F8FAFC',
           borderTop: '1px solid #E2E8F0',
-          padding: '12px 24px',
+          padding: '12px 16px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: 8,
+          flexWrap: 'wrap',
         }}>
           <div style={{ fontSize: 12, color: '#64748B' }}>
             Section {activeSection} of {SECTIONS.length} · {SECTIONS.find(s => s.id === activeSection)?.label}

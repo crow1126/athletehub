@@ -31,6 +31,7 @@ const EMPTY     = {
   height: '',
   weight: '',
   coach_id: '',
+  gender: 'Male',
   status: 'Active',
   // New fields:
   first_name: '',
@@ -96,6 +97,7 @@ export default function AthletesPage() {
   const [search,        setSearch]        = useState('')
   const [posFilter,     setPosFilter]     = useState('')
   const [statFilter,    setStatFilter]    = useState('')
+  const [genderFilter,  setGenderFilter]  = useState('')
   const [formError,     setFormError]     = useState('')
   const [teamId,        setTeamId]        = useState(null)
   // Strict admin gate: admin + superadmin only (not coaches)
@@ -228,6 +230,7 @@ export default function AthletesPage() {
       iban: ath.iban||'',
       bic: ath.bic||'',
       tax_id: ath.tax_id||'',
+      gender: ath.gender || (ath.contract_details?.includes('[GENDER:Female]') ? 'Female' : 'Male'),
       status: ath.status||'Active'
     })
     setPhotoFile(null); setPhotoPreview(ath.photo_url||null); setFormError(''); setShowForm(true)
@@ -328,17 +331,29 @@ export default function AthletesPage() {
       iban: form.iban.trim() || null,
       bic: form.bic.trim() || null,
       tax_id: form.tax_id.trim() || null,
+      gender: form.gender || 'Male',
       status: form.status || 'Active',
     }
     if (editId) {
       const url = await uploadPhoto(editId)
       if (url) payload.photo_url = url
-      const { error } = await scopeTeam(supabase.from('athletes').update(payload).eq('id', editId), teamId)
-      if (error) { setFormError('Update failed: '+error.message); setSaving(false); return }
+      let res = await scopeTeam(supabase.from('athletes').update(payload).eq('id', editId), teamId)
+      if (res.error && res.error.message?.includes('gender')) {
+        delete payload.gender
+        payload.contract_details = (payload.contract_details ? payload.contract_details.replace(/\[GENDER:[^\]]+\]/g, '') : '') + ` [GENDER:${form.gender || 'Male'}]`
+        res = await scopeTeam(supabase.from('athletes').update(payload).eq('id', editId), teamId)
+      }
+      if (res.error) { setFormError('Update failed: '+res.error.message); setSaving(false); return }
       setShowForm(false); fetchData()
     } else {
-      const { data, error } = await supabase.from('athletes').insert([payload]).select().single()
-      if (error) { setFormError('Save failed: '+error.message); setSaving(false); return }
+      let res = await supabase.from('athletes').insert([payload]).select().single()
+      if (res.error && res.error.message?.includes('gender')) {
+        delete payload.gender
+        payload.contract_details = (payload.contract_details ? payload.contract_details.replace(/\[GENDER:[^\]]+\]/g, '') : '') + ` [GENDER:${form.gender || 'Male'}]`
+        res = await supabase.from('athletes').insert([payload]).select().single()
+      }
+      if (res.error) { setFormError('Save failed: '+res.error.message); setSaving(false); return }
+      const data = res.data
       const url = await uploadPhoto(data.id)
       if (url) await scopeTeam(supabase.from('athletes').update({ photo_url:url }).eq('id', data.id), teamId)
       // Clear draft on successful save
@@ -359,14 +374,21 @@ export default function AthletesPage() {
     setDeleting(null)
   }
 
+  const getAthGender = a => (a.gender === 'Female' || a.contract_details?.includes('[GENDER:Female]')) ? 'Female' : 'Male'
+
   const filtered = athletes.filter(a => {
     const q = search.toLowerCase()
+    const g = getAthGender(a)
     return (
-      (!search     || a.name?.toLowerCase().includes(q) || a.club?.toLowerCase().includes(q) || a.region?.toLowerCase().includes(q)) &&
-      (!posFilter  || a.position === posFilter) &&
-      (!statFilter || a.status   === statFilter)
+      (!search       || a.name?.toLowerCase().includes(q) || a.club?.toLowerCase().includes(q) || a.region?.toLowerCase().includes(q)) &&
+      (!posFilter    || a.position === posFilter) &&
+      (!statFilter   || a.status   === statFilter) &&
+      (!genderFilter || g === genderFilter)
     )
   })
+
+  const totalMaleAth = athletes.filter(a => getAthGender(a) === 'Male').length
+  const totalFemAth  = athletes.filter(a => getAthGender(a) === 'Female').length
 
   const positionGroups = POSITION_GROUPS
   const pageTitle = 'Athletes'
@@ -395,7 +417,7 @@ export default function AthletesPage() {
       <div className="ath-outer">
         <PageHeader
           label="Football Registry" title={pageTitle}
-          subtitle={`${filtered.length} of ${athletes.length} ${pageTitle.toLowerCase()} registered`}
+          subtitle={`${filtered.length} of ${athletes.length} ${pageTitle.toLowerCase()} · ${totalMaleAth} Male (♂) · ${totalFemAth} Female (♀)`}
           action={
             <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
               {isAdmin && (
@@ -448,12 +470,17 @@ export default function AthletesPage() {
               </optgroup>
             ))}
           </select>
-          <select value={statFilter} onChange={e=>setStatFilter(e.target.value)} className="form-inp" style={{ ...inp, maxWidth:140 }}>
+          <select value={statFilter} onChange={e=>setStatFilter(e.target.value)} className="form-inp" style={{ ...inp, maxWidth:130 }}>
             <option value="">All Statuses</option>
             {['Active','Injured','Suspended'].map(s=><option key={s}>{s}</option>)}
           </select>
-          {(search||posFilter||statFilter) && (
-            <button onClick={()=>{setSearch('');setPosFilter('');setStatFilter('')}}
+          <select value={genderFilter} onChange={e=>setGenderFilter(e.target.value)} className="form-inp" style={{ ...inp, maxWidth:130 }}>
+            <option value="">All Sexes</option>
+            <option value="Male">Male (♂)</option>
+            <option value="Female">Female (♀)</option>
+          </select>
+          {(search||posFilter||statFilter||genderFilter) && (
+            <button onClick={()=>{setSearch('');setPosFilter('');setStatFilter('');setGenderFilter('')}}
               style={{ ...inp, width:'auto', cursor:'pointer', background:'#F1F5F9', fontWeight:600, color:'#334155', display:'flex', alignItems:'center', gap:4 }}>
               <X size={13} /> Clear
             </button>
@@ -481,7 +508,12 @@ export default function AthletesPage() {
                 <AthleteAvatar athlete={ath} size={38} index={i}/>
                 <div>
                   <Link href={`/athletes/${ath.id}`} style={{ fontSize:13, fontWeight:700, color:'#0F766E', display:'block', marginBottom:1 }}>{ath.name}</Link>
-                  <span style={{ fontSize:11, color:'#64748B' }}>{ath.club||'—'}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                    <span style={{ fontSize:11, color:'#64748B' }}>{ath.club||'—'}</span>
+                    <span style={{ fontSize:10, fontWeight:700, padding:'1px 5px', borderRadius:4, background:getAthGender(ath)==='Female'?'#FDF2F8':'#EFF6FF', color:getAthGender(ath)==='Female'?'#DB2777':'#2563EB' }}>
+                      {getAthGender(ath)==='Female'?'♀ F':'♂ M'}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="ath-hide" style={{ fontSize:12, fontWeight:700, color:'#0F766E', background:'#F0FDFA', border:'1px solid #CCFBF1', padding:'3px 8px', borderRadius:6, width:'fit-content' }}>{ath.position||'—'}</div>
@@ -645,15 +677,22 @@ export default function AthletesPage() {
                 </div>
               </div>
 
-              {/* Date of Birth + Age */}
-              <div className="modal-g2">
+              {/* Date of Birth + Age + Sex / Gender */}
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(140px, 1fr))', gap:12 }}>
                 <div>
                   <label style={lbl}>Date of Birth</label>
                   <input type="date" className="form-inp" value={form.date_of_birth} onChange={e=>set('date_of_birth')(e.target.value)} style={inp}/>
                 </div>
                 <div>
                   <label style={lbl}>Age</label>
-                  <input type="number" min="14" max="50" className="form-inp" value={form.age} onChange={e=>set('age')(e.target.value)} style={inp}/>
+                  <input type="number" min="10" max="60" className="form-inp" value={form.age} onChange={e=>set('age')(e.target.value)} style={inp}/>
+                </div>
+                <div>
+                  <label style={lbl}>Sex / Gender</label>
+                  <select className="form-inp" value={form.gender || 'Male'} onChange={e=>set('gender')(e.target.value)} style={inp}>
+                    <option value="Male">Male (M)</option>
+                    <option value="Female">Female (F)</option>
+                  </select>
                 </div>
               </div>
 

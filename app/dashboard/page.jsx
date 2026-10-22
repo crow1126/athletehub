@@ -178,21 +178,30 @@ export default function Dashboard() {
   const recoveredCount = recoveredAthleteIds.size
 
   const iconProps = { size: 18, strokeWidth: 2 }
+
+  const isAthFem = a => (a.gender === 'Female' || a.contract_details?.includes('[GENDER:Female]') || a.team_section?.toLowerCase().includes('female') || a.team_section?.toLowerCase().includes('women'))
+  const maleAthCount = athletes.filter(a => !isAthFem(a)).length
+  const femAthCount = athletes.filter(isAthFem).length
+
+  const isStaffFem = c => (c.gender === 'Female' || c.contract_notes?.includes('[GENDER:Female]'))
+  const maleStaffCount = coaches.filter(c => !isStaffFem(c)).length
+  const femStaffCount = coaches.filter(isStaffFem).length
+
   const stats = isPhysio ? [
-    { label: 'Athletes', value: athletes.length, note: `${fitAthletes.length} fit · ${injuredAthleteIds.size} injured`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
+    { label: 'Athletes', value: athletes.length, note: `${maleAthCount} ♂ · ${femAthCount} ♀ (${fitAthletes.length} fit)`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
     { label: 'In Rehabilitation', value: activeInj.length, note: 'active injuries', icon: <HeartPulse {...iconProps} />, accent: 'var(--danger)' },
     { label: 'Recovered', value: recoveredCount, note: 'cleared to play', icon: <ShieldCheck {...iconProps} />, accent: 'var(--success)' },
-    { label: 'Upcoming Sessions', value: upcoming.length, note: 'next 7 days', icon: <CalendarDays {...iconProps} />, accent: '#4A90E2' },
+    { label: 'Staff Team', value: coaches.length, note: `${maleStaffCount} ♂ · ${femStaffCount} ♀`, icon: <ShieldCheck {...iconProps} />, accent: '#4A90E2' },
     { label: 'Today', value: todaySess.length, note: 'sessions', icon: <Flame {...iconProps} />, accent: 'var(--warning)' },
   ] : isAnalyst ? [
-    { label: 'Squad Tracked', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} active squad`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
+    { label: 'Squad Tracked', value: athletes.length, note: `${maleAthCount} ♂ · ${femAthCount} ♀`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
     { label: 'Matches Evaluated', value: uniqueMatchesCount, note: `${performanceStats.length} logged player stats`, icon: <BarChart3 {...iconProps} />, accent: '#3B82F6' },
     { label: 'Squad Avg Rating', value: avgSquadRating ? `${avgSquadRating} / 10` : '—', note: 'recent match form', icon: <TrendingUp {...iconProps} />, accent: '#10B981' },
     { label: 'Total G + A', value: totalGoalsAssists, note: `${totalGoals}G · ${totalAssists}A logged`, icon: <Flame {...iconProps} />, accent: '#F59E0B' },
-    { label: 'Unpublished Reviews', value: pendingReviewsCount, note: pendingReviewsCount > 0 ? 'drafts awaiting SMS' : 'all published', icon: <ClipboardList {...iconProps} />, accent: pendingReviewsCount > 0 ? 'var(--danger)' : 'var(--success)' },
+    { label: 'Staff Roster', value: coaches.length, note: `${maleStaffCount} ♂ · ${femStaffCount} ♀`, icon: <ShieldCheck {...iconProps} />, accent: '#4A90E2' },
   ] : [
-    { label: labels.athletes || 'Athletes', value: athletes.length, note: `${athletes.filter(a => a.status === 'Active').length} active`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
-    { label: labels.coaches || 'Staff', value: coaches.length, note: 'members', icon: <ShieldCheck {...iconProps} />, accent: '#4A90E2' },
+    { label: labels.athletes || 'Athletes', value: athletes.length, note: `${maleAthCount} ♂ · ${femAthCount} ♀`, icon: <Users {...iconProps} />, accent: 'var(--lagoon)' },
+    { label: labels.coaches || 'Staff', value: coaches.length, note: `${maleStaffCount} ♂ · ${femStaffCount} ♀`, icon: <ShieldCheck {...iconProps} />, accent: '#4A90E2' },
     { label: 'Sessions', value: upcoming.length, note: 'next 7 days', icon: <CalendarDays {...iconProps} />, accent: 'var(--success)' },
     { label: 'Injuries', value: activeInj.length, note: 'active', icon: <HeartPulse {...iconProps} />, accent: 'var(--danger)' },
     { label: 'Today', value: todaySess.length, note: 'sessions', icon: <Flame {...iconProps} />, accent: 'var(--warning)' },

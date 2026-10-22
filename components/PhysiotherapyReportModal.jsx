@@ -38,14 +38,14 @@ export default function PhysiotherapyReportModal({
     if (!isOpen) return
 
     async function loadPlan() {
-      // 1. Start from default template
+      // 1. Start from clean blank template
       let merged = {
         ...DEFAULT_PHYSIO_TEMPLATE,
-        therapist_name: currentUser?.full_name || currentUser?.name || DEFAULT_PHYSIO_TEMPLATE.therapist_name,
+        therapist_name: currentUser?.full_name || currentUser?.name || '',
         report_date: new Date().toISOString().split('T')[0],
       }
 
-      // 2. Pre-fill from active injury / diagnosis_data
+      // 2. Pre-fill from active injury ONLY if saved injury data exists
       if (injury) {
         if (injury.injury_type) merged.structure_and_side = injury.injury_type
         if (injury.severity) {
@@ -59,30 +59,22 @@ export default function PhysiotherapyReportModal({
         }
       }
 
-      // 3. Pre-fill from latest rehab note
-      if (rehabNotes && rehabNotes.length > 0) {
-        const latest = rehabNotes[0]
-        if (latest.pain_level !== undefined) {
-          merged.baseline[0].injured = `Pain: ${latest.pain_level}/10`
-        }
-        if (latest.treatment_summary) {
-          merged.phase2.exercises = latest.treatment_summary
-        }
-        if (latest.clinical_notes) {
-          merged.status_against_goals = latest.clinical_notes
-        }
-      }
-
-      // 4. Check localStorage fallback
+      // 3. Check localStorage fallback (ignore legacy mock hamstring data)
       try {
-        const local = athlete?.id ? localStorage.getItem(`apextrack_physio_plan_${athlete.id}`) : null
+        const localKey = athlete?.id ? `apextrack_physio_plan_${athlete.id}` : null
+        const local = localKey ? localStorage.getItem(localKey) : null
         if (local) {
           const parsed = JSON.parse(local)
-          merged = { ...merged, ...parsed }
+          // If local data contains legacy mock template strings, purge them so user starts clean
+          if (parsed.structure_and_side === 'Right Hamstring (Biceps Femoris)' && !injury) {
+            localStorage.removeItem(localKey)
+          } else {
+            merged = { ...merged, ...parsed }
+          }
         }
       } catch (_e) {}
 
-      // 5. Try fetching from Supabase physiotherapy_plans
+      // 4. Try fetching from Supabase physiotherapy_plans if saved previously
       if (teamId && athlete?.id) {
         try {
           const { data: dbPlan } = await scopeTeam(
@@ -340,7 +332,7 @@ export default function PhysiotherapyReportModal({
       <div className="physio-modal-inner" style={{
         background: '#FFFFFF',
         width: '100%',
-        maxWidth: 960,
+        maxWidth: 1140,
         height: '92vh',
         borderRadius: '20px 20px 0 0',
         boxShadow: '0 25px 60px rgba(0, 0, 0, 0.4)',
@@ -561,23 +553,29 @@ export default function PhysiotherapyReportModal({
                 </div>
                 <div>
                   <label style={lbl}>Age / Sex</label>
-                  <input style={inp} value={`${currentAth?.age ? `${currentAth.age} yrs` : '—'} / ${currentAth?.sex || currentAth?.gender || 'Male'}`} readOnly />
+                  <input style={inp} value={`${currentAth?.age ? `${currentAth.age} yrs` : (currentAth?.date_of_birth ? `${Math.floor((Date.now() - new Date(currentAth.date_of_birth)) / (365.25 * 86400000))} yrs` : '—')} / ${currentAth?.gender || currentAth?.sex || 'Male'}`} readOnly />
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── SECTION 2: Sports Injury Diagnosis ── */}
+          {/* ── SECTION 2: Sports Injury Diagnosis (Clean Blank Default & Spacious Inputs) ── */}
           {activeSection === '2' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 14 }}>
-                <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label style={lbl}>Injury (Structure &amp; Side) *</label>
-                  <input style={inp} value={plan.structure_and_side} onChange={e => updateField('structure_and_side', e.target.value)} placeholder="e.g. Right Hamstring (Biceps Femoris) or Left Ankle ATFL" />
+                  <input 
+                    style={{ ...inp, fontSize: 14, fontWeight: 600 }} 
+                    value={plan.structure_and_side || ''} 
+                    onChange={e => updateField('structure_and_side', e.target.value)} 
+                    placeholder="e.g. Right Hamstring (Biceps Femoris) or Left Ankle ATFL" 
+                  />
                 </div>
                 <div>
                   <label style={lbl}>Grade</label>
-                  <select style={inp} value={plan.grade} onChange={e => updateField('grade', e.target.value)}>
+                  <select style={inp} value={plan.grade || ''} onChange={e => updateField('grade', e.target.value)}>
+                    <option value="">Select Grade…</option>
                     <option value="Grade I">Grade I (Mild - Micro-tears, minimal loss of function)</option>
                     <option value="Grade II">Grade II (Moderate - Partial structural tear, pain/swelling)</option>
                     <option value="Grade III">Grade III (Severe - Complete rupture / avulsion)</option>
@@ -585,49 +583,70 @@ export default function PhysiotherapyReportModal({
                 </div>
                 <div>
                   <label style={lbl}>Date of Injury</label>
-                  <input type="date" style={inp} value={plan.date_of_injury} onChange={e => updateField('date_of_injury', e.target.value)} />
+                  <input type="date" style={inp} value={plan.date_of_injury || ''} onChange={e => updateField('date_of_injury', e.target.value)} />
                 </div>
                 <div>
                   <label style={lbl}>Mechanism (Contact vs Non-contact)</label>
-                  <select style={inp} value={plan.mechanism_contact} onChange={e => updateField('mechanism_contact', e.target.value)}>
+                  <select style={inp} value={plan.mechanism_contact || ''} onChange={e => updateField('mechanism_contact', e.target.value)}>
+                    <option value="">Select Mechanism…</option>
                     <option value="Non-contact">Non-contact (Deceleration, sprinting, change of direction)</option>
                     <option value="Contact">Contact (Tackle, collision, impact)</option>
                   </select>
                 </div>
                 <div>
                   <label style={lbl}>Onset (Acute vs Overuse)</label>
-                  <select style={inp} value={plan.mechanism_timing} onChange={e => updateField('mechanism_timing', e.target.value)}>
+                  <select style={inp} value={plan.mechanism_timing || ''} onChange={e => updateField('mechanism_timing', e.target.value)}>
+                    <option value="">Select Onset…</option>
                     <option value="Acute">Acute (Sudden onset incident)</option>
                     <option value="Overuse">Overuse (Gradual insidious loading onset)</option>
                   </select>
                 </div>
                 <div>
                   <label style={lbl}>Stage of Healing</label>
-                  <select style={inp} value={plan.stage} onChange={e => updateField('stage', e.target.value)}>
+                  <select style={inp} value={plan.stage || ''} onChange={e => updateField('stage', e.target.value)}>
+                    <option value="">Select Stage of Healing…</option>
                     <option value="Acute">Acute (Day 0–7: Inflammatory response)</option>
                     <option value="Sub-acute">Sub-acute (Week 1–6: Repair &amp; collagen deposition)</option>
                     <option value="Chronic">Chronic (&gt;6 weeks: Remodeling / persistent pathology)</option>
                   </select>
                 </div>
-                <div>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label style={lbl}>Contributing Factors</label>
-                  <input style={inp} value={plan.contributing_factors} onChange={e => updateField('contributing_factors', e.target.value)} placeholder="Training load, previous injury, footwear, surface" />
+                  <textarea 
+                    rows={2} 
+                    style={{ ...inp, resize: 'vertical', minHeight: 64, lineHeight: 1.5 }} 
+                    value={plan.contributing_factors || ''} 
+                    onChange={e => updateField('contributing_factors', e.target.value)} 
+                    placeholder="e.g. High sprint volume, rapid deceleration, pitch surface condition, previous injury history" 
+                  />
                 </div>
               </div>
 
               <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', padding: 14, borderRadius: 10 }}>
                 <label style={{ ...lbl, color: '#B91C1C' }}>Red Flags / Precautions</label>
-                <input style={{ ...inp, background: '#FFFFFF', borderColor: '#F87171' }} value={plan.red_flags} onChange={e => updateField('red_flags', e.target.value)} placeholder="Exclude avulsion fracture, neurovascular compromise, severe instability" />
+                <textarea 
+                  rows={2} 
+                  style={{ ...inp, background: '#FFFFFF', borderColor: '#F87171', resize: 'vertical', minHeight: 64, lineHeight: 1.5 }} 
+                  value={plan.red_flags || ''} 
+                  onChange={e => updateField('red_flags', e.target.value)} 
+                  placeholder="e.g. Exclude avulsion fracture, neurovascular compromise, severe instability or gross deficit" 
+                />
               </div>
 
               <div>
                 <label style={lbl}>Clinical Impression &amp; Pathology Summary</label>
-                <textarea rows={3} style={{ ...inp, resize: 'vertical' }} value={plan.clinical_impression} onChange={e => updateField('clinical_impression', e.target.value)} placeholder="Physiotherapist diagnostic assessment and clinical rationale" />
+                <textarea 
+                  rows={4} 
+                  style={{ ...inp, resize: 'vertical', minHeight: 90, lineHeight: 1.5 }} 
+                  value={plan.clinical_impression || ''} 
+                  onChange={e => updateField('clinical_impression', e.target.value)} 
+                  placeholder="Physiotherapist diagnostic assessment, clinical rationale, and examination findings…" 
+                />
               </div>
             </div>
           )}
 
-          {/* ── SECTION 3: Baseline Assessment ── */}
+          {/* ── SECTION 3: Baseline Assessment (Clean Blank & Expandable Inputs) ── */}
           {activeSection === '3' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div style={{ fontSize: 13, color: '#64748B' }}>
@@ -638,24 +657,44 @@ export default function PhysiotherapyReportModal({
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: '#0F172A', color: '#FFFFFF', textAlign: 'left' }}>
-                      <th style={{ padding: '10px 12px', width: '25%' }}>Measure</th>
-                      <th style={{ padding: '10px 12px', width: '25%' }}>Injured Side</th>
-                      <th style={{ padding: '10px 12px', width: '25%' }}>Uninjured Side</th>
-                      <th style={{ padding: '10px 12px', width: '25%' }}>Notes / Deficit</th>
+                      <th style={{ padding: '12px 14px', width: '22%' }}>Measure</th>
+                      <th style={{ padding: '12px 14px', width: '26%' }}>Injured Side</th>
+                      <th style={{ padding: '12px 14px', width: '26%' }}>Uninjured Side</th>
+                      <th style={{ padding: '12px 14px', width: '26%' }}>Notes / Deficit</th>
                     </tr>
                   </thead>
                   <tbody>
                     {plan.baseline.map((b, idx) => (
                       <tr key={b.measure} style={{ borderBottom: '1px solid #E2E8F0', background: idx % 2 === 0 ? '#FFFFFF' : '#F8FAFC' }}>
-                        <td style={{ padding: '8px 12px', fontWeight: 700, color: '#334155' }}>{b.measure}</td>
-                        <td style={{ padding: '6px 8px' }}>
-                          <input style={inp} value={b.injured} onChange={e => updateBaseline(idx, 'injured', e.target.value)} />
+                        <td style={{ padding: '10px 14px', fontWeight: 700, color: '#334155', verticalAlign: 'top' }}>
+                          {b.measure}
                         </td>
-                        <td style={{ padding: '6px 8px' }}>
-                          <input style={inp} value={b.uninjured} onChange={e => updateBaseline(idx, 'uninjured', e.target.value)} />
+                        <td style={{ padding: '8px 10px', verticalAlign: 'top' }}>
+                          <textarea 
+                            rows={2} 
+                            style={{ ...inp, minHeight: 48, padding: '8px 10px', fontSize: 13, resize: 'vertical', lineHeight: 1.4 }} 
+                            value={b.injured || ''} 
+                            onChange={e => updateBaseline(idx, 'injured', e.target.value)} 
+                            placeholder="e.g. Pain: 6/10, limited ROM" 
+                          />
                         </td>
-                        <td style={{ padding: '6px 8px' }}>
-                          <input style={inp} value={b.notes} onChange={e => updateBaseline(idx, 'notes', e.target.value)} />
+                        <td style={{ padding: '8px 10px', verticalAlign: 'top' }}>
+                          <textarea 
+                            rows={2} 
+                            style={{ ...inp, minHeight: 48, padding: '8px 10px', fontSize: 13, resize: 'vertical', lineHeight: 1.4 }} 
+                            value={b.uninjured || ''} 
+                            onChange={e => updateBaseline(idx, 'uninjured', e.target.value)} 
+                            placeholder="e.g. Pain: 0/10, full ROM" 
+                          />
+                        </td>
+                        <td style={{ padding: '8px 10px', verticalAlign: 'top' }}>
+                          <textarea 
+                            rows={2} 
+                            style={{ ...inp, minHeight: 48, padding: '8px 10px', fontSize: 13, resize: 'vertical', lineHeight: 1.4 }} 
+                            value={b.notes || ''} 
+                            onChange={e => updateBaseline(idx, 'notes', e.target.value)} 
+                            placeholder="Clinical notes / deficit %" 
+                          />
                         </td>
                       </tr>
                     ))}
@@ -665,22 +704,34 @@ export default function PhysiotherapyReportModal({
             </div>
           )}
 
-          {/* ── SECTION 4: Rehabilitation Goals ── */}
+          {/* ── SECTION 4: Rehabilitation Goals (Clean Blank & Spacious Textareas) ── */}
           {activeSection === '4' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-              <div style={{ background: '#F0FDFA', border: '1px solid #99F6E4', borderRadius: 12, padding: 16 }}>
+              <div style={{ background: '#F0FDFA', border: '1px solid #99F6E4', borderRadius: 12, padding: 18 }}>
                 <label style={{ ...lbl, color: '#0F766E' }}>Short-term Goals (1–4 weeks)</label>
-                <textarea rows={3} style={{ ...inp, background: '#FFFFFF', borderColor: '#2DD4BF' }} value={plan.goal_short_term} onChange={e => updateField('goal_short_term', e.target.value)} />
+                <textarea 
+                  rows={4} 
+                  style={{ ...inp, background: '#FFFFFF', borderColor: '#2DD4BF', minHeight: 88, resize: 'vertical', lineHeight: 1.5 }} 
+                  value={plan.goal_short_term || ''} 
+                  onChange={e => updateField('goal_short_term', e.target.value)} 
+                  placeholder="e.g. Control pain (<=2/10) and swelling; restore full pain-free ROM; establish painless isometric activation." 
+                />
                 <p style={{ margin: '6px 0 0', fontSize: 11, color: '#0F766E' }}>
-                  Target: Control pain &amp; swelling, restore full pain-free ROM, isometric activation.
+                  Target: Acute symptom management, progressive mobility, and isometric load tolerance.
                 </p>
               </div>
 
-              <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 16 }}>
+              <div style={{ background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 12, padding: 18 }}>
                 <label style={{ ...lbl, color: '#065F46' }}>Long-term Goals (Full Return to Sport)</label>
-                <textarea rows={3} style={{ ...inp, background: '#FFFFFF', borderColor: '#34D399' }} value={plan.goal_long_term} onChange={e => updateField('goal_long_term', e.target.value)} />
+                <textarea 
+                  rows={4} 
+                  style={{ ...inp, background: '#FFFFFF', borderColor: '#34D399', minHeight: 88, resize: 'vertical', lineHeight: 1.5 }} 
+                  value={plan.goal_long_term || ''} 
+                  onChange={e => updateField('goal_long_term', e.target.value)} 
+                  placeholder="e.g. Full return to competitive match play at pre-injury benchmark with hop test LSI >= 90% and minimized re-injury risk." 
+                />
                 <p style={{ margin: '6px 0 0', fontSize: 11, color: '#065F46' }}>
-                  Target: Full return to competitive match play at pre-injury peak; hop test LSI &gt;= 90%; minimized re-injury risk.
+                  Target: Sports-specific power, high-speed running tolerance, match fitness, and clinician clearance.
                 </p>
               </div>
             </div>
@@ -723,11 +774,11 @@ export default function PhysiotherapyReportModal({
                     <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12, background: '#FFFFFF' }}>
                       <div>
                         <label style={lbl}>Aim</label>
-                        <input style={inp} value={p.aim || ''} onChange={e => updatePhase(key, 'aim', e.target.value)} />
+                        <textarea rows={2} style={{ ...inp, resize: 'vertical', minHeight: 52 }} value={p.aim || ''} onChange={e => updatePhase(key, 'aim', e.target.value)} placeholder="Phase rehabilitation objective…" />
                       </div>
                       <div>
                         <label style={lbl}>Interventions</label>
-                        <input style={inp} value={p.interventions || ''} onChange={e => updatePhase(key, 'interventions', e.target.value)} />
+                        <textarea rows={2} style={{ ...inp, resize: 'vertical', minHeight: 52 }} value={p.interventions || ''} onChange={e => updatePhase(key, 'interventions', e.target.value)} placeholder="Clinical modalities, manual therapy, and movement progressions…" />
                       </div>
                       <div>
                         <label style={lbl}>Prescribed Exercises (Sets x Reps)</label>

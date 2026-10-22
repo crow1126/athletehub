@@ -76,7 +76,7 @@ function PostStamp({ loggedBy, loggedAt, updatedBy, updatedAt }) {
   )
 }
 
-const EMPTY_FORM = { name:'',staff_type:'assistant_coach',speciality:'',experience_years:'',phone:'',email:'',is_active:true,
+const EMPTY_FORM = { name:'',staff_type:'assistant_coach',gender:'Male',speciality:'',experience_years:'',phone:'',email:'',is_active:true,
   monthly_salary:'', win_bonus:'', contract_start:'', contract_end:'', contract_status:'Active', contract_notes:'' }
 const inp = { width:'100%',padding:'10px 14px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--r-md)',fontSize:14,outline:'none',color:'var(--text)',fontFamily:'var(--font)' }
 const lbl = { display:'block',fontSize:11,fontWeight:600,letterSpacing:'0.08em',textTransform:'uppercase',color:'var(--text3)',marginBottom:6 }
@@ -177,7 +177,7 @@ export default function CoachesPage() {
   }
   function openEdit(c) {
     setEditId(c.id)
-    setForm({name:c.name||'',staff_type:c.staff_type||'assistant_coach',speciality:c.speciality||'',experience_years:c.experience_years||'',phone:c.phone||'',email:c.email||'',is_active:c.is_active!==false,
+    setForm({name:c.name||'',staff_type:c.staff_type||'assistant_coach',gender:c.gender || (c.contract_notes?.includes('[GENDER:Female]') ? 'Female' : 'Male'),speciality:c.speciality||'',experience_years:c.experience_years||'',phone:c.phone||'',email:c.email||'',is_active:c.is_active!==false,
       monthly_salary:c.monthly_salary||'',win_bonus:c.win_bonus||'',contract_start:c.contract_start||'',contract_end:c.contract_end||'',contract_status:c.contract_status||'Active',contract_notes:c.contract_notes||''
     })
     setPhotoFile(null);setPhotoPreview(c.photo_url||null);setFormError('');setShowForm(true)
@@ -204,6 +204,7 @@ export default function CoachesPage() {
     const userId=currentUser?.id||null
     const payload={
       name:form.name.trim(),staff_type:form.staff_type,
+      gender:form.gender||'Male',
       speciality:form.speciality||null,experience_years:parseInt(form.experience_years)||null,
       phone:form.phone||null,email:form.email||null,is_active:form.is_active,
       team_id:teamId,
@@ -221,11 +222,22 @@ export default function CoachesPage() {
     if (editId) {
       const url=await uploadPhoto(editId)
       if (url) payload.photo_url=url
-      const {error}=await scopeTeam(supabase.from('coaches').update(payload).eq('id',editId), teamId)
-      if (error){setFormError('Update failed: '+error.message);setSaving(false);return}
+      let res = await scopeTeam(supabase.from('coaches').update(payload).eq('id',editId), teamId)
+      if (res.error && res.error.message?.includes('gender')) {
+        delete payload.gender
+        payload.contract_notes = (payload.contract_notes ? payload.contract_notes.replace(/\[GENDER:[^\]]+\]/g, '') : '') + ` [GENDER:${form.gender || 'Male'}]`
+        res = await scopeTeam(supabase.from('coaches').update(payload).eq('id',editId), teamId)
+      }
+      if (res.error){setFormError('Update failed: '+res.error.message);setSaving(false);return}
     } else {
-      const {data:nc,error}=await supabase.from('coaches').insert([payload]).select().single()
-      if (error){setFormError('Save failed: '+error.message);setSaving(false);return}
+      let res = await supabase.from('coaches').insert([payload]).select().single()
+      if (res.error && res.error.message?.includes('gender')) {
+        delete payload.gender
+        payload.contract_notes = (payload.contract_notes || '') + ` [GENDER:${form.gender || 'Male'}]`
+        res = await supabase.from('coaches').insert([payload]).select().single()
+      }
+      if (res.error){setFormError('Save failed: '+res.error.message);setSaving(false);return}
+      const nc = res.data
       const url=await uploadPhoto(nc.id)
       if (url) await scopeTeam(supabase.from('coaches').update({photo_url:url}).eq('id',nc.id), teamId)
     }
@@ -251,6 +263,9 @@ export default function CoachesPage() {
     fetchData()
   }
 
+  const getCoachGender = c => (c.gender === 'Female' || c.contract_notes?.includes('[GENDER:Female]')) ? 'Female' : 'Male'
+  const totalMaleStaff = coaches.filter(c => getCoachGender(c) === 'Male').length
+  const totalFemStaff  = coaches.filter(c => getCoachGender(c) === 'Female').length
   const filtered=activeTab==='All'?coaches:coaches.filter(c=>getStaffType(c.staff_type).dept===activeTab)
   const deptCounts={}
   DEPT_TABS.forEach(d=>{deptCounts[d.key]=d.key==='All'?coaches.length:coaches.filter(c=>getStaffType(c.staff_type).dept===d.key).length})
@@ -284,7 +299,7 @@ export default function CoachesPage() {
               {[
                 { label:'Active Staff Contracts', value:activeContracts.length, color:'#0D9488' },
                 { label:'Monthly Wage Bill', value:currency(totalWageBill), color:'#276749' },
-                { label:'Expiring (90 days)', value:expiringContracts.length, color:'#B45309' },
+                { label:'Staff Demographics', value:`${totalMaleStaff} ♂ · ${totalFemStaff} ♀`, color:'#7C3AED' },
                 { label:'Total Staff', value:coaches.length, color:'#4A90E2' },
               ].map(s=>(
                 <div key={s.label} className="card" style={{ padding:'18px 20px', borderTop:`3px solid ${s.color}` }}>
@@ -413,7 +428,12 @@ export default function CoachesPage() {
                     <div style={{ display:'flex',gap:12,alignItems:'flex-start' }}>
                       <StaffAvatar staff={coach} size={54}/>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:10,color:'var(--text3)',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:3 }}>{st.icon} {st.label}</div>
+                        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                          <span style={{ fontSize:10,color:'var(--text3)',fontWeight:700,letterSpacing:'0.1em',textTransform:'uppercase' }}>{st.icon} {st.label}</span>
+                          <span style={{ fontSize:9, fontWeight:700, padding:'1px 5px', borderRadius:4, background:getCoachGender(coach)==='Female'?'#FDF2F8':'#EFF6FF', color:getCoachGender(coach)==='Female'?'#DB2777':'#2563EB' }}>
+                            {getCoachGender(coach)==='Female'?'♀ Female':'♂ Male'}
+                          </span>
+                        </div>
                         <div style={{ fontSize:16,fontWeight:800,color:'var(--text)',marginBottom:3 }}>{coach.name}</div>
                         <div style={{ fontSize:11,color:'var(--text2)' }}>
                           {coach.experience_years?`${coach.experience_years} yrs exp`:''}
@@ -554,9 +574,17 @@ export default function CoachesPage() {
               <div><label style={lbl}>Speciality / Qualification</label><input value={form.speciality} onChange={e=>set('speciality')(e.target.value)} style={inp} placeholder="e.g. UEFA A Licence, MSc Sports Science" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
 
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+                <div>
+                  <label style={lbl}>Sex / Gender</label>
+                  <select value={form.gender||'Male'} onChange={e=>set('gender')(e.target.value)} style={inp}>
+                    <option value="Male">Male (M)</option>
+                    <option value="Female">Female (F)</option>
+                  </select>
+                </div>
                 <div><label style={lbl}>Years Experience</label><input type="number" min="0" max="50" value={form.experience_years} onChange={e=>set('experience_years')(e.target.value)} style={inp} onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
-                <div><label style={lbl}>Phone</label><input value={form.phone} onChange={e=>set('phone')(e.target.value)} style={inp} placeholder="+233 24 000 0000" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
               </div>
+
+              <div><label style={lbl}>Phone</label><input value={form.phone} onChange={e=>set('phone')(e.target.value)} style={inp} placeholder="+233 24 000 0000" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}  /></div>
 
               <div><label style={lbl}>Email Address</label><input type="email" value={form.email} onChange={e=>set('email')(e.target.value)} style={inp} placeholder="staff@club.gh" onFocus={e=>e.target.style.borderColor='#0D9488'} onBlur={e=>e.target.style.borderColor='var(--border)'}/></div>
 

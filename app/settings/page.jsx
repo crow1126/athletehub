@@ -128,10 +128,14 @@ export default function SettingsPage() {
     try {
       const { data:{ session } } = await supabase.auth.getSession()
       if (!session) { setLoading(false); return }
-      const { data:p } = await supabase.from('profiles').select('*, team_id, teams(id,name,short_name)').eq('id', session.user.id).single()
+      const { data:p } = await supabase.from('profiles').select('*, team_id, teams(id,name,short_name,gender_category)').eq('id', session.user.id).single()
       const prof = p || { full_name: session.user.email, role: 'admin' }
       setProfile({ ...prof, email: session.user.email })
-      setProfileForm({ full_name: prof.full_name||'', phone: prof.phone||'' })
+      setProfileForm({ 
+        full_name: prof.full_name||'', 
+        phone: prof.phone||'',
+        club_gender: prof.teams?.gender_category || "Men's Team"
+      })
       const admin = prof.role === 'admin' || prof.role === 'superadmin'
       setIsAdmin(admin)
       if (prof.team_id) {
@@ -172,8 +176,14 @@ export default function SettingsPage() {
     const { data:{ session } } = await supabase.auth.getSession()
     const { error } = await supabase.from('profiles').update({ full_name: profileForm.full_name.trim(), phone: profileForm.phone||null }).eq('id', session.user.id)
 
+    if (isAdmin && profile?.team_id) {
+      try {
+        await supabase.from('teams').update({ gender_category: profileForm.club_gender || "Men's Team" }).eq('id', profile.team_id)
+      } catch (_e) {}
+    }
+
     if (error) flash('Failed: '+error.message,'error')
-    else { flash('Profile and settings updated!'); await loadAll() }
+    else { flash('Profile and club settings updated!'); await loadAll() }
     setSaving(false)
   }
 
@@ -685,6 +695,24 @@ export default function SettingsPage() {
                   <div><label style={lbl}>System Role</label><input value={profile?.role||''} disabled style={{ ...inp,opacity:0.55,cursor:'not-allowed',textTransform:'capitalize' }}/></div>
                   <div><label style={lbl}>Club / Team</label><input value={profile?.teams?.name||'No team assigned'} disabled style={{ ...inp,opacity:0.55,cursor:'not-allowed' }}/></div>
                   
+                  {isAdmin && (
+                    <div>
+                      <label style={lbl}>Club Gender Classification</label>
+                      <select 
+                        value={profileForm.club_gender || "Men's Team"} 
+                        onChange={e=>setProfileForm(f=>({...f, club_gender: e.target.value}))} 
+                        style={inp}
+                      >
+                        <option value="Men's Team">Men's Football Club (Male)</option>
+                        <option value="Women's Team">Women's Football Club (Female)</option>
+                        <option value="Mixed / Academy">Mixed / Co-ed / Academy (Male &amp; Female)</option>
+                      </select>
+                      <p style={{ margin:'4px 0 0', fontSize:11, color:'var(--text3)' }}>
+                        Sets default club gender metrics across squads, staff directories, and medical dossiers.
+                      </p>
+                    </div>
+                  )}
+
                   <div><label style={lbl}>Phone</label><input value={profileForm.phone} onChange={e=>setProfileForm(f=>({...f,phone:e.target.value}))} style={inp} placeholder="+233 24 000 0000" onFocus={onFocus} onBlur={onBlur}/></div>
                   <MsgBox m={msg}/>
                   <button onClick={saveProfile} disabled={saving} className="gm-btn" style={{ width:'fit-content',opacity:saving?0.7:1 }}>

@@ -101,6 +101,16 @@ const FEATURES = [
     title: 'Smart Bulk Athlete Upload', 
     desc: 'Import your entire squad from CSV or Excel in seconds. AI-powered column mapping auto-matches your spreadsheet headers, validates positions, detects duplicates, and flags errors — so your roster is onboarded without manual data entry.' 
   },
+  { 
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="#0D9488" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M8 9h8M8 13h5" stroke="#0D9488" strokeWidth="1.5" strokeLinecap="round"/>
+      </svg>
+    ), 
+    title: 'Instant SMS & Notice Broadcasts', 
+    desc: 'Keep players, coaching staff, and parents updated with real-time SMS alerts. Broadcast match call-ups, schedule reminders, and team announcements via Moolre SMS gateway with custom club sender IDs.' 
+  },
 ]
 
 const STATS = [
@@ -1979,7 +1989,7 @@ export default function LandingPage() {
       <section className="hero">
         <h1 className="hero-h1">
           Run Your Football Club Smarter{' '}
-          <span className="hero-h1-accent">From Pitch to Payroll</span>
+          <span className="hero-h1-accent">From Grassroots to Glory</span>
         </h1>
 
         {/* Subtext */}
@@ -1992,12 +2002,6 @@ export default function LandingPage() {
           <Link href="/login?tab=signup" className="btn-primary">
             Get Started — Free
           </Link>
-          <button 
-            onClick={() => setDemoModalOpen(true)}
-            className="smart-hero-demo-btn"
-          >
-            Book a Demo
-          </button>
           {!isElectron && (
             <a 
               href="#download"

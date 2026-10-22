@@ -332,6 +332,7 @@ export default function AthleteProfilePage() {
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, fontSize: 13 }}>
                 <div><span style={{ color: '#94A3B8', fontSize: 11, display: 'block', fontWeight: 700 }}>FULL NAME</span><strong>{fullName}</strong></div>
+                <div><span style={{ color: '#94A3B8', fontSize: 11, display: 'block', fontWeight: 700 }}>SEX / GENDER</span><strong>{(ath.gender === 'Female' || ath.contract_details?.includes('[GENDER:Female]')) ? 'Female (♀)' : 'Male (♂)'}</strong></div>
                 <div><span style={{ color: '#94A3B8', fontSize: 11, display: 'block', fontWeight: 700 }}>DATE OF BIRTH</span><strong>{ath.date_of_birth || '—'}</strong></div>
                 <div><span style={{ color: '#94A3B8', fontSize: 11, display: 'block', fontWeight: 700 }}>PLACE OF BIRTH</span><strong>{ath.place_of_birth || '—'}</strong></div>
                 <div><span style={{ color: '#94A3B8', fontSize: 11, display: 'block', fontWeight: 700 }}>NATIONALITY</span><strong>{ath.nationality || 'Ghana'}</strong></div>

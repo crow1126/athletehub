@@ -6,7 +6,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import { Check, AlertTriangle, FileEdit } from 'lucide-react'
 
 
@@ -96,7 +96,7 @@ export default function CoachesPage() {
   const [formError,    setFormError]    = useState('')
   const [currentUser,  setCurrentUser]  = useState(null)
   const [hasStampCols, setHasStampCols] = useState(false)
-  const [teamId,       setTeamId]       = useState(null)
+  const [teamId,       setTeamId]       = useState(() => getLastKnownTeamId())
 
   const [draftSavedAt, setDraftSavedAt] = useState(null)
   const [hasDraft,     setHasDraft]     = useState(false)

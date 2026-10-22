@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import { Eye, Ban, ShieldAlert } from 'lucide-react'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
@@ -30,7 +30,7 @@ export default function PerformancePage(){
   const [deleting,     setDeleting]    = useState(null)
   const [form,         setForm]        = useState(EMPTY)
   const [selAth,       setSelAth]      = useState('all')
-  const [teamId,       setTeamId]      = useState(null)
+  const [teamId,       setTeamId]      = useState(() => getLastKnownTeamId())
   const [currentUser,  setCurrentUser] = useState(null)
   const [unpublished,  setUnpublished] = useState([])  // unnotified stat rows
   const [publishing,   setPublishing]  = useState(false)

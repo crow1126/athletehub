@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import { Sparkles, Lightbulb } from 'lucide-react'
 
 const POSITIONS=['Forward','Midfielder','Defender','Goalkeeper']
@@ -89,7 +89,7 @@ export default function ScoutingPage(){
   const [form,    setForm]    = useState(EMPTY)
   const [filter,  setFilter]  = useState('All')
   const [search,  setSearch]  = useState('')
-  const [teamId,  setTeamId]  = useState(null)
+  const [teamId,  setTeamId]  = useState(() => getLastKnownTeamId())
 
   const [isAiSearching, setIsAiSearching] = useState(false)
   const [aiSearchResult, setAiSearchResult] = useState(null)

@@ -418,34 +418,48 @@ export default function Layout({ children }) {
 
   const loadProfile = useCallback(async () => {
     try {
-      let { session, profile: p } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
-      if (!session) { router.replace('/login'); return }
+      // forceRefresh=false: use the fast-path localStorage cache on cold start
+      // so the layout resolves immediately instead of waiting for network.
+      let { session, profile: p, _fromCache } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', false)
+
+      // If we got a fast-path cached result with no session, verify auth independently
+      if (!session && _fromCache) {
+        try {
+          const { data } = await supabase.auth.getSession()
+          session = data?.session || null
+        } catch {}
+      }
+
+      // Not authenticated at all — redirect to login
+      if (!session && !p) { router.replace('/login'); return }
+
       if (p?.role === 'player' && (path === '/dashboard' || path === '/')) {
         router.replace('/player-hub')
         return
       }
 
-      // If p is not yet available, attempt a second pass before giving up
+      // If p is not yet available (no localStorage snapshot either), attempt a fresh fetch
       if (!p) {
         await new Promise(r => setTimeout(r, 400))
         const retryRes = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
         if (retryRes.profile) {
           p = retryRes.profile
+          session = retryRes.session || session
         }
       }
 
-      setCurrentUserId(session.user.id)
+      if (session?.user?.id) setCurrentUserId(session.user.id)
       if (p) {
         setProfile(p)
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('apex_profile_loaded', { detail: { profile: p, teamId: p.team_id } }))
         }
-      } else {
+      } else if (session) {
         setProfile({ full_name: session.user.email, role: 'admin', email: session.user.email })
       }
 
       // Set logger context so all subsequent logs are tagged with this tenant
-      if (p) {
+      if (p && session) {
         logger.setContext({
           team_id: p.team_id || null,
           user_id: session.user.id,
@@ -460,6 +474,7 @@ export default function Layout({ children }) {
     } catch (e) { console.error('Layout error:', e) }
     setLoading(false)
   }, [router, path])
+
 
   useEffect(() => {
     loadProfile()

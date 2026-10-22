@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 
 const STATUS_OPTS   = ['Active','Expired','Terminated','Negotiating']
 const STATUS_COLORS = {
@@ -46,7 +46,7 @@ export default function ContractsPage() {
   const [form,      setForm]      = useState(EMPTY)
   const [filter,    setFilter]    = useState('All')
   const [formError, setFormError] = useState('')
-  const [teamId,    setTeamId]    = useState(null)
+  const [teamId,    setTeamId]    = useState(() => getLastKnownTeamId())
 
   const fetchData = useCallback(async () => {
     setLoading(true)

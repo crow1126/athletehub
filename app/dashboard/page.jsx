@@ -6,7 +6,7 @@ import Layout from '@/components/Layout'
 import Badge from '@/components/Badge'
 import StatCard from '@/components/StatCard'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 
 import { Users, ShieldCheck, CalendarDays, HeartPulse, Flame, UserPlus, Search, BarChart3, ClipboardList, Settings, TrendingUp, Clock, Megaphone, Pin, Radio, Activity, Plus, Stethoscope } from 'lucide-react'
 
@@ -70,7 +70,7 @@ export default function Dashboard() {
   const [performanceStats, setPerformanceStats] = useState([])
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState(null)
-  const [teamId, setTeamId] = useState(null)
+  const [teamId, setTeamId] = useState(() => getLastKnownTeamId())
   const [isAdmin, setIsAdmin] = useState(false)
 
   const load = useCallback(async () => {

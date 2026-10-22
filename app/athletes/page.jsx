@@ -4,7 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import BulkAthleteUpload from '@/components/BulkAthleteUpload'
 
 import Link from 'next/link'
@@ -99,7 +99,7 @@ export default function AthletesPage() {
   const [statFilter,    setStatFilter]    = useState('')
   const [genderFilter,  setGenderFilter]  = useState('')
   const [formError,     setFormError]     = useState('')
-  const [teamId,        setTeamId]        = useState(null)
+  const [teamId,        setTeamId]        = useState(() => getLastKnownTeamId())
   // Strict admin gate: admin + superadmin only (not coaches)
   const [isAdmin,       setIsAdmin]       = useState(false)
   // Bulk upload result banner: null | { added, skipped }

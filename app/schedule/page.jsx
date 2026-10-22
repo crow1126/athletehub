@@ -6,7 +6,7 @@ import { Eye } from 'lucide-react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 
 const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -31,7 +31,7 @@ export default function SchedulePage() {
   const [saving,     setSaving]     = useState(false)
   const [deleting,   setDeleting]   = useState(null)
   const [view,       setView]       = useState('month')
-  const [teamId,     setTeamId]     = useState(null)
+  const [teamId,     setTeamId]     = useState(() => getLastKnownTeamId())
   const [currentUser, setCurrentUser] = useState(null)
   const [smsStatus,  setSmsStatus]  = useState(null) // {sent, failed, total} | null
 

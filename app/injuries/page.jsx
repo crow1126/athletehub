@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
-import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import {
   Heart, HeartOff, FileHeart, Plus, Pencil, Trash2, Check,
   Stethoscope, Eye, Download, Activity, Clock
@@ -135,7 +135,7 @@ export default function InjuriesPage() {
   const [filter, setFilter] = useState('All')
   const [deleting, setDeleting] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
-  const [teamId, setTeamId] = useState(null)
+  const [teamId, setTeamId] = useState(() => getLastKnownTeamId())
   const [canEdit, setCanEdit] = useState(false)
   const [loading, setLoading] = useState(true)
   const [downloadingRow, setDownloadingRow] = useState(null)

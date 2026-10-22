@@ -157,7 +157,11 @@ export default function NoticeBoardPage() {
   const loadData = useCallback(async () => {
     try {
       setLoading(true)
-      const { profile: p, teamId: tid } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, logo_url)')
+      const { session, profile: p, teamId: tid } = await getTenantProfile()
+      if (!session || !tid) {
+        setLoading(false)
+        return
+      }
       setProfile(p)
       setTeamId(tid)
 
@@ -218,7 +222,7 @@ export default function NoticeBoardPage() {
     loadData()
     const handleProfileLoaded = (e) => {
       const tid = e.detail?.teamId
-      if (tid && tid !== teamId) {
+      if (tid && (tid !== teamId || notices.length === 0)) {
         loadData()
       }
     }

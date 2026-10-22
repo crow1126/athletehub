@@ -418,17 +418,7 @@ export default function Layout({ children }) {
 
   const loadProfile = useCallback(async () => {
     try {
-      // forceRefresh=false: use the fast-path localStorage cache on cold start
-      // so the layout resolves immediately instead of waiting for network.
-      let { session, profile: p, _fromCache } = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', false)
-
-      // If we got a fast-path cached result with no session, verify auth independently
-      if (!session && _fromCache) {
-        try {
-          const { data } = await supabase.auth.getSession()
-          session = data?.session || null
-        } catch {}
-      }
+      const { session, profile: p } = await getTenantProfile()
 
       // Not authenticated at all — redirect to login
       if (!session && !p) { router.replace('/login'); return }
@@ -436,16 +426,6 @@ export default function Layout({ children }) {
       if (p?.role === 'player' && (path === '/dashboard' || path === '/')) {
         router.replace('/player-hub')
         return
-      }
-
-      // If p is not yet available (no localStorage snapshot either), attempt a fresh fetch
-      if (!p) {
-        await new Promise(r => setTimeout(r, 400))
-        const retryRes = await getTenantProfile('*, club_name, club_logo_url, teams(id, name, short_name, primary_color, logo_url)', true)
-        if (retryRes.profile) {
-          p = retryRes.profile
-          session = retryRes.session || session
-        }
       }
 
       if (session?.user?.id) setCurrentUserId(session.user.id)

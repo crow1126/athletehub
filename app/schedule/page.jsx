@@ -36,7 +36,8 @@ export default function SchedulePage() {
   const [smsStatus,  setSmsStatus]  = useState(null) // {sent, failed, total} | null
 
   const fetchData = useCallback(async () => {
-    const { profile, teamId: currentTeamId } = await getTenantProfile('id,full_name,role')
+    const { session, profile, teamId: currentTeamId } = await getTenantProfile()
+    if (!session || !currentTeamId) return
     setCurrentUser(profile)
     setTeamId(currentTeamId)
     const [{ data: s }, { data: c }, { data: a }] = await Promise.all([
@@ -47,7 +48,27 @@ export default function SchedulePage() {
     setSessions(s || []); setCoaches(c || []); setAthletes(a || [])
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    fetchData()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid) {
+        setSessions(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
+      }
+    }
+    const handleTeamChange = () => fetchData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchData, teamId])
 
   const set = k => v => setForm(f => ({ ...f, [k]: v }))
 

@@ -74,9 +74,13 @@ export default function Dashboard() {
   const [isAdmin, setIsAdmin] = useState(false)
 
   const load = useCallback(async () => {
-    const { profile: p, teamId: tid } = await getTenantProfile('*, club_name, club_logo_url, teams(id,name,short_name,primary_color,logo_url)')
+    const { session, profile: p, teamId: tid } = await getTenantProfile()
     if (p?.role === 'player') {
       router.replace('/player-hub')
+      return
+    }
+    if (!session || !tid) {
+      setLoading(false)
       return
     }
     setProfile(p)
@@ -101,8 +105,13 @@ export default function Dashboard() {
     load()
     const handleProfileLoaded = (e) => {
       const tid = e.detail?.teamId
-      if (tid && tid !== teamId) {
-        load()
+      if (tid) {
+        setAthletes(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            load()
+          }
+          return prev
+        })
       }
     }
     const handleTeamChange = () => load()

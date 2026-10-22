@@ -106,7 +106,11 @@ export default function CoachesPage() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+      const { session, profile: p, teamId: currentTeamId } = await getTenantProfile()
+      if (!session || !currentTeamId) {
+        setLoading(false)
+        return
+      }
       setCurrentUser(p)
       setTeamId(currentTeamId)
 
@@ -129,7 +133,27 @@ export default function CoachesPage() {
     setLoading(false)
   }, [])
 
-  useEffect(()=>{ fetchData() },[fetchData])
+  useEffect(() => {
+    fetchData()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid) {
+        setCoaches(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
+      }
+    }
+    const handleTeamChange = () => fetchData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchData, teamId])
 
   // Auto-save draft when adding new staff (not editing)
   useEffect(() => {

@@ -36,12 +36,16 @@ export default function PerformancePage(){
   const [publishing,   setPublishing]  = useState(false)
   const [publishMsg,   setPublishMsg]  = useState('')
 
-  const fetchData=useCallback(async()=>{
+  const fetchData = useCallback(async () => {
     setLoading(true)
-    const { profile, teamId: currentTeamId } = await getTenantProfile('id,full_name,role')
+    const { session, profile, teamId: currentTeamId } = await getTenantProfile()
+    if (!session || !currentTeamId) {
+      setLoading(false)
+      return
+    }
     setCurrentUser(profile)
     setTeamId(currentTeamId)
-    const [{data:s},{data:a}]=await Promise.all([
+    const [{data:s},{data:a}] = await Promise.all([
       scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url,status,back_number)'), currentTeamId).order('match_date',{ascending:false}),
       scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url,status,back_number'), currentTeamId).order('name'),
     ])
@@ -50,9 +54,29 @@ export default function PerformancePage(){
     // Track entries awaiting notification
     setUnpublished((s||[]).filter(r => r.notified === false))
     setLoading(false)
-  },[])
+  }, [])
 
-  useEffect(()=>{fetchData()},[fetchData])
+  useEffect(() => {
+    fetchData()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid) {
+        setStats(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
+      }
+    }
+    const handleTeamChange = () => fetchData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchData, teamId])
 
   const set=k=>v=>setForm(f=>({...f,[k]:v}))
   function openAdd(){setEditId(null);setForm(EMPTY);setShowForm(true)}

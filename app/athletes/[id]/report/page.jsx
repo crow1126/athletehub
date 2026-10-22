@@ -37,7 +37,11 @@ export default function AthleteReport() {
 
   useEffect(() => {
     async function load() {
-      const { teamId } = await getTenantProfile()
+      const { session, teamId } = await getTenantProfile()
+      if (!session || !teamId) {
+        setLoading(false)
+        return
+      }
       const [{ data:a },{ data:i },{ data:p },{ data:c }] = await Promise.all([
         scopeTeam(supabase.from('athletes').select('*,coaches(name)').eq('id',id), teamId).single(),
         scopeTeam(supabase.from('injuries').select('*').eq('athlete_id',id), teamId).order('date_of_injury',{ ascending:false }),

@@ -113,7 +113,11 @@ export default function AthletesPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { profile: p, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,team_id')
+    const { session, profile: p, teamId: currentTeamId } = await getTenantProfile()
+    if (!session || !currentTeamId) {
+      setLoading(false)
+      return
+    }
     setTeamId(currentTeamId)
     // Strict admin check — admin and superadmin only (not coach/analyst/physio/accountant)
     setIsAdmin(p?.role === 'admin' || p?.role === 'superadmin')
@@ -128,8 +132,13 @@ export default function AthletesPage() {
     fetchData()
     const handleProfileLoaded = (e) => {
       const tid = e.detail?.teamId
-      if (tid && tid !== teamId) {
-        fetchData()
+      if (tid) {
+        setAthletes(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
       }
     }
     const handleTeamChange = () => fetchData()

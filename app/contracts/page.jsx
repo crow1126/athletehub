@@ -50,7 +50,11 @@ export default function ContractsPage() {
 
   const fetchData = useCallback(async () => {
     setLoading(true)
-    const { teamId: currentTeamId } = await getTenantProfile()
+    const { session, teamId: currentTeamId } = await getTenantProfile()
+    if (!session || !currentTeamId) {
+      setLoading(false)
+      return
+    }
     setTeamId(currentTeamId)
     const [{ data: c }, { data: a }] = await Promise.all([
       scopeTeam(supabase.from('contracts').select('*, athletes(id, name, position, club, photo_url)'), currentTeamId).order('created_at', { ascending: false }),
@@ -61,7 +65,27 @@ export default function ContractsPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchData() }, [fetchData])
+  useEffect(() => {
+    fetchData()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid) {
+        setContracts(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
+      }
+    }
+    const handleTeamChange = () => fetchData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchData, teamId])
 
   const set = k => v => setForm(f => ({ ...f, [k]: v }))
 

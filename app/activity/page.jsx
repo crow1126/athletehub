@@ -86,7 +86,12 @@ export default function AdminActivityLogPage() {
     else setLoading(true)
 
     try {
-      const { profile, teamId: currentTeamId } = await getTenantProfile('id,full_name,role,staff_type')
+      const { session, profile, teamId: currentTeamId } = await getTenantProfile()
+      if (!session || !currentTeamId) {
+        setLoading(false)
+        setRefreshing(false)
+        return
+      }
       setCurrentUser(profile)
       setTeamId(currentTeamId)
 
@@ -358,7 +363,20 @@ export default function AdminActivityLogPage() {
 
   useEffect(() => {
     fetchActivities()
-  }, [fetchActivities])
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid && (tid !== teamId || activities.length === 0)) {
+        fetchActivities()
+      }
+    }
+    const handleTeamChange = () => fetchActivities()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchActivities, teamId])
 
   // Filter activities
   const filteredActivities = useMemo(() => {

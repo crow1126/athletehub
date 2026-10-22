@@ -679,7 +679,11 @@ export default function ReportsPage() {
     async function load() {
       setLoading(true)
       try {
-        const { teamId, profile } = await getTenantProfile()
+        const { session, teamId, profile } = await getTenantProfile()
+        if (!session || !teamId) {
+          setLoading(false)
+          return
+        }
         setCurrentProfile(profile)
         const [
           { data: a }, { data: i }, { data: r }, { data: p },

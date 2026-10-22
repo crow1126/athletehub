@@ -142,7 +142,12 @@ export default function InjuriesPage() {
   const [physioModal, setPhysioModal] = useState({ open: false, athlete: null, injury: null })
 
   const fetchData = useCallback(async () => {
-    const { profile: p, teamId: tid } = await getTenantProfile('id,full_name,role,team_id')
+    setLoading(true)
+    const { session, profile: p, teamId: tid } = await getTenantProfile()
+    if (!session || !tid) {
+      setLoading(false)
+      return
+    }
     setCurrentUser(p)
     setTeamId(tid)
 
@@ -171,7 +176,25 @@ export default function InjuriesPage() {
 
   useEffect(() => {
     fetchData()
-  }, [fetchData])
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid) {
+        setInjuries(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
+      }
+    }
+    const handleTeamChange = () => fetchData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchData, teamId])
 
   async function handleDelete(id) {
     if (!isAdmin) {

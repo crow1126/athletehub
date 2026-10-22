@@ -129,18 +129,42 @@ export default function ScoutingPage(){
     }
   }
 
-  const fetchData=useCallback(async()=>{
+  const fetchData = useCallback(async () => {
     setLoading(true)
-    const { teamId: currentTeamId } = await getTenantProfile()
+    const { session, teamId: currentTeamId } = await getTenantProfile()
+    if (!session || !currentTeamId) {
+      setLoading(false)
+      return
+    }
     setTeamId(currentTeamId)
-    const [{data:r},{data:c}]=await Promise.all([
+    const [{data:r},{data:c}] = await Promise.all([
       scopeTeam(supabase.from('scouting_reports').select('*, coaches(name)'), currentTeamId).order('created_at',{ascending:false}),
       scopeTeam(supabase.from('coaches').select('id,name'), currentTeamId),
     ])
-    setReports(r||[]);setCoaches(c||[]);setLoading(false)
-  },[])
+    setReports(r||[]); setCoaches(c||[]); setLoading(false)
+  }, [])
 
-  useEffect(()=>{fetchData()},[fetchData])
+  useEffect(() => {
+    fetchData()
+    const handleProfileLoaded = (e) => {
+      const tid = e.detail?.teamId
+      if (tid) {
+        setReports(prev => {
+          if (prev.length === 0 || tid !== teamId) {
+            fetchData()
+          }
+          return prev
+        })
+      }
+    }
+    const handleTeamChange = () => fetchData()
+    window.addEventListener('apex_profile_loaded', handleProfileLoaded)
+    window.addEventListener('apex_superadmin_team_changed', handleTeamChange)
+    return () => {
+      window.removeEventListener('apex_profile_loaded', handleProfileLoaded)
+      window.removeEventListener('apex_superadmin_team_changed', handleTeamChange)
+    }
+  }, [fetchData, teamId])
 
   const set=k=>v=>setForm(f=>({...f,[k]:v}))
   function openAdd(){setEditId(null);setForm(EMPTY);setShowForm(true)}

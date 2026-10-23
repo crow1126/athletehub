@@ -1,8 +1,8 @@
 {
   "name": "apextrack",
   "version": "1.0.5",
-  "description": "ApexTrack Desktop Football Club Management App",
-  "author": "ApexTrack",
+  "description": "Apextrack GH Desktop Football Club Management App",
+  "author": "Apextrack GH",
   "private": true,
   "main": "electron/main.js",
   "scripts": {
@@ -19,7 +19,7 @@
   },
   "build": {
     "appId": "com.apextrack.app",
-    "productName": "ApexTrack",
+    "productName": "Apextrack GH",
     "publish": [
       {
         "provider": "github",
@@ -39,7 +39,7 @@
       "verifyUpdateCodeSignature": false,
       "requestedExecutionLevel": "asInvoker",
       "signtoolOptions": {
-        "publisherName": "ApexTrack"
+        "publisherName": "Apextrack GH"
       },
       "target": [
         {
@@ -57,7 +57,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "ApexTrack",
+      "shortcutName": "Apextrack GH",
       "installerIcon": "electron/icon.ico",
       "uninstallerIcon": "electron/icon.ico",
       "artifactName": "ApexTrack-Setup.${ext}"

@@ -15,7 +15,7 @@ export default function GlobalError({ error, reset }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>Critical Error — ApexTrack</title>
+        <title>Critical Error — Apextrack GH</title>
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
           body {

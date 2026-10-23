@@ -352,50 +352,194 @@ export default function LandingPage() {
       <div style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: '#FFFFFF',
+        background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(13,148,136,0.28) 0%, transparent 65%), radial-gradient(circle at 50% 100%, rgba(15,118,110,0.18) 0%, transparent 60%), linear-gradient(180deg, #07131B 0%, #03080D 100%)',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 99999,
-        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif"
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+        color: '#FFFFFF',
+        overflow: 'hidden'
       }}>
         <style>{`
-          @keyframes pulseScale {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.05); opacity: 0.85; }
+          @keyframes orbitSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
           }
-          @keyframes spinSlow {
-            to { transform: rotate(360deg); }
+          @keyframes beaconPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+          }
+          @keyframes shimmerSweep {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(250%); }
+          }
+          @keyframes dotPulse {
+            0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+            40% { opacity: 1; transform: scale(1.2); }
           }
         `}</style>
+
+        {/* Ambient tactical pitch overlay */}
         <div style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundImage: 'radial-gradient(rgba(45,212,191,0.06) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+          opacity: 0.7,
+          pointerEvents: 'none'
+        }} />
+
+        <div style={{
+          position: 'relative',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: 18,
-          animation: 'pulseScale 1.8s ease-in-out infinite'
+          gap: 22,
+          zIndex: 2,
+          padding: '0 24px'
         }}>
+          {/* Glowing Emblem Container with Orbital Energy Ring */}
+          <div style={{ position: 'relative', width: 96, height: 96, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            
+            {/* Soft Ambient Glow */}
+            <div style={{
+              position: 'absolute',
+              inset: -14,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(45,212,191,0.35) 0%, rgba(13,148,136,0.1) 60%, transparent 75%)',
+              filter: 'blur(10px)',
+              animation: 'beaconPulse 2.4s ease-in-out infinite'
+            }} />
+
+            {/* Orbiting Energy Ring */}
+            <div style={{
+              position: 'absolute',
+              inset: -3,
+              borderRadius: 24,
+              padding: 1.5,
+              background: 'linear-gradient(135deg, rgba(45,212,191,0.8), rgba(13,148,136,0.1) 40%, rgba(45,212,191,0.8))',
+              WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
+              WebkitMaskComposite: 'xor',
+              maskComposite: 'exclude',
+              animation: 'orbitSpin 6s linear infinite'
+            }} />
+
+            {/* Inner Glass Emblem Card */}
+            <div style={{
+              width: 82,
+              height: 82,
+              borderRadius: 20,
+              background: 'linear-gradient(135deg, rgba(15,118,110,0.45) 0%, rgba(6,78,59,0.55) 100%)',
+              backdropFilter: 'blur(16px)',
+              border: '1.5px solid rgba(45,212,191,0.3)',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 14
+            }}>
+              <img
+                src="/apex-track-logo.svg"
+                alt="Apextrack GH"
+                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                onError={e => { e.currentTarget.src = '/logo.png' }}
+              />
+            </div>
+          </div>
+
+          {/* Typography */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+            <div style={{
+              fontSize: 24,
+              fontWeight: 900,
+              letterSpacing: '-0.03em',
+              color: '#F8FAFC',
+              textShadow: '0 2px 14px rgba(0,0,0,0.5)'
+            }}>
+              Apex<span style={{
+                background: 'linear-gradient(135deg, #2DD4BF 0%, #0D9488 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent'
+              }}>track GH</span>
+            </div>
+
+            {/* Micro Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(45,212,191,0.08)',
+              border: '1px solid rgba(45,212,191,0.22)',
+              borderRadius: 99,
+              padding: '3px 10px',
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#2DD4BF',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase'
+            }}>
+              Football Management Engine
+            </div>
+          </div>
+
+          {/* Progress Bar & Pulse Indicator */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginTop: 4 }}>
+            <div style={{
+              width: 190,
+              height: 4,
+              background: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: 99,
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 0,
+                width: '45%',
+                background: 'linear-gradient(90deg, #0D9488, #2DD4BF)',
+                borderRadius: 99,
+                boxShadow: '0 0 12px rgba(45,212,191,0.6)',
+                animation: 'shimmerSweep 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite'
+              }} />
+            </div>
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              fontSize: 11,
+              color: '#94A3B8',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              fontWeight: 700
+            }}>
+              <span>Connecting to squad</span>
+              <span style={{ display: 'inline-flex', gap: 3, marginLeft: 2 }}>
+                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#2DD4BF', animation: 'dotPulse 1.4s infinite 0s' }} />
+                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#2DD4BF', animation: 'dotPulse 1.4s infinite 0.2s' }} />
+                <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#2DD4BF', animation: 'dotPulse 1.4s infinite 0.4s' }} />
+              </span>
+            </div>
+          </div>
+
+          {/* Security footnote */}
           <div style={{
-            width: 72,
-            height: 72,
-            borderRadius: 18,
-            background: 'linear-gradient(135deg, #0D9488, #0F766E)',
+            fontSize: 10,
+            color: 'rgba(148, 163, 184, 0.65)',
+            letterSpacing: '0.04em',
+            marginTop: 6,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 12px 30px rgba(13,148,136,0.25)',
-            padding: 8
+            gap: 5
           }}>
-            <img src="/logo.png" alt="ApexTrack" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 10 }} />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>
-              Apex<span style={{ color: '#0D9488' }}>Track GH</span>
-            </div>
-            <div style={{ fontSize: 11, color: '#64748B', marginTop: 4, letterSpacing: '0.06em', textTransform: 'uppercase', fontWeight: 700 }}>
-              Connecting to squad...
-            </div>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span>Encrypted Multi-Tenant RLS Channel</span>
           </div>
         </div>
       </div>

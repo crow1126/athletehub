@@ -56,11 +56,21 @@ export async function POST(req) {
         }
       }
 
-      // Delete non-superadmin profiles (by email, not only role)
+      // Fetch all superadmin profiles to preserve
+      const { data: existingSuperadmins } = await db
+        .from('profiles')
+        .select('id, email, full_name')
+        .eq('role', 'superadmin')
+      
+      const preservedEmails = new Set(
+        [SUPER_ADMIN_EMAIL.toLowerCase(), ...(existingSuperadmins || []).map(s => s.email?.toLowerCase())].filter(Boolean)
+      )
+
+      // Delete non-superadmin profiles
       const { error: profileError } = await db
         .from('profiles')
         .delete()
-        .neq('email', SUPER_ADMIN_EMAIL.toLowerCase())
+        .neq('role', 'superadmin')
       if (profileError) {
         console.error('Error deleting profiles:', profileError.message)
         return NextResponse.json({ error: `Failed to clear profiles: ${profileError.message}` }, { status: 500 })
@@ -85,7 +95,8 @@ export async function POST(req) {
 
       let deletedCount = 0
       for (const user of users) {
-        if (user.email !== SUPER_ADMIN_EMAIL) {
+        const uEmail = user.email?.toLowerCase()
+        if (!preservedEmails.has(uEmail)) {
           const { error: delError } = await db.auth.admin.deleteUser(user.id)
           if (delError) {
             console.error(`Error deleting auth user ${user.email}:`, delError.message)
@@ -95,23 +106,9 @@ export async function POST(req) {
         }
       }
 
-      // Re-ensure superadmin profile after wipe
-      const superAuth = users?.find(u => u.email?.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase())
-      if (superAuth) {
-        await db.from('profiles').upsert({
-          id: superAuth.id,
-          email: SUPER_ADMIN_EMAIL.toLowerCase(),
-          full_name: superAuth.user_metadata?.full_name || 'Super Admin',
-          role: 'superadmin',
-          is_active: true,
-          registration_status: 'approved',
-          team_id: null,
-        }, { onConflict: 'id' })
-      }
-
       return NextResponse.json({
         success: true,
-        message: `System data cleared successfully. Deleted ${deletedCount} auth users and all associate table records. Superadmin preserved.`
+        message: `System data cleared successfully. Deleted ${deletedCount} auth users and all associate table records. Superadmins preserved.`
       })
     }
 

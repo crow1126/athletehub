@@ -167,7 +167,7 @@ export default function LoginPage() {
         const unconfirmed = msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('confirm')
         if (unconfirmed) {
           setNeedsVerification(true)
-          setError('Please confirm your email first. Check your inbox for "Confirm your email - Apex Track", or resend the link below.')
+          setError('Please confirm your email first. Check your inbox for "Confirm your email - Apextrack GH", or resend the link below.')
         } else {
           setError(msg.toLowerCase().includes('invalid') ? 'Incorrect username, email or password.' : msg)
         }
@@ -276,7 +276,7 @@ export default function LoginPage() {
             console.warn('Logo upload failed (non-blocking):', uploadErr.message)
           }
         }
-        setSuccess('Account created! Check your email for "Confirm your email - Apex Track" and click the button to activate. Then sign in here.')
+        setSuccess('Account created! Check your email for "Confirm your email - Apextrack GH" and click the button to activate. Then sign in here.')
         setTab('login'); setPassword(''); setFullName(''); setClubName(''); setClubLogo(null); setLogoPreview('')
       }
     } catch(err) { setError(err.message||'Unexpected error.') }
@@ -473,8 +473,8 @@ export default function LoginPage() {
       {/* ── NAVBAR ── */}
       <nav className="lp-nav">
         <Link className="nav-brand" href="/">
-          <img src="/logo.png" alt="ApexTrack" className="nav-brand-img" />
-          <span className="nav-brand-name">Apex<span>Track</span></span>
+          <img src="/apex-track-logo.svg" alt="Apextrack GH" className="nav-brand-img" onError={e => { e.currentTarget.src = '/logo.png' }} />
+          <span className="nav-brand-name">Apex<span>track GH</span></span>
         </Link>
         <Link href="/" className="nav-back-link">
           ← Back to Home
@@ -523,10 +523,10 @@ export default function LoginPage() {
 
               {/* Logo row */}
               <div style={{ padding: '24px 28px 4px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <img src="/logo.png" alt="Apex Track Logo" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain', border: '1px solid rgba(13, 148, 136, 0.12)' }} />
+                <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain' }} onError={e => { e.currentTarget.src = '/logo.png' }} />
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: '#0D9488', letterSpacing: '-0.02em' }}>Apex <span style={{ color: '#64748B', fontWeight: 400 }}>Track</span></div>
-                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#94A3B8' }}>Performance Platform</div>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#0D9488', letterSpacing: '-0.02em' }}>Apex<span style={{ color: '#0F766E' }}>track GH</span></div>
+                  <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#94A3B8' }}>Football Management Engine</div>
                 </div>
               </div>
 
@@ -534,7 +534,7 @@ export default function LoginPage() {
                 <form className="auth-form" onSubmit={handleLogin}>
                   <div>
                     <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 3 }}>Welcome back</h3>
-                    <p style={{ fontSize: 13, color: '#64748B' }}>Sign in to your Apex Track account</p>
+                    <p style={{ fontSize: 13, color: '#64748B' }}>Sign in to your Apextrack GH account</p>
                   </div>
 
                   {disabled && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.2)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>Account disabled. Contact your administrator.</div>}
@@ -577,7 +577,7 @@ export default function LoginPage() {
                 <form className="auth-form" onSubmit={handleSignup}>
                   <div>
                     <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', marginBottom: 3 }}>Create account</h3>
-                    <p style={{ fontSize: 13, color: '#64748B' }}>Join ApexTrack GH — free to get started</p>
+                    <p style={{ fontSize: 13, color: '#64748B' }}>Join Apextrack GH — free to get started</p>
                   </div>
 
                   {error && <div style={{ background: '#F9E8E8', border: '1px solid rgba(180,50,50,0.18)', borderRadius: 10, padding: '11px 14px', fontSize: 13, color: '#8B2020', fontWeight: 600 }}>{error}</div>}
@@ -820,7 +820,7 @@ export default function LoginPage() {
         {/* ── FOOTER ── */}
         <footer className="footer">
           <div className="footer-inner">
-            <div className="footer-brand">ApexTrack<span> GH</span></div>
+            <div className="footer-brand">Apex<span>track GH</span></div>
             <div className="footer-links">
               <Link href="/privacy" className="footer-link">Privacy Policy</Link>
               <Link href="/terms" className="footer-link">Terms of Service</Link>
@@ -828,7 +828,7 @@ export default function LoginPage() {
               <Link href="/" className="footer-link">Home</Link>
             </div>
           </div>
-          <div className="footer-copy">© {new Date().getFullYear()} ApexTrack GH. All rights reserved. Built for African football.</div>
+          <div className="footer-copy">© {new Date().getFullYear()} Apextrack GH. All rights reserved. Built for African football.</div>
         </footer>
       </div>
     </>

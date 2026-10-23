@@ -521,7 +521,7 @@ export default function Layout({ children }) {
               : rawBody
 
             triggerNotificationAlert({
-              title: newNotif.title || 'ApexTrack Alert',
+              title: newNotif.title || 'Apextrack GH Alert',
               message: individualizedBody,
               body: individualizedBody,
               url: newNotif.link || '/notices',
@@ -600,9 +600,53 @@ export default function Layout({ children }) {
   const teamLogo  = profile?.teams?.logo_url || (role !== 'superadmin' && profile?.club_logo_url && !profile.club_logo_url.startsWith('data:') ? profile.club_logo_url : null)
 
   if (loading) return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background: C.floral }}>
-      <div style={{ width:36, height:36, border:`3px solid ${C.floralMuted}`, borderTopColor: C.lagoon, borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100vh',
+      background: 'radial-gradient(ellipse 80% 60% at 50% 0%, rgba(13,148,136,0.18) 0%, transparent 65%), #0A1319',
+      flexDirection: 'column',
+      gap: 16,
+      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif"
+    }}>
+      <style>{`
+        @keyframes spinPulse { to { transform: rotate(360deg); } }
+        @keyframes logoBreathe { 0%, 100% { transform: scale(1); opacity: 0.9; } 50% { transform: scale(1.06); opacity: 1; } }
+      `}</style>
+      <div style={{ position: 'relative', width: 68, height: 68, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{
+          position: 'absolute',
+          inset: -2,
+          borderRadius: 20,
+          border: '2px solid rgba(45,212,191,0.2)',
+          borderTopColor: '#2DD4BF',
+          animation: 'spinPulse 0.9s linear infinite'
+        }} />
+        <div style={{
+          width: 56,
+          height: 56,
+          borderRadius: 16,
+          background: 'linear-gradient(135deg, rgba(15,118,110,0.5), rgba(6,78,59,0.7))',
+          backdropFilter: 'blur(10px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 10,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          animation: 'logoBreathe 2s ease-in-out infinite'
+        }}>
+          <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width: '100%', height: '100%', objectFit: 'contain' }} onError={e => { e.currentTarget.src = '/logo.png' }} />
+        </div>
+      </div>
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.02em' }}>
+          Apex<span style={{ color: '#2DD4BF' }}>track GH</span>
+        </div>
+        <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 3, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 700 }}>
+          Synchronizing Workspace…
+        </div>
+      </div>
     </div>
   )
 
@@ -617,7 +661,7 @@ export default function Layout({ children }) {
     }
     return (
       <div style={{ width:size, height:size, borderRadius:12, background: C.floral, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:`0 4px 12px rgba(0,106,106,0.12)`, border:`1px solid ${C.border}` }}>
-        <img src="/logo.png" alt="ApexTrack" style={{ width:'85%', height:'85%', objectFit:'contain', borderRadius:'4px' }} />
+        <img src="/logo.png" alt="Apextrack GH" style={{ width:'85%', height:'85%', objectFit:'contain', borderRadius:'4px' }} />
       </div>
     )
   }
@@ -631,7 +675,7 @@ export default function Layout({ children }) {
           <div style={{ display:'flex', alignItems:'center', gap:10 }}>
             <ClubLogo size={32} />
             <div>
-              <div style={{ fontSize:14, fontWeight:700, color: C.text }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontSize:14, fontWeight:700, color: C.text }}>{teamName || 'Apextrack GH'}</div>
               <div style={{ fontSize:11, color: C.text3, textTransform:'capitalize' }}>{ROLE_DISPLAY_LABELS[role] || role}</div>
             </div>
           </div>
@@ -763,7 +807,7 @@ export default function Layout({ children }) {
           <ClubLogo size={44} />
           {expanded && (
             <div style={{ overflow:'hidden', whiteSpace:'nowrap', animation: 'fadeUp 0.3s ease' }}>
-              <div style={{ fontWeight:800, fontSize:15, color: C.text, overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apex Track'}</div>
+              <div style={{ fontWeight:800, fontSize:15, color: C.text, overflow:'hidden', textOverflow:'ellipsis', maxWidth:150 }}>{teamName || 'Apextrack GH'}</div>
               <div style={{ fontSize:11, color: C.text3, fontWeight:600, letterSpacing:'0.06em', textTransform:'uppercase', marginTop:2 }}>{teamShort || 'AT'}</div>
             </div>
           )}

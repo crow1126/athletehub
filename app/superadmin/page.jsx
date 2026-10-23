@@ -304,6 +304,7 @@ const NAV_ITEMS = [
   { id:'clubs',       label:'Clubs & Teams',    icon:<IconClubs /> },
   { id:'analytics',   label:'Analytics & Clicks', icon:<IconAnalytics /> },
   { id:'maintenance', label:'Database & Roots', icon:<IconMaintenance /> },
+  { id:'settings',    label:'System Settings',  icon:<IconSettings size={18} /> },
 ]
 
 export default function SuperadminPage() {
@@ -386,17 +387,46 @@ export default function SuperadminPage() {
   const [restoreSummary, setRestoreSummary] = useState(null)
   const [restoring, setRestoring] = useState(false)
 
+  // Superadmin Settings States
+  const [superadmins, setSuperadmins] = useState([])
+  const [superadminsLoading, setSuperadminsLoading] = useState(false)
+  const [currentSuperadminId, setCurrentSuperadminId] = useState('')
+  const [currentSuperadminProfile, setCurrentSuperadminProfile] = useState(null)
+  const [addSuperadminModal, setAddSuperadminModal] = useState(false)
+  const [newSuperadminName, setNewSuperadminName] = useState('')
+  const [newSuperadminEmail, setNewSuperadminEmail] = useState('')
+  const [newSuperadminPassword, setNewSuperadminPassword] = useState('')
+  const [newSuperadminPhone, setNewSuperadminPhone] = useState('')
+  const [addingSuperadmin, setAddingSuperadmin] = useState(false)
+  const [pwModal, setPwModal] = useState(false)
+  const [pwTargetUser, setPwTargetUser] = useState(null)
+  const [targetNewPassword, setTargetNewPassword] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [myProfileName, setMyProfileName] = useState('')
+  const [myProfilePhone, setMyProfilePhone] = useState('')
+  const [myNewPassword, setMyNewPassword] = useState('')
+  const [myConfirmPassword, setMyConfirmPassword] = useState('')
+
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!session) { router.replace('/login'); return }
-      const { data: p } = await supabase.from('profiles').select('role').eq('id', session.user.id).single()
+      const { data: p } = await supabase.from('profiles').select('*').eq('id', session.user.id).single()
       if (p?.role !== 'superadmin') { router.replace('/dashboard'); return }
+      setCurrentSuperadminProfile(p)
+      setCurrentSuperadminId(session.user.id)
+      setMyProfileName(p?.full_name || '')
+      setMyProfilePhone(p?.phone || '')
       setAuthOk(true)
     })
   }, [router])
+      if (p?.role !== 'superadmin') { router.replace('/dashboard'); return }
+      setAuthOk(true)
+    })
+  }, [router]
 
   const fetchWithAuth = useCallback(async (url) => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -457,9 +487,24 @@ export default function SuperadminPage() {
     }
   }, [fetchWithAuth])
 
+  const loadSuperadmins = useCallback(async () => {
+    setSuperadminsLoading(true)
+    try {
+      const data = await fetchWithAuth('/api/admin/superadmin-user')
+      setSuperadmins(data.superadmins || [])
+      if (data.currentUserId) setCurrentSuperadminId(data.currentUserId)
+    } catch (err) {
+      console.error('Failed to load superadmins:', err)
+      showToast('Failed to load superadmin list: ' + err.message, 'error')
+    } finally {
+      setSuperadminsLoading(false)
+    }
+  }, [fetchWithAuth])
+
   useEffect(() => { if (authOk) { loadProfiles(); loadTeams() } }, [authOk, loadProfiles, loadTeams])
   useEffect(() => { if (authOk && section === 'maintenance') { loadTable(dbTable) } }, [authOk, section, dbTable, loadTable])
   useEffect(() => { if (authOk && section === 'analytics') { loadClicks() } }, [authOk, section, loadClicks])
+  useEffect(() => { if (authOk && section === 'settings') { loadSuperadmins() } }, [authOk, section, loadSuperadmins])
 
   function showToast(msg, type='success') { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
@@ -1123,6 +1168,190 @@ export default function SuperadminPage() {
     finally { setAddingAdmin(false) }
   }
 
+  // ── SUPERADMIN MANAGEMENT HANDLERS ──
+  async function handleAddSuperadmin() {
+    if (!newSuperadminName.trim() || !newSuperadminEmail.trim() || !newSuperadminPassword) {
+      showToast('Please fill out full name, email address, and password.', 'error')
+      return
+    }
+    if (newSuperadminPassword.length < 8) {
+      showToast('Password must be at least 8 characters long.', 'error')
+      return
+    }
+    setAddingSuperadmin(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/superadmin-user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          full_name: newSuperadminName.trim(),
+          email: newSuperadminEmail.trim().toLowerCase(),
+          password: newSuperadminPassword,
+          phone: newSuperadminPhone.trim() || null
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to create superadmin')
+      showToast(data.message || 'Superadmin account created successfully!')
+      setAddSuperadminModal(false)
+      setNewSuperadminName('')
+      setNewSuperadminEmail('')
+      setNewSuperadminPassword('')
+      setNewSuperadminPhone('')
+      loadSuperadmins()
+      loadProfiles()
+    } catch (err) {
+      showToast('Creation failed: ' + err.message, 'error')
+    } finally {
+      setAddingSuperadmin(false)
+    }
+  }
+
+  async function handleToggleSuperadminActive(user) {
+    if (user.id === currentSuperadminId) {
+      showToast('Action locked: You cannot deactivate your own superadmin account.', 'error')
+      return
+    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/superadmin-user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          targetUserId: user.id,
+          is_active: !user.is_active
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update status')
+      showToast(`Superadmin status set to ${!user.is_active ? 'Active' : 'Suspended'}`)
+      loadSuperadmins()
+      loadProfiles()
+    } catch (err) {
+      showToast('Update failed: ' + err.message, 'error')
+    }
+  }
+
+  async function handleResetSuperadminPassword() {
+    if (!targetNewPassword || targetNewPassword.length < 8) {
+      showToast('New password must be at least 8 characters.', 'error')
+      return
+    }
+    setSavingPassword(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/superadmin-user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          targetUserId: pwTargetUser.id,
+          new_password: targetNewPassword
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to reset password')
+      showToast(`Password updated for ${pwTargetUser.email}`)
+      setPwModal(false)
+      setPwTargetUser(null)
+      setTargetNewPassword('')
+    } catch (err) {
+      showToast('Reset failed: ' + err.message, 'error')
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
+  async function handleDeleteSuperadmin(user) {
+    if (user.id === currentSuperadminId) {
+      showToast('Action locked: You cannot delete your own superadmin account.', 'error')
+      return
+    }
+    if (!confirm(`CAUTION: Are you sure you want to delete superadmin "${user.full_name || user.email}"? This will revoke all system authority.`)) {
+      return
+    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/admin/superadmin-user?userId=${user.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to delete superadmin')
+      showToast('Superadmin removed successfully.')
+      loadSuperadmins()
+      loadProfiles()
+    } catch (err) {
+      showToast('Deletion failed: ' + err.message, 'error')
+    }
+  }
+
+  async function handleUpdateMyProfile() {
+    if (!myProfileName.trim()) {
+      showToast('Name cannot be empty.', 'error')
+      return
+    }
+    setProfileSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/admin/superadmin-user', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          targetUserId: session.user.id,
+          full_name: myProfileName.trim(),
+          phone: myProfilePhone.trim() || null
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to update profile')
+      showToast('Profile information saved.')
+      setCurrentSuperadminProfile(prev => ({ ...prev, full_name: myProfileName.trim(), phone: myProfilePhone.trim() || null }))
+      loadSuperadmins()
+    } catch (err) {
+      showToast('Save failed: ' + err.message, 'error')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  async function handleChangeMyPassword() {
+    if (!myNewPassword || myNewPassword.length < 8) {
+      showToast('New password must be at least 8 characters.', 'error')
+      return
+    }
+    if (myNewPassword !== myConfirmPassword) {
+      showToast('Password confirmation does not match.', 'error')
+      return
+    }
+    setProfileSaving(true)
+    try {
+      const { error } = await supabase.auth.updateUser({ password: myNewPassword })
+      if (error) throw error
+      showToast('Your superadmin password has been updated successfully.')
+      setMyNewPassword('')
+      setMyConfirmPassword('')
+    } catch (err) {
+      showToast('Password update failed: ' + err.message, 'error')
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
   const filtered = profiles.filter(p => {
     const q = search.toLowerCase()
     const matchQ = !search || [p.full_name, p.email, p.club_name].some(v => v?.toLowerCase().includes(q))
@@ -1145,11 +1374,69 @@ export default function SuperadminPage() {
 
   if (!authOk) {
     return (
-      <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', flexDirection:'column', gap:16 }}>
-        <img src="/logo.png" alt="AthleteHub" style={{ width:56, height:56, objectFit:'contain', marginBottom:8 }} onError={e => e.target.style.display='none'} />
-        <div style={{ width:32, height:32, border:'3px solid #e2e8f0', borderTopColor:'#0d9488', borderRadius:'50%', animation:'spin 0.8s linear infinite' }} />
-        <div style={{ fontSize:12, color:'#64748b', fontFamily:'monospace', fontWeight:600, letterSpacing:'0.1em' }}>AUTHENTICATING ACCESS…</div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      <div style={{
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(13,148,136,0.2), transparent 70%), linear-gradient(180deg, #061118 0%, #03080C 100%)',
+        flexDirection: 'column',
+        gap: 20,
+        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
+        color: '#FFFFFF'
+      }}>
+        <style>{`
+          @keyframes spinSlow { to { transform: rotate(360deg); } }
+          @keyframes pulseGlow { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+        `}</style>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            position: 'absolute',
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(45,212,191,0.3) 0%, transparent 70%)',
+            animation: 'pulseGlow 2s ease-in-out infinite'
+          }} />
+          <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: 18,
+            background: 'linear-gradient(135deg, rgba(15,118,110,0.8), rgba(13,148,136,0.5))',
+            border: '1px solid rgba(45,212,191,0.4)',
+            backdropFilter: 'blur(12px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 25px rgba(13,148,136,0.3)'
+          }}>
+            <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width: 36, height: 36, objectFit: 'contain' }}
+              onError={e => { e.currentTarget.src = '/logo.png' }} />
+          </div>
+        </div>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.02em', color: '#F8FAFC' }}>
+            Apex<span style={{ color: '#2DD4BF' }}>track GH</span>
+          </div>
+          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+            Verifying Root Authority…
+          </div>
+        </div>
+        <div style={{ width: 140, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{
+            width: '40%',
+            height: '100%',
+            background: 'linear-gradient(90deg, #0D9488, #2DD4BF)',
+            borderRadius: 99,
+            animation: 'slideBar 1.2s ease-in-out infinite alternate'
+          }} />
+        </div>
+        <style>{`
+          @keyframes slideBar {
+            from { transform: translateX(0); width: 30%; }
+            to { transform: translateX(180%); width: 45%; }
+          }
+        `}</style>
       </div>
     )
   }
@@ -1330,12 +1617,11 @@ export default function SuperadminPage() {
         <aside className="sa-sidebar">
           {/* Logo */}
           <div style={{ padding:'22px 20px 18px', borderBottom:'1px solid #D4EDDE', display:'flex', alignItems:'center', gap:12 }}>
-            <img src="/logo.png" alt="ApexTrack" style={{ width:38, height:38, objectFit:'contain', borderRadius:10, background:'#0F766E', padding:4 }}
-              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex' }} />
-            <div style={{ display:'none', width:38, height:38, borderRadius:10, background:'linear-gradient(135deg,#0d9488,#0f766e)', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:900, color:'#fff' }}></div>
+            <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width:38, height:38, objectFit:'contain', borderRadius:10, background:'#0F766E', padding:4 }}
+              onError={e => { e.currentTarget.src = '/logo.png' }} />
             <div>
-              <div style={{ fontSize:15, fontWeight:800, color:'#0F2218', lineHeight:1.2, letterSpacing:'-0.02em' }}>Apex<span style={{ color:'#0D9488' }}>Track</span></div>
-              <div style={{ fontSize:10, color:'#0F766E', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginTop:2 }}>Superadmin Console</div>
+              <div style={{ fontSize:15, fontWeight:800, color:'#0F2218', lineHeight:1.2, letterSpacing:'-0.02em' }}>Apex<span style={{ color:'#0D9488' }}>track GH</span></div>
+              <div style={{ fontSize:10, color:'#0F766E', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginTop:2 }}>Platform Console</div>
             </div>
           </div>
 
@@ -1355,8 +1641,12 @@ export default function SuperadminPage() {
 
           {/* User info */}
           <div style={{ padding:'16px 20px', borderTop:'1px solid #D4EDDE', background:'#F0FBF4' }}>
-            <div style={{ fontSize:13, fontWeight:700, color:'#0F2218' }}>Samuel Wobil</div>
-            <div style={{ fontSize:11, color:'#5A7A68', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>admin@apextrackgh.com</div>
+            <div style={{ fontSize:13, fontWeight:700, color:'#0F2218', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {currentSuperadminProfile?.full_name || 'Superadmin'}
+            </div>
+            <div style={{ fontSize:11, color:'#5A7A68', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+              {currentSuperadminProfile?.email || 'admin@apextrackgh.com'}
+            </div>
           </div>
         </aside>
 
@@ -1372,9 +1662,9 @@ export default function SuperadminPage() {
               </button>
               {/* Mobile logo */}
               <div className="sa-mobile-only" style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <img src="/logo.png" alt="AthleteHub" style={{ width:32, height:32, objectFit:'contain', borderRadius:8 }}
-                  onError={e => e.target.style.display='none'} />
-                <span style={{ fontSize:14, fontWeight:800, color:'#0f172a' }}>Superadmin</span>
+                <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width:30, height:30, objectFit:'contain', borderRadius:6 }}
+                  onError={e => { e.currentTarget.src = '/logo.png' }} />
+                <span style={{ fontSize:14, fontWeight:800, color:'#0f172a' }}>Apextrack GH Superadmin</span>
               </div>
               {/* Desktop title */}
               <div style={{ display:'flex', alignItems:'center', gap:8 }} className="sa-desktop-title">
@@ -3361,6 +3651,307 @@ export default function SuperadminPage() {
               )
             })()}
 
+            {/* ── SYSTEM & SUPERADMIN SETTINGS ── */}
+            {section === 'settings' && (() => {
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:20, animation:'fadeIn 0.2s ease' }}>
+                  
+                  {/* Top Bar Banner */}
+                  <div className="sa-card" style={{ background:'linear-gradient(135deg, #0F2218 0%, #162E1E 50%, #0F766E 100%)', color:'#FFFFFF', padding:'24px', border:'none' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:16 }}>
+                      <div>
+                        <div style={{ display:'inline-flex', alignItems:'center', gap:6, background:'rgba(45,212,191,0.15)', border:'1px solid rgba(45,212,191,0.35)', padding:'4px 10px', borderRadius:99, fontSize:11, fontWeight:700, color:'#2DD4BF', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:10 }}>
+                          <IconShieldCheck size={13} color="#2DD4BF" /> Root Platform Authority
+                        </div>
+                        <h2 style={{ fontSize:22, fontWeight:800, color:'#FFFFFF', letterSpacing:'-0.02em', lineHeight:1.2 }}>
+                          System &amp; Superadmin Settings
+                        </h2>
+                        <p style={{ fontSize:13, color:'rgba(255,255,255,0.75)', marginTop:6, maxWidth:600, lineHeight:1.5 }}>
+                          Manage system-wide superadministrators, security credentials, and Apextrack GH platform settings.
+                        </p>
+                      </div>
+                      <Btn
+                        variant="primary"
+                        onClick={() => setAddSuperadminModal(true)}
+                        style={{ background:'#2DD4BF', color:'#0F2218', fontWeight:800, padding:'10px 18px', fontSize:13, boxShadow:'0 4px 14px rgba(45,212,191,0.3)', border:'none' }}
+                      >
+                        <IconPlus size={15} /> Add Superadmin User
+                      </Btn>
+                    </div>
+                  </div>
+
+                  {/* Superadmin User Accounts Table Card */}
+                  <div className="sa-card">
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16, flexWrap:'wrap', gap:10 }}>
+                      <div>
+                        <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', display:'flex', alignItems:'center', gap:8 }}>
+                          <IconUsers size={16} /> Super Administrator Roster
+                          <span style={{ fontSize:11, fontWeight:700, background:'#0F766E15', color:'#0F766E', padding:'2px 8px', borderRadius:99 }}>
+                            {superadmins.length} Total
+                          </span>
+                        </h3>
+                        <p style={{ fontSize:12, color:'#64748B', marginTop:3 }}>
+                          Users with complete platform authority across all football clubs, data roots, and system commands.
+                        </p>
+                      </div>
+                      <Btn onClick={loadSuperadmins} disabled={superadminsLoading} style={{ fontSize:12 }}>
+                        <IconRefresh size={13} /> Refresh List
+                      </Btn>
+                    </div>
+
+                    {superadminsLoading ? (
+                      <div style={{ padding:40, textAlign:'center', color:'#64748B', fontSize:13 }}>
+                        <div style={{ width:28, height:28, border:'3px solid #E2E8F0', borderTopColor:'#0D9488', borderRadius:'50%', animation:'spin 0.8s linear infinite', margin:'0 auto 12px' }} />
+                        Loading Superadministrators…
+                      </div>
+                    ) : (
+                      <div className="sa-table-wrap">
+                        <table className="sa-table" style={{ width:'100%', borderCollapse:'collapse' }}>
+                          <thead>
+                            <tr style={{ borderBottom:'1px solid #E2E8F0', background:'#F8FAFC', textAlign:'left', fontSize:11, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                              <th style={{ padding:'12px 16px' }}>Administrator</th>
+                              <th style={{ padding:'12px 16px' }}>Contact Phone</th>
+                              <th style={{ padding:'12px 16px' }}>Status</th>
+                              <th style={{ padding:'12px 16px' }}>Created</th>
+                              <th style={{ padding:'12px 16px', textAlign:'right' }}>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {superadmins.map(s => {
+                              const isSelf = s.id === currentSuperadminId
+                              return (
+                                <tr key={s.id} style={{ borderBottom:'1px solid #F1F5F9', transition:'background 0.15s' }}>
+                                  <td style={{ padding:'14px 16px' }}>
+                                    <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                                      <Avatar name={s.full_name || s.email} size={36} />
+                                      <div>
+                                        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                                          <span style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>
+                                            {s.full_name || 'Superadmin'}
+                                          </span>
+                                          {isSelf && (
+                                            <span style={{ fontSize:10, fontWeight:800, background:'#0F766E20', color:'#0F766E', padding:'1px 6px', borderRadius:4 }}>
+                                              YOU
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>
+                                          {s.email}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding:'14px 16px', fontSize:12, color:'#334155' }}>
+                                    {s.phone || <span style={{ color:'#94A3B8' }}>— Not set —</span>}
+                                  </td>
+                                  <td style={{ padding:'14px 16px' }}>
+                                    <span style={{
+                                      display:'inline-flex',
+                                      alignItems:'center',
+                                      gap:5,
+                                      padding:'3px 9px',
+                                      borderRadius:99,
+                                      fontSize:11,
+                                      fontWeight:700,
+                                      background: s.is_active !== false ? '#ECFDF5' : '#FEF2F2',
+                                      color: s.is_active !== false ? '#059669' : '#DC2626'
+                                    }}>
+                                      <span style={{ width:6, height:6, borderRadius:'50%', background: s.is_active !== false ? '#10B981' : '#EF4444' }} />
+                                      {s.is_active !== false ? 'Active' : 'Suspended'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding:'14px 16px', fontSize:12, color:'#64748B' }}>
+                                    {s.created_at ? new Date(s.created_at).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—'}
+                                  </td>
+                                  <td style={{ padding:'14px 16px', textAlign:'right' }}>
+                                    <div style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
+                                      <Btn
+                                        onClick={() => { setPwTargetUser(s); setPwModal(true) }}
+                                        style={{ fontSize:11, padding:'5px 10px' }}
+                                        title="Reset Password"
+                                      >
+                                        <IconSettings size={12} /> Reset PW
+                                      </Btn>
+                                      {!isSelf && (
+                                        <>
+                                          <Btn
+                                            onClick={() => handleToggleSuperadminActive(s)}
+                                            style={{ fontSize:11, padding:'5px 10px', background: s.is_active !== false ? '#FFFBEB' : '#ECFDF5', color: s.is_active !== false ? '#B45309' : '#059669', border:'1px solid rgba(0,0,0,0.06)' }}
+                                          >
+                                            {s.is_active !== false ? 'Suspend' : 'Activate'}
+                                          </Btn>
+                                          <Btn
+                                            variant="danger"
+                                            onClick={() => handleDeleteSuperadmin(s)}
+                                            style={{ fontSize:11, padding:'5px 10px' }}
+                                            title="Delete Superadmin"
+                                          >
+                                            <IconTrash size={12} />
+                                          </Btn>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Dual Grid: Current Profile & Security */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))', gap:20 }}>
+                    
+                    {/* My Profile */}
+                    <div className="sa-card">
+                      <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', marginBottom:4, display:'flex', alignItems:'center', gap:8 }}>
+                        <IconUser size={16} /> My Account Information
+                      </h3>
+                      <p style={{ fontSize:12, color:'#64748B', marginBottom:16 }}>
+                        Update your administrator profile contact details.
+                      </p>
+
+                      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                        <div>
+                          <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                            Email Address (Sign-In ID)
+                          </label>
+                          <input
+                            type="text"
+                            disabled
+                            value={currentSuperadminProfile?.email || ''}
+                            style={{ ...inputStyle, background:'#F1F5F9', color:'#64748B', cursor:'not-allowed' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            value={myProfileName}
+                            onChange={e => setMyProfileName(e.target.value)}
+                            placeholder="e.g. Samuel Wobil"
+                            style={inputStyle}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                            Phone Number (SMS / WhatsApp Alerts)
+                          </label>
+                          <input
+                            type="text"
+                            value={myProfilePhone}
+                            onChange={e => setMyProfilePhone(e.target.value)}
+                            placeholder="e.g. +233548126092"
+                            style={inputStyle}
+                          />
+                        </div>
+
+                        <Btn
+                          variant="primary"
+                          onClick={handleUpdateMyProfile}
+                          disabled={profileSaving}
+                          style={{ marginTop:6, justifyContent:'center' }}
+                        >
+                          {profileSaving ? 'Saving Changes…' : 'Save Profile Changes'}
+                        </Btn>
+                      </div>
+                    </div>
+
+                    {/* Change Password */}
+                    <div className="sa-card">
+                      <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', marginBottom:4, display:'flex', alignItems:'center', gap:8 }}>
+                        <IconShieldCheck size={16} /> Update Password
+                      </h3>
+                      <p style={{ fontSize:12, color:'#64748B', marginBottom:16 }}>
+                        Ensure your account uses a secure 8+ character password.
+                      </p>
+
+                      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                        <div>
+                          <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                            New Secure Password
+                          </label>
+                          <input
+                            type="password"
+                            placeholder="Minimum 8 characters"
+                            value={myNewPassword}
+                            onChange={e => setMyNewPassword(e.target.value)}
+                            style={inputStyle}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                            Confirm New Password
+                          </label>
+                          <input
+                            type="password"
+                            placeholder="Re-enter password"
+                            value={myConfirmPassword}
+                            onChange={e => setMyConfirmPassword(e.target.value)}
+                            style={inputStyle}
+                          />
+                        </div>
+
+                        <Btn
+                          variant="primary"
+                          onClick={handleChangeMyPassword}
+                          disabled={profileSaving || !myNewPassword}
+                          style={{ marginTop:6, justifyContent:'center' }}
+                        >
+                          {profileSaving ? 'Updating Password…' : 'Update Password'}
+                        </Btn>
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* Platform Environment & System Status */}
+                  <div className="sa-card" style={{ background:'#F8FAFC', border:'1px solid #E2E8F0' }}>
+                    <h3 style={{ fontSize:14, fontWeight:800, color:'#0F172A', marginBottom:4, display:'flex', alignItems:'center', gap:8 }}>
+                      <IconGlobe size={16} /> Apextrack GH Platform Environment
+                    </h3>
+                    <p style={{ fontSize:12, color:'#64748B', marginBottom:16 }}>
+                      System configurations, multi-tenant database topology, and global platform parameters.
+                    </p>
+
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14 }}>
+                      <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:14 }}>
+                        <div style={{ fontSize:11, color:'#64748B', textTransform:'uppercase', fontWeight:700, letterSpacing:'0.06em' }}>Official Engine</div>
+                        <div style={{ fontSize:15, fontWeight:800, color:'#0F172A', marginTop:4 }}>Apextrack GH</div>
+                        <div style={{ fontSize:11, color:'#0F766E', fontWeight:600, marginTop:2 }}>Ghana &amp; West Africa 🇬🇭</div>
+                      </div>
+
+                      <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:14 }}>
+                        <div style={{ fontSize:11, color:'#64748B', textTransform:'uppercase', fontWeight:700, letterSpacing:'0.06em' }}>Platform Version</div>
+                        <div style={{ fontSize:15, fontWeight:800, color:'#0F172A', marginTop:4 }}>v1.0.5 Release</div>
+                        <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>Desktop &amp; Web Engine</div>
+                      </div>
+
+                      <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:14 }}>
+                        <div style={{ fontSize:11, color:'#64748B', textTransform:'uppercase', fontWeight:700, letterSpacing:'0.06em' }}>Multi-Tenant Isolation</div>
+                        <div style={{ fontSize:15, fontWeight:800, color:'#059669', marginTop:4 }}>Postgres RLS</div>
+                        <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>Strict tenant security</div>
+                      </div>
+
+                      <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:14 }}>
+                        <div style={{ fontSize:11, color:'#64748B', textTransform:'uppercase', fontWeight:700, letterSpacing:'0.06em' }}>Official Support</div>
+                        <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', marginTop:4 }}>admin@apextrackgh.com</div>
+                        <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>WhatsApp: 0554074984</div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )
+            })()}
+
           </main>
         </div>
       </div>
@@ -3921,6 +4512,149 @@ export default function SuperadminPage() {
               <Btn onClick={() => setRestoreModal(false)} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
               <Btn variant="primary" onClick={handleExecuteRestore} disabled={restoring} style={{ flex:2, justifyContent:'center', background:'#0d9488', color:'#fff', fontWeight:700 }}>
                 {restoring ? 'Restoring Database…' : 'Proceed with Restoration →'}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD SUPERADMIN MODAL */}
+      {addSuperadminModal && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(8px)', zIndex:650, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:460, display:'flex', flexDirection:'column', gap:16, border:'1.5px solid #0D9488', boxShadow:'0 24px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #F1F5F9', paddingBottom:12 }}>
+              <div>
+                <h3 style={{ fontSize:16, fontWeight:800, color:'#0F172A', display:'flex', alignItems:'center', gap:8 }}>
+                  <IconPlus size={16} /> Add Super Administrator
+                </h3>
+                <p style={{ fontSize:11, color:'#64748B', marginTop:2 }}>
+                  Provision a user with complete system root access across all clubs
+                </p>
+              </div>
+              <button onClick={() => setAddSuperadminModal(false)} style={{ background:'none', border:'none', color:'#94A3B8', fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+              <div>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                  Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Kwame Mensah"
+                  value={newSuperadminName}
+                  onChange={e => setNewSuperadminName(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                  Email Address *
+                </label>
+                <input
+                  type="email"
+                  placeholder="e.g. kwame@apextrackgh.com"
+                  value={newSuperadminEmail}
+                  onChange={e => setNewSuperadminEmail(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
+                  <label style={{ fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                    Secure Password *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const randomPw = 'Apex-' + Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8)
+                      setNewSuperadminPassword(randomPw)
+                    }}
+                    style={{ background:'none', border:'none', color:'#0D9488', fontSize:11, fontWeight:700, cursor:'pointer' }}
+                  >
+                    Generate Secure Password
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Min. 8 characters"
+                  value={newSuperadminPassword}
+                  onChange={e => setNewSuperadminPassword(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div>
+                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:5 }}>
+                  Phone Number (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. +233548126092"
+                  value={newSuperadminPhone}
+                  onChange={e => setNewSuperadminPhone(e.target.value)}
+                  style={inputStyle}
+                />
+              </div>
+
+              <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', padding:'10px 14px', borderRadius:8, fontSize:11, color:'#166534', lineHeight:1.4 }}>
+                <strong>Root Authority Notice:</strong> Superadmins bypass all tenant and module restrictions. Keep credentials strictly confidential.
+              </div>
+            </div>
+
+            <div style={{ display:'flex', gap:8, borderTop:'1px solid #F1F5F9', paddingTop:14 }}>
+              <Btn onClick={() => setAddSuperadminModal(false)} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
+              <Btn variant="primary" onClick={handleAddSuperadmin} disabled={addingSuperadmin} style={{ flex:2, justifyContent:'center' }}>
+                {addingSuperadmin ? 'Creating Superadmin…' : 'Create Superadmin Account'}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESET SUPERADMIN PASSWORD MODAL */}
+      {pwModal && pwTargetUser && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.6)', backdropFilter:'blur(8px)', zIndex:650, display:'flex', alignItems:'center', justifyContent:'center', padding:16 }}>
+          <div className="sa-card" style={{ width:'100%', maxWidth:420, display:'flex', flexDirection:'column', gap:16, border:'1.5px solid #0D9488' }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'1px solid #F1F5F9', paddingBottom:12 }}>
+              <div>
+                <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A' }}>Reset Superadmin Password</h3>
+                <p style={{ fontSize:11, color:'#64748B', marginTop:2 }}>{pwTargetUser.email}</p>
+              </div>
+              <button onClick={() => { setPwModal(false); setPwTargetUser(null) }} style={{ background:'none', border:'none', color:'#94A3B8', fontSize:20, cursor:'pointer', lineHeight:1 }}>×</button>
+            </div>
+
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                <label style={{ fontSize:11, fontWeight:700, color:'#475569', textTransform:'uppercase', letterSpacing:'0.06em' }}>
+                  New Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const randomPw = 'Apex-' + Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + Math.random().toString(36).slice(2, 8)
+                    setTargetNewPassword(randomPw)
+                  }}
+                  style={{ background:'none', border:'none', color:'#0D9488', fontSize:11, fontWeight:700, cursor:'pointer' }}
+                >
+                  Generate
+                </button>
+              </div>
+              <input
+                type="text"
+                placeholder="Min. 8 characters"
+                value={targetNewPassword}
+                onChange={e => setTargetNewPassword(e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ display:'flex', gap:8, borderTop:'1px solid #F1F5F9', paddingTop:14 }}>
+              <Btn onClick={() => { setPwModal(false); setPwTargetUser(null) }} style={{ flex:1, justifyContent:'center' }}>Cancel</Btn>
+              <Btn variant="primary" onClick={handleResetSuperadminPassword} disabled={savingPassword || !targetNewPassword} style={{ flex:2, justifyContent:'center' }}>
+                {savingPassword ? 'Resetting…' : 'Confirm Password Reset'}
               </Btn>
             </div>
           </div>

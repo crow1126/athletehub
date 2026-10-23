@@ -37,6 +37,76 @@ function getDb() {
   return createServiceClient()
 }
 
+export async function GET(req) {
+  try {
+    const db = getDb()
+    const requester = await getRequester(req, db)
+    if (requester.error) {
+      return NextResponse.json({ error: requester.error }, { status: requester.status })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const reqTeamId = searchParams.get('team_id')
+
+    let effectiveTeamId = requester.profile.role === 'superadmin'
+      ? (reqTeamId || requester.profile.team_id || null)
+      : requester.profile.team_id
+
+    if (!effectiveTeamId) {
+      const { data: firstTeam } = await db
+        .from('teams')
+        .select('id, name')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (firstTeam?.id) effectiveTeamId = firstTeam.id
+    }
+
+    let coachQuery = db
+      .from('coaches')
+      .select('id, name, staff_type, email, phone, is_active, photo_url, team_id')
+      .order('name')
+    if (effectiveTeamId) coachQuery = coachQuery.eq('team_id', effectiveTeamId)
+    const { data: staff, error: staffErr } = await coachQuery
+    if (staffErr) console.error('[create-user GET] staff error:', staffErr)
+
+    let athleteQuery = db
+      .from('athletes')
+      .select('id, name, position, back_number, phone, team_id')
+      .order('name')
+    if (effectiveTeamId) athleteQuery = athleteQuery.eq('team_id', effectiveTeamId)
+    const { data: athletes } = await athleteQuery
+
+    let loginsQuery = db
+      .from('staff_logins')
+      .select('*, coaches(name, staff_type, photo_url, phone)')
+      .order('created_at', { ascending: false })
+    if (effectiveTeamId) loginsQuery = loginsQuery.eq('team_id', effectiveTeamId)
+    const { data: logins } = await loginsQuery
+
+    let teamData = null
+    if (effectiveTeamId) {
+      const { data: t } = await db
+        .from('teams')
+        .select('id, name, short_name, primary_color, logo_url')
+        .eq('id', effectiveTeamId)
+        .maybeSingle()
+      if (t) teamData = t
+    }
+
+    return NextResponse.json({
+      staff: staff || [],
+      athletes: athletes || [],
+      logins: logins || [],
+      team: teamData,
+      team_id: effectiveTeamId,
+    })
+  } catch (err) {
+    console.error('[create-user GET] error:', err)
+    return NextResponse.json({ error: err.message }, { status: 500 })
+  }
+}
+
 export async function POST(req) {
   // Rate-limit: 5 create-user calls per 10 minutes per IP
   const rl = userMgmtLimiter(req)

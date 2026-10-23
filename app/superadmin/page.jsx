@@ -423,10 +423,6 @@ export default function SuperadminPage() {
       setAuthOk(true)
     })
   }, [router])
-      if (p?.role !== 'superadmin') { router.replace('/dashboard'); return }
-      setAuthOk(true)
-    })
-  }, [router]
 
   const fetchWithAuth = useCallback(async (url) => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -1683,6 +1679,9 @@ export default function SuperadminPage() {
               </a>
               <Btn variant="primary" onClick={() => setAddModal(true)} className="sa-provision-btn" style={{ fontSize:12 }}>
                 <IconPlus size={13} /> Provision Admin
+              </Btn>
+              <Btn onClick={() => setAddSuperadminModal(true)} style={{ fontSize:12, background:'linear-gradient(135deg, #0F766E, #0D9488)', color:'#fff', border:'none' }}>
+                <IconShieldCheck size={13} color="#fff" /> Add Superadmin
               </Btn>
               <Btn onClick={() => supabase.auth.signOut().then(() => router.replace('/login'))} variant="danger" style={{ fontSize:12 }}>
                 <IconLogOut size={13} /> Sign Out

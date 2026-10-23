@@ -210,35 +210,57 @@ export default function SettingsPage() {
         } catch (_sErr) {}
       }
 
-      if (admin && prof.team_id) {
-        const [{ data:users }, { data:staff }, { data:logins }, { data:athletes }] = await Promise.all([
-          scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
-          scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active,photo_url'), prof.team_id).order('name'),
-          scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type,photo_url,phone)'), prof.team_id).order('created_at',{ ascending:false }),
-          scopeTeam(supabase.from('athletes').select('id,name,position,back_number,phone'), prof.team_id).order('name'),
-        ])
-        const enrichedUsers = (users||[]).map(u => {
-          const login = (logins||[]).find(l => l.email?.toLowerCase() === u.email?.toLowerCase() || l.username?.toLowerCase() === u.username?.toLowerCase())
+      if (admin) {
+        let loadedStaff = []
+        let loadedUsers = []
+        let loadedLogins = []
+        let loadedAthletes = []
+
+        try {
+          const staffRes = await fetchWithAuth('/api/admin/create-user')
+          if (staffRes.ok) {
+            const sData = await staffRes.json()
+            if (sData.staff) loadedStaff = sData.staff
+            if (sData.logins) loadedLogins = sData.logins
+            if (sData.athletes) loadedAthletes = sData.athletes
+            if (sData.team && !prof.teams) {
+              prof.teams = sData.team
+              setProfile(prev => ({ ...prev, teams: sData.team }))
+            }
+          }
+        } catch (_apiErr) {
+          console.warn('API staff fetch fallback:', _apiErr)
+        }
+
+        if (loadedStaff.length === 0) {
+          const [{ data:users }, { data:staff }, { data:logins }, { data:athletes }] = await Promise.all([
+            scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
+            scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active,photo_url'), prof.team_id).order('name'),
+            scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type,photo_url,phone)'), prof.team_id).order('created_at',{ ascending:false }),
+            scopeTeam(supabase.from('athletes').select('id,name,position,back_number,phone'), prof.team_id).order('name'),
+          ])
+          loadedUsers = users || []
+          loadedStaff = staff || []
+          loadedLogins = logins || []
+          loadedAthletes = athletes || []
+        } else {
+          try {
+            const { data: users } = await scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false })
+            if (users) loadedUsers = users
+          } catch (_uErr) {}
+        }
+
+        const enrichedUsers = (loadedUsers||[]).map(u => {
+          const login = (loadedLogins||[]).find(l => l.email?.toLowerCase() === u.email?.toLowerCase() || l.username?.toLowerCase() === u.username?.toLowerCase())
           if (login && u.role === 'coach' && (login.role === 'analyst' || login.role === 'scout')) {
             return { ...u, role: login.role }
           }
           return u
         })
         setAllUsers(enrichedUsers)
-        setAllStaff(staff||[])
-        setStaffLogins(logins||[])
-        setAllAthletes(athletes||[])
-      } else if (admin && !prof.team_id) {
-        const [{ data:users }, { data:staff }, { data:logins }, { data:athletes }] = await Promise.all([
-          supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin').order('created_at',{ ascending:false }),
-          supabase.from('coaches').select('id,name,staff_type,email,phone,is_active,photo_url').order('name'),
-          supabase.from('staff_logins').select('*,coaches(name,staff_type,photo_url,phone)').order('created_at',{ ascending:false }),
-          supabase.from('athletes').select('id,name,position,back_number,phone').order('name'),
-        ])
-        setAllUsers(users||[])
-        setAllStaff(staff||[])
-        setStaffLogins(logins||[])
-        setAllAthletes(athletes||[])
+        setAllStaff(loadedStaff||[])
+        setStaffLogins(loadedLogins||[])
+        setAllAthletes(loadedAthletes||[])
       }
     } catch(e) { console.error('Settings loadAll error:', e) }
     setLoading(false)

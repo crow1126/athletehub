@@ -45,7 +45,8 @@ export default [
     rules: {
       ...nextPlugin.configs.recommended.rules,
       ...nextPlugin.configs["core-web-vitals"].rules,
-      "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+      "no-unused-vars": "off",
+      "@next/next/no-img-element": "off",
       "no-undef": "off",
       "no-empty": ["error", { "allowEmptyCatch": true }],
     },

@@ -5,7 +5,7 @@ import { KeyRound, Trash2 } from 'lucide-react'
 import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
-import { fetchWithAuth, scopeTeam } from '@/lib/tenant'
+import { fetchWithAuth, scopeTeam, getTenantProfile, setSuperadminActiveTeam } from '@/lib/tenant'
 
 const ROLES = ['admin','coach','physio','analyst','scout','player','accountant']
 const ROLE_COLORS = {
@@ -59,6 +59,7 @@ export default function SettingsPage() {
   const [profile,       setProfile]       = useState(null)
   const [subPlan,       setSubPlan]       = useState('trial')
   const [allUsers,      setAllUsers]      = useState([])
+  const [allTeams,      setAllTeams]      = useState([])
   const [allStaff,      setAllStaff]      = useState([])
   const [staffLogins,   setStaffLogins]   = useState([])
   const [loading,       setLoading]       = useState(true)
@@ -123,27 +124,94 @@ export default function SettingsPage() {
 
   useEffect(() => { loadAll() }, [])
 
-  async function loadAll() {
+  async function loadAll(overrideTeamId = null) {
     setLoading(true)
     try {
       const { data:{ session } } = await supabase.auth.getSession()
       if (!session) { setLoading(false); return }
-      const { data:p } = await supabase.from('profiles').select('*, team_id, teams(id,name,short_name,gender_category)').eq('id', session.user.id).single()
-      const prof = p || { full_name: session.user.email, role: 'admin' }
-      setProfile({ ...prof, email: session.user.email })
+
+      // 1. Fetch profile safely without fragile relation joins that crash on missing columns
+      let p = null
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, role, team_id, email, phone, avatar_url, club_name, club_logo_url, is_active, username')
+          .eq('id', session.user.id)
+          .maybeSingle()
+        if (data) p = data
+      } catch (_err) {}
+
+      // 2. Resolve tenant profile for robust multi-tenant / superadmin team support
+      let tenantData = null
+      try {
+        tenantData = await getTenantProfile('', true)
+      } catch (_tErr) {}
+
+      const effectiveRole = p?.role || tenantData?.profile?.role || 'admin'
+      let effectiveTeamId = overrideTeamId || p?.team_id || tenantData?.teamId || tenantData?.profile?.team_id || null
+
+      // Fallback: If no team_id found, query first team
+      if (!effectiveTeamId) {
+        try {
+          const { data: firstTeam } = await supabase
+            .from('teams')
+            .select('id, name, short_name, primary_color, logo_url')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+          if (firstTeam?.id) {
+            effectiveTeamId = firstTeam.id
+          }
+        } catch (_ftErr) {}
+      }
+
+      // Fetch team details safely without non-existent columns
+      let teamData = null
+      if (effectiveTeamId) {
+        try {
+          const { data: t } = await supabase
+            .from('teams')
+            .select('id, name, short_name, primary_color, logo_url')
+            .eq('id', effectiveTeamId)
+            .maybeSingle()
+          if (t) teamData = t
+        } catch (_tErr) {}
+      }
+
+      const prof = {
+        ...(p || {}),
+        full_name: p?.full_name || session.user.user_metadata?.full_name || session.user.email,
+        email: session.user.email || p?.email,
+        role: effectiveRole,
+        team_id: effectiveTeamId,
+        teams: teamData
+      }
+
+      setProfile(prof)
       setProfileForm({ 
-        full_name: prof.full_name||'', 
-        phone: prof.phone||'',
-        club_gender: prof.teams?.gender_category || "Men's Team"
+        full_name: prof.full_name || '', 
+        phone: prof.phone || '',
+        club_gender: "Men's Team"
       })
       const admin = prof.role === 'admin' || prof.role === 'superadmin'
       setIsAdmin(admin)
-      if (prof.team_id) {
-        const { data: sub } = await supabase.from('subscriptions').select('plan').eq('team_id', prof.team_id).maybeSingle()
-        if (sub?.plan) setSubPlan(sub.plan)
-      }
+
       if (admin) {
-        const [{ data:users },{ data:staff },{ data:logins },{ data:athletes }] = await Promise.all([
+        try {
+          const { data: teamsList } = await supabase.from('teams').select('id, name, short_name').order('name')
+          if (teamsList) setAllTeams(teamsList)
+        } catch (_tmErr) {}
+      }
+
+      if (prof.team_id) {
+        try {
+          const { data: sub } = await supabase.from('subscriptions').select('plan').eq('team_id', prof.team_id).maybeSingle()
+          if (sub?.plan) setSubPlan(sub.plan)
+        } catch (_sErr) {}
+      }
+
+      if (admin && prof.team_id) {
+        const [{ data:users }, { data:staff }, { data:logins }, { data:athletes }] = await Promise.all([
           scopeTeam(supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin'), prof.team_id).order('created_at',{ ascending:false }),
           scopeTeam(supabase.from('coaches').select('id,name,staff_type,email,phone,is_active,photo_url'), prof.team_id).order('name'),
           scopeTeam(supabase.from('staff_logins').select('*,coaches(name,staff_type,photo_url,phone)'), prof.team_id).order('created_at',{ ascending:false }),
@@ -160,8 +228,19 @@ export default function SettingsPage() {
         setAllStaff(staff||[])
         setStaffLogins(logins||[])
         setAllAthletes(athletes||[])
+      } else if (admin && !prof.team_id) {
+        const [{ data:users }, { data:staff }, { data:logins }, { data:athletes }] = await Promise.all([
+          supabase.from('profiles').select('id,full_name,role,is_active,email,username,athlete_id,phone,avatar_url').neq('role','superadmin').order('created_at',{ ascending:false }),
+          supabase.from('coaches').select('id,name,staff_type,email,phone,is_active,photo_url').order('name'),
+          supabase.from('staff_logins').select('*,coaches(name,staff_type,photo_url,phone)').order('created_at',{ ascending:false }),
+          supabase.from('athletes').select('id,name,position,back_number,phone').order('name'),
+        ])
+        setAllUsers(users||[])
+        setAllStaff(staff||[])
+        setStaffLogins(logins||[])
+        setAllAthletes(athletes||[])
       }
-    } catch(e) { console.error(e) }
+    } catch(e) { console.error('Settings loadAll error:', e) }
     setLoading(false)
   }
 
@@ -764,7 +843,25 @@ export default function SettingsPage() {
                 <div className="settings-section-header" style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
                   <div>
                     <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Issue Staff Logins</h2>
-                    <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong></p>
+                    <p style={{ fontSize:14,color:'var(--text3)', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
+                      Grant access to staff. Linked to: <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong>
+                      {profile?.role === 'superadmin' && allTeams.length > 1 && (
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:6, marginLeft:10 }}>
+                          <span style={{ fontSize:12, color:'var(--text3)' }}>Switch Club:</span>
+                          <select
+                            value={profile?.team_id || ''}
+                            onChange={e => {
+                              const newTid = e.target.value
+                              setSuperadminActiveTeam(newTid)
+                              loadAll(newTid)
+                            }}
+                            style={{ ...inp, width:'auto', padding:'4px 10px', fontSize:12, borderRadius:6, height:'auto' }}
+                          >
+                            {allTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                          </select>
+                        </span>
+                      )}
+                    </p>
                   </div>
                   <button onClick={()=>{ setShowIssueForm(!showIssueForm); setIssueMsg({ text:'',type:'' }) }}
                     className={showIssueForm ? 'gm-btn danger' : 'gm-btn outline'} style={{ flexShrink:0 }}>

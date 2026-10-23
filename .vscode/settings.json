@@ -1,4 +1,5 @@
 {
   "deno.enable": false,
-  "problems.decorations.enabled": false
+  "problems.decorations.enabled": false,
+  "editor.lightbulb.enabled": "off"
 }

@@ -17,7 +17,7 @@ export async function POST(req) {
   if (!phone) return NextResponse.json({ error: 'phone required' }, { status: 400 })
 
   const vasKey = process.env.MOOLRE_VAS_KEY
-  const senderid = process.env.MOOLRE_SMS_SENDER_ID || 'ApexTrack'
+  const senderid = process.env.MOOLRE_SMS_SENDER_ID || 'ApexTrackGH'
 
   // Config check — tell user exactly what's missing
   const configErrors = []
@@ -34,7 +34,7 @@ export async function POST(req) {
     }, { status: 400 })
   }
 
-  const result = await sendSMS(phone, `ApexTrack test SMS — SMS notifications are working! Sender: ${senderid}`)
+  const result = await sendSMS(phone, `ApexTrack GH test SMS — SMS notifications are working! Sender: ${senderid}`)
 
   return NextResponse.json({
     ok: result.sent > 0,

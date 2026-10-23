@@ -475,7 +475,7 @@ export default function PayLayout({ children }) {
           boxShadow: C.shadowMd, flexShrink: 0,
           animation: 'tealPulse 3s ease-in-out infinite',
         }}>
-          <img src="/logo.png" alt="ApexTrack" style={{ width: '82%', height: '82%', objectFit: 'contain', borderRadius: 6 }} />
+          <img src="/logo.png" alt="ApexTrack GH" style={{ width: '82%', height: '82%', objectFit: 'contain', borderRadius: 6 }} />
         </div>
         <div>
           <div style={{ fontSize: size === 36 ? 15 : 13, fontWeight: 800, color: C.text, letterSpacing: '-0.02em' }}>
@@ -562,7 +562,7 @@ export default function PayLayout({ children }) {
                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}` }}>
                     <a href={mainUrl} onClick={(e) => { e.preventDefault(); window.location.href = mainUrl }}
                       className="pay-nav-link" style={{ fontSize: 13 }}>
-                      <span>←</span> Back to ApexTrack
+                      <span>←</span> Back to ApexTrack GH
                     </a>
                   </div>
                 )}
@@ -646,7 +646,7 @@ export default function PayLayout({ children }) {
             <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 10, marginTop: 12 }}>
               <a href={mainUrl} onClick={(e) => { e.preventDefault(); window.location.href = mainUrl }}
                 className="pay-nav-link" style={{ fontSize: 12 }}>
-                <span>←</span> Back to ApexTrack
+                <span>←</span> Back to ApexTrack GH
               </a>
             </div>
           )}

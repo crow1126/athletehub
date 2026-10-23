@@ -412,7 +412,7 @@ export default function PlayerLayout({ children }) {
               : rawBody
 
             triggerNotificationAlert({
-              title: newNotif.title || 'ApexTrack Alert',
+              title: newNotif.title || 'ApexTrack GH Alert',
               message: individualizedBody,
               body: individualizedBody,
               url: newNotif.link || '/notices',
@@ -500,7 +500,7 @@ export default function PlayerLayout({ children }) {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <ClubLogo size={32} />
             <div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{teamName || 'ApexTrack Player Portal'}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{teamName || 'ApexTrack GH Player Portal'}</div>
               <div style={{ fontSize: 10, color: C.text3, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Player Hub</div>
             </div>
           </div>
@@ -555,7 +555,7 @@ export default function PlayerLayout({ children }) {
         <div style={{ padding: '20px 16px', display: 'flex', alignItems: 'center', borderBottom: `1px solid ${C.border}`, minHeight: 80, gap: 12 }}>
           <ClubLogo size={42} />
           <div>
-            <div style={{ fontWeight: 800, fontSize: 15, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>{teamName || 'ApexTrack'}</div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 150 }}>{teamName || 'ApexTrack GH'}</div>
             <div style={{ fontSize: 10, color: C.text3, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginTop: 2 }}>Player Hub</div>
           </div>
         </div>

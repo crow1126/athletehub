@@ -72,7 +72,7 @@ export async function POST(req) {
 
     if (!athlete) {
       return returnResponse(req, {
-        message: `Sorry, your number (${phoneInput}) is not registered on ApexTrack. Contact your admin.`,
+        message: `Sorry, your number (${phoneInput}) is not registered on ApexTrack GH. Contact your admin.`,
         isEnd: true,
         sessionId
       })
@@ -134,7 +134,7 @@ export async function POST(req) {
 
     if (path.length === 0) {
       // --- MAIN MENU ---
-      menuText = `ApexTrack - Welcome, ${firstName}!\n`
+      menuText = `ApexTrack GH - Welcome, ${firstName}!\n`
       menuText += '1. Next Training Session\n'
       menuText += '2. Recent Sessions\n'
       menuText += '3. My Team'
@@ -256,7 +256,7 @@ export async function POST(req) {
       else {
         // Invalid main menu choice
         path = [] // reset path to main menu
-        menuText = 'Invalid option.\nApexTrack - Welcome, ' + firstName + '!\n'
+        menuText = 'Invalid option.\nApexTrack GH - Welcome, ' + firstName + '!\n'
         menuText += '1. Next Training Session\n'
         menuText += '2. Recent Sessions\n'
         menuText += '3. My Team'

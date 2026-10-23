@@ -454,7 +454,7 @@ export async function PATCH(req) {
           const loginUrl = !isLocal ? `https://${host}/login` : 'https://apextrackgh.com/login'
           const roleTitle = targetProfile?.role === 'player' ? 'player' : (targetProfile?.role || 'staff')
           const loginIdentifier = targetProfile?.username || targetProfile?.email || 'your account'
-          const resetMsg = `ApexTrack: Your ${roleTitle} login password has been reset.\nUsername: ${loginIdentifier}\nNew Password: ${new_password}\nLogin: ${loginUrl}`
+          const resetMsg = `ApexTrack GH: Your ${roleTitle} login password has been reset.\nUsername: ${loginIdentifier}\nNew Password: ${new_password}\nLogin: ${loginUrl}`
           const smsRes = await sendSMS(resetPhone, resetMsg, { teamId: targetTeamId, db })
           resetSmsSent = Boolean(smsRes?.sent > 0 || smsRes?.ok === true)
           if (smsRes?.error) resetSmsError = smsRes.error

@@ -843,25 +843,7 @@ export default function SettingsPage() {
                 <div className="settings-section-header" style={{ display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20 }}>
                   <div>
                     <h2 style={{ fontSize:20,fontWeight:700,marginBottom:6 }}>Issue Staff Logins</h2>
-                    <p style={{ fontSize:14,color:'var(--text3)', display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
-                      Grant access to staff. Linked to: <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong>
-                      {profile?.role === 'superadmin' && allTeams.length > 1 && (
-                        <span style={{ display:'inline-flex', alignItems:'center', gap:6, marginLeft:10 }}>
-                          <span style={{ fontSize:12, color:'var(--text3)' }}>Switch Club:</span>
-                          <select
-                            value={profile?.team_id || ''}
-                            onChange={e => {
-                              const newTid = e.target.value
-                              setSuperadminActiveTeam(newTid)
-                              loadAll(newTid)
-                            }}
-                            style={{ ...inp, width:'auto', padding:'4px 10px', fontSize:12, borderRadius:6, height:'auto' }}
-                          >
-                            {allTeams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                          </select>
-                        </span>
-                      )}
-                    </p>
+                    <p style={{ fontSize:14,color:'var(--text3)' }}>Grant access to staff. Linked to: <strong style={{ color:'#0D9488' }}>{profile?.teams?.name||'No team'}</strong></p>
                   </div>
                   <button onClick={()=>{ setShowIssueForm(!showIssueForm); setIssueMsg({ text:'',type:'' }) }}
                     className={showIssueForm ? 'gm-btn danger' : 'gm-btn outline'} style={{ flexShrink:0 }}>

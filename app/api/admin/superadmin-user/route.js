@@ -17,7 +17,7 @@ export async function GET(req) {
     // Fetch all superadmin profiles
     const { data: superadmins, error: fetchErr } = await db
       .from('profiles')
-      .select('id, full_name, email, phone, role, is_active, registration_status, created_at, updated_at')
+      .select('id, full_name, email, phone, role, is_active, registration_status, created_at')
       .eq('role', 'superadmin')
       .order('created_at', { ascending: true })
 
@@ -101,7 +101,6 @@ export async function POST(req) {
         registration_status: 'approved',
         team_id: null,
         club_name: 'Apextrack GH Platform',
-        updated_at: new Date().toISOString(),
       }, { onConflict: 'id' })
       .select()
       .single()
@@ -145,7 +144,7 @@ export async function PATCH(req) {
       return NextResponse.json({ error: 'Action denied: You cannot deactivate your own superadmin account.' }, { status: 400 })
     }
 
-    const updates = { updated_at: new Date().toISOString() }
+    const updates = {}
     if (typeof is_active === 'boolean') updates.is_active = is_active
     if (typeof full_name === 'string' && full_name.trim()) updates.full_name = full_name.trim()
     if (typeof phone === 'string') updates.phone = phone.trim() || null

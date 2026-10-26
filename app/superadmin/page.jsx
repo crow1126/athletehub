@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
+import LoadingScreen from '@/components/LoadingScreen'
 
 // ── ICONS ──
 const IconUsers = ({ size = 18 }) => (
@@ -1368,74 +1369,10 @@ export default function SuperadminPage() {
     return profiles.filter(p => p.team_id === teamId || (teamName && p.club_name?.trim().toLowerCase() === teamName.trim().toLowerCase()))
   }
 
-  if (!authOk) {
-    return (
-      <div style={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'radial-gradient(ellipse 80% 60% at 50% -20%, rgba(13,148,136,0.2), transparent 70%), linear-gradient(180deg, #061118 0%, #03080C 100%)',
-        flexDirection: 'column',
-        gap: 20,
-        fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-        color: '#FFFFFF'
-      }}>
-        <style>{`
-          @keyframes spinSlow { to { transform: rotate(360deg); } }
-          @keyframes pulseGlow { 0%, 100% { opacity: 0.6; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
-        `}</style>
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{
-            position: 'absolute',
-            width: 80,
-            height: 80,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(45,212,191,0.3) 0%, transparent 70%)',
-            animation: 'pulseGlow 2s ease-in-out infinite'
-          }} />
-          <div style={{
-            width: 64,
-            height: 64,
-            borderRadius: 18,
-            background: 'linear-gradient(135deg, rgba(15,118,110,0.8), rgba(13,148,136,0.5))',
-            border: '1px solid rgba(45,212,191,0.4)',
-            backdropFilter: 'blur(12px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 10px 30px rgba(0,0,0,0.5), 0 0 25px rgba(13,148,136,0.3)'
-          }}>
-            <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width: 36, height: 36, objectFit: 'contain' }}
-              onError={e => { e.currentTarget.src = '/logo.png' }} />
-          </div>
-        </div>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: '-0.02em', color: '#F8FAFC' }}>
-            Apex<span style={{ color: '#2DD4BF' }}>track GH</span>
-          </div>
-          <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 4, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
-            Verifying Root Authority…
-          </div>
-        </div>
-        <div style={{ width: 140, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{
-            width: '40%',
-            height: '100%',
-            background: 'linear-gradient(90deg, #0D9488, #2DD4BF)',
-            borderRadius: 99,
-            animation: 'slideBar 1.2s ease-in-out infinite alternate'
-          }} />
-        </div>
-        <style>{`
-          @keyframes slideBar {
-            from { transform: translateX(0); width: 30%; }
-            to { transform: translateX(180%); width: 45%; }
-          }
-        `}</style>
-      </div>
-    )
+  if (!authOk || (loading && profiles.length === 0)) {
+    return <LoadingScreen subtitle="Platform Superadmin Console" />
   }
+
 
   const inputStyle = {
     width:'100%', padding:'10px 14px', background:'#f8fafc', border:'1px solid #e2e8f0',
@@ -1613,8 +1550,8 @@ export default function SuperadminPage() {
         <aside className="sa-sidebar">
           {/* Logo */}
           <div style={{ padding:'22px 20px 18px', borderBottom:'1px solid #D4EDDE', display:'flex', alignItems:'center', gap:12 }}>
-            <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width:38, height:38, objectFit:'contain', borderRadius:10, background:'#0F766E', padding:4 }}
-              onError={e => { e.currentTarget.src = '/logo.png' }} />
+            <img src="/logo.png" alt="Apextrack GH" style={{ width:38, height:38, objectFit:'contain', borderRadius:10, background:'#FFFFFF', border:'1px solid #D4EDDE', padding:3, boxShadow:'0 2px 6px rgba(0,0,0,0.06)' }}
+              onError={e => { e.currentTarget.src = '/apex-track-logo.svg' }} />
             <div>
               <div style={{ fontSize:15, fontWeight:800, color:'#0F2218', lineHeight:1.2, letterSpacing:'-0.02em' }}>Apex<span style={{ color:'#0D9488' }}>track GH</span></div>
               <div style={{ fontSize:10, color:'#0F766E', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', marginTop:2 }}>Platform Console</div>
@@ -1658,8 +1595,8 @@ export default function SuperadminPage() {
               </button>
               {/* Mobile logo */}
               <div className="sa-mobile-only" style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width:30, height:30, objectFit:'contain', borderRadius:6 }}
-                  onError={e => { e.currentTarget.src = '/logo.png' }} />
+                <img src="/logo.png" alt="Apextrack GH" style={{ width:32, height:32, objectFit:'contain', borderRadius:8, background:'#FFFFFF', border:'1px solid #D4EDDE', padding:2 }}
+                  onError={e => { e.currentTarget.src = '/apex-track-logo.svg' }} />
                 <span style={{ fontSize:14, fontWeight:800, color:'#0f172a' }}>Apextrack GH Superadmin</span>
               </div>
               {/* Desktop title */}

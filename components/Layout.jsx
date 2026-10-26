@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { signOut, ROLE_PERMISSIONS } from '@/lib/auth'
 import InstallPWAButton from '@/components/InstallPWAButton'
+import LoadingScreen from '@/components/LoadingScreen'
 
 import { getTenantProfile, setSuperadminActiveTeam, getSuperadminActiveTeam } from '@/lib/tenant'
 import { logger } from '@/lib/logger'
@@ -599,138 +600,8 @@ export default function Layout({ children }) {
   const teamShort = profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : 'ADM')
   const teamLogo  = profile?.teams?.logo_url || (role !== 'superadmin' && profile?.club_logo_url && !profile.club_logo_url.startsWith('data:') ? profile.club_logo_url : null)
 
-  if (loading) return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      height: '100vh',
-      background: '#0A1319',
-      flexDirection: 'column',
-      gap: 28,
-      fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif",
-      overflow: 'hidden',
-      position: 'relative',
-    }}>
-      <style>{`
-        @keyframes atk-orb-float {
-          0%, 100% { transform: translateY(0px) scale(1); opacity: 0.18; }
-          50% { transform: translateY(-30px) scale(1.12); opacity: 0.32; }
-        }
-        @keyframes atk-orb-float2 {
-          0%, 100% { transform: translateY(0px) scale(1); opacity: 0.12; }
-          50% { transform: translateY(20px) scale(0.9); opacity: 0.28; }
-        }
-        @keyframes atk-logo-in {
-          0% { opacity: 0; transform: scale(0.82) translateY(12px); }
-          100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        @keyframes atk-logo-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(45,212,191,0), 0 24px 60px rgba(0,0,0,0.5); }
-          50% { box-shadow: 0 0 40px 12px rgba(45,212,191,0.18), 0 24px 60px rgba(0,0,0,0.5); }
-        }
-        @keyframes atk-bar-sweep {
-          0% { transform: scaleX(0); opacity: 1; }
-          70% { transform: scaleX(1); opacity: 1; }
-          100% { transform: scaleX(1); opacity: 0; }
-        }
-        @keyframes atk-bar-shimmer {
-          0% { background-position: -200% center; }
-          100% { background-position: 200% center; }
-        }
-        @keyframes atk-text-in {
-          0% { opacity: 0; transform: translateY(8px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes atk-dot-bounce {
-          0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-          40% { transform: scale(1); opacity: 1; }
-        }
-        @keyframes atk-ring-spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes atk-ring-spin-rev {
-          to { transform: rotate(-360deg); }
-        }
-      `}</style>
+  if (loading) return <LoadingScreen />
 
-      {/* Background orbs */}
-      <div style={{ position:'absolute', width:420, height:420, borderRadius:'50%', background:'radial-gradient(circle, rgba(13,148,136,0.22) 0%, transparent 70%)', top:'-10%', left:'-8%', animation:'atk-orb-float 6s ease-in-out infinite' }} />
-      <div style={{ position:'absolute', width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle, rgba(15,118,110,0.18) 0%, transparent 70%)', bottom:'-5%', right:'-5%', animation:'atk-orb-float2 7s ease-in-out infinite' }} />
-      <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse 70% 50% at 50% 40%, rgba(13,148,136,0.08) 0%, transparent 70%)' }} />
-
-      {/* Logo block */}
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16, animation:'atk-logo-in 0.6s cubic-bezier(0.16,1,0.3,1) both' }}>
-        {/* Logo with dual spinning rings */}
-        <div style={{ position:'relative', width:96, height:96, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          {/* Outer ring */}
-          <div style={{
-            position:'absolute', inset:-4, borderRadius:'50%',
-            border:'1.5px solid rgba(45,212,191,0.12)',
-            borderTopColor:'rgba(45,212,191,0.7)',
-            borderRightColor:'rgba(45,212,191,0.35)',
-            animation:'atk-ring-spin 1.4s linear infinite',
-          }} />
-          {/* Inner ring reverse */}
-          <div style={{
-            position:'absolute', inset:6, borderRadius:'50%',
-            border:'1px solid rgba(15,118,110,0.15)',
-            borderBottomColor:'rgba(45,212,191,0.5)',
-            animation:'atk-ring-spin-rev 2s linear infinite',
-          }} />
-          {/* Logo container */}
-          <div style={{
-            width:80, height:80, borderRadius:'50%',
-            background:'#fff',
-            display:'flex', alignItems:'center', justifyContent:'center',
-            padding:8,
-            animation:'atk-logo-glow 2.5s ease-in-out infinite',
-            flexShrink:0,
-          }}>
-            <img
-              src="/logo.png"
-              alt="ApexTrack GH"
-              style={{ width:'100%', height:'100%', objectFit:'contain', borderRadius:4 }}
-            />
-          </div>
-        </div>
-
-        {/* Brand name */}
-        <div style={{ textAlign:'center', animation:'atk-text-in 0.5s 0.2s cubic-bezier(0.16,1,0.3,1) both' }}>
-          <div style={{ fontSize:20, fontWeight:800, color:'#F1F5F9', letterSpacing:'-0.03em', lineHeight:1 }}>
-            Apex<span style={{ color:'#2DD4BF' }}>Track GH</span>
-          </div>
-          <div style={{ fontSize:10, color:'#64748B', marginTop:4, letterSpacing:'0.14em', textTransform:'uppercase', fontWeight:600 }}>
-            Track. Achieve. Excel.
-          </div>
-        </div>
-      </div>
-
-      {/* Animated progress bar */}
-      <div style={{ width:180, animation:'atk-text-in 0.5s 0.35s cubic-bezier(0.16,1,0.3,1) both' }}>
-        <div style={{ height:2, background:'rgba(255,255,255,0.06)', borderRadius:99, overflow:'hidden' }}>
-          <div style={{
-            height:'100%',
-            background:'linear-gradient(90deg, transparent, #2DD4BF, #0D9488, #2DD4BF, transparent)',
-            backgroundSize:'200% 100%',
-            animation:'atk-bar-shimmer 1.6s linear infinite',
-            borderRadius:99,
-          }} />
-        </div>
-      </div>
-
-      {/* Bouncing dots */}
-      <div style={{ display:'flex', gap:6, animation:'atk-text-in 0.5s 0.45s cubic-bezier(0.16,1,0.3,1) both' }}>
-        {[0,1,2].map(i => (
-          <div key={i} style={{
-            width:6, height:6, borderRadius:'50%',
-            background: i === 1 ? '#2DD4BF' : 'rgba(45,212,191,0.45)',
-            animation:`atk-dot-bounce 1.2s ${i * 0.18}s ease-in-out infinite`,
-          }} />
-        ))}
-      </div>
-    </div>
-  )
 
 
   const sideW = expanded ? 240 : 72

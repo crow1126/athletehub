@@ -90,6 +90,8 @@ export default function RootLayout({ children }) {
             }catch(e){}})()`,
           }}
         />
+        <link rel="preload" as="image" href="/logo-loading.png" type="image/png" />
+        <link rel="preload" as="image" href="/logo.png" type="image/png" />
       </head>
       <body className="antialiased">
         <PWAProvider />

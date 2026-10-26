@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { signOut } from '@/lib/auth'
 import { triggerNotificationAlert, requestNotificationPermission, sendTestNotificationToSelf } from '@/lib/notifications'
 import NotificationPromptBanner from '@/components/NotificationPromptBanner'
+import LoadingScreen from '@/components/LoadingScreen'
 import { User, Zap, Calendar, LogOut, Bell, Megaphone, CheckCircle2, BellOff } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -469,47 +470,8 @@ export default function PlayerLayout({ children }) {
   const teamLogo = profile?.teams?.logo_url || profile?.club_logo_url || null
   const initials = (profile?.full_name || 'PL').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  if (loading) {
-    return (
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100vh', background:'#0A1319', flexDirection:'column', gap:28, fontFamily:"'Plus Jakarta Sans', system-ui, sans-serif", overflow:'hidden', position:'relative' }}>
-        <style>{`
-          @keyframes pl-orb { 0%,100%{transform:translateY(0) scale(1);opacity:.18}50%{transform:translateY(-28px) scale(1.1);opacity:.3} }
-          @keyframes pl-orb2 { 0%,100%{transform:translateY(0) scale(1);opacity:.12}50%{transform:translateY(18px) scale(.9);opacity:.25} }
-          @keyframes pl-in { 0%{opacity:0;transform:scale(.84) translateY(10px)}100%{opacity:1;transform:scale(1) translateY(0)} }
-          @keyframes pl-glow { 0%,100%{box-shadow:0 0 0 0 rgba(45,212,191,0),0 20px 50px rgba(0,0,0,.5)}50%{box-shadow:0 0 36px 10px rgba(45,212,191,.16),0 20px 50px rgba(0,0,0,.5)} }
-          @keyframes pl-shimmer { 0%{background-position:-200% center}100%{background-position:200% center} }
-          @keyframes pl-fade { 0%{opacity:0;transform:translateY(6px)}100%{opacity:1;transform:translateY(0)} }
-          @keyframes pl-bounce { 0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1} }
-          @keyframes pl-spin { to{transform:rotate(360deg)} }
-          @keyframes pl-spin-rev { to{transform:rotate(-360deg)} }
-        `}</style>
-        <div style={{ position:'absolute', width:400, height:400, borderRadius:'50%', background:'radial-gradient(circle,rgba(13,148,136,.2) 0%,transparent 70%)', top:'-8%', left:'-6%', animation:'pl-orb 6s ease-in-out infinite' }} />
-        <div style={{ position:'absolute', width:280, height:280, borderRadius:'50%', background:'radial-gradient(circle,rgba(15,118,110,.15) 0%,transparent 70%)', bottom:'-4%', right:'-4%', animation:'pl-orb2 7s ease-in-out infinite' }} />
-        <div style={{ position:'absolute', inset:0, background:'radial-gradient(ellipse 65% 50% at 50% 40%,rgba(13,148,136,.07) 0%,transparent 70%)' }} />
-        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:16, animation:'pl-in .6s cubic-bezier(.16,1,.3,1) both' }}>
-          <div style={{ position:'relative', width:96, height:96, display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <div style={{ position:'absolute', inset:-4, borderRadius:'50%', border:'1.5px solid rgba(45,212,191,.12)', borderTopColor:'rgba(45,212,191,.7)', borderRightColor:'rgba(45,212,191,.35)', animation:'pl-spin 1.4s linear infinite' }} />
-            <div style={{ position:'absolute', inset:6, borderRadius:'50%', border:'1px solid rgba(15,118,110,.15)', borderBottomColor:'rgba(45,212,191,.5)', animation:'pl-spin-rev 2s linear infinite' }} />
-            <div style={{ width:80, height:80, borderRadius:'50%', background:'#fff', display:'flex', alignItems:'center', justifyContent:'center', padding:8, animation:'pl-glow 2.5s ease-in-out infinite' }}>
-              <img src="/logo.png" alt="ApexTrack GH" style={{ width:'100%', height:'100%', objectFit:'contain', borderRadius:4 }} />
-            </div>
-          </div>
-          <div style={{ textAlign:'center', animation:'pl-fade .5s .2s cubic-bezier(.16,1,.3,1) both' }}>
-            <div style={{ fontSize:20, fontWeight:800, color:'#F1F5F9', letterSpacing:'-0.03em', lineHeight:1 }}>Apex<span style={{ color:'#2DD4BF' }}>Track GH</span></div>
-            <div style={{ fontSize:10, color:'#64748B', marginTop:4, letterSpacing:'0.14em', textTransform:'uppercase', fontWeight:600 }}>Track. Achieve. Excel.</div>
-          </div>
-        </div>
-        <div style={{ width:180, animation:'pl-fade .5s .35s cubic-bezier(.16,1,.3,1) both' }}>
-          <div style={{ height:2, background:'rgba(255,255,255,.06)', borderRadius:99, overflow:'hidden' }}>
-            <div style={{ height:'100%', background:'linear-gradient(90deg,transparent,#2DD4BF,#0D9488,#2DD4BF,transparent)', backgroundSize:'200% 100%', animation:'pl-shimmer 1.6s linear infinite', borderRadius:99 }} />
-          </div>
-        </div>
-        <div style={{ display:'flex', gap:6, animation:'pl-fade .5s .45s cubic-bezier(.16,1,.3,1) both' }}>
-          {[0,1,2].map(i => <div key={i} style={{ width:6, height:6, borderRadius:'50%', background: i===1?'#2DD4BF':'rgba(45,212,191,.45)', animation:`pl-bounce 1.2s ${i*.18}s ease-in-out infinite` }} />)}
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <LoadingScreen subtitle="Player Hub Portal" />
+
 
   function ClubLogo({ size = 40 }) {
     if (teamLogo && !logoError) {

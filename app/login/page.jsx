@@ -473,7 +473,7 @@ export default function LoginPage() {
       {/* ── NAVBAR ── */}
       <nav className="lp-nav">
         <Link className="nav-brand" href="/">
-          <img src="/apex-track-logo.svg" alt="Apextrack GH" className="nav-brand-img" onError={e => { e.currentTarget.src = '/logo.png' }} />
+          <img src="/logo.png" alt="ApexTrack GH" className="nav-brand-img" style={{ height: 38, width: 38, borderRadius: 10, objectFit: 'contain', background: '#FFFFFF', padding: 2, border: '1px solid rgba(13,148,136,0.2)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} onError={e => { e.currentTarget.src = '/apex-track-logo.svg' }} />
           <span className="nav-brand-name">Apex<span>track GH</span></span>
         </Link>
         <Link href="/" className="nav-back-link">
@@ -523,7 +523,7 @@ export default function LoginPage() {
 
               {/* Logo row */}
               <div style={{ padding: '24px 28px 4px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <img src="/apex-track-logo.svg" alt="Apextrack GH" style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain' }} onError={e => { e.currentTarget.src = '/logo.png' }} />
+                <img src="/logo.png" alt="ApexTrack GH" style={{ width: 42, height: 42, borderRadius: 10, objectFit: 'contain', background: '#FFFFFF', padding: 3, border: '1px solid #E2E8F0', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }} onError={e => { e.currentTarget.src = '/apex-track-logo.svg' }} />
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 800, color: '#0D9488', letterSpacing: '-0.02em' }}>Apex<span style={{ color: '#0F766E' }}>track GH</span></div>
                   <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#94A3B8' }}>Football Management Engine</div>

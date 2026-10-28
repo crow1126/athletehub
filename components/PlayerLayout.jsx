@@ -363,6 +363,9 @@ export default function PlayerLayout({ children }) {
         router.replace('/login')
       }
       setLoading(false)
+      if (typeof window !== 'undefined') {
+        try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+      }
     }
     loadProfile()
   }, [router])

@@ -454,6 +454,9 @@ export default function Layout({ children }) {
       }
     } catch (e) { console.error('Layout error:', e) }
     setLoading(false)
+    if (typeof window !== 'undefined') {
+      try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+    }
   }, [router, path])
 
 

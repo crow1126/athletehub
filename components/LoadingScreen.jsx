@@ -3,9 +3,61 @@
 import React from 'react'
 import { APEXTRACK_LOGO_BASE64 } from '@/lib/logoBase64'
 
-export default function LoadingScreen({
+/**
+ * Traditional Loading Screen
+ * Plain background and a small circular motion.
+ */
+export function TraditionalLoadingScreen({
+  fullScreen = true,
+  background = 'var(--floral, #F4FAF6)',
+  spinnerColor = 'var(--lagoon, #0D9488)',
+  spinnerTrack = 'var(--floral-muted, #E5F5EB)',
+  size = 36,
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background,
+        position: fullScreen ? 'fixed' : 'relative',
+        inset: fullScreen ? 0 : 'auto',
+        width: fullScreen ? '100vw' : '100%',
+        height: fullScreen ? '100vh' : '100%',
+        zIndex: fullScreen ? 99999 : 1,
+      }}
+      aria-label="Loading"
+      role="status"
+    >
+      <div
+        style={{
+          width: size,
+          height: size,
+          border: `3px solid ${spinnerTrack}`,
+          borderTopColor: spinnerColor,
+          borderRadius: '50%',
+          animation: 'atk-spin 0.7s linear infinite',
+          boxSizing: 'border-box',
+        }}
+      />
+      <style>{`
+        @keyframes atk-spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+    </div>
+  )
+}
+
+/**
+ * Branded Login Loading Animation
+ * Dedicated to the logging-in state: glowing dark ambient backdrop, dual spinning rings,
+ * synchronous base64 logo, brand title, shimmering bar, and bouncing dots.
+ */
+export function LoginLoadingScreen({
   title = null,
-  subtitle = 'Track. Achieve. Excel.',
+  subtitle = 'Signing in…',
   fullScreen = true,
   brandColor = '#2DD4BF',
 }) {
@@ -27,7 +79,7 @@ export default function LoadingScreen({
         zIndex: fullScreen ? 99999 : 1,
         color: '#FFFFFF',
       }}
-      aria-label="Loading ApexTrack GH"
+      aria-label="Logging in to ApexTrack GH"
       role="status"
     >
       <style>{`
@@ -161,7 +213,6 @@ export default function LoadingScreen({
             overflow: 'hidden',
           }}
         >
-          {/* Synchronous data URL image: guaranteed to render frame 0 with zero pop-in */}
           <img
             src={APEXTRACK_LOGO_BASE64}
             alt="ApexTrack GH"
@@ -274,4 +325,50 @@ export default function LoadingScreen({
       </div>
     </div>
   )
+}
+
+/**
+ * LoadingScreen
+ *
+ * If `variant="login"` (or if currently in login transition via sessionStorage 'apex_logging_in'):
+ *   Renders the rich glowing login animation.
+ * Otherwise ('traditional' or default non-login):
+ *   Renders the traditional loading screen with a plain background and a small circular motion.
+ */
+export default function LoadingScreen({
+  variant = 'auto', // 'auto' | 'traditional' | 'login'
+  ...props
+}) {
+  const [isLogin, setIsLogin] = React.useState(() => {
+    if (variant === 'login') return true
+    if (variant === 'traditional') return false
+    if (typeof window !== 'undefined') {
+      try {
+        return sessionStorage.getItem('apex_logging_in') === 'true'
+      } catch (_e) {
+        return false
+      }
+    }
+    return false
+  })
+
+  React.useEffect(() => {
+    if (variant === 'login') {
+      setIsLogin(true)
+    } else if (variant === 'traditional') {
+      setIsLogin(false)
+    } else if (typeof window !== 'undefined') {
+      try {
+        setIsLogin(sessionStorage.getItem('apex_logging_in') === 'true')
+      } catch (_e) {
+        setIsLogin(false)
+      }
+    }
+  }, [variant])
+
+  if (isLogin) {
+    return <LoginLoadingScreen {...props} />
+  }
+
+  return <TraditionalLoadingScreen {...props} />
 }

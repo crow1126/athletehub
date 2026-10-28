@@ -452,7 +452,12 @@ export default function SuperadminPage() {
       if (data.contracts) setContracts(data.contracts)
       if (data.injuries) setInjuries(data.injuries)
     } catch (err) { showToast('Failed to load profiles: ' + err.message, 'error') }
-    finally { setLoading(false) }
+    finally {
+      setLoading(false)
+      if (typeof window !== 'undefined') {
+        try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+      }
+    }
   }, [fetchWithAuth])
 
   const loadTeams = useCallback(async () => {

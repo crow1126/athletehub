@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import LoadingScreen from '@/components/LoadingScreen'
 
 /* ── Animated canvas orbs ── */
 function OrbCanvas() {
@@ -55,6 +56,7 @@ export default function LoginPage() {
   const [logoDragActive, setLogoDragActive] = useState(false)
   const [showPass,   setShowPass]  = useState(false)
   const [loading,    setLoading]   = useState(false)
+  const [loggingIn,  setLoggingIn] = useState(false)
   const [error,      setError]     = useState('')
 
   const handleLogoFile = (file) => {
@@ -174,8 +176,16 @@ export default function LoginPage() {
         setLoading(false); return
       }
       if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
+      setLoggingIn(true)
+      if (typeof window !== 'undefined') {
+        try { sessionStorage.setItem('apex_logging_in', 'true') } catch (_e) {}
+      }
       const { data:profile } = await supabase.from('profiles').select('is_active, role, registration_status').eq('id',data.user.id).single()
       if (profile?.is_active === false) {
+        setLoggingIn(false)
+        if (typeof window !== 'undefined') {
+          try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+        }
         await supabase.auth.signOut()
         if (profile?.registration_status === 'rejected') {
           setError('Your account has been disabled. Contact your administrator for assistance.')
@@ -197,6 +207,10 @@ export default function LoginPage() {
         window.location.href = '/dashboard'
       }
     } catch(err) {
+      setLoggingIn(false)
+      if (typeof window !== 'undefined') {
+        try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+      }
       setError(err.message?.includes('fetch') ? 'Cannot connect. Check your internet and try again.' : (err.message||'Unexpected error.'))
       setLoading(false)
     }
@@ -294,6 +308,10 @@ export default function LoginPage() {
   }
   const focusInp = e => { e.target.style.borderColor='#0D9488'; e.target.style.boxShadow='0 0 0 3px rgba(13,148,136,0.1)' }
   const blurInp  = e => { e.target.style.borderColor='#C8E0E0'; e.target.style.boxShadow='none' }
+
+  if (loggingIn) {
+    return <LoadingScreen variant="login" subtitle="Signing into your club workspace…" />
+  }
 
   return (
     <>

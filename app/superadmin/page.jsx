@@ -2193,30 +2193,69 @@ export default function SuperadminPage() {
               const countriesList = getAggregatedStats(clicks, c => c.country || 'GH')
               const browsersList  = getAggregatedStats(clicks, c => getDetailedBrowserName(c.user_agent))
               const osList        = getAggregatedStats(clicks, c => getOSName(c.user_agent))
+              const deviceList    = getAggregatedStats(clicks, c => getDeviceCategory(c.user_agent))
+
+              // Weekly trend: last 7 days buckets
+              const todayStr = new Date().toISOString().split('T')[0]
+              const weekDays = Array.from({ length: 7 }, (_, i) => {
+                const d = new Date()
+                d.setDate(d.getDate() - (6 - i))
+                d.setHours(0, 0, 0, 0)
+                return { label: d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' }), date: d.toISOString().split('T')[0], count: 0 }
+              })
+              clicks.forEach(c => {
+                const cDay = c.created_at ? c.created_at.split('T')[0] : ''
+                const slot = weekDays.find(d => d.date === cDay)
+                if (slot) slot.count++
+              })
+              const weekMax = Math.max(...weekDays.map(d => d.count), 1)
+
+              // Week-over-week trend
+              const now = Date.now()
+              const last7 = clicks.filter(c => now - new Date(c.created_at).getTime() < 7 * 86400000).length
+              const prev7 = clicks.filter(c => { const age = now - new Date(c.created_at).getTime(); return age >= 7 * 86400000 && age < 14 * 86400000 }).length
+              const trendPct = prev7 === 0 ? null : Math.round(((last7 - prev7) / prev7) * 100)
+
+              // Hourly heatmap for today
+              const hourBuckets = Array.from({ length: 24 }, (_, h) => ({ hour: h, count: 0 }))
+              clicks.filter(c => (c.created_at || '').startsWith(todayStr)).forEach(c => {
+                const h = new Date(c.created_at).getHours()
+                hourBuckets[h].count++
+              })
+              const hourMax = Math.max(...hourBuckets.map(b => b.count), 1)
 
               return (
                 <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-                  
+
                   {/* Top Bar / Header */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingBottom:12, borderBottom:'1px solid #D4EDDE' }}>
-                    <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                      <h2 style={{ fontSize:18, fontWeight:800, color:'#0F2218', margin:0, letterSpacing:'-0.02em' }}>Analytics & Traffic</h2>
+                    <div style={{ display:'flex', alignItems:'center', gap:12, flexWrap:'wrap' }}>
+                      <h2 style={{ fontSize:18, fontWeight:800, color:'#0F2218', margin:0, letterSpacing:'-0.02em' }}>Analytics &amp; Traffic</h2>
                       <span style={{ fontSize:11, color:'#0D9488', background:'#F0FDFA', border:'1px solid #CCFBF1', padding:'3px 12px', borderRadius:99, fontWeight:700 }}>
                         {clicks.length} total events tracked
                       </span>
+                      {trendPct !== null && (
+                        <span style={{ fontSize:11, padding:'3px 10px', borderRadius:99, fontWeight:700,
+                          background: trendPct >= 0 ? '#DCFCE7' : '#FEE2E2',
+                          color: trendPct >= 0 ? '#15803D' : '#B91C1C' }}>
+                          {trendPct >= 0 ? '▲' : '▼'} {Math.abs(trendPct)}% vs prev week
+                        </span>
+                      )}
                     </div>
                     <Btn onClick={loadClicks} disabled={analyticsLoading} variant="primary" style={{ fontSize:12, padding:'6px 14px' }}>
                       {analyticsLoading ? 'Refreshing...' : <><IconRefresh size={13} /> Refresh Data</>}
                     </Btn>
                   </div>
 
-                  {/* ── KPI METRIC CARDS ── */}
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14 }}>
+                  {/* KPI METRIC CARDS */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:14 }}>
                     {[
-                      { label:'Total Events',  val:clicks.length,          note:'Recorded clicks',   Icon:IconBarChart },
-                      { label:'Unique Paths',   val:pathsList.length,        note:'Active pages',      Icon:IconLink },
-                      { label:'Referrers',      val:referrersList.length,    note:'Traffic sources',   Icon:IconGlobe },
-                      { label:'Countries',      val:countriesList.length,    note:'Visitor locations', Icon:IconMapPin },
+                      { label:'Total Events',    val:clicks.length,       note:'All recorded page visits',    Icon:IconBarChart },
+                      { label:'Last 7 Days',     val:last7,               note:`${prev7} in previous 7 days`, Icon:IconBarChart },
+                      { label:'Unique Paths',    val:pathsList.length,    note:'Distinct pages visited',      Icon:IconLink },
+                      { label:'Traffic Sources', val:referrersList.length,note:'Distinct referrers',          Icon:IconGlobe },
+                      { label:'Countries',       val:countriesList.length,note:'Visitor locations detected',  Icon:IconMapPin },
+                      { label:'Device Types',    val:deviceList.length,   note:'Device categories seen',      Icon:IconBarChart },
                     ].map(({ label, val, note, Icon }) => (
                       <div key={label} className="sa-card" style={{ padding:'16px 20px', display:'flex', flexDirection:'column', gap:4 }}>
                         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
@@ -2229,135 +2268,150 @@ export default function SuperadminPage() {
                     ))}
                   </div>
 
-                  {/* ── TOP ROW: PATHS & REFERRERS ── */}
+                  {/* WEEKLY TREND BAR CHART */}
+                  <div className="sa-card">
+                    <div style={{ fontSize:13, fontWeight:800, color:'#0F2218', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                      <span>Traffic Trend — Last 7 Days</span>
+                      <span style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', padding:'2px 8px', borderRadius:6, fontWeight:700, border:'1px solid #CCFBF1' }}>WEEKLY</span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'flex-end', gap:8, height:90 }}>
+                      {weekDays.map(d => (
+                        <div key={d.date} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                          <div style={{ fontSize:10, fontWeight:700, color:'#0D9488', minHeight:14 }}>{d.count > 0 ? d.count : ''}</div>
+                          <div
+                            title={`${d.label}: ${d.count} visits`}
+                            style={{
+                              width:'100%', borderRadius:6,
+                              background: d.date === todayStr
+                                ? 'linear-gradient(180deg,#0D9488 0%,#14B8A6 100%)'
+                                : 'linear-gradient(180deg,#6EE7B7 0%,#A7F3D0 100%)',
+                              height: Math.max(4, Math.round((d.count / weekMax) * 56)),
+                              transition:'height 0.3s ease',
+                              boxShadow: d.date === todayStr ? '0 2px 8px rgba(13,148,136,0.4)' : 'none',
+                            }}
+                          />
+                          <div style={{ fontSize:10, color:'#5A7A68', textAlign:'center', whiteSpace:'nowrap' }}>{d.label.split(' ')[0]}</div>
+                          <div style={{ fontSize:9, color:'#5A7A68', textAlign:'center' }}>{d.label.split(' ')[1]}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* TOP ROW: PATHS & REFERRERS */}
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(340px, 1fr))', gap:16 }}>
-                    
-                    {/* Top Paths Card */}
+
                     <div className="sa-card">
                       <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
-                        <span>Top Visited Paths</span>
-                        <span>CLICKS</span>
+                        <span>Top Visited Paths</span><span>CLICKS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {pathsList.length === 0 ? (
                           <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No path data recorded yet</div>
-                        ) : (
-                          pathsList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0FBF4', padding:'8px 14px', borderRadius:10, border:'1px solid #D4EDDE' }}>
-                              <span style={{ fontSize:12, fontFamily:'monospace', fontWeight:700, color:'#0F766E', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
-                                {item.name}
-                              </span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', background:'#FFFFFF', padding:'2px 8px', borderRadius:6, border:'1px solid #D4EDDE' }}>
-                                {item.count}
-                              </span>
-                            </div>
-                          ))
-                        )}
+                        ) : pathsList.slice(0, 10).map((item, idx) => (
+                          <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0FBF4', padding:'8px 14px', borderRadius:10, border:'1px solid #D4EDDE', position:'relative', overflow:'hidden' }}>
+                            <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13,148,136,0.08)', pointerEvents:'none' }} />
+                            <span style={{ fontSize:12, fontFamily:'monospace', fontWeight:700, color:'#0F766E', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'75%', zIndex:1 }}>
+                              {idx + 1}. {item.name}
+                            </span>
+                            <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', background:'#FFFFFF', padding:'2px 8px', borderRadius:6, border:'1px solid #D4EDDE', zIndex:1 }}>
+                              {item.count}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Top Referrers Card */}
                     <div className="sa-card">
                       <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:12, display:'flex', justifyContent:'space-between' }}>
-                        <span>Traffic Referrers</span>
-                        <span>VISITORS</span>
+                        <span>Traffic Referrers</span><span>VISITORS</span>
                       </div>
                       <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                         {referrersList.length === 0 ? (
                           <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No referrer data yet</div>
-                        ) : (
-                          referrersList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0FBF4', padding:'8px 14px', borderRadius:10, border:'1px solid #D4EDDE' }}>
-                              <span style={{ fontSize:12, fontWeight:600, color:'#0F2218', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'80%' }}>
-                                {item.name}
-                              </span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', background:'#FFFFFF', padding:'2px 8px', borderRadius:6, border:'1px solid #D4EDDE' }}>
-                                {item.count}
-                              </span>
-                            </div>
-                          ))
-                        )}
+                        ) : referrersList.slice(0, 10).map(item => (
+                          <div key={item.name} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F0FBF4', padding:'8px 14px', borderRadius:10, border:'1px solid #D4EDDE', position:'relative', overflow:'hidden' }}>
+                            <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13,148,136,0.08)', pointerEvents:'none' }} />
+                            <span style={{ fontSize:12, fontWeight:600, color:'#0F2218', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', maxWidth:'75%', zIndex:1 }}>
+                              {item.name === 'direct' ? '🔗 Direct / Bookmark' : item.name}
+                            </span>
+                            <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', background:'#FFFFFF', padding:'2px 8px', borderRadius:6, border:'1px solid #D4EDDE', zIndex:1 }}>
+                              {item.count}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                   </div>
 
-                  {/* ── MIDDLE ROW: COUNTRIES, BROWSERS, OPERATING SYSTEMS ── */}
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(280px, 1fr))', gap:16 }}>
-                    
-                    {/* Countries List */}
-                    <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
-                        <span>Countries</span>
-                        <span>SHARE</span>
-                      </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                        {countriesList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No country data</div>
-                        ) : (
-                          countriesList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1, display:'flex', alignItems:'center', gap:8 }}>
-                                <span style={{ fontSize:10, fontWeight:800, background:'#0D9488', color:'#fff', borderRadius:4, padding:'1px 5px', fontFamily:'monospace', letterSpacing:'0.05em' }}>{getCountryCode(item.name)}</span>
-                                <span>{getCountryFullName(item.name)}</span>
-                              </span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                  {/* COUNTRIES, BROWSERS, OS, DEVICES */}
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(220px, 1fr))', gap:16 }}>
 
-                    {/* Browsers List */}
-                    <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
-                        <span>Browsers</span>
-                        <span>SHARE</span>
-                      </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                        {browsersList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No browser data</div>
-                        ) : (
-                          browsersList.slice(0, 6).map(item => (
+                    {[
+                      { title:'Countries', data:countriesList, renderName: item => (
+                        <span style={{ display:'flex', alignItems:'center', gap:8 }}>
+                          <span style={{ fontSize:10, fontWeight:800, background:'#0D9488', color:'#fff', borderRadius:4, padding:'1px 5px', fontFamily:'monospace' }}>{getCountryCode(item.name)}</span>
+                          <span>{getCountryFullName(item.name)}</span>
+                        </span>
+                      )},
+                      { title:'Browsers', data:browsersList, renderName: item => item.name },
+                      { title:'Operating Systems', data:osList, renderName: item => item.name },
+                      { title:'Device Types', data:deviceList, renderName: item => (
+                        <span>{item.name === 'Mobile' ? '📱 ' : item.name === 'Tablet' ? '📟 ' : '🖥️ '}{item.name}</span>
+                      )},
+                    ].map(({ title, data, renderName }) => (
+                      <div key={title} className="sa-card">
+                        <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
+                          <span>{title}</span><span>SHARE</span>
+                        </div>
+                        <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                          {data.length === 0 ? (
+                            <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No data yet</div>
+                          ) : data.slice(0, 8).map(item => (
                             <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1 }}>{item.name}</span>
+                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13,148,136,0.12)', pointerEvents:'none' }} />
+                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1 }}>{renderName(item)}</span>
                               <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
                             </div>
-                          ))
-                        )}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Operating Systems List */}
-                    <div className="sa-card">
-                      <div style={{ fontSize:11, fontWeight:800, color:'#5A7A68', textTransform:'uppercase', letterSpacing:'0.06em', marginBottom:14, display:'flex', justifyContent:'space-between' }}>
-                        <span>Operating Systems</span>
-                        <span>SHARE</span>
-                      </div>
-                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                        {osList.length === 0 ? (
-                          <div style={{ padding:'20px 0', textAlign:'center', color:'#5A7A68', fontSize:12 }}>No OS data</div>
-                        ) : (
-                          osList.slice(0, 6).map(item => (
-                            <div key={item.name} style={{ position:'relative', overflow:'hidden', background:'#F0FBF4', borderRadius:10, padding:'8px 14px', display:'flex', justifyContent:'space-between', alignItems:'center', border:'1px solid #D4EDDE' }}>
-                              <div style={{ position:'absolute', top:0, left:0, bottom:0, width:`${item.pct}%`, background:'rgba(13, 148, 136, 0.12)', borderRadius:10, pointerEvents:'none' }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#0F2218', zIndex:1 }}>{item.name}</span>
-                              <span style={{ fontSize:12, fontWeight:800, color:'#0D9488', fontFamily:'monospace', zIndex:1 }}>{item.pct}%</span>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </div>
+                    ))}
 
                   </div>
 
-                  {/* ── BOTTOM ROW: RECENT TRAFFIC EVENTS TABLE ── */}
+                  {/* TODAY HOURLY HEATMAP */}
                   <div className="sa-card">
-                    <div style={{ fontSize:14, fontWeight:800, color:'#0F2218', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:'#0F2218', marginBottom:14 }}>
+                      Hourly Traffic — Today &nbsp;
+                      <span style={{ fontSize:12, fontWeight:600, color:'#0D9488' }}>
+                        ({clicks.filter(c => (c.created_at||'').startsWith(todayStr)).length} visits today)
+                      </span>
+                    </div>
+                    <div style={{ display:'flex', alignItems:'flex-end', gap:3, height:60, overflowX:'auto', paddingBottom:4 }}>
+                      {hourBuckets.map(b => (
+                        <div key={b.hour} style={{ flex:'0 0 auto', width:26, display:'flex', flexDirection:'column', alignItems:'center', gap:2 }}>
+                          <div
+                            title={`${String(b.hour).padStart(2,'0')}:00 — ${b.count} visits`}
+                            style={{
+                              width:'100%', borderRadius:4,
+                              background: b.count > 0 ? `rgba(13,148,136,${0.2 + 0.8*(b.count/hourMax)})` : '#E8F5E9',
+                              height: Math.max(3, Math.round((b.count/hourMax)*40)),
+                              transition:'height 0.3s',
+                            }}
+                          />
+                          <div style={{ fontSize:7, color:'#5A7A68', textAlign:'center' }}>{b.hour}h</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* SEQUENTIAL RECENT TRAFFIC LOG */}
+                  <div className="sa-card">
+                    <div style={{ fontSize:14, fontWeight:800, color:'#0F2218', marginBottom:14, display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' }}>
                       <span>Recent Traffic Activity Log</span>
-                      <span style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', padding:'2px 8px', borderRadius:6, fontWeight:700, border:'1px solid #CCFBF1' }}>LIVE</span>
+                      <span style={{ fontSize:11, background:'#F0FDFA', color:'#0D9488', padding:'2px 8px', borderRadius:6, fontWeight:700, border:'1px solid #CCFBF1' }}>SEQUENTIAL</span>
+                      <span style={{ fontSize:11, color:'#5A7A68' }}>Newest first · {clicks.length} total recorded</span>
                     </div>
                     {analyticsLoading ? (
                       <div style={{ padding:30, textAlign:'center', color:'#5A7A68', fontSize:12 }}>Loading recent events...</div>
@@ -2368,16 +2422,19 @@ export default function SuperadminPage() {
                         <table className="sa-table">
                           <thead>
                             <tr>
+                              <th className="sa-th" style={{ width:36 }}>#</th>
                               <th className="sa-th">Target Path</th>
                               <th className="sa-th">Referrer</th>
                               <th className="sa-th">Browser / OS</th>
+                              <th className="sa-th">Device</th>
                               <th className="sa-th">Location</th>
                               <th className="sa-th" style={{ textAlign:'right' }}>Time</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {clicks.slice(0, 15).map(c => (
+                            {clicks.slice(0, 50).map((c, idx) => (
                               <tr key={c.id} style={{ transition:'background 0.15s' }}>
+                                <td className="sa-td" style={{ fontSize:10, color:'#9CA3AF', fontFamily:'monospace' }}>{idx + 1}</td>
                                 <td className="sa-td" style={{ fontFamily:'monospace', fontSize:12, color:'#0D9488', fontWeight:700 }}>
                                   {getCleanPath(c.url)}
                                 </td>
@@ -2386,6 +2443,9 @@ export default function SuperadminPage() {
                                 </td>
                                 <td className="sa-td" style={{ fontSize:12, color:'#5A7A68' }}>
                                   {getDetailedBrowserName(c.user_agent)} ({getOSName(c.user_agent)})
+                                </td>
+                                <td className="sa-td" style={{ fontSize:12, color:'#5A7A68' }}>
+                                  {getDeviceCategory(c.user_agent)}
                                 </td>
                                 <td className="sa-td" style={{ fontSize:12, fontWeight:700, color:'#0F2218' }}>
                                   <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>
@@ -2400,6 +2460,11 @@ export default function SuperadminPage() {
                             ))}
                           </tbody>
                         </table>
+                        {clicks.length > 50 && (
+                          <div style={{ padding:'10px 16px', textAlign:'center', fontSize:12, color:'#5A7A68', borderTop:'1px solid #D4EDDE' }}>
+                            Showing 50 of {clicks.length} sequential events. All {clicks.length} are included in stats above.
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

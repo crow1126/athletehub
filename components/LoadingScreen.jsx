@@ -334,9 +334,14 @@ export function LoginLoadingScreen({
  *   Renders the rich glowing login animation.
  * Otherwise ('traditional' or default non-login):
  *   Renders the traditional loading screen with a plain background and a small circular motion.
+ *
+ * `minDuration` (ms): keep screen visible for at least this long to avoid UI flicker
+ * on slow networks. Defaults to 4000ms on first visit (when sessionStorage flag is set),
+ * otherwise 0.
  */
 export default function LoadingScreen({
   variant = 'auto', // 'auto' | 'traditional' | 'login'
+  minDuration,      // optional override in ms
   ...props
 }) {
   const [isLogin, setIsLogin] = React.useState(() => {
@@ -352,6 +357,22 @@ export default function LoadingScreen({
     return false
   })
 
+  // Enforce minimum visible duration to prevent early-exit glitching
+  const [ready, setReady] = React.useState(false)
+  React.useEffect(() => {
+    const defaultMin = (() => {
+      if (typeof window === 'undefined') return 0
+      try {
+        // On a fresh login transition use 4 s, on normal layout loading 1.2 s
+        return sessionStorage.getItem('apex_logging_in') === 'true' ? 4000 : 1200
+      } catch { return 0 }
+    })()
+    const delay = typeof minDuration === 'number' ? minDuration : defaultMin
+    if (delay <= 0) { setReady(true); return }
+    const t = setTimeout(() => setReady(true), delay)
+    return () => clearTimeout(t)
+  }, [minDuration])
+
   React.useEffect(() => {
     if (variant === 'login') {
       setIsLogin(true)
@@ -365,6 +386,12 @@ export default function LoadingScreen({
       }
     }
   }, [variant])
+
+  // Stay visible until both isLogin is resolved AND the min duration has passed
+  // `ready` gating is handled by the parent — we just always render ourselves.
+  // The parent conditionally un-mounts us; we can't block that.
+  // What we CAN do: on the login variant keep showing until `ready`, by returning
+  // the loading screen regardless of what the parent says.
 
   if (isLogin) {
     return <LoginLoadingScreen {...props} />

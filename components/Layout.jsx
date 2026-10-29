@@ -32,9 +32,9 @@ const ALL_NAV = [
   { href:'/contracts',   label:'Contracts',          page:'contracts'   },
   { href:'/reports',     label:'Reports',            page:'reports'     },
   { href:'/activity',    label:'Activity Log',       page:'activity'    },
-  { href:'/settings',    label:'Settings',           page:'settings'    },
   { href:'/transfers',   label:'Transfers',          page:'transfers'   },
   { href:'/billing',     label:'Billing',            page:'billing'     },
+  { href:'/settings',    label:'Settings',           page:'settings'    },
 ]
 
 const MOBILE_NAV = ['superadmin','dashboard','notices','athletes','schedule','injuries','settings']

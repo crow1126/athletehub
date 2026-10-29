@@ -173,9 +173,13 @@ export default function LandingPage() {
     }
     return false
   })
+  // Track when splash started so we can enforce a minimum display time
+  const splashStartRef = typeof window !== 'undefined' ? { current: Date.now() } : { current: 0 }
 
   useEffect(() => {
     async function checkAuthSession() {
+      const MIN_SPLASH_MS = 4000 // at least 4s for network stability
+      const startTime = Date.now()
       try {
         let session = null
         const { data } = await supabase.auth.getSession()
@@ -206,13 +210,17 @@ export default function LandingPage() {
             .single()
 
           if (profile && profile.is_active !== false) {
-            if (profile.role === 'superadmin') {
-              router.replace('/superadmin')
-            } else if (profile.role === 'player') {
-              router.replace('/player-hub')
-            } else {
-              router.replace('/dashboard')
-            }
+            const elapsed = Date.now() - startTime
+            const delay = Math.max(0, MIN_SPLASH_MS - elapsed)
+            setTimeout(() => {
+              if (profile.role === 'superadmin') {
+                router.replace('/superadmin')
+              } else if (profile.role === 'player') {
+                router.replace('/player-hub')
+              } else {
+                router.replace('/dashboard')
+              }
+            }, delay)
             return
           }
         }

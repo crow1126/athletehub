@@ -57,6 +57,8 @@ export default function LoginPage() {
   const [showPass,   setShowPass]  = useState(false)
   const [loading,    setLoading]   = useState(false)
   const [loggingIn,  setLoggingIn] = useState(false)
+  // Track when loggingIn started so we can enforce min 4 s splash
+  const loginStartRef = { current: 0 }
   const [error,      setError]     = useState('')
 
   const handleLogoFile = (file) => {
@@ -180,6 +182,8 @@ export default function LoginPage() {
       if (typeof window !== 'undefined') {
         try { sessionStorage.setItem('apex_logging_in', 'true') } catch (_e) {}
       }
+      const loginSplashStart = Date.now()
+      const MIN_LOGIN_SPLASH_MS = 4000
       const { data:profile } = await supabase.from('profiles').select('is_active, role, registration_status').eq('id',data.user.id).single()
       if (profile?.is_active === false) {
         setLoggingIn(false)
@@ -199,13 +203,13 @@ export default function LoginPage() {
         }
         setLoading(false); return
       }
-      if (profile?.role === 'superadmin') {
-        window.location.href = '/superadmin'
-      } else if (profile?.role === 'player') {
-        window.location.href = '/player-hub'
-      } else {
-        window.location.href = '/dashboard'
-      }
+      const destination = profile?.role === 'superadmin' ? '/superadmin'
+        : profile?.role === 'player' ? '/player-hub'
+        : '/dashboard'
+      // Ensure loading splash shows for at least MIN_LOGIN_SPLASH_MS for network stability
+      const elapsed = Date.now() - loginSplashStart
+      const delay = Math.max(0, MIN_LOGIN_SPLASH_MS - elapsed)
+      setTimeout(() => { window.location.href = destination }, delay)
     } catch(err) {
       setLoggingIn(false)
       if (typeof window !== 'undefined') {

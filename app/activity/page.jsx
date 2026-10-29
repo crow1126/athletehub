@@ -79,7 +79,7 @@ export default function AdminActivityLogPage() {
   const [activeModule, setActiveModule] = useState('all')
   const [searchQuery, setSearchQuery]   = useState('')
   const [roleFilter, setRoleFilter]     = useState('all')
-  const [timeRange, setTimeRange]       = useState('30d') // 'today' | '7d' | '30d' | 'all'
+  const [timeRange, setTimeRange]       = useState('all') // 'today' | '7d' | '30d' | 'all'
 
   const fetchActivities = useCallback(async (isManual = false) => {
     if (isManual) setRefreshing(true)
@@ -97,41 +97,96 @@ export default function AdminActivityLogPage() {
 
       const events = []
 
-      // 1. Fetch Injury Records
-      try {
-        const { data: injData } = await scopeTeam(
+      // Fetch all sources in parallel for faster loading
+      const [injResult, rehabResult, perfResult, sesResult, athResult, scoutResult, noticeResult] = await Promise.allSettled([
+        // 1. Injury Records
+        scopeTeam(
           supabase
             .from('injuries')
             .select('id, injury_type, body_part, severity, status, logged_at, created_at, updated_at, logged_by, updated_by, athletes(id, name, squad_number)')
             .order('created_at', { ascending: false })
+            .limit(200),
+          currentTeamId
+        ),
+        // 2. Rehabilitation Notes
+        scopeTeam(
+          supabase
+            .from('rehabilitation_notes')
+            .select('id, note_type, session_date, created_at, author_name, author_role, treatment_performed, athletes(name)')
+            .order('created_at', { ascending: false })
+            .limit(200),
+          currentTeamId
+        ),
+        // 3. Performance Stats
+        scopeTeam(
+          supabase
+            .from('performance_stats')
+            .select('id, match_date, opponent, goals, assists, rating, minutes_played, created_at, athletes(name, position)')
+            .order('created_at', { ascending: false })
+            .limit(200),
+          currentTeamId
+        ),
+        // 4. Training Sessions
+        scopeTeam(
+          supabase
+            .from('training_sessions')
+            .select('id, title, date, time, type, duration, created_at, coaches(name)')
+            .order('created_at', { ascending: false })
+            .limit(200),
+          currentTeamId
+        ),
+        // 5. Athletes
+        scopeTeam(
+          supabase
+            .from('athletes')
+            .select('id, name, position, club, status, created_at')
+            .order('created_at', { ascending: false })
             .limit(100),
           currentTeamId
-        )
+        ),
+        // 6. Scouting Reports
+        scopeTeam(
+          supabase
+            .from('scouting_reports')
+            .select('id, player_name, position, overall_rating, created_at')
+            .order('created_at', { ascending: false })
+            .limit(100),
+          currentTeamId
+        ),
+        // 7. Notices
+        scopeTeam(
+          supabase
+            .from('notices')
+            .select('id, title, priority, created_at, profiles(full_name, role)')
+            .order('created_at', { ascending: false })
+            .limit(50),
+          currentTeamId
+        ),
+      ])
 
-        // Resolve staff names if available
+      // 1. Process Injury Records
+      if (injResult.status === 'fulfilled') {
+        const injData = injResult.value?.data || []
+        // Resolve staff names
         const staffIds = new Set()
-        ;(injData || []).forEach(i => {
+        injData.forEach(i => {
           if (i.logged_by) staffIds.add(i.logged_by)
           if (i.updated_by) staffIds.add(i.updated_by)
         })
-
         let profileMap = {}
         if (staffIds.size > 0) {
-          const { data: profiles } = await supabase
-            .from('profiles')
-            .select('id, full_name, role')
-            .in('id', Array.from(staffIds))
-          if (profiles) {
-            profiles.forEach(p => { profileMap[p.id] = p })
-          }
+          try {
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, full_name, role')
+              .in('id', Array.from(staffIds))
+            if (profiles) profiles.forEach(p => { profileMap[p.id] = p })
+          } catch {}
         }
-
-        ;(injData || []).forEach(i => {
+        injData.forEach(i => {
           const author = profileMap[i.logged_by]
           const updater = profileMap[i.updated_by]
           const athName = i.athletes?.name || 'Athlete'
-
-          // Created event
           events.push({
             id: `inj-create-${i.id}`,
             module: 'medical',
@@ -145,8 +200,6 @@ export default function AdminActivityLogPage() {
             badgeBg: '#FEE2E2',
             badgeColor: '#B91C1C',
           })
-
-          // Updated event if different timestamp
           if (i.updated_at && i.updated_at !== i.created_at && updater) {
             events.push({
               id: `inj-update-${i.id}`,
@@ -163,22 +216,12 @@ export default function AdminActivityLogPage() {
             })
           }
         })
-      } catch (err) {
-        console.warn('Could not load injury activities:', err)
-      }
+      } else { console.warn('Could not load injury activities:', injResult.reason) }
 
-      // 2. Fetch Rehabilitation Notes
-      try {
-        const { data: rehabData } = await scopeTeam(
-          supabase
-            .from('rehabilitation_notes')
-            .select('id, note_type, session_date, created_at, author_name, author_role, treatment_performed, athletes(name)')
-            .order('created_at', { ascending: false })
-            .limit(100),
-          currentTeamId
-        )
-
-        ;(rehabData || []).forEach(r => {
+      // 2. Process Rehabilitation Notes
+      if (rehabResult.status === 'fulfilled') {
+        const rehabData = rehabResult.value?.data || []
+        rehabData.forEach(r => {
           const athName = r.athletes?.name || 'Athlete'
           events.push({
             id: `rehab-${r.id}`,
@@ -194,22 +237,12 @@ export default function AdminActivityLogPage() {
             badgeColor: '#B91C1C',
           })
         })
-      } catch (err) {
-        console.warn('Could not load rehab notes:', err)
-      }
+      } else { console.warn('Could not load rehab notes:', rehabResult.reason) }
 
-      // 3. Fetch Performance Stats
-      try {
-        const { data: perfData } = await scopeTeam(
-          supabase
-            .from('performance_stats')
-            .select('id, match_date, opponent, goals, assists, rating, minutes_played, created_at, athletes(name, position)')
-            .order('created_at', { ascending: false })
-            .limit(100),
-          currentTeamId
-        )
-
-        ;(perfData || []).forEach(p => {
+      // 3. Process Performance Stats
+      if (perfResult.status === 'fulfilled') {
+        const perfData = perfResult.value?.data || []
+        perfData.forEach(p => {
           const athName = p.athletes?.name || 'Player'
           const opp = p.opponent ? ` vs ${p.opponent}` : ''
           events.push({
@@ -226,22 +259,12 @@ export default function AdminActivityLogPage() {
             badgeColor: '#7E22CE',
           })
         })
-      } catch (err) {
-        console.warn('Could not load performance stats:', err)
-      }
+      } else { console.warn('Could not load performance stats:', perfResult.reason) }
 
-      // 4. Fetch Training Sessions
-      try {
-        const { data: sesData } = await scopeTeam(
-          supabase
-            .from('training_sessions')
-            .select('id, title, date, time, type, duration, created_at, coaches(name)')
-            .order('created_at', { ascending: false })
-            .limit(100),
-          currentTeamId
-        )
-
-        ;(sesData || []).forEach(s => {
+      // 4. Process Training Sessions
+      if (sesResult.status === 'fulfilled') {
+        const sesData = sesResult.value?.data || []
+        sesData.forEach(s => {
           const coachName = s.coaches?.name || 'Head Coach'
           events.push({
             id: `sch-${s.id}`,
@@ -257,22 +280,12 @@ export default function AdminActivityLogPage() {
             badgeColor: '#0369A1',
           })
         })
-      } catch (err) {
-        console.warn('Could not load training sessions:', err)
-      }
+      } else { console.warn('Could not load training sessions:', sesResult.reason) }
 
-      // 5. Fetch Athletes (Squad registrations)
-      try {
-        const { data: athData } = await scopeTeam(
-          supabase
-            .from('athletes')
-            .select('id, name, position, club, status, created_at')
-            .order('created_at', { ascending: false })
-            .limit(50),
-          currentTeamId
-        )
-
-        ;(athData || []).forEach(a => {
+      // 5. Process Athletes
+      if (athResult.status === 'fulfilled') {
+        const athData = athResult.value?.data || []
+        athData.forEach(a => {
           events.push({
             id: `ath-${a.id}`,
             module: 'athletes',
@@ -287,22 +300,12 @@ export default function AdminActivityLogPage() {
             badgeColor: '#047857',
           })
         })
-      } catch (err) {
-        console.warn('Could not load athletes:', err)
-      }
+      } else { console.warn('Could not load athletes:', athResult.reason) }
 
-      // 6. Fetch Scouting Reports
-      try {
-        const { data: scoutData } = await scopeTeam(
-          supabase
-            .from('scouting_reports')
-            .select('id, player_name, position, overall_rating, created_at')
-            .order('created_at', { ascending: false })
-            .limit(50),
-          currentTeamId
-        )
-
-        ;(scoutData || []).forEach(sc => {
+      // 6. Process Scouting Reports
+      if (scoutResult.status === 'fulfilled') {
+        const scoutData = scoutResult.value?.data || []
+        scoutData.forEach(sc => {
           events.push({
             id: `scout-${sc.id}`,
             module: 'scouting',
@@ -317,22 +320,12 @@ export default function AdminActivityLogPage() {
             badgeColor: '#A16207',
           })
         })
-      } catch (err) {
-        console.warn('Could not load scouting reports:', err)
-      }
+      } else { console.warn('Could not load scouting reports:', scoutResult.reason) }
 
-      // 7. Fetch Notice Board Announcements
-      try {
-        const { data: noticeData } = await scopeTeam(
-          supabase
-            .from('notices')
-            .select('id, title, priority, created_at, profiles(full_name, role)')
-            .order('created_at', { ascending: false })
-            .limit(30),
-          currentTeamId
-        )
-
-        ;(noticeData || []).forEach(n => {
+      // 7. Process Notices
+      if (noticeResult.status === 'fulfilled') {
+        const noticeData = noticeResult.value?.data || []
+        noticeData.forEach(n => {
           const author = n.profiles
           events.push({
             id: `notice-${n.id}`,
@@ -348,9 +341,7 @@ export default function AdminActivityLogPage() {
             badgeColor: '#4F46E5',
           })
         })
-      } catch (err) {
-        console.warn('Could not load notices:', err)
-      }
+      } else { console.warn('Could not load notices:', noticeResult.reason) }
 
       // Sort all events in descending chronological order
       events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -393,7 +384,10 @@ export default function AdminActivityLogPage() {
         const actDate = new Date(act.timestamp)
         const diffMs = now.getTime() - actDate.getTime()
         const diffHours = diffMs / (1000 * 60 * 60)
-        if (timeRange === 'today' && diffHours > 24) return false
+        if (timeRange === 'today') {
+          // actual calendar day match
+          if (actDate.toDateString() !== now.toDateString()) return false
+        }
         if (timeRange === '7d' && diffHours > 24 * 7) return false
         if (timeRange === '30d' && diffHours > 24 * 30) return false
       }

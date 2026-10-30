@@ -100,22 +100,36 @@ export default function LoginPage() {
       }
       if (p.get('tab') === 'signup') setTab('signup')
     }
-    supabase.auth.getSession().then(async ({ data:{ session } }) => {
-      if (session) {
-        try {
-          const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
-          if (profile?.is_active !== false) {
-            if (profile?.role === 'superadmin') {
-              router.replace('/superadmin')
-            } else if (profile?.role === 'player') {
-              router.replace('/player-hub')
-            } else {
-              router.replace('/dashboard')
+
+    // Only auto-redirect on login page if within native app (Capacitor/Electron).
+    // On the public website, opening /login should allow manual entry every time.
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+    const isNative = typeof window !== 'undefined' && Boolean(
+      window.electronAPI?.isElectron ||
+      window.Capacitor?.isNativePlatform?.() ||
+      ua.includes('Electron') ||
+      ua.includes('ApexTrackDesktop') ||
+      (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')))
+    )
+
+    if (isNative) {
+      supabase.auth.getSession().then(async ({ data:{ session } }) => {
+        if (session) {
+          try {
+            const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
+            if (profile?.is_active !== false) {
+              if (profile?.role === 'superadmin') {
+                router.replace('/superadmin')
+              } else if (profile?.role === 'player') {
+                router.replace('/player-hub')
+              } else {
+                router.replace('/dashboard')
+              }
             }
-          }
-        } catch (_e) { /* session check failed silently */ }
-      }
-    }).catch(()=>{})
+          } catch (_e) { /* session check failed silently */ }
+        }
+      }).catch(()=>{})
+    }
   }, [])
 
   async function handleResendVerification() {

@@ -165,20 +165,46 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeFaq, setActiveFaq] = useState(null)
+  // For web visitors: NEVER auto-redirect away from the landing page.
+  // Anyone opening the website lands cleanly on the landing page and must manually click Sign In.
+  // Native apps (Capacitor/Electron) check session on launch.
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
-      const hasAuthCookie = document.cookie.includes('sb-') || document.cookie.includes('auth')
-      const hasAuthBackup = !!localStorage.getItem('sb-session-backup')
-      return hasAuthCookie || hasAuthBackup
+      const ua = navigator.userAgent || ''
+      const isNative = Boolean(
+        window.electronAPI?.isElectron ||
+        window.Capacitor?.isNativePlatform?.() ||
+        ua.includes('Electron') ||
+        ua.includes('ApexTrackDesktop') ||
+        (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')))
+      )
+      if (isNative) {
+        return document.cookie.includes('sb-') || !!localStorage.getItem('sb-session-backup')
+      }
     }
     return false
   })
-  // Track when splash started so we can enforce a minimum display time
-  const splashStartRef = typeof window !== 'undefined' ? { current: Date.now() } : { current: 0 }
 
   useEffect(() => {
     async function checkAuthSession() {
-      const MIN_SPLASH_MS = 4000 // at least 4s for network stability
+      // In a public web browser: do not auto-login or redirect to dashboard on landing page.
+      // Every web visitor starts at the landing page and logs in deliberately.
+      if (typeof window !== 'undefined') {
+        const ua = navigator.userAgent || ''
+        const isNative = Boolean(
+          window.electronAPI?.isElectron ||
+          window.Capacitor?.isNativePlatform?.() ||
+          ua.includes('Electron') ||
+          ua.includes('ApexTrackDesktop') ||
+          (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')))
+        )
+        if (!isNative) {
+          setShowSplash(false)
+          return
+        }
+      }
+
+      const MIN_SPLASH_MS = 4000 // at least 4s for network stability in native apps
       const startTime = Date.now()
       try {
         let session = null
@@ -226,7 +252,7 @@ export default function LandingPage() {
         }
       } catch (_e) {}
 
-      // If unauthenticated, show the landing page (don't force kick to /login)
+      // If unauthenticated, show the landing page
       setShowSplash(false)
     }
 

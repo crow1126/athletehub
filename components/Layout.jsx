@@ -363,8 +363,18 @@ function getTimeAgo(isoStr) {
 export default function Layout({ children }) {
   const path   = usePathname()
   const router = useRouter()
-  const [profile,    setProfile]    = useState(null)
-  const [loading,    setLoading]    = useState(true)
+  const [profile,    setProfile]    = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const lastUid = localStorage.getItem('apex_last_user_id')
+      if (lastUid) {
+        const saved = localStorage.getItem(`apex_tenant_profile_${lastUid}`)
+        if (saved) return JSON.parse(saved)
+      }
+    } catch {}
+    return null
+  })
+  const [loading,    setLoading]    = useState(() => !profile)
   const [expanded,   setExpanded]   = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
   const [logoError,  setLogoError]  = useState(false)
@@ -455,7 +465,9 @@ export default function Layout({ children }) {
     } catch (e) { console.error('Layout error:', e) }
     setLoading(false)
     if (typeof window !== 'undefined') {
-      try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+      setTimeout(() => {
+        try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+      }, 500)
     }
   }, [router, path])
 
@@ -603,7 +615,7 @@ export default function Layout({ children }) {
   const teamShort = profile?.teams?.short_name || (profile?.club_name ? profile.club_name.slice(0,3).toUpperCase() : 'ADM')
   const teamLogo  = profile?.teams?.logo_url || (role !== 'superadmin' && profile?.club_logo_url && !profile.club_logo_url.startsWith('data:') ? profile.club_logo_url : null)
 
-  if (loading) return <LoadingScreen />
+  if (loading) return <LoadingScreen variant="traditional" />
 
 
 

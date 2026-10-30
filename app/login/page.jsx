@@ -198,7 +198,7 @@ export default function LoginPage() {
       }
       const loginSplashStart = Date.now()
       const MIN_LOGIN_SPLASH_MS = 4000
-      const { data:profile } = await supabase.from('profiles').select('is_active, role, registration_status').eq('id',data.user.id).single()
+      const { data:profile } = await supabase.from('profiles').select('id, is_active, role, registration_status, team_id, club_name, club_logo_url').eq('id',data.user.id).single()
       if (profile?.is_active === false) {
         setLoggingIn(false)
         if (typeof window !== 'undefined') {
@@ -217,13 +217,57 @@ export default function LoginPage() {
         }
         setLoading(false); return
       }
+
+      // Pre-warm profile in localStorage and cache so destination loads instantly
+      if (typeof window !== 'undefined' && profile) {
+        try {
+          localStorage.setItem('apex_last_user_id', data.user.id)
+          localStorage.setItem(`apex_tenant_profile_${data.user.id}`, JSON.stringify({
+            ...profile,
+            email: data.user.email || profile.email,
+          }))
+        } catch {}
+      }
+
+      // Pre-fetch dashboard data in parallel during the 4-second splash so it loads immediately on entry
+      if (profile?.team_id && profile?.role !== 'player' && profile?.role !== 'superadmin') {
+        const tid = profile.team_id
+        Promise.all([
+          supabase.from('athletes').select('*').eq('team_id', tid).order('created_at', { ascending: false }),
+          supabase.from('injuries').select('*,athletes(name,club,position,photo_url)').eq('team_id', tid),
+          supabase.from('coaches').select('*').eq('team_id', tid),
+          supabase.from('training_sessions').select('*,coaches(name)').eq('team_id', tid).order('date', { ascending: true }),
+          supabase.from('notices').select('*').eq('team_id', tid).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
+          supabase.from('performance_stats').select('*,athletes(id,name,position,photo_url)').eq('team_id', tid).order('match_date', { ascending: false }).limit(50),
+        ]).then(([{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }, { data: ps }]) => {
+          if (typeof window !== 'undefined') {
+            try {
+              sessionStorage.setItem(`apex_dashboard_cache_${tid}`, JSON.stringify({
+                athletes: a || [],
+                injuries: i || [],
+                coaches: c || [],
+                sessions: s || [],
+                notices: n || [],
+                performanceStats: ps || [],
+                cachedAt: Date.now(),
+              }))
+            } catch {}
+          }
+        }).catch(() => {})
+      }
+
       const destination = profile?.role === 'superadmin' ? '/superadmin'
         : profile?.role === 'player' ? '/player-hub'
         : '/dashboard'
-      // Ensure loading splash shows for at least MIN_LOGIN_SPLASH_MS for network stability
+      // Ensure loading splash shows for at least MIN_LOGIN_SPLASH_MS (4s)
       const elapsed = Date.now() - loginSplashStart
       const delay = Math.max(0, MIN_LOGIN_SPLASH_MS - elapsed)
-      setTimeout(() => { window.location.href = destination }, delay)
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          try { sessionStorage.removeItem('apex_logging_in') } catch (_e) {}
+        }
+        window.location.href = destination
+      }, delay)
     } catch(err) {
       setLoggingIn(false)
       if (typeof window !== 'undefined') {

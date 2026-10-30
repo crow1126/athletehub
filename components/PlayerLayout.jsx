@@ -293,8 +293,18 @@ function getTimeAgo(isoStr) {
 export default function PlayerLayout({ children }) {
   const path = usePathname()
   const router = useRouter()
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const lastUid = localStorage.getItem('apex_last_user_id')
+      if (lastUid) {
+        const saved = localStorage.getItem(`apex_tenant_profile_${lastUid}`)
+        if (saved) return JSON.parse(saved)
+      }
+    } catch {}
+    return null
+  })
+  const [loading, setLoading] = useState(() => !profile)
   const [logoError, setLogoError] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -473,7 +483,7 @@ export default function PlayerLayout({ children }) {
   const teamLogo = profile?.teams?.logo_url || profile?.club_logo_url || null
   const initials = (profile?.full_name || 'PL').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
 
-  if (loading) return <LoadingScreen subtitle="Player Hub Portal" />
+  if (loading) return <LoadingScreen variant="traditional" />
 
 
   function ClubLogo({ size = 40 }) {

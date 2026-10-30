@@ -62,13 +62,28 @@ function MiniChart({ data = [40, 55, 48, 62, 58, 72, 68, 75, 70, 80], color = '#
 
 export default function Dashboard() {
   const router = useRouter()
-  const [athletes, setAthletes] = useState([])
-  const [injuries, setInjuries] = useState([])
-  const [coaches, setCoaches] = useState([])
-  const [sessions, setSessions] = useState([])
-  const [notices, setNotices] = useState([])
-  const [performanceStats, setPerformanceStats] = useState([])
-  const [loading, setLoading] = useState(true)
+  // Fast cache rehydration for instant rendering
+  const [cachedData] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const tid = getLastKnownTeamId()
+      if (!tid) return null
+      const raw = sessionStorage.getItem(`apex_dashboard_cache_${tid}`)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed === 'object') return parsed
+      }
+    } catch {}
+    return null
+  })
+
+  const [athletes, setAthletes] = useState(() => cachedData?.athletes || [])
+  const [injuries, setInjuries] = useState(() => cachedData?.injuries || [])
+  const [coaches, setCoaches] = useState(() => cachedData?.coaches || [])
+  const [sessions, setSessions] = useState(() => cachedData?.sessions || [])
+  const [notices, setNotices] = useState(() => cachedData?.notices || [])
+  const [performanceStats, setPerformanceStats] = useState(() => cachedData?.performanceStats || [])
+  const [loading, setLoading] = useState(() => !cachedData)
   const [profile, setProfile] = useState(null)
   const [teamId, setTeamId] = useState(() => getLastKnownTeamId())
   const [isAdmin, setIsAdmin] = useState(false)
@@ -99,6 +114,19 @@ export default function Dashboard() {
     ])
     setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || []); setPerformanceStats(ps || [])
     setLoading(false)
+    if (typeof window !== 'undefined' && tid) {
+      try {
+        sessionStorage.setItem(`apex_dashboard_cache_${tid}`, JSON.stringify({
+          athletes: a || [],
+          injuries: i || [],
+          coaches: c || [],
+          sessions: s || [],
+          notices: n || [],
+          performanceStats: ps || [],
+          cachedAt: Date.now(),
+        }))
+      } catch {}
+    }
   }, [router])
 
   useEffect(() => {

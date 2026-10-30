@@ -1375,7 +1375,7 @@ export default function SuperadminPage() {
   }
 
   if (!authOk || (loading && profiles.length === 0)) {
-    return <LoadingScreen subtitle="Platform Superadmin Console" />
+    return <LoadingScreen variant="traditional" subtitle="Platform Superadmin Console" />
   }
 
 

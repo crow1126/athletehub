@@ -71,9 +71,19 @@ function getDayHeader(iso) {
 export default function AdminActivityLogPage() {
   const [currentUser, setCurrentUser] = useState(null)
   const [teamId, setTeamId]           = useState(null)
-  const [loading, setLoading]         = useState(true)
+  const [activities, setActivities]   = useState(() => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw = sessionStorage.getItem('apex_activity_cache')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed
+      }
+    } catch {}
+    return []
+  })
+  const [loading, setLoading]         = useState(() => activities.length === 0)
   const [refreshing, setRefreshing]   = useState(false)
-  const [activities, setActivities]   = useState([])
   
   // Filters
   const [activeModule, setActiveModule] = useState('all')
@@ -346,6 +356,9 @@ export default function AdminActivityLogPage() {
       // Sort all events in descending chronological order
       events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       setActivities(events)
+      if (typeof window !== 'undefined' && events.length > 0) {
+        try { sessionStorage.setItem('apex_activity_cache', JSON.stringify(events.slice(0, 100))) } catch {}
+      }
     } finally {
       setLoading(false)
       setRefreshing(false)

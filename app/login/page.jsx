@@ -164,41 +164,93 @@ export default function LoginPage() {
     if (!password)     { setError('Please enter your password.'); return }
     setLoading(true)
     try {
-      let loginEmail = email.trim().toLowerCase()
+      let rawIdentifier = email.trim()
+      let loginEmail = rawIdentifier.toLowerCase()
+      let authenticatedUser = null
+      let authenticatedSession = null
+
+      // If user provided a username or if client-side is on cellular network,
+      // use the server-side login endpoint to bypass client IP rate limiting
       if (!loginEmail.includes('@')) {
         try {
-          const resolveRes = await fetch(`/api/auth/resolve-username?username=${encodeURIComponent(loginEmail)}`)
-          const resolveData = await resolveRes.json()
-          if (resolveRes.ok && resolveData.email) {
-            loginEmail = resolveData.email
+          const serverRes = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ identifier: rawIdentifier, password }),
+          })
+          const serverData = await serverRes.json()
+          if (serverRes.ok && serverData.session) {
+            await supabase.auth.setSession({
+              access_token: serverData.session.access_token,
+              refresh_token: serverData.session.refresh_token,
+            })
+            authenticatedUser = serverData.session.user
+            authenticatedSession = serverData.session
           } else {
-            loginEmail = `${loginEmail}@apex.local`
+            const sMsg = serverData.error || ''
+            if (serverData.needsVerification) setNeedsVerification(true)
+            setError(sMsg || 'Incorrect username or password.')
+            setLoading(false); return
           }
-        } catch {
-          loginEmail = `${loginEmail}@apex.local`
+        } catch (_serverErr) {
+          setError('Network connection error. Please check your internet and try again.')
+          setLoading(false); return
+        }
+      } else {
+        // Direct email login with server fallback if rate-limited by Supabase
+        const { data, error: authError } = await supabase.auth.signInWithPassword({ email: loginEmail, password })
+        if (!authError && data?.session && data?.user) {
+          authenticatedUser = data.user
+          authenticatedSession = data.session
+        } else if (authError) {
+          const msg = authError.message || ''
+          const isRateLimit = msg.toLowerCase().includes('rate limit') || authError.status === 429
+          if (isRateLimit) {
+            // Client IP throttled on mobile carrier NAT — fallback to server route
+            try {
+              const serverRes = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ identifier: loginEmail, password }),
+              })
+              const serverData = await serverRes.json()
+              if (serverRes.ok && serverData.session) {
+                await supabase.auth.setSession({
+                  access_token: serverData.session.access_token,
+                  refresh_token: serverData.session.refresh_token,
+                })
+                authenticatedUser = serverData.session.user
+                authenticatedSession = serverData.session
+              } else {
+                setError(serverData.error || 'Too many sign-in attempts. Please wait 1-2 minutes before trying again.')
+                if (serverData.needsVerification) setNeedsVerification(true)
+                setLoading(false); return
+              }
+            } catch (_err) {
+              setError('Too many sign-in attempts. Please wait 1-2 minutes before trying again.')
+              setLoading(false); return
+            }
+          } else {
+            const unconfirmed = msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('confirm')
+            if (unconfirmed) {
+              setNeedsVerification(true)
+              setError('Please confirm your email first. Check your inbox for "Confirm your email - Apextrack GH", or resend the link below.')
+            } else {
+              setError(msg.toLowerCase().includes('invalid') ? 'Incorrect username, email or password.' : msg)
+            }
+            setLoading(false); return
+          }
         }
       }
 
-      const { data, error:authError } = await supabase.auth.signInWithPassword({ email:loginEmail, password })
-      if (authError) {
-        const msg = authError.message || ''
-        const unconfirmed = msg.toLowerCase().includes('email not confirmed') || msg.toLowerCase().includes('confirm')
-        if (unconfirmed) {
-          setNeedsVerification(true)
-          setError('Please confirm your email first. Check your inbox for "Confirm your email - Apextrack GH", or resend the link below.')
-        } else {
-          setError(msg.toLowerCase().includes('invalid') ? 'Incorrect username, email or password.' : msg)
-        }
-        setLoading(false); return
-      }
-      if (!data?.user) { setError('Login failed. Please try again.'); setLoading(false); return }
+      if (!authenticatedUser) { setError('Login failed. Please try again.'); setLoading(false); return }
       setLoggingIn(true)
       if (typeof window !== 'undefined') {
         try { sessionStorage.setItem('apex_logging_in', 'true') } catch (_e) {}
       }
       const loginSplashStart = Date.now()
       const MIN_LOGIN_SPLASH_MS = 4000
-      const { data:profile } = await supabase.from('profiles').select('id, is_active, role, registration_status, team_id, club_name, club_logo_url').eq('id',data.user.id).single()
+      const { data:profile } = await supabase.from('profiles').select('id, is_active, role, registration_status, team_id, club_name, club_logo_url').eq('id',authenticatedUser.id).single()
       if (profile?.is_active === false) {
         setLoggingIn(false)
         if (typeof window !== 'undefined') {
@@ -221,10 +273,10 @@ export default function LoginPage() {
       // Pre-warm profile in localStorage and cache so destination loads instantly
       if (typeof window !== 'undefined' && profile) {
         try {
-          localStorage.setItem('apex_last_user_id', data.user.id)
-          localStorage.setItem(`apex_tenant_profile_${data.user.id}`, JSON.stringify({
+          localStorage.setItem('apex_last_user_id', authenticatedUser.id)
+          localStorage.setItem(`apex_tenant_profile_${authenticatedUser.id}`, JSON.stringify({
             ...profile,
-            email: data.user.email || profile.email,
+            email: authenticatedUser.email || profile.email,
           }))
         } catch {}
       }

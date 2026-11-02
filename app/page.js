@@ -2228,7 +2228,7 @@ export default function LandingPage() {
           <div className="dl-pill-group">
             {/* Windows Button */}
             <a
-              href="https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe"
+              href="/download"
               target="_blank"
               rel="noopener noreferrer"
               className="dl-pill-btn"

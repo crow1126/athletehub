@@ -270,6 +270,13 @@ export default function LoginPage() {
         setLoading(false); return
       }
 
+      // Record login activity in background
+      fetch('/api/auth/log-access', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: authenticatedUser.id }),
+      }).catch(() => {})
+
       // Pre-warm profile in localStorage and cache so destination loads instantly
       if (typeof window !== 'undefined' && profile) {
         try {

@@ -34,6 +34,7 @@ const MODULE_CONFIG = {
   athletes:    { label: 'Squad & Athletes', icon: Users, color: '#10B981' },
   scouting:    { label: 'Scouting', icon: Search, color: '#F59E0B' },
   notices:     { label: 'Announcements', icon: Megaphone, color: '#6366F1' },
+  logins:      { label: 'Logins & Access', icon: UserCheck, color: '#10B981' },
 }
 
 function fmtDate(iso) {
@@ -170,6 +171,16 @@ export default function AdminActivityLogPage() {
             .select('id, title, priority, created_at, profiles(full_name, role)')
             .order('created_at', { ascending: false })
             .limit(50),
+          currentTeamId
+        ),
+        // 8. User Login Activity
+        scopeTeam(
+          supabase
+            .from('notification_logs')
+            .select('id, type, created_at, created_by, profiles:created_by(id, full_name, role, team_id)')
+            .eq('type', 'user_login')
+            .order('created_at', { ascending: false })
+            .limit(100),
           currentTeamId
         ),
       ])
@@ -352,6 +363,28 @@ export default function AdminActivityLogPage() {
           })
         })
       } else { console.warn('Could not load notices:', noticeResult.reason) }
+
+      // 8. Process Login Activities
+      if (loginResult?.status === 'fulfilled') {
+        const loginData = loginResult.value?.data || []
+        loginData.forEach(l => {
+          const user = l.profiles
+          const roleName = ROLE_BADGES[user?.role]?.label || (user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Member')
+          events.push({
+            id: `login-${l.id}`,
+            module: 'logins',
+            action: `Logged In (${roleName})`,
+            target: user?.full_name || 'Team Member',
+            actorName: user?.full_name || 'Team Member',
+            actorRole: user?.role || 'player',
+            timestamp: l.created_at || new Date().toISOString(),
+            details: `Session verified • ${user?.full_name || 'User'} accessed the system`,
+            link: user?.role === 'player' ? '/athletes' : '/settings',
+            badgeBg: '#ECFDF5',
+            badgeColor: '#047857',
+          })
+        })
+      } else { console.warn('Could not load login activities:', loginResult?.reason) }
 
       // Sort all events in descending chronological order
       events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())

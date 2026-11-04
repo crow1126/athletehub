@@ -114,6 +114,23 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Your account is currently inactive. Contact your club administrator.' }, { status: 403 })
     }
 
+    // Record login activity in database immediately
+    const nowIso = new Date().toISOString()
+    try {
+      await adminDb.from('profiles').update({ last_login: nowIso }).eq('id', authData.user.id)
+      if (profile?.team_id) {
+        await adminDb.from('notification_logs').insert({
+          team_id: profile.team_id,
+          type: 'user_login',
+          sent_count: 1,
+          fail_count: 0,
+          created_by: authData.user.id,
+        })
+      }
+    } catch (logErr) {
+      console.warn('[api/auth/login] Could not log access record:', logErr?.message)
+    }
+
     return NextResponse.json({
       success: true,
       session: {

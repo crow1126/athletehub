@@ -14,16 +14,6 @@ const nextConfig = {
     cpus: 2,
   },
 
-  async redirects() {
-    return [
-      {
-        source: '/download',
-        destination: 'https://github.com/crow1126/athletehub/releases/download/v1.0.5/ApexTrack-Setup.exe',
-        permanent: false,
-      },
-    ]
-  },
-
   // ── Security & CORS headers on all routes ─────────────────────────────────
   async headers() {
     // Determine the production origin — falls back to env var or a wildcard

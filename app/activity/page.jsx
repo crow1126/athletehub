@@ -109,12 +109,12 @@ export default function AdminActivityLogPage() {
       const events = []
 
       // Fetch all sources in parallel for faster loading
-      const [injResult, rehabResult, perfResult, sesResult, athResult, scoutResult, noticeResult] = await Promise.allSettled([
+      const [injResult, rehabResult, perfResult, sesResult, athResult, scoutResult, noticeResult, loginResult] = await Promise.allSettled([
         // 1. Injury Records
         scopeTeam(
           supabase
             .from('injuries')
-            .select('id, injury_type, body_part, severity, status, logged_at, created_at, updated_at, logged_by, updated_by, athletes(id, name, squad_number)')
+            .select('id, injury_type, severity, status, notes, logged_at, created_at, updated_at, logged_by, updated_by, athletes(id, name, back_number)')
             .order('created_at', { ascending: false })
             .limit(200),
           currentTeamId
@@ -168,7 +168,7 @@ export default function AdminActivityLogPage() {
         scopeTeam(
           supabase
             .from('notices')
-            .select('id, title, priority, created_at, profiles(full_name, role)')
+            .select('id, title, category, created_at, author_name, author_role')
             .order('created_at', { ascending: false })
             .limit(50),
           currentTeamId
@@ -216,7 +216,7 @@ export default function AdminActivityLogPage() {
             actorName: author?.full_name || 'Physiotherapy Staff',
             actorRole: author?.role || 'physio',
             timestamp: i.logged_at || i.created_at || new Date().toISOString(),
-            details: `Body part: ${i.body_part || 'Unspecified'} • Status: ${i.status} • Player: ${athName}`,
+            details: `Type: ${i.injury_type || 'Injury'} • Status: ${i.status} • Player: ${athName}${i.notes ? ' • ' + i.notes.slice(0, 50) : ''}`,
             link: '/injuries',
             badgeBg: '#FEE2E2',
             badgeColor: '#B91C1C',
@@ -347,7 +347,7 @@ export default function AdminActivityLogPage() {
       if (noticeResult.status === 'fulfilled') {
         const noticeData = noticeResult.value?.data || []
         noticeData.forEach(n => {
-          const author = n.profiles
+          const author = { full_name: n.author_name, role: n.author_role }
           events.push({
             id: `notice-${n.id}`,
             module: 'notices',
@@ -356,7 +356,7 @@ export default function AdminActivityLogPage() {
             actorName: author?.full_name || 'Staff Member',
             actorRole: author?.role || 'coach',
             timestamp: n.created_at || new Date().toISOString(),
-            details: `Priority: ${n.priority || 'Normal'}`,
+            details: `Category: ${n.category || 'General'}`,
             link: '/notices',
             badgeBg: '#EEF2FF',
             badgeColor: '#4F46E5',

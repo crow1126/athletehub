@@ -4,7 +4,7 @@ import { Bell, Check, X } from 'lucide-react'
 import { requestNotificationPermission, sendTestNotificationToSelf } from '@/lib/notifications'
 
 export default function NotificationPromptBanner() {
-  const [permission, setPermission] = useState('granted') // default to granted so no flash
+  const [permission, setPermission] = useState('default')
   const [dismissed, setDismissed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -19,12 +19,13 @@ export default function NotificationPromptBanner() {
     }
 
     if (window.Capacitor?.isNativePlatform?.()) {
-      // In native app, permissions are handled natively
       return
     }
 
     if ('Notification' in window) {
       setPermission(Notification.permission)
+    } else {
+      setPermission('unsupported')
     }
   }, [])
 

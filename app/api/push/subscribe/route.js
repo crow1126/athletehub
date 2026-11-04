@@ -1,5 +1,5 @@
 // app/api/push/subscribe/route.js
-// Saves Web Push (iPhone PWA / Chrome) and Capacitor FCM device tokens
+// Saves Web Push (iPhone PWA / Chrome / Edge) and Capacitor FCM device tokens
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester } from '@/lib/serverAuth'
 
@@ -70,10 +70,39 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Invalid Web Push subscription format' }, { status: 400 })
       }
 
-      const { data, error } = await supabase
+      // Check if this endpoint already exists to avoid conflict errors
+      const { data: existing } = await supabase
         .from('push_subscriptions')
-        .upsert(
-          {
+        .select('id')
+        .eq('endpoint', endpoint)
+        .maybeSingle()
+
+      let resData = null
+      let dbError = null
+
+      if (existing?.id) {
+        // Update existing row
+        const updateRes = await supabase
+          .from('push_subscriptions')
+          .update({
+            user_id: userId,
+            team_id: teamId,
+            platform: platform || 'web',
+            p256dh: keys.p256dh,
+            auth: keys.auth,
+            user_agent: userAgent.slice(0, 500),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id)
+          .select()
+          .maybeSingle()
+        resData = updateRes.data
+        dbError = updateRes.error
+      } else {
+        // Insert new row
+        const insertRes = await supabase
+          .from('push_subscriptions')
+          .insert({
             user_id: userId,
             team_id: teamId,
             platform: platform || 'web',
@@ -81,44 +110,71 @@ export async function POST(req) {
             p256dh: keys.p256dh,
             auth: keys.auth,
             user_agent: userAgent.slice(0, 500),
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,endpoint' }
-        )
-        .select()
-        .maybeSingle()
-
-      if (error) {
-        console.warn('[push/subscribe] DB error saving subscription:', error.message)
-        // If table doesn't exist yet, return ok: false with hint
-        return NextResponse.json({ ok: false, warning: error.message }, { status: 200 })
+          })
+          .select()
+          .maybeSingle()
+        resData = insertRes.data
+        dbError = insertRes.error
       }
 
-      return NextResponse.json({ ok: true, subscription_id: data?.id })
+      if (dbError) {
+        console.warn('[push/subscribe] DB error saving subscription:', dbError.message)
+        return NextResponse.json({ ok: false, warning: dbError.message }, { status: 200 })
+      }
+
+      return NextResponse.json({ ok: true, subscription_id: resData?.id })
     } else if (fcm_token) {
       // Capacitor Native FCM (Android / iOS app)
-      const { data, error } = await supabase
+      const { data: existing } = await supabase
         .from('push_subscriptions')
-        .upsert(
-          {
+        .select('id')
+        .eq('fcm_token', fcm_token)
+        .maybeSingle()
+
+      let resData = null
+      let dbError = null
+
+      if (existing?.id) {
+        const updateRes = await supabase
+          .from('push_subscriptions')
+          .update({
+            user_id: userId,
+            team_id: teamId,
+            platform: platform || 'android',
+            user_agent: userAgent.slice(0, 500),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id)
+          .select()
+          .maybeSingle()
+        resData = updateRes.data
+        dbError = updateRes.error
+      } else {
+        const insertRes = await supabase
+          .from('push_subscriptions')
+          .insert({
             user_id: userId,
             team_id: teamId,
             platform: platform || 'android',
             fcm_token,
             user_agent: userAgent.slice(0, 500),
+            created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-          },
-          { onConflict: 'user_id,fcm_token' }
-        )
-        .select()
-        .maybeSingle()
-
-      if (error) {
-        console.warn('[push/subscribe] DB error saving FCM token:', error.message)
-        return NextResponse.json({ ok: false, warning: error.message }, { status: 200 })
+          })
+          .select()
+          .maybeSingle()
+        resData = insertRes.data
+        dbError = insertRes.error
       }
 
-      return NextResponse.json({ ok: true, subscription_id: data?.id })
+      if (dbError) {
+        console.warn('[push/subscribe] DB error saving FCM token:', dbError.message)
+        return NextResponse.json({ ok: false, warning: dbError.message }, { status: 200 })
+      }
+
+      return NextResponse.json({ ok: true, subscription_id: resData?.id })
     }
 
     return NextResponse.json({ ok: true })
@@ -138,11 +194,24 @@ export async function DELETE(req) {
     const userId = requester.profile?.id
     const { endpoint, fcm_token } = await req.json().catch(() => ({}))
 
-    let query = supabase.from('push_subscriptions').delete().eq('user_id', userId)
-    if (endpoint) query = query.eq('endpoint', endpoint)
-    if (fcm_token) query = query.eq('fcm_token', fcm_token)
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-    await query
+    if (endpoint) {
+      await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('endpoint', endpoint)
+    } else if (fcm_token) {
+      await supabase
+        .from('push_subscriptions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('fcm_token', fcm_token)
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })

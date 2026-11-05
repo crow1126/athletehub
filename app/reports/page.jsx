@@ -663,14 +663,20 @@ export default function ReportsPage() {
   const [generating,     setGenerating]     = useState(null)
   const [statusMsg,      setStatusMsg]      = useState({ text:'', type:'' })
   const [currentProfile, setCurrentProfile] = useState(null)
-  const [selectedPlayer, setSelectedPlayer] = useState('')
-  const [searchTerm,     setSearchTerm]     = useState('')
-  const [selectedPerfPlayer, setSelectedPerfPlayer] = useState('')
-  const [perfSearchTerm,     setPerfSearchTerm]     = useState('')
 
+  // ── 3-STEP FLOW: Category -> Time -> Target Scope ──────────────────────────
+  // 1. Category: 'analytics' | 'medical' | 'overall' | 'finance'
+  const [activeCategory, setActiveCategory] = useState('analytics')
+  
+  // 2. Time: 'monthly' | 'yearly'
   const [reportType, setReportType] = useState('monthly')
   const [selMonth,   setSelMonth]   = useState(new Date().getMonth())
   const [selYear,    setSelYear]    = useState(new Date().getFullYear())
+
+  // 3. Target Scope: 'squad' (Full Squad / Club) | 'individual' (Specific Player)
+  const [targetScope, setTargetScope] = useState('squad')
+  const [selectedPlayer, setSelectedPlayer] = useState('')
+  const [playerSearchQuery, setPlayerSearchQuery] = useState('')
 
   const years = []
   for (let y = 2022; y <= new Date().getFullYear() + 1; y++) years.push(y)
@@ -685,10 +691,10 @@ export default function ReportsPage() {
           return
         }
         setCurrentProfile(profile)
-        const [
-          { data: a }, { data: i }, { data: r }, { data: p },
-          { data: s }, { data: c }, { data: ct },
-        ] = await Promise.all([
+
+        // Use Promise.allSettled so if rehabilitation_notes table does not exist,
+        // it fails gracefully and falls back to local storage cache
+        const results = await Promise.allSettled([
           scopeTeam(supabase.from('athletes').select('*, coaches(name)'), teamId).order('name', { ascending: true }),
           scopeTeam(supabase.from('injuries').select('*, athletes(name, club, position, photo_url)'), teamId),
           scopeTeam(supabase.from('rehabilitation_notes').select('*, athletes(name, position, photo_url)'), teamId).order('session_date', { ascending: false }),
@@ -697,6 +703,14 @@ export default function ReportsPage() {
           scopeTeam(supabase.from('coaches').select('*'), teamId),
           scopeTeam(supabase.from('contracts').select('*, athletes(name, position, club)'), teamId),
         ])
+
+        const a  = results[0].status === 'fulfilled' ? (results[0].value?.data || []) : []
+        const i  = results[1].status === 'fulfilled' ? (results[1].value?.data || []) : []
+        const r  = results[2].status === 'fulfilled' ? (results[2].value?.data || []) : []
+        const p  = results[3].status === 'fulfilled' ? (results[3].value?.data || []) : []
+        const s  = results[4].status === 'fulfilled' ? (results[4].value?.data || []) : []
+        const c  = results[5].status === 'fulfilled' ? (results[5].value?.data || []) : []
+        const ct = results[6].status === 'fulfilled' ? (results[6].value?.data || []) : []
 
         // Read local storage cache for rehab notes
         let localRehab = []
@@ -727,23 +741,14 @@ export default function ReportsPage() {
         setContracts(ct || [])
 
         if (a && a.length > 0) {
-          setSelectedPlayer(prev => (prev && a.some(ath => ath.id === prev) ? prev : ''))
-          setSelectedPerfPlayer(prev => (prev && a.some(ath => ath.id === prev) ? prev : a[0].id))
+          setSelectedPlayer(prev => (prev && a.some(ath => ath.id === prev) ? prev : a[0].id))
         }
       } catch (err) {
-        setStatusMsg({ text: 'Failed to load data: ' + err.message, type: 'error' })
+        setStatusMsg({ text: 'Failed to load report data: ' + err.message, type: 'error' })
       }
       setLoading(false)
     }
     load()
-  }, [])
-
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') setSelectedPlayer('')
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
   const userRole     = currentProfile?.role || 'staff'
@@ -760,41 +765,35 @@ export default function ReportsPage() {
   const isPurePhysio  = isPhysio && !isAdmin
   const isPureAnalyst = isAnalyst && !isAdmin
 
-  const [activeTab, setActiveTab] = useState('medical')
-  const [medicalSubTab, setMedicalSubTab] = useState('active_cases')
-
   useEffect(() => {
     if (isPurePhysio) {
-      setActiveTab('medical')
-      setMedicalSubTab('active_cases')
+      setActiveCategory('medical')
     } else if (isPureAnalyst) {
-      setActiveTab('performance')
-    } else {
-      setActiveTab('medical')
+      setActiveCategory('analytics')
     }
   }, [isPurePhysio, isPureAnalyst])
 
-  // ── Performance PDF generator for Analysts / Admins ─────────────────────
+  // ── Performance PDF generator ─────────────────────────────────────────────
   async function generatePerformancePDF(athleteId) {
-    const targetId = athleteId || selectedPerfPlayer
+    const targetId = athleteId || selectedPlayer
     const athlete = athletes.find(a => a.id === targetId)
     if (!athlete) {
       setStatusMsg({ text: 'Please select an athlete first.', type: 'error' })
       return
     }
     const isDesk = typeof window !== 'undefined' && !(/iphone|ipad|ipod|android/i.test(navigator.userAgent || ''))
-    const win = isDesk ? openDownloadWindow(`Performance & Match Analytics Dossier — ${athlete.name}`) : null
+    const win = isDesk ? openDownloadWindow(`Performance Dossier — ${athlete.name}`) : null
     const jobKey = `perf_${targetId}`
     setGenerating(jobKey)
     setStatusMsg({ text: '', type: '' })
     try {
       const athleteStats = performance.filter(p => p.athlete_id === targetId)
-      const period = reportType === 'yearly' ? `Year ${selYear}` : `${MONTHS[selMonth]} ${selYear}`
+      const periodStr = reportType === 'yearly' ? `Year ${selYear}` : `${MONTHS[selMonth]} ${selYear}`
       const meta = {
         clubName: currentProfile?.club_name || currentProfile?.teams?.name || 'Club',
         clubLogoUrl: currentProfile?.club_logo_url || currentProfile?.teams?.logo_url || null,
       }
-      const doc = await buildPlayerPerformanceDossierPDF({ athlete, athleteStats, meta, period })
+      const doc = await buildPlayerPerformanceDossierPDF({ athlete, athleteStats, meta, period: periodStr })
       const safeAthlete = (athlete.name || 'Player').replace(/\s+/g, '_')
       const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
       const filename = `${safeAthlete}_Performance_Dossier_${safePeriod}.pdf`
@@ -803,8 +802,8 @@ export default function ReportsPage() {
       } else {
         await mobileSafeDownload(doc, filename)
       }
-      setStatusMsg({ text: `Performance Dossier opened on desktop — review and save.`, type: 'success' })
-      setTimeout(() => setStatusMsg({ text: '', type: '' }), 6000)
+      setStatusMsg({ text: `Performance Dossier ready for ${athlete.name}.`, type: 'success' })
+      setTimeout(() => setStatusMsg({ text: '', type: '' }), 5000)
     } catch (err) {
       if (win) try { win.close() } catch {}
       setStatusMsg({ text: 'PDF generation failed: ' + err.message, type: 'error' })
@@ -812,7 +811,7 @@ export default function ReportsPage() {
     setGenerating(null)
   }
 
-  // ── Excel report generator for Admins ────────────────────────────────────
+  // ── Excel report generator ────────────────────────────────────────────────
   async function generateExcelReport(reportId) {
     setGenerating(reportId)
     setStatusMsg({ text: '', type: '' })
@@ -830,12 +829,12 @@ export default function ReportsPage() {
       })
       if (!res.ok) {
         let errMsg = `Server error ${res.status}`
-        try { const j = await res.json(); errMsg = j.error || errMsg } catch (_e) { /* ignore */ }
+        try { const j = await res.json(); errMsg = j.error || errMsg } catch (_e) {}
         throw new Error(errMsg)
       }
       const blob   = await res.blob()
-      const period = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
-      await mobileSafeDownload(blob, `ApexTrack_${period}_${reportId}_report.xlsx`)
+      const periodStr = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
+      await mobileSafeDownload(blob, `ApexTrack_${periodStr}_${reportId}_report.xlsx`)
       const cardTitle = ADMIN_REPORT_CARDS.find(r => r.id === reportId)?.title || 'Report'
       setStatusMsg({ text: `"${cardTitle}" downloaded successfully!`, type: 'success' })
       setTimeout(() => setStatusMsg({ text: '', type: '' }), 5000)
@@ -846,15 +845,16 @@ export default function ReportsPage() {
   }
 
   // ── Medical PDF generator ────────────────────────────────────────────────
-  async function generateMedicalPDF(reportScope) {
+  async function generateMedicalPDF(reportScope, targetAthleteId) {
     const isDesk = typeof window !== 'undefined' && !(/iphone|ipad|ipod|android/i.test(navigator.userAgent || ''))
-    const selectedAth = reportScope === 'player' ? (athletes.find(a => a.id === selectedPlayer) || athletes[0]) : null
+    const effectiveAthleteId = targetAthleteId || selectedPlayer
+    const selectedAth = reportScope === 'player' ? (athletes.find(a => a.id === effectiveAthleteId) || athletes[0]) : null
     const winTitle = reportScope === 'player'
       ? `Physiotherapy & Rehabilitation Plan — ${selectedAth?.name || 'Athlete'}`
       : 'Squad Medical & Clinical Health Report'
     const win = isDesk ? openDownloadWindow(winTitle) : null
 
-    const jobKey = `medical_${reportScope}`
+    const jobKey = reportScope === 'player' ? `medical_player_${effectiveAthleteId}` : 'medical_general'
     setGenerating(jobKey)
     setStatusMsg({ text: '', type: '' })
 
@@ -870,7 +870,7 @@ export default function ReportsPage() {
         },
         body: JSON.stringify({
           reportScope,
-          athleteId:  reportScope === 'player' ? selectedPlayer : null,
+          athleteId:  reportScope === 'player' ? effectiveAthleteId : null,
           month:      selMonth,
           year:       selYear,
           reportType,
@@ -880,20 +880,19 @@ export default function ReportsPage() {
 
       if (!res.ok) {
         let errMsg = `Server error ${res.status}`
-        try { const j = await res.json(); errMsg = j.error || errMsg } catch (_e) { /* ignore */ }
+        try { const j = await res.json(); errMsg = j.error || errMsg } catch (_e) {}
         throw new Error(errMsg)
       }
 
       const data = await res.json()
-      const period = reportType === 'yearly' ? `Year ${selYear}` : `${MONTHS[selMonth]} ${selYear}`
+      const periodStr = reportType === 'yearly' ? `Year ${selYear}` : `${MONTHS[selMonth]} ${selYear}`
 
       let doc
       let filename
 
       if (reportScope === 'player') {
-        const targetAth = athletes.find(a => a.id === selectedPlayer) || data.athletes[0]
-        // Ensure data.rehabNotes incorporates any client-side / local notes for this player
-        const playerRehabs = rehabNotes.filter(r => r.athlete_id === selectedPlayer)
+        const targetAth = athletes.find(a => a.id === effectiveAthleteId) || data.athletes[0]
+        const playerRehabs = rehabNotes.filter(r => r.athlete_id === effectiveAthleteId)
         const combinedPlayerRehab = [...(data.rehabNotes || [])]
         for (const pr of playerRehabs) {
           if (!combinedPlayerRehab.some(dr => dr.id === pr.id)) {
@@ -902,12 +901,12 @@ export default function ReportsPage() {
         }
         data.rehabNotes = combinedPlayerRehab
 
-        doc = await buildPlayerClinicalDossierPDF({ data, selectedAthlete: targetAth, period })
+        doc = await buildPlayerClinicalDossierPDF({ data, selectedAthlete: targetAth, period: periodStr })
         const safeAthlete = (targetAth?.name || 'Player').replace(/\s+/g, '_')
         const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
         filename = `${safeAthlete}_Physiotherapy_Rehab_Plan_${safePeriod}.pdf`
       } else {
-        doc = await buildAdminGeneralMedicalPDF({ data, period })
+        doc = await buildAdminGeneralMedicalPDF({ data, period: periodStr })
         const safeName = (data.meta?.clubName || 'Club').replace(/[^a-zA-Z0-9_-]/g, '_')
         const safePeriod = reportType === 'yearly' ? `Year_${selYear}` : `${MONTHS[selMonth]}_${selYear}`
         filename = `${safeName}_Squad_Medical_Report_${safePeriod}.pdf`
@@ -920,10 +919,10 @@ export default function ReportsPage() {
       }
 
       setStatusMsg({
-        text: `Clinical report opened on desktop — review and save.`,
+        text: reportScope === 'player' ? `Medical Dossier ready for ${selectedAth?.name || 'Athlete'}.` : 'Squad Medical Report ready.',
         type: 'success',
       })
-      setTimeout(() => setStatusMsg({ text: '', type: '' }), 6000)
+      setTimeout(() => setStatusMsg({ text: '', type: '' }), 5000)
     } catch (err) {
       if (win) try { win.close() } catch {}
       setStatusMsg({ text: 'PDF generation failed: ' + err.message, type: 'error' })
@@ -931,72 +930,68 @@ export default function ReportsPage() {
     setGenerating(null)
   }
 
+  // Derived period label
+  const period = reportType === 'monthly' ? `${MONTHS[selMonth]} ${selYear}` : `Full Year ${selYear}`
   const activeContracts = contracts.filter(c => c.status === 'Active')
   const weeklyWage      = activeContracts.reduce((s, c) => s + parseFloat(c.weekly_wage || 0), 0)
-  const period          = reportType === 'monthly' ? `${MONTHS[selMonth]} ${selYear}` : `Full Year ${selYear}`
 
-  const sel = { padding:'8px 12px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', fontSize:13, color:'var(--text)', background:'var(--surface2)', outline:'none', fontFamily:'var(--font)', cursor:'pointer' }
-
-  // Filter athletes for the selector
+  // Derived selected athlete
+  const currentAthlete = athletes.find(a => a.id === selectedPlayer) || athletes[0] || null
   const filteredAthletes = athletes.filter(a => {
-    if (!searchTerm) return true
-    const q = searchTerm.toLowerCase()
+    if (!playerSearchQuery.trim()) return true
+    const q = playerSearchQuery.toLowerCase()
     return (a.name || '').toLowerCase().includes(q) || (a.position || '').toLowerCase().includes(q)
   })
 
-  // Filter athletes for performance selector
-  const filteredPerfAthletes = athletes.filter(a => {
-    if (!perfSearchTerm) return true
-    const q = perfSearchTerm.toLowerCase()
-    return (a.name || '').toLowerCase().includes(q) || (a.position || '').toLowerCase().includes(q)
-  })
+  // Selected player stats
+  const athleteStats = currentAthlete ? performance.filter(p => p.athlete_id === currentAthlete.id) : []
+  const athMatches = athleteStats.length
+  const athGoals   = athleteStats.reduce((s, p) => s + (parseInt(p.goals) || 0), 0)
+  const athAssists = athleteStats.reduce((s, p) => s + (parseInt(p.assists) || 0), 0)
+  const athMins    = athleteStats.reduce((s, p) => s + (parseInt(p.minutes_played) || 0), 0)
+  const athRating  = athMatches > 0 ? (athleteStats.reduce((s, p) => s + (parseFloat(p.rating) || 0), 0) / athMatches).toFixed(1) : '—'
+  const athXg      = athleteStats.reduce((s, p) => s + (parseFloat(p.xg) || 0), 0).toFixed(2)
 
-  const selectedAthleteObj = athletes.find(a => a.id === selectedPlayer)
-  const selectedPlayerInjuries = selectedPlayer ? injuries.filter(i => i.athlete_id === selectedPlayer) : []
-  const selectedPlayerActiveInj = selectedPlayerInjuries.filter(i => i.status === 'Active')
-  const selectedPlayerRehabNotes = selectedPlayer ? rehabNotes.filter(r => r.athlete_id === selectedPlayer) : []
-  const latestPlayerRehab = selectedPlayerRehabNotes[0]
-  const playerInjuryWithNotes = !latestPlayerRehab ? selectedPlayerInjuries.find(i => i.notes && i.notes.trim()) : null
+  // Selected player medical
+  const athleteInjuries = currentAthlete ? injuries.filter(i => i.athlete_id === currentAthlete.id) : []
+  const athleteActiveInj = athleteInjuries.filter(i => i.status === 'Active')
+  const athleteRehabs   = currentAthlete ? rehabNotes.filter(r => r.athlete_id === currentAthlete.id) : []
+  const latestRehab     = athleteRehabs[0]
 
-  const selectedPerfAthleteObj = athletes.find(a => a.id === selectedPerfPlayer) || athletes[0]
-  const selectedPlayerStats = selectedPerfAthleteObj
-    ? performance.filter(p => p.athlete_id === selectedPerfAthleteObj.id)
-    : []
+  // Squad active injuries
+  const squadActiveInjuries = injuries.filter(i => i.status === 'Active')
 
-  const perfMatchesCount = selectedPlayerStats.length
-  const perfGoalsCount   = selectedPlayerStats.reduce((s, p) => s + (parseInt(p.goals) || 0), 0)
-  const perfAssistsCount = selectedPlayerStats.reduce((s, p) => s + (parseInt(p.assists) || 0), 0)
-  const perfMinsCount    = selectedPlayerStats.reduce((s, p) => s + (parseInt(p.minutes_played) || 0), 0)
-  const perfAvgRating    = perfMatchesCount > 0
-    ? (selectedPlayerStats.reduce((s, p) => s + (parseFloat(p.rating) || 0), 0) / perfMatchesCount).toFixed(1)
-    : '—'
-  const perfTotalXg      = selectedPlayerStats.reduce((s, p) => s + (parseFloat(p.xg) || 0), 0).toFixed(2)
+  // Available categories based on role
+  const categoryOptions = [
+    ...(!isPurePhysio ? [{ id: 'analytics', label: 'Analytics & Performance', icon: <TrendingUp size={16}/>, color: '#7C3AED', badge: 'Performance' }] : []),
+    ...(!isPureAnalyst ? [{ id: 'medical', label: 'Medical & Physio', icon: <HeartPulse size={16}/>, color: '#0D9488', badge: `${squadActiveInjuries.length} Active` }] : []),
+    ...(!isPurePhysio && !isPureAnalyst ? [
+      { id: 'overall', label: 'Overall Club Operations', icon: <FileSpreadsheet size={16}/>, color: '#2563EB', badge: 'Club Workbooks' },
+      { id: 'finance', label: 'Finance & Contracts', icon: <ClipboardList size={16}/>, color: '#059669', badge: 'Payroll' },
+    ] : []),
+  ]
 
   return (
     <Layout>
-      <div className="page-outer-wide">
+      <div className="page-outer-wide" style={{ maxWidth: 1180, margin: '0 auto', padding: '20px 16px 80px' }}>
         
-        {/* Header */}
+        {/* ── Page Header ── */}
         <PageHeader
-          label={isPurePhysio ? 'Medical & Physiotherapy' : (isPureAnalyst ? 'Performance & Analytics' : 'Reports & Analytics')}
-          title={isPurePhysio ? 'Player Clinical & Rehab Reports' : (isPureAnalyst ? 'Performance & Analytics Reports' : 'Club Reports')}
-          subtitle={isPurePhysio
-            ? 'Generate official clinical dossiers with team logo, player photo, entered rehabilitation plan, and return-to-play status.'
-            : isPureAnalyst
-            ? 'Export match performance metrics, player performance dossiers, and squad technical analytics.'
-            : 'Generate executive squad health overviews, player clinical dossiers, and exportable club data.'}
+          label="Reports & Data Export"
+          title="Club Reports Center"
+          subtitle="Generate official match performance dossiers, clinical rehabilitation dossiers, and club spreadsheets in 3 simple steps."
         />
 
-        {/* ── Status Message Toast ── */}
+        {/* ── Toast status message ── */}
         {statusMsg.text && (
           <div style={{
-            background: statusMsg.type==='error' ? '#FEF2F2' : '#F0FDF4',
-            border: `1px solid ${statusMsg.type==='error' ? '#FECACA' : '#BBF7D0'}`,
-            borderRadius: 'var(--r-md)',
+            background: statusMsg.type === 'error' ? '#FEF2F2' : '#F0FDF4',
+            border: `1px solid ${statusMsg.type === 'error' ? '#FECACA' : '#BBF7D0'}`,
+            borderRadius: 10,
             padding: '12px 16px',
             marginBottom: 20,
             fontSize: 13,
-            color: statusMsg.type==='error' ? '#B91C1C' : '#166534',
+            color: statusMsg.type === 'error' ? '#B91C1C' : '#166534',
             fontWeight: 600,
             display: 'flex',
             alignItems: 'center',
@@ -1007,444 +1002,995 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* ── Reporting Window Filter ── */}
-        <div className="card fade-up" style={{ padding:'16px 20px', marginBottom:20, border:'1px solid var(--border)', background:'var(--surface)' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
-            <div>
-              <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', margin:0 }}>Reporting Window</div>
-              <div style={{ fontSize:12, color:'var(--text3)', margin:'2px 0 0' }}>Select date scope applied to generated reports</div>
+        {/* ══════════════════════════════════════════════════════════════════════
+            STEP-BY-STEP FILTER CONSOLE (Clean, Simple, Uncluttered)
+        ══════════════════════════════════════════════════════════════════════ */}
+        <div style={{
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 14,
+          padding: '18px 20px',
+          marginBottom: 24,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16,
+        }}>
+
+          {/* STEP 1: CATEGORY SELECTION */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                Step 1 · Choose Category
+              </div>
             </div>
-            <div style={{ display:'flex', gap:8, alignItems:'center', flexWrap:'wrap' }}>
-              <div style={{ display:'flex', background:'var(--surface2)', border:'1px solid var(--border)', borderRadius:'var(--r-md)', padding:2 }}>
-                {['monthly','yearly'].map(t => (
-                  <button key={t} onClick={() => setReportType(t)} style={{ padding:'5px 14px', background: reportType===t ? '#0D9488' : 'transparent', border:'none', borderRadius:6, fontSize:12, fontWeight:700, color: reportType===t ? '#fff' : 'var(--text2)', cursor:'pointer', transition:'var(--transition)', textTransform:'capitalize', fontFamily:'var(--font)' }}>
-                    {t}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+              {categoryOptions.map(cat => {
+                const isSelected = activeCategory === cat.id
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 14px',
+                      borderRadius: 10,
+                      background: isSelected ? cat.color : 'var(--surface2)',
+                      color: isSelected ? '#FFFFFF' : 'var(--text)',
+                      border: isSelected ? `1.5px solid ${cat.color}` : '1px solid var(--border)',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      fontFamily: 'var(--font)',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: 8,
+                        background: isSelected ? 'rgba(255,255,255,0.2)' : `${cat.color}15`,
+                        color: isSelected ? '#FFFFFF' : cat.color,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        {cat.icon}
+                      </div>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>{cat.label}</span>
+                    </div>
                   </button>
-                ))}
-              </div>
-              {reportType === 'monthly' && (
-                <select value={selMonth} onChange={e => setSelMonth(parseInt(e.target.value))} style={sel}>
-                  {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                </select>
-              )}
-              <select value={selYear} onChange={e => setSelYear(parseInt(e.target.value))} style={sel}>
-                {years.map(y => <option key={y}>{y}</option>)}
-              </select>
-              <div style={{ fontSize:12, color:'var(--text2)', background:'var(--surface2)', padding:'6px 10px', borderRadius:'var(--r-md)', border:'1px solid var(--border)', fontWeight:600 }}>
-                Period: <span style={{ color:'#0D9488' }}>{period}</span>
-              </div>
+                )
+              })}
             </div>
           </div>
-        </div>
 
-        {/* ── Main Navigation Tabs (Role-tailored & Comfortable) ── */}
-        <div style={{ display:'flex', gap:8, marginBottom:22, overflowX:'auto', paddingBottom:4, borderBottom:'1px solid var(--border)' }}>
-          {isPurePhysio ? (
-            [
-              { id:'active_cases', label:`Active Rehab Cases (${injuries.filter(i => i.status === 'Active').length})`, icon:<HeartPulse size={15}/> },
-              { id:'all_players',  label:`All Squad Dossiers (${athletes.length})`, icon:<Stethoscope size={15}/> },
-              { id:'squad_audit',  label:'Squad Medical Audit (PDF)', icon:<FileText size={15}/> },
-              { id:'logs',         label:'Export Medical Register', icon:<FileSpreadsheet size={15}/> },
-            ].map(tab => {
-              const isCur = medicalSubTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setMedicalSubTab(tab.id)}
-                  style={{
-                    display:'inline-flex', alignItems:'center', gap:7,
-                    padding:'9px 16px', borderRadius:10, fontSize:13, fontWeight:700,
-                    background: isCur ? '#0D9488' : 'var(--surface2)',
-                    color: isCur ? '#FFFFFF' : 'var(--text2)',
-                    border: isCur ? '1px solid #0D9488' : '1px solid var(--border)',
-                    cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap', fontFamily:'var(--font)',
-                  }}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              )
-            })
-          ) : isPureAnalyst ? (
-            [
-              { id:'performance', label:'Match Analytics & Dossiers', icon:<TrendingUp size={15}/> },
-              { id:'operations',  label:'Analytics Exports (Excel)', icon:<FileSpreadsheet size={15}/> },
-            ].map(tab => {
-              const isCur = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display:'inline-flex', alignItems:'center', gap:7,
-                    padding:'9px 16px', borderRadius:10, fontSize:13, fontWeight:700,
-                    background: isCur ? '#7C3AED' : 'var(--surface2)',
-                    color: isCur ? '#FFFFFF' : 'var(--text2)',
-                    border: isCur ? '1px solid #7C3AED' : '1px solid var(--border)',
-                    cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap', fontFamily:'var(--font)',
-                  }}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              )
-            })
-          ) : (
-            [
-              { id:'medical',     label:'Medical & Physio', icon:<HeartPulse size={15}/>, color:'#0D9488' },
-              { id:'performance', label:'Match Performance', icon:<TrendingUp size={15}/>, color:'#7C3AED' },
-              { id:'operations',  label:'Club Operations & Exports', icon:<FileSpreadsheet size={15}/>, color:'#2563EB' },
-              { id:'finance',     label:'Financial Snapshot', icon:<ClipboardList size={15}/>, color:'#059669' },
-            ].map(tab => {
-              const isCur = activeTab === tab.id
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{
-                    display:'inline-flex', alignItems:'center', gap:7,
-                    padding:'9px 18px', borderRadius:10, fontSize:13, fontWeight:700,
-                    background: isCur ? tab.color : 'var(--surface2)',
-                    color: isCur ? '#FFFFFF' : 'var(--text2)',
-                    border: isCur ? `1px solid ${tab.color}` : '1px solid var(--border)',
-                    cursor:'pointer', transition:'all 0.15s', whiteSpace:'nowrap', fontFamily:'var(--font)',
-                  }}
-                >
-                  {tab.icon}
-                  {tab.label}
-                </button>
-              )
-            })
-          )}
-        </div>
+          {/* DIVIDER */}
+          <div style={{ height: 1, background: 'var(--border)' }} />
 
-        {/* ══════════════════════════════════════════════════════════════════
-            MEDICAL & PHYSIOTHERAPY DEPARTMENT VIEW
-        ══════════════════════════════════════════════════════════════════ */}
-        {(isPurePhysio || (!isPureAnalyst && activeTab === 'medical')) && (
-          <div className="fade-up" style={{ marginBottom:28 }}>
+          {/* STEP 2 & STEP 3: TIME PERIOD & TARGET SCOPE (SIDE BY SIDE) */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             
-            {/* Top Medical KPI scorecard */}
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px, 1fr))', gap:12, marginBottom:20 }}>
-              {[
-                { label:'Total Squad', val: athletes.length, sub:'registered athletes', color:'#0F172A', bg:'#F8FAFC', brd:'#E2E8F0' },
-                { label:'Match Fit', val: Math.max(0, athletes.length - injuries.filter(i => i.status === 'Active').length), sub:'cleared for selection', color:'#16A34A', bg:'#F0FDF4', brd:'#BBF7D0' },
-                { label:'Active Injuries', val: injuries.filter(i => i.status === 'Active').length, sub:'undergoing care', color:'#DC2626', bg:'#FEF2F2', brd:'#FECACA' },
-                { label:'Rehab Entries', val: rehabNotes.length, sub:'clinical sessions logged', color:'#0D9488', bg:'#F0FDFA', brd:'#CCFBF1' },
-              ].map((k, i) => (
-                <div key={i} style={{ background: k.bg, border:`1px solid ${k.brd}`, borderRadius:12, padding:'14px 16px', boxShadow:'0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize:11, fontWeight:800, color:'#64748B', textTransform:'uppercase', letterSpacing:'0.04em' }}>{k.label}</div>
-                  <div style={{ fontSize:24, fontWeight:800, color: k.color, marginTop:4 }}>{k.val}</div>
-                  <div style={{ fontSize:11, color:'#94A3B8', marginTop:2 }}>{k.sub}</div>
+            {/* STEP 2: TIME SCOPE */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Step 2 · Time Period (Month / Year)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', background: 'var(--surface2)', border: '1px solid var(--border)', borderRadius: 8, padding: 2 }}>
+                  {['monthly', 'yearly'].map(t => (
+                    <button
+                      key={t}
+                      onClick={() => setReportType(t)}
+                      style={{
+                        padding: '6px 14px',
+                        background: reportType === t ? '#0D9488' : 'transparent',
+                        border: 'none',
+                        borderRadius: 6,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: reportType === t ? '#FFFFFF' : 'var(--text2)',
+                        cursor: 'pointer',
+                        textTransform: 'capitalize',
+                        transition: 'all 0.15s ease',
+                        fontFamily: 'var(--font)',
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
                 </div>
-              ))}
+
+                {reportType === 'monthly' && (
+                  <select
+                    value={selMonth}
+                    onChange={e => setSelMonth(parseInt(e.target.value))}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 8,
+                      border: '1px solid var(--border)',
+                      fontSize: 12.5,
+                      color: 'var(--text)',
+                      background: 'var(--surface2)',
+                      outline: 'none',
+                      cursor: 'pointer',
+                      fontFamily: 'var(--font)',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {MONTHS.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                  </select>
+                )}
+
+                <select
+                  value={selYear}
+                  onChange={e => setSelYear(parseInt(e.target.value))}
+                  style={{
+                    padding: '7px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    fontSize: 12.5,
+                    color: 'var(--text)',
+                    background: 'var(--surface2)',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font)',
+                    fontWeight: 600,
+                  }}
+                >
+                  {years.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+
+                <span style={{ fontSize: 11.5, fontWeight: 700, background: '#F0FDFA', color: '#0D9488', padding: '5px 10px', borderRadius: 6, border: '1px solid #CCFBF1' }}>
+                  Scope: {period}
+                </span>
+              </div>
             </div>
 
-            {/* Admin sub-navigation inside Medical */}
-            {!isPurePhysio && (
-              <div style={{ display:'flex', gap:8, marginBottom:18, flexWrap:'wrap' }}>
-                {[
-                  { id:'active_cases', label:`Active Rehab Cases (${injuries.filter(i => i.status === 'Active').length})` },
-                  { id:'all_players',  label:'All Squad Dossiers' },
-                  { id:'squad_audit',  label:'Squad Medical Overview (PDF)' },
-                  { id:'logs',         label:'Export Injury Register' },
-                ].map(st => (
-                  <button
-                    key={st.id}
-                    onClick={() => setMedicalSubTab(st.id)}
-                    style={{
-                      padding:'6px 14px', borderRadius:8, fontSize:12, fontWeight:700,
-                      background: medicalSubTab === st.id ? '#0F766E' : 'var(--surface2)',
-                      color: medicalSubTab === st.id ? '#fff' : 'var(--text2)',
-                      border: `1px solid ${medicalSubTab === st.id ? '#0F766E' : 'var(--border)'}`,
-                      cursor:'pointer', transition:'all 0.15s',
-                    }}
-                  >
-                    {st.label}
-                  </button>
-                ))}
+            {/* STEP 3: REPORT TARGET SCOPE (Full Squad vs Individual) */}
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                Step 3 · Report Target Scope
               </div>
-            )}
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setTargetScope('squad')}
+                  style={{
+                    flex: 1,
+                    minWidth: 140,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    background: targetScope === 'squad' ? 'var(--text)' : 'var(--surface2)',
+                    color: targetScope === 'squad' ? '#FFFFFF' : 'var(--text2)',
+                    border: targetScope === 'squad' ? '1px solid var(--text)' : '1px solid var(--border)',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <Users size={14}/>
+                  Full Squad / Club
+                </button>
 
-            {/* ── Sub-tab 1: Active Rehab Cases ── */}
-            {medicalSubTab === 'active_cases' && (
+                <button
+                  onClick={() => setTargetScope('individual')}
+                  style={{
+                    flex: 1,
+                    minWidth: 140,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    background: targetScope === 'individual' ? '#0D9488' : 'var(--surface2)',
+                    color: targetScope === 'individual' ? '#FFFFFF' : 'var(--text2)',
+                    border: targetScope === 'individual' ? '1px solid #0D9488' : '1px solid var(--border)',
+                    fontSize: 12.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'var(--font)',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <User size={14}/>
+                  Individual Player
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* ══════════════════════════════════════════════════════════════════════
+            REPORT ACTION CARDS BASED ON CATEGORY & SCOPE
+        ══════════════════════════════════════════════════════════════════════ */}
+
+        {/* ──────────────────────────────────────────────────────────────────
+            VIEW A: INDIVIDUAL PLAYER SCOPE
+        ────────────────────────────────────────────────────────────────── */}
+        {targetScope === 'individual' && (
+          <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            
+            {/* Player Selection Bar */}
+            <div style={{
+              background: 'var(--surface)',
+              border: '1px solid var(--border)',
+              borderRadius: 12,
+              padding: '14px 18px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: 12,
+            }}>
               <div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12, flexWrap:'wrap', gap:8 }}>
-                  <div>
-                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'var(--text)' }}>Active Injuries &amp; Rehabilitation Progress</h3>
-                    <p style={{ margin:'2px 0 0', fontSize:12, color:'var(--text3)' }}>Current medical cases with clinical rehabilitation notes and 1-click dossier export</p>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>Select Individual Player</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>Choose the athlete to generate individual dossiers</div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <select
+                  value={selectedPlayer}
+                  onChange={e => setSelectedPlayer(e.target.value)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    fontSize: 13,
+                    color: 'var(--text)',
+                    background: 'var(--surface2)',
+                    minWidth: 240,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {athletes.map(a => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} ({a.position || 'Player'}{a.back_number ? ` · #${a.back_number}` : ''}) {a.status === 'Injured' ? '• [Injured]' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Individual Athlete Dossier Card */}
+            {currentAthlete ? (
+              <div style={{
+                background: '#FFFFFF',
+                border: '1px solid #CBD5E1',
+                borderRadius: 14,
+                overflow: 'hidden',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.04)',
+              }}>
+                {/* Header Banner */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 14,
+                  borderBottom: activeCategory === 'medical' ? '2.5px solid #0D9488' : '2.5px solid #7C3AED',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    {currentAthlete.photo_url ? (
+                      <img
+                        src={currentAthlete.photo_url}
+                        alt={currentAthlete.name}
+                        style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', border: '2px solid #2DD4BF' }}
+                      />
+                    ) : (
+                      <div style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 10,
+                        background: '#0F766E',
+                        color: '#FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 15,
+                        fontWeight: 800,
+                      }}>
+                        {currentAthlete.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <div style={{ color: '#FFFFFF', fontSize: 16, fontWeight: 800 }}>
+                        {currentAthlete.name} {currentAthlete.back_number ? `· #${currentAthlete.back_number}` : ''}
+                      </div>
+                      <div style={{ color: '#94A3B8', fontSize: 12, marginTop: 2 }}>
+                        {currentAthlete.position || 'Athlete'} · {currentAthlete.club || currentProfile?.club_name || 'ApexTrack GH'}
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    onClick={() => generateMedicalPDF('general')}
-                    disabled={generating === 'medical_general'}
-                    style={{
-                      padding:'7px 14px', borderRadius:8, background:'#0F766E', color:'#fff', border:'none',
-                      fontSize:12, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6,
-                      boxShadow:'0 2px 6px rgba(15,118,110,0.25)',
-                    }}
-                  >
-                    <Download size={13}/> Download Full Squad Health PDF
-                  </button>
+
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    padding: '4px 10px',
+                    borderRadius: 6,
+                    background: currentAthlete.status === 'Injured' ? '#FEF2F2' : '#F0FDF4',
+                    color: currentAthlete.status === 'Injured' ? '#DC2626' : '#16A34A',
+                    border: currentAthlete.status === 'Injured' ? '1px solid #FECACA' : '1px solid #BBF7D0',
+                  }}>
+                    {currentAthlete.status === 'Injured' ? 'In Rehabilitation' : 'Match Fit'}
+                  </span>
                 </div>
 
-                {injuries.filter(i => i.status === 'Active').length === 0 ? (
-                  <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:14, padding:'28px 20px', textAlign:'center', color:'#166534' }}>
-                    <div style={{ display:'flex', justifyContent:'center', marginBottom:8 }}>
-                      <CheckCircle2 size={36} color="#16a34a" />
-                    </div>
-                    <div style={{ fontSize:15, fontWeight:800 }}>Squad Clean Bill of Health!</div>
-                    <div style={{ fontSize:12.5, color:'#15803D', marginTop:4 }}>All squad athletes are currently match-fit with zero active injuries recorded.</div>
-                  </div>
-                ) : (
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(360px, 1fr))', gap:14 }}>
-                    {injuries.filter(i => i.status === 'Active').map(inj => {
-                      const ath = athletes.find(a => a.id === inj.athlete_id) || inj.athletes
-                      const athRehabs = rehabNotes.filter(r => r.athlete_id === inj.athlete_id)
-                      const latestRehab = athRehabs[0]
-                      const isGeneratingThis = generating === `medical_player` && selectedPlayer === inj.athlete_id
-
-                      return (
-                        <div key={inj.id} className="card" style={{ padding:0, overflow:'hidden', border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:12, boxShadow:'0 2px 6px rgba(0,0,0,0.04)' }}>
-                          <div style={{ background:'linear-gradient(135deg, #0F172A, #1E293B)', padding:'12px 16px', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'2px solid #0D9488' }}>
-                            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                              {ath?.photo_url ? (
-                                <img src={ath.photo_url} alt={ath.name} style={{ width:38, height:38, borderRadius:'50%', objectFit:'cover', border:'1.5px solid #2DD4BF' }} />
-                              ) : (
-                                <div style={{ width:38, height:38, borderRadius:'50%', background:'#0F766E', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:800 }}>
-                                  {(ath?.name || 'A').slice(0, 2).toUpperCase()}
-                                </div>
-                              )}
-                              <div>
-                                <div style={{ color:'#fff', fontSize:14, fontWeight:800 }}>{ath?.name || 'Athlete'}</div>
-                                <div style={{ color:'#94A3B8', fontSize:11 }}>{ath?.position || 'Player'} {ath?.back_number ? `· #${ath.back_number}` : ''}</div>
-                              </div>
-                            </div>
-                            <span style={{ fontSize:10.5, fontWeight:800, padding:'3px 8px', borderRadius:6, background:'#FEF2F2', color:'#DC2626', border:'1px solid #FECACA' }}>
-                              {inj.severity || 'Moderate'}
-                            </span>
+                {/* Body Content tailored to category */}
+                <div style={{ padding: '20px' }}>
+                  
+                  {/* CATEGORY: ANALYTICS */}
+                  {activeCategory === 'analytics' && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>
+                            Match Performance Profile ({period})
                           </div>
-
-                          <div style={{ padding:'14px 16px' }}>
-                            <div style={{ marginBottom:10 }}>
-                              <div style={{ fontSize:13, fontWeight:700, color:'#0F172A' }}>{inj.injury_type || 'Injury'}</div>
-                              <div style={{ fontSize:11, color:'#64748B', marginTop:2 }}>
-                                Sustained: <strong>{fmtDate(inj.date_of_injury)}</strong> · Expected: <strong>{fmtDate(inj.expected_return)}</strong>
-                              </div>
-                            </div>
-
-                            {/* Latest clinical rehab info */}
-                            <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:8, padding:'10px 12px', fontSize:11.5, marginBottom:12 }}>
-                              <div style={{ fontWeight:700, color:'#0F766E', marginBottom:4, display:'flex', justifyContent:'space-between' }}>
-                                <span>Rehab: {latestRehab?.rehab_phase || 'Active Protocol'}</span>
-                                {latestRehab?.pain_level !== undefined && <span>Pain: {latestRehab.pain_level}/10</span>}
-                              </div>
-                              <div style={{ color:'#334155', lineHeight:1.4 }}>
-                                {latestRehab?.treatment_summary || inj.notes || 'Undergoing clinical assessment and physiotherapy treatments.'}
-                              </div>
-                              <div style={{ fontSize:10.5, color:'#64748B', marginTop:4, fontWeight:600 }}>
-                                Status: <span style={{ color: latestRehab?.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>{latestRehab?.clearance_status || 'In Rehabilitation'}</span>
-                              </div>
-                            </div>
-
-                            {/* 1-click Download and Inspect buttons */}
-                            <div style={{ display:'flex', gap:8 }}>
-                              <button
-                                onClick={async () => {
-                                  setSelectedPlayer(inj.athlete_id)
-                                  await generateMedicalPDF('player')
-                                }}
-                                disabled={isGeneratingThis}
-                                style={{
-                                  flex:1, padding:'8px 12px', borderRadius:8,
-                                  background: isGeneratingThis ? '#E2E8F0' : 'linear-gradient(135deg, #0D9488, #0F766E)',
-                                  color: isGeneratingThis ? '#94A3B8' : '#fff',
-                                  border:'none', fontSize:12, fontWeight:700, cursor: isGeneratingThis ? 'not-allowed' : 'pointer',
-                                  display:'inline-flex', alignItems:'center', justifyContent:'center', gap:6,
-                                  boxShadow:'0 2px 6px rgba(13,148,136,0.25)',
-                                }}
-                              >
-                                {isGeneratingThis ? (
-                                  <>
-                                    <div style={{ width:12, height:12, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                                    Exporting…
-                                  </>
-                                ) : (
-                                  <>
-                                    <Download size={13}/>
-                                    Download Clinical Dossier (PDF)
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                onClick={() => setSelectedPlayer(inj.athlete_id)}
-                                style={{
-                                  padding:'8px 12px', borderRadius:8, background:'#F8FAFC', color:'#334155',
-                                  border:'1px solid #CBD5E1', fontSize:12, fontWeight:700, cursor:'pointer',
-                                }}
-                              >
-                                Preview
-                              </button>
-                            </div>
+                          <div style={{ fontSize: 12, color: '#64748B' }}>
+                            Official match statistics and performance rating metrics
                           </div>
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* ── Sub-tab 2: All Squad Dossiers (Clean Searchable List) ── */}
-            {medicalSubTab === 'all_players' && (
-              <div>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12, flexWrap:'wrap', gap:10 }}>
-                  <div>
-                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'var(--text)' }}>Squad Clinical Dossier Generator</h3>
-                    <p style={{ margin:'2px 0 0', fontSize:12, color:'var(--text3)' }}>Search any athlete to download their official Medical &amp; Rehabilitation Dossier</p>
-                  </div>
-                  <div style={{ position:'relative', minWidth:260 }}>
-                    <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94A3B8' }} />
-                    <input
-                      type="text"
-                      placeholder="Search player by name or position…"
-                      value={searchTerm}
-                      onChange={e => setSearchTerm(e.target.value)}
-                      style={{ width:'100%', padding:'8px 10px 8px 32px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:12.5, outline:'none', background:'#fff', color:'#0F172A', boxSizing:'border-box' }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:10 }}>
-                  {filteredAthletes.map(a => {
-                    const isInjured = a.status === 'Injured'
-                    const isSelected = selectedPlayer === a.id
-                    const athRehabs = rehabNotes.filter(r => r.athlete_id === a.id)
-                    return (
-                      <div
-                        key={a.id}
-                        style={{
-                          background:'#fff', border:`1px solid ${isSelected ? '#0D9488' : '#E2E8F0'}`,
-                          borderRadius:10, padding:'11px 13px', display:'flex', alignItems:'center', justifyContent:'space-between', gap:10,
-                          boxShadow: isSelected ? '0 0 0 2px rgba(13,148,136,0.2)' : '0 1px 3px rgba(0,0,0,0.03)',
-                        }}
-                      >
-                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
-                          {a.photo_url ? (
-                            <img src={a.photo_url} alt={a.name} style={{ width:36, height:36, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
+                        <button
+                          onClick={() => generatePerformancePDF(currentAthlete.id)}
+                          disabled={generating === `perf_${currentAthlete.id}`}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: 8,
+                            background: generating === `perf_${currentAthlete.id}` ? '#E2E8F0' : 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                            color: generating === `perf_${currentAthlete.id}` ? '#94A3B8' : '#FFFFFF',
+                            border: 'none',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: generating === `perf_${currentAthlete.id}` ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            boxShadow: '0 2px 8px rgba(124,58,237,0.25)',
+                          }}
+                        >
+                          {generating === `perf_${currentAthlete.id}` ? (
+                            <>
+                              <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
+                              Generating PDF…
+                            </>
                           ) : (
-                            <div style={{ width:36, height:36, borderRadius:'50%', background:'#F1F5F9', color:'#475569', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, flexShrink:0 }}>
-                              {a.name.slice(0, 2).toUpperCase()}
+                            <>
+                              <Download size={14}/>
+                              Download Performance Dossier (PDF)
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* KPI Stat Chips */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: 10, marginBottom: 16 }}>
+                        {[
+                          { label: 'Apps', val: athMatches, color: '#0F172A' },
+                          { label: 'Goals', val: athGoals, color: '#7C3AED' },
+                          { label: 'Assists', val: athAssists, color: '#2563EB' },
+                          { label: 'Minutes', val: `${athMins}'`, color: '#0D9488' },
+                          { label: 'Avg Rating', val: athRating, color: '#D97706' },
+                          { label: 'xG', val: athXg, color: '#059669' },
+                        ].map((k, i) => (
+                          <div key={i} style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '10px', textAlign: 'center' }}>
+                            <div style={{ fontSize: 10, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{k.label}</div>
+                            <div style={{ fontSize: 18, fontWeight: 800, color: k.color, marginTop: 2 }}>{k.val}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {athMatches === 0 && (
+                        <div style={{ background: '#F8FAFC', padding: '12px 16px', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 12, color: '#64748B' }}>
+                          No match statistics logged for {currentAthlete.name} in {period}. The PDF dossier will include their baseline athlete profile.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CATEGORY: MEDICAL */}
+                  {activeCategory === 'medical' && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>
+                            Clinical &amp; Rehabilitation Dossier ({period})
+                          </div>
+                          <div style={{ fontSize: 12, color: '#64748B' }}>
+                            Complete physiotherapy notes, recovery protocol, and return-to-play timeline
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => generateMedicalPDF('player', currentAthlete.id)}
+                          disabled={generating === `medical_player_${currentAthlete.id}`}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: 8,
+                            background: generating === `medical_player_${currentAthlete.id}` ? '#E2E8F0' : 'linear-gradient(135deg, #0D9488, #0F766E)',
+                            color: generating === `medical_player_${currentAthlete.id}` ? '#94A3B8' : '#FFFFFF',
+                            border: 'none',
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: generating === `medical_player_${currentAthlete.id}` ? 'not-allowed' : 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            boxShadow: '0 2px 8px rgba(13,148,136,0.25)',
+                          }}
+                        >
+                          {generating === `medical_player_${currentAthlete.id}` ? (
+                            <>
+                              <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
+                              Generating PDF…
+                            </>
+                          ) : (
+                            <>
+                              <Download size={14}/>
+                              Download Medical &amp; Rehab Dossier (PDF)
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Active Case or Clear Status */}
+                      {athleteActiveInj.length > 0 ? (
+                        <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '14px 16px', marginBottom: 14 }}>
+                          <div style={{ fontWeight: 800, color: '#B91C1C', fontSize: 13, marginBottom: 4 }}>
+                            Active Injury: {athleteActiveInj[0].injury_type || 'Injury'} ({athleteActiveInj[0].severity || 'Active'})
+                          </div>
+                          <div style={{ fontSize: 12, color: '#7F1D1D', lineHeight: 1.5 }}>
+                            Sustained on {fmtDate(athleteActiveInj[0].date_of_injury)} · Expected Return: {fmtDate(athleteActiveInj[0].expected_return)}
+                          </div>
+                          {latestRehab?.treatment_summary && (
+                            <div style={{ fontSize: 11.5, color: '#991B1B', marginTop: 6, paddingTop: 6, borderTop: '1px dashed #FECACA' }}>
+                              Latest Rehab: {latestRehab.treatment_summary} (Pain: {latestRehab.pain_level ?? 0}/10)
                             </div>
                           )}
-                          <div style={{ minWidth:0 }}>
-                            <div style={{ fontSize:13, fontWeight:700, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                              {a.name} {a.back_number ? `(#${a.back_number})` : ''}
-                            </div>
-                            <div style={{ fontSize:11, color:'#64748B' }}>
-                              {a.position || 'Player'} · <span style={{ color: isInjured ? '#DC2626' : '#16A34A', fontWeight:700 }}>{isInjured ? 'Injured' : 'Fit'}</span>
-                              {athRehabs.length > 0 && ` · ${athRehabs.length} note${athRehabs.length > 1 ? 's' : ''}`}
-                            </div>
+                        </div>
+                      ) : (
+                        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 10, padding: '14px 16px', marginBottom: 14, color: '#166534', fontSize: 12.5 }}>
+                          <strong>Match Fit:</strong> No active injury on record for this period. Download the clinical dossier above for full historical records.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* CATEGORY: OVERALL OR FINANCE */}
+                  {(activeCategory === 'overall' || activeCategory === 'finance') && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                        <div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>
+                            Player Record &amp; Contract Terms
+                          </div>
+                          <div style={{ fontSize: 12, color: '#64748B' }}>
+                            Contract breakdown and club administrative data
                           </div>
                         </div>
 
-                        <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                          <button
-                            onClick={() => setSelectedPlayer(a.id)}
-                            title="Preview Dossier"
-                            style={{ background:'#F8FAFC', border:'1px solid #CBD5E1', borderRadius:6, padding:'6px 9px', fontSize:11, fontWeight:700, color:'#334155', cursor:'pointer' }}
-                          >
-                            Inspect
-                          </button>
-                          <button
-                            onClick={async () => {
-                              setSelectedPlayer(a.id)
-                              await generateMedicalPDF('player')
-                            }}
-                            title="Download Clinical Dossier (PDF)"
-                            style={{ background:'#0D9488', border:'none', borderRadius:6, padding:'6px 10px', fontSize:11, fontWeight:700, color:'#fff', cursor:'pointer', display:'inline-flex', alignItems:'center', gap:4 }}
-                          >
-                            <Download size={12}/> PDF
-                          </button>
+                        <button
+                          onClick={() => generateExcelReport('contracts')}
+                          disabled={generating === 'contracts'}
+                          style={{
+                            padding: '9px 16px',
+                            borderRadius: 8,
+                            background: '#047857',
+                            color: '#FFFFFF',
+                            border: 'none',
+                            fontSize: 12.5,
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6
+                          }}
+                        >
+                          <Download size={13}/> Export Contracts (Excel)
+                        </button>
+                      </div>
+
+                      <div style={{ background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 8, padding: '12px 14px', fontSize: 12.5, color: '#334155' }}>
+                        <div><strong>Squad Status:</strong> {currentAthlete.status || 'Active'}</div>
+                        <div style={{ marginTop: 4 }}><strong>Position:</strong> {currentAthlete.position || 'Player'}</div>
+                        <div style={{ marginTop: 4 }}><strong>Club:</strong> {currentAthlete.club || currentProfile?.club_name || 'ApexTrack GH'}</div>
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              </div>
+            ) : (
+              <div style={{ padding: 24, textAlign: 'center', color: 'var(--text3)' }}>
+                No athlete records found. Please ensure players are registered in Squad &amp; Athletes.
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {/* ──────────────────────────────────────────────────────────────────
+            VIEW B: FULL SQUAD / CLUB SCOPE
+        ────────────────────────────────────────────────────────────────── */}
+        {targetScope === 'squad' && (
+          <div className="fade-up" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+            {/* ── B1: SQUAD MEDICAL & PHYSIO REPORTS ── */}
+            {activeCategory === 'medical' && (
+              <div>
+                
+                {/* KPI scorecards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  {[
+                    { label: 'Total Squad', val: athletes.length, sub: 'registered athletes', color: '#0F172A', bg: '#F8FAFC', brd: '#E2E8F0' },
+                    { label: 'Match Fit', val: Math.max(0, athletes.length - squadActiveInjuries.length), sub: 'cleared for selection', color: '#16A34A', bg: '#F0FDF4', brd: '#BBF7D0' },
+                    { label: 'Active Injuries', val: squadActiveInjuries.length, sub: 'undergoing care', color: '#DC2626', bg: '#FEF2F2', brd: '#FECACA' },
+                    { label: 'Rehab Sessions', val: rehabNotes.length, sub: 'logged clinical entries', color: '#0D9488', bg: '#F0FDFA', brd: '#CCFBF1' },
+                  ].map((k, i) => (
+                    <div key={i} style={{ background: k.bg, border: `1px solid ${k.brd}`, borderRadius: 12, padding: '14px 16px' }}>
+                      <div style={{ fontSize: 11, fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>{k.label}</div>
+                      <div style={{ fontSize: 24, fontWeight: 800, color: k.color, marginTop: 4 }}>{k.val}</div>
+                      <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{k.sub}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 2 Primary Medical Download Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14, marginBottom: 20 }}>
+                  
+                  {/* Card 1: Executive Medical PDF */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    border: '1.5px solid #0D9488',
+                    borderRadius: 12,
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(13,148,136,0.08)',
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 8, background: '#F0FDFA', color: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FileText size={20}/>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>Squad Medical &amp; Clinical Health Report</div>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#0D9488', background: '#F0FDFA', padding: '2px 8px', borderRadius: 99 }}>PDF Document</span>
                         </div>
                       </div>
-                    )
-                  })}
+                      <p style={{ fontSize: 12.5, color: '#64748B', lineHeight: 1.5, margin: '0 0 16px' }}>
+                        Official board-level medical audit covering squad availability, active injury logs, recovered athletes, days missed, and physiotherapist clearance sign-offs for {period}.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => generateMedicalPDF('general')}
+                      disabled={generating === 'medical_general'}
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        borderRadius: 8,
+                        background: generating === 'medical_general' ? '#E2E8F0' : 'linear-gradient(135deg, #0F766E, #0D9488)',
+                        color: generating === 'medical_general' ? '#94A3B8' : '#FFFFFF',
+                        border: 'none',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: generating === 'medical_general' ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                        boxShadow: '0 2px 8px rgba(15,118,110,0.25)',
+                      }}
+                    >
+                      {generating === 'medical_general' ? (
+                        <>
+                          <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
+                          Generating PDF…
+                        </>
+                      ) : (
+                        <>
+                          <Download size={14}/>
+                          Download Squad Medical Report (PDF)
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Card 2: Injury Register Excel */}
+                  <div style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: 12,
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                  }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 8, background: '#F0FDFA', color: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <FileSpreadsheet size={20}/>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>Injury Register &amp; Clinical Data</div>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#0D9488', background: '#F0FDFA', padding: '2px 8px', borderRadius: 99 }}>Excel (.xlsx)</span>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12.5, color: '#64748B', lineHeight: 1.5, margin: '0 0 16px' }}>
+                        Complete spreadsheet workbook of all logged injuries, diagnoses, recovery timelines, and historical physiotherapy notes for {period}.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => generateExcelReport('injuries')}
+                      disabled={generating === 'injuries'}
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        borderRadius: 8,
+                        background: '#0D9488',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: generating === 'injuries' ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8,
+                      }}
+                    >
+                      {generating === 'injuries' ? (
+                        <>
+                          <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
+                          Exporting…
+                        </>
+                      ) : (
+                        <>
+                          <Download size={14}/>
+                          Export Injury Register (Excel)
+                        </>
+                      )}
+                    </button>
+                  </div>
+
                 </div>
+
+                {/* Active Cases Quick List */}
+                {squadActiveInjuries.length > 0 && (
+                  <div style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 12, padding: '16px 20px' }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>
+                      Current Active Rehabilitation Cases ({squadActiveInjuries.length})
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 10 }}>
+                      {squadActiveInjuries.map(inj => {
+                        const ath = athletes.find(a => a.id === inj.athlete_id) || inj.athletes
+                        return (
+                          <div
+                            key={inj.id}
+                            style={{
+                              background: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              borderRadius: 8,
+                              padding: '10px 12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 10
+                            }}
+                          >
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {ath?.name || 'Athlete'}
+                              </div>
+                              <div style={{ fontSize: 11, color: '#B91C1C', fontWeight: 600 }}>
+                                {inj.injury_type || 'Injury'} · Expected {fmtDate(inj.expected_return)}
+                              </div>
+                            </div>
+
+                            <button
+                              onClick={() => {
+                                setSelectedPlayer(inj.athlete_id)
+                                generateMedicalPDF('player', inj.athlete_id)
+                              }}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: 6,
+                                background: '#0D9488',
+                                color: '#FFFFFF',
+                                border: 'none',
+                                fontSize: 11,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                flexShrink: 0
+                              }}
+                            >
+                              <Download size={11}/> Dossier PDF
+                            </button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
               </div>
             )}
 
-            {/* ── Sub-tab 3: Squad Medical Audit (PDF) ── */}
-            {medicalSubTab === 'squad_audit' && (
-              <div style={{ maxWidth:640, margin:'0 auto' }}>
-                <div className="card" style={{ padding:24, border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:14, textAlign:'center' }}>
-                  <div style={{ width:56, height:56, borderRadius:12, background:'#F0FDFA', border:'1.5px solid #CCFBF1', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', color:'#0D9488' }}>
-                    <FileText size={28}/>
+            {/* ── B2: SQUAD MATCH ANALYTICS & PERFORMANCE ── */}
+            {activeCategory === 'analytics' && (
+              <div>
+                
+                {/* Primary Card: Performance Register Excel */}
+                <div style={{
+                  background: '#FFFFFF',
+                  border: '1.5px solid #7C3AED',
+                  borderRadius: 12,
+                  padding: '20px',
+                  marginBottom: 20,
+                  boxShadow: '0 2px 8px rgba(124,58,237,0.08)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 16,
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 8, background: '#F5F3FF', color: '#7C3AED', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Trophy size={20}/>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 800, color: '#0F172A' }}>Squad Match Performance Register</div>
+                        <span style={{ fontSize: 10.5, fontWeight: 700, color: '#7C3AED', background: '#F5F3FF', padding: '2px 8px', borderRadius: 99 }}>Excel (.xlsx)</span>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 12.5, color: '#64748B', margin: 0 }}>
+                      Export complete match logs, goals, assists, pass accuracy, distance, and ratings for all players in {period}.
+                    </p>
                   </div>
-                  <h3 style={{ fontSize:18, fontWeight:800, color:'#0F172A', margin:'0 0 6px' }}>Executive Squad Health &amp; Availability Report</h3>
-                  <p style={{ fontSize:13, color:'#64748B', margin:'0 0 18px', lineHeight:1.5 }}>
-                    Generate the formal board-level medical audit covering squad availability, active injury logs, recovered athletes, days missed, and physiotherapist clearance sign-offs.
-                  </p>
-                  <div style={{ display:'flex', justifyContent:'center', gap:10, marginBottom:20, flexWrap:'wrap' }}>
-                    <span style={{ fontSize:11, fontWeight:700, background:'#F0FDFA', color:'#0D9488', padding:'4px 10px', borderRadius:99, border:'1px solid #CCFBF1' }}>{period}</span>
-                    <span style={{ fontSize:11, fontWeight:700, background:'#F0FDF4', color:'#16A34A', padding:'4px 10px', borderRadius:99, border:'1px solid #DCFCE7' }}>Includes Recovered Athletes</span>
-                    <span style={{ fontSize:11, fontWeight:700, background:'#F8FAFC', color:'#475569', padding:'4px 10px', borderRadius:99, border:'1px solid #E2E8F0' }}>ApexTrack GH Certified PDF</span>
-                  </div>
-                  <button
-                    onClick={() => generateMedicalPDF('general')}
-                    disabled={generating === 'medical_general'}
-                    style={{
-                      padding:'12px 24px', borderRadius:10, background:'linear-gradient(135deg, #0F766E, #0D9488)',
-                      color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor: generating === 'medical_general' ? 'not-allowed' : 'pointer',
-                      display:'inline-flex', alignItems:'center', gap:8, boxShadow:'0 3px 12px rgba(15,118,110,0.3)',
-                    }}
-                  >
-                    {generating === 'medical_general' ? (
-                      <>
-                        <div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                        Generating PDF…
-                      </>
-                    ) : (
-                      <>
-                        <Download size={16}/>
-                        Download Squad Medical Report (PDF)
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            )}
 
-            {/* ── Sub-tab 4: Medical Register (Excel) ── */}
-            {medicalSubTab === 'logs' && (
-              <div style={{ maxWidth:640, margin:'0 auto' }}>
-                <div className="card" style={{ padding:24, border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:14, textAlign:'center' }}>
-                  <div style={{ width:56, height:56, borderRadius:12, background:'#F0FDFA', border:'1.5px solid #CCFBF1', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 14px', color:'#0D9488' }}>
-                    <FileSpreadsheet size={28}/>
-                  </div>
-                  <h3 style={{ fontSize:18, fontWeight:800, color:'#0F172A', margin:'0 0 6px' }}>Injury Register &amp; Clinical Data (.xlsx)</h3>
-                  <p style={{ fontSize:13, color:'#64748B', margin:'0 0 18px', lineHeight:1.5 }}>
-                    Export raw spreadsheet records of all recorded injuries, severity levels, dates, recovery timelines, and notes for offline analysis or club record-keeping.
-                  </p>
                   <button
-                    onClick={() => generateExcelReport('injuries')}
-                    disabled={generating === 'injuries'}
+                    onClick={() => generateExcelReport('performance')}
+                    disabled={generating === 'performance'}
                     style={{
-                      padding:'12px 24px', borderRadius:10, background:'#0D9488',
-                      color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor: generating === 'injuries' ? 'not-allowed' : 'pointer',
-                      display:'inline-flex', alignItems:'center', gap:8, boxShadow:'0 3px 12px rgba(13,148,136,0.3)',
+                      padding: '11px 20px',
+                      borderRadius: 8,
+                      background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: generating === 'performance' ? 'not-allowed' : 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      boxShadow: '0 2px 8px rgba(124,58,237,0.25)',
                     }}
                   >
-                    {generating === 'injuries' ? (
+                    {generating === 'performance' ? (
                       <>
-                        <div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                        <div style={{ width: 14, height: 14, border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }}/>
                         Exporting…
                       </>
                     ) : (
                       <>
-                        <Download size={16}/>
-                        Export Injury Register (Excel)
+                        <Download size={14}/>
+                        Export Match Register (Excel)
                       </>
                     )}
+                  </button>
+                </div>
+
+                {/* Squad Quick Download Table */}
+                <div style={{ background: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: 12, padding: '16px 20px' }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>
+                    Squad Match Appearances ({athletes.length} Players)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
+                    {athletes.map(a => {
+                      const stats = performance.filter(p => p.athlete_id === a.id)
+                      const goals = stats.reduce((s, p) => s + (parseInt(p.goals) || 0), 0)
+                      return (
+                        <div
+                          key={a.id}
+                          style={{
+                            background: '#F8FAFC',
+                            border: '1px solid #E2E8F0',
+                            borderRadius: 8,
+                            padding: '10px 12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 10
+                          }}
+                        >
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {a.name}
+                            </div>
+                            <div style={{ fontSize: 11, color: '#64748B' }}>
+                              {a.position || 'Player'} · {stats.length} apps · {goals} goals
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => {
+                              setSelectedPlayer(a.id)
+                              generatePerformancePDF(a.id)
+                            }}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: 6,
+                              background: '#7C3AED',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              fontSize: 11,
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              flexShrink: 0
+                            }}
+                          >
+                            <Download size={11}/> Dossier PDF
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {/* ── B3: OVERALL CLUB OPERATIONS & WORKBOOKS ── */}
+            {activeCategory === 'overall' && (
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}>
+                  Official Club Operations Workbooks ({period})
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))', gap: 14 }}>
+                  {ADMIN_REPORT_CARDS.map(card => {
+                    const isGen = generating === card.id
+                    return (
+                      <div
+                        key={card.id}
+                        style={{
+                          background: 'var(--surface)',
+                          border: card.featured ? `1.5px solid ${card.color}` : '1px solid var(--border)',
+                          borderRadius: 12,
+                          overflow: 'hidden',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        {card.featured && (
+                          <div style={{ background: card.color, padding: '4px 12px', fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: '0.06em', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                            <Star size={11} fill="currentColor"/> Complete Club Workbook
+                          </div>
+                        )}
+                        <div style={{ padding: '16px', display: 'flex', gap: 12 }}>
+                          <div style={{ width: 40, height: 40, borderRadius: 10, background: `${card.color}15`, color: card.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            {card.icon}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
+                              {card.title}
+                            </div>
+                            <div style={{ fontSize: 11.5, color: 'var(--text3)', lineHeight: 1.45 }}>
+                              {card.desc}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ padding: '10px 16px 14px', borderTop: '1px solid var(--border)', background: 'var(--surface2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: card.color }}>{card.sheets}</span>
+                          <button
+                            onClick={() => generateExcelReport(card.id)}
+                            disabled={isGen || loading}
+                            style={{
+                              padding: '6px 12px',
+                              background: card.color,
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 6,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              cursor: isGen ? 'not-allowed' : 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                            }}
+                          >
+                            {isGen ? 'Exporting…' : <><Download size={12}/> Export Excel</>}
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── B4: FINANCE & CONTRACTS ── */}
+            {activeCategory === 'finance' && (
+              <div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
+                  {[
+                    ['Weekly Wage Bill',  `GHS ${weeklyWage.toFixed(2)}`, '#059669'],
+                    ['Monthly Estimate',  `GHS ${(weeklyWage * 4.33).toFixed(2)}`, '#2563EB'],
+                    ['Annual Projection', `GHS ${(weeklyWage * 52).toFixed(2)}`, '#7C3AED'],
+                  ].map(([label, value, col]) => (
+                    <div key={label} style={{ background: 'var(--surface)', borderRadius: 12, padding: '16px', border: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 700, textTransform: 'uppercase' }}>{label}</div>
+                      <div style={{ fontSize: 22, fontWeight: 800, color: col, marginTop: 4 }}>{value}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>Active contracts: {activeContracts.length}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 12,
+                  padding: '18px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 14,
+                }}>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)' }}>Squad Contracts &amp; Payroll Register</div>
+                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>Export salary breakdowns, allowances, and contract expiry dates in .xlsx</div>
+                  </div>
+
+                  <button
+                    onClick={() => generateExcelReport('contracts')}
+                    disabled={generating === 'contracts'}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: 8,
+                      background: '#059669',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6
+                    }}
+                  >
+                    <Download size={14}/> Export Contracts Excel
                   </button>
                 </div>
               </div>
@@ -1453,510 +1999,7 @@ export default function ReportsPage() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════════
-            PERFORMANCE & MATCH ANALYTICS REPORT CENTER
-        ══════════════════════════════════════════════════════════════════ */}
-        {(isPureAnalyst || (!isPurePhysio && activeTab === 'performance')) && (
-          <div className="fade-up" style={{ marginBottom: 28 }}>
-            
-            {/* Header */}
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-              <div style={{ width:34, height:34, borderRadius:8, background:'#F5F3FF', border:'1px solid #DDD6FE', display:'flex', alignItems:'center', justifyContent:'center', color:'#7C3AED', flexShrink:0 }}>
-                <TrendingUp size={18} strokeWidth={2.2}/>
-              </div>
-              <div>
-                <h2 style={{ fontSize:16, fontWeight:800, color:'var(--text)', margin:0 }}>
-                  Performance &amp; Match Analytics Reports
-                </h2>
-                <p style={{ fontSize:12, color:'var(--text3)', margin:0 }}>
-                  Generate player performance dossiers, seasonal match KPIs, and scouting ratings
-                </p>
-              </div>
-            </div>
-
-            {/* Player Selection & KPI Dossier Explorer */}
-            <div className="card" style={{ padding:0, overflow:'hidden', border:'1px solid #CBD5E1', background:'#FFFFFF', borderRadius:14, boxShadow:'0 1px 3px rgba(0,0,0,0.05)' }}>
-              
-              <div style={{ background:'linear-gradient(135deg, #0F172A, #1E1B4B)', padding:'14px 20px', color:'#fff', display:'flex', justifyContent:'space-between', alignItems:'center', borderBottom:'2px solid #7C3AED' }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                  <Trophy size={18} color="#A78BFA"/>
-                  <span style={{ fontSize:14, fontWeight:800 }}>Player Performance Explorer</span>
-                </div>
-                <div style={{ position:'relative', minWidth:220 }}>
-                  <Search size={13} style={{ position:'absolute', left:9, top:'50%', transform:'translateY(-50%)', color:'#94A3B8' }} />
-                  <input
-                    type="text"
-                    placeholder="Search player…"
-                    value={perfSearchTerm}
-                    onChange={e => setPerfSearchTerm(e.target.value)}
-                    style={{ width:'100%', padding:'6px 10px 6px 28px', border:'1px solid rgba(255,255,255,0.2)', borderRadius:6, fontSize:12, outline:'none', background:'rgba(255,255,255,0.1)', color:'#fff', boxSizing:'border-box' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ padding:'18px 20px' }}>
-                {/* Horizontal player picker */}
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:8, maxHeight: 180, overflowY: 'auto', marginBottom: 16 }}>
-                  {filteredPerfAthletes.map(a => {
-                    const isSelected = (selectedPerfAthleteObj?.id === a.id)
-                    const athStats = performance.filter(p => p.athlete_id === a.id)
-                    return (
-                      <div
-                        key={a.id}
-                        onClick={() => setSelectedPerfPlayer(a.id)}
-                        style={{
-                          display:'flex', alignItems:'center', gap:8, padding:'8px 10px',
-                          background: isSelected ? '#F5F3FF' : '#F8FAFC',
-                          border: isSelected ? '1.5px solid #7C3AED' : '1px solid #E2E8F0',
-                          borderRadius:8, cursor:'pointer',
-                        }}
-                      >
-                        {a.photo_url ? (
-                          <img src={a.photo_url} alt={a.name} style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
-                        ) : (
-                          <div style={{ width:32, height:32, borderRadius:'50%', background:'#EDE9FE', color:'#6D28D9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, flexShrink:0 }}>
-                            {a.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:12, fontWeight:700, color: isSelected ? '#6D28D9' : '#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                            {a.name}
-                          </div>
-                          <div style={{ fontSize:10.5, color:'#64748B' }}>
-                            {a.position || 'Player'} · {athStats.length} apps
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-
-                {/* Selected Athlete Panel */}
-                {selectedPerfAthleteObj && (
-                  <div style={{ background:'#F8FAFC', border:'1px solid #E2E8F0', borderRadius:10, padding:'16px 18px' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10, marginBottom:14, borderBottom:'1px solid #E2E8F0', paddingBottom:12 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                        {selectedPerfAthleteObj.photo_url ? (
-                          <img src={selectedPerfAthleteObj.photo_url} alt={selectedPerfAthleteObj.name} style={{ width:44, height:44, borderRadius:8, objectFit:'cover', border:'2px solid #7C3AED' }} />
-                        ) : (
-                          <div style={{ width:44, height:44, borderRadius:8, background:'#EDE9FE', color:'#6D28D9', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800 }}>
-                            {selectedPerfAthleteObj.name.slice(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <div style={{ fontSize:15, fontWeight:800, color:'#0F172A' }}>
-                            {selectedPerfAthleteObj.name} {selectedPerfAthleteObj.back_number ? `(#${selectedPerfAthleteObj.back_number})` : ''}
-                          </div>
-                          <div style={{ fontSize:11.5, color:'#64748B' }}>
-                            {selectedPerfAthleteObj.position || 'Player'} · {selectedPerfAthleteObj.club || currentProfile?.club_name || 'ApexTrack GH'}
-                          </div>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => generatePerformancePDF(selectedPerfAthleteObj.id)}
-                        disabled={generating === `perf_${selectedPerfAthleteObj.id}`}
-                        style={{
-                          padding:'8px 16px', background: generating === `perf_${selectedPerfAthleteObj.id}` ? '#E2E8F0' : 'linear-gradient(135deg, #7C3AED, #6D28D9)',
-                          color: generating === `perf_${selectedPerfAthleteObj.id}` ? '#94A3B8' : '#fff',
-                          border:'none', borderRadius:8, fontSize:12.5, fontWeight:700, cursor:'pointer',
-                          display:'inline-flex', alignItems:'center', gap:6, boxShadow:'0 2px 8px rgba(124,58,237,0.25)',
-                        }}
-                      >
-                        {generating === `perf_${selectedPerfAthleteObj.id}` ? (
-                          <>
-                            <div style={{ width:12, height:12, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                            Exporting…
-                          </>
-                        ) : (
-                          <>
-                            <Download size={14}/>
-                            Download Performance Dossier (PDF)
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    {/* KPI Tiles */}
-                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(110px, 1fr))', gap:8, marginBottom:14 }}>
-                      {[
-                        { label:'Apps', val: perfMatchesCount, color:'#0F172A' },
-                        { label:'Goals', val: perfGoalsCount, color:'#7C3AED' },
-                        { label:'Assists', val: perfAssistsCount, color:'#2563EB' },
-                        { label:'Minutes', val: `${perfMinsCount}'`, color:'#0D9488' },
-                        { label:'Avg Rating', val: perfAvgRating, color:'#D97706' },
-                        { label:'xG', val: perfTotalXg, color:'#059669' },
-                      ].map((k, i) => (
-                        <div key={i} style={{ background:'#fff', border:'1px solid #E2E8F0', borderRadius:8, padding:'8px 10px', textAlign:'center' }}>
-                          <div style={{ fontSize:10, fontWeight:700, color:'#64748B', textTransform:'uppercase' }}>{k.label}</div>
-                          <div style={{ fontSize:16, fontWeight:800, color: k.color, marginTop:2 }}>{k.val}</div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Match Log Summary */}
-                    <div style={{ fontSize:12, color:'#64748B' }}>
-                      {selectedPlayerStats.length > 0 ? (
-                        <span>Logged {selectedPlayerStats.length} match appearances in {period}. Use the download button above to generate the full dossier.</span>
-                      ) : (
-                        <span>No match records logged for {selectedPerfAthleteObj.name} in {period}.</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Performance Excel card */}
-            <div style={{ marginTop:14 }}>
-              <div className="card" style={{ padding:'14px 18px', border:'1px solid var(--border)', background:'var(--surface)', borderRadius:10, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
-                <div>
-                  <div style={{ fontSize:13.5, fontWeight:700, color:'var(--text)' }}>Squad Match Performance Register (.xlsx)</div>
-                  <div style={{ fontSize:11.5, color:'var(--text3)' }}>Export entire team match logs, goals, assists, pass accuracy, and ratings</div>
-                </div>
-                <button
-                  onClick={() => generateExcelReport('performance')}
-                  disabled={generating === 'performance'}
-                  style={{ padding:'7px 14px', borderRadius:8, background:'#7C3AED', color:'#fff', border:'none', fontSize:12, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6 }}
-                >
-                  <Download size={13}/> Export Excel
-                </button>
-              </div>
-            </div>
-
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════
-            CLUB OPERATIONS & EXCEL DATA EXPORTS (ADMIN / OPERATIONS)
-        ══════════════════════════════════════════════════════════════════ */}
-        {(!isPurePhysio && !isPureAnalyst && (activeTab === 'operations' || (isPureAnalyst && activeTab === 'operations'))) && (
-          <div className="fade-up" style={{ marginBottom: 28 }}>
-            
-            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-              <div>
-                <h2 style={{ fontSize:16, fontWeight:800, color:'var(--text)', margin:0 }}>
-                  Club Operations &amp; Data Exports
-                </h2>
-                <p style={{ fontSize:12, color:'var(--text3)', margin:0 }}>
-                  Download official formatted workbooks for all club departments
-                </p>
-              </div>
-              <span style={{ fontSize:12, color:'var(--text3)' }}>{ADMIN_REPORT_CARDS.length} Excel workbooks</span>
-            </div>
-
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(320px, 1fr))', gap:14 }} className="card-grid-auto">
-              {ADMIN_REPORT_CARDS.map(card => {
-                const isGen = generating === card.id
-                return (
-                  <div key={card.id} className="card" style={{ padding:0, overflow:'hidden', border: card.featured ? `1.5px solid ${card.color}` : '1px solid var(--border)', background:'var(--surface)', borderRadius:12, display:'flex', flexDirection:'column' }}>
-                    {card.featured && (
-                      <div style={{ background:card.color, padding:'4px 12px', fontSize:10.5, fontWeight:700, color:'#fff', letterSpacing:'0.06em', textTransform:'uppercase', display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                        <Star size={11} fill="currentColor" /> Complete Club Overview
-                      </div>
-                    )}
-                    <div style={{ padding:'16px 18px', flex:1, display:'flex', gap:12 }}>
-                      <div style={{ width:42, height:42, borderRadius:10, background:`${card.color}15`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${card.color}30` }}>
-                        {card.icon}
-                      </div>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6, marginBottom:4 }}>
-                          <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>{card.title}</div>
-                          <span style={{ fontSize:10, fontWeight:700, color:card.color, background:`${card.color}15`, padding:'2px 7px', borderRadius:99 }}>{card.sheets}</span>
-                        </div>
-                        <div style={{ fontSize:11.5, color:'var(--text3)', lineHeight:1.45 }}>{card.desc}</div>
-                      </div>
-                    </div>
-                    <div style={{ padding:'10px 18px 14px', borderTop:'1px solid var(--border)', background:'var(--surface2)', display:'flex', alignItems:'center', justifyContent:'flex-end' }}>
-                      <button
-                        onClick={() => generateExcelReport(card.id)}
-                        disabled={isGen || loading}
-                        style={{
-                          padding:'7px 14px', background: card.color, color:'#fff', border:'none',
-                          borderRadius:8, fontSize:12, fontWeight:700, cursor: isGen ? 'not-allowed' : 'pointer',
-                          display:'inline-flex', alignItems:'center', gap:6, opacity: isGen ? 0.7 : 1,
-                        }}
-                      >
-                        {isGen ? (
-                          <>
-                            <div style={{ width:12, height:12, border:'2px solid rgba(255,255,255,0.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                            Exporting…
-                          </>
-                        ) : (
-                          <>
-                            <Download size={13}/> Export Excel
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-
-          </div>
-        )}
-
-        {/* ══════════════════════════════════════════════════════════════════
-            FINANCIAL SNAPSHOT (ADMIN)
-        ══════════════════════════════════════════════════════════════════ */}
-        {isAdmin && activeTab === 'finance' && (
-          <div className="fade-up" style={{ marginBottom: 28 }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}>
-              <div style={{ width:34, height:34, borderRadius:8, background:'#ECFDF5', border:'1px solid #A7F3D0', display:'flex', alignItems:'center', justifyContent:'center', color:'#059669', flexShrink:0 }}>
-                <ClipboardList size={18} strokeWidth={2.2}/>
-              </div>
-              <div>
-                <h2 style={{ fontSize:16, fontWeight:800, color:'var(--text)', margin:0 }}>
-                  Club Financial &amp; Payroll Snapshot
-                </h2>
-                <p style={{ fontSize:12, color:'var(--text3)', margin:0 }}>
-                  Squad wage bill projections, player contracts, and payroll estimates
-                </p>
-              </div>
-            </div>
-
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(200px, 1fr))', gap:14, marginBottom:20 }}>
-              {[
-                ['Weekly Wage Bill',  `GHS ${weeklyWage.toFixed(2)}`, '#059669'],
-                ['Monthly Estimate',  `GHS ${(weeklyWage * 4.33).toFixed(2)}`, '#2563EB'],
-                ['Annual Projection', `GHS ${(weeklyWage * 52).toFixed(2)}`, '#7C3AED'],
-              ].map(([label, value, col]) => (
-                <div key={label} style={{ background:'var(--surface)', borderRadius:12, padding:'16px 18px', border:'1px solid var(--border)', boxShadow:'0 1px 3px rgba(0,0,0,0.03)' }}>
-                  <div style={{ fontSize:11, color:'var(--text3)', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>{label}</div>
-                  <div style={{ fontSize:22, fontWeight:800, color: col }}>{value}</div>
-                  <div style={{ fontSize:11, color:'var(--text3)', marginTop:3 }}>Active player contracts: {activeContracts.length}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="card" style={{ padding:'16px 20px', border:'1px solid var(--border)', background:'var(--surface)', borderRadius:12, display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
-              <div>
-                <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>Download Contracts &amp; Payroll Sheet</div>
-                <div style={{ fontSize:12, color:'var(--text3)' }}>Export player salary breakdown, bonuses, payment modes, and contract terms in .xlsx</div>
-              </div>
-              <button
-                onClick={() => generateExcelReport('contracts')}
-                disabled={generating === 'contracts'}
-                style={{ padding:'8px 16px', borderRadius:8, background:'#059669', color:'#fff', border:'none', fontSize:12.5, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6 }}
-              >
-                <Download size={14}/> Export Contracts Excel
-              </button>
-            </div>
-          </div>
-        )}
-
       </div>
-
-      {/* ── Player Preview Modal Overlay (Root-level, never clipped by parent card) ── */}
-      {selectedPlayer && selectedAthleteObj && !isPureAnalyst && (
-        <div
-          style={{
-            position:'fixed',
-            inset:0,
-            zIndex:99999,
-            background:'rgba(15,23,42,0.65)',
-            backdropFilter:'blur(4px)',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            padding:'20px 16px',
-            animation:'fadeIn 0.15s ease',
-          }}
-          onClick={e => { if (e.target === e.currentTarget) setSelectedPlayer('') }}
-        >
-          <div style={{
-            background:'#FFFFFF',
-            borderRadius:16,
-            width:'100%',
-            maxWidth:600,
-            maxHeight:'90vh',
-            display:'flex',
-            flexDirection:'column',
-            boxShadow:'0 25px 60px rgba(15,23,42,0.35)',
-            border:'1px solid #CBD5E1',
-            overflow:'hidden',
-          }}>
-
-            {/* Modal Header Banner */}
-            <div style={{
-              background:'linear-gradient(135deg, #0B132B 0%, #0F172A 100%)',
-              padding:'16px 20px',
-              position:'relative',
-              flexShrink:0,
-              borderBottom:'2.5px solid #0D9488',
-            }}>
-              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:0 }}>
-                  {selectedAthleteObj.photo_url ? (
-                    <img src={selectedAthleteObj.photo_url} alt={selectedAthleteObj.name} style={{ width:44, height:44, borderRadius:8, objectFit:'cover', border:'1.5px solid #2DD4BF', flexShrink:0 }} />
-                  ) : (
-                    <div style={{ width:44, height:44, borderRadius:8, background:'rgba(13,148,136,0.25)', border:'1.5px solid #2DD4BF', color:'#2DD4BF', display:'flex', alignItems:'center', justifyContent:'center', fontSize:14, fontWeight:800, flexShrink:0 }}>
-                      {selectedAthleteObj.name.split(' ').map(w=>w[0]).join('').slice(0,2)}
-                    </div>
-                  )}
-                  <div style={{ minWidth:0 }}>
-                    <span style={{ background:'#0F766E', border:'1px solid #2DD4BF', color:'#FFF', fontSize:9, fontWeight:800, padding:'2px 8px', borderRadius:5, letterSpacing:'0.05em', textTransform:'uppercase', display:'inline-block' }}>
-                      PLAYER CLINICAL DOSSIER
-                    </span>
-                    <div style={{ fontSize:16, fontWeight:800, color:'#FFFFFF', marginTop:3, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{selectedAthleteObj.name}</div>
-                    <div style={{ fontSize:12, color:'#94A3B8', marginTop:1 }}>
-                      {selectedAthleteObj.position || 'Athlete'} {selectedAthleteObj.back_number ? `· Jersey #${selectedAthleteObj.back_number}` : ''} {selectedAthleteObj.age ? `· ${selectedAthleteObj.age} yrs` : ''}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
-                  <span style={{
-                    fontSize:11, fontWeight:700, padding:'4px 10px', borderRadius:6,
-                    background: selectedAthleteObj.status === 'Injured' ? '#FEF3C7' : '#DCFCE7',
-                    color: selectedAthleteObj.status === 'Injured' ? '#B45309' : '#15803D',
-                    border: `1px solid ${selectedAthleteObj.status === 'Injured' ? '#FDE68A' : '#BBF7D0'}`
-                  }}>
-                    {selectedAthleteObj.status === 'Injured' ? 'In Rehab' : 'Match Fit'}
-                  </span>
-                  <button
-                    onClick={() => setSelectedPlayer('')}
-                    title="Close"
-                    style={{
-                      background:'rgba(255,255,255,0.12)',
-                      border:'1px solid rgba(255,255,255,0.2)',
-                      color:'#fff',
-                      width:32,
-                      height:32,
-                      borderRadius:'50%',
-                      display:'flex',
-                      alignItems:'center',
-                      justifyContent:'center',
-                      cursor:'pointer',
-                      transition:'all 0.15s ease',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.25)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.12)'}
-                  >
-                    <X size={16}/>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Body (Scrollable) */}
-            <div style={{ padding:'18px 20px', overflowY:'auto', flex:1, display:'flex', flexDirection:'column', gap:14 }}>
-
-              {/* Stat badges */}
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:10 }}>
-                {[
-                  { label:'Injuries Logged', val: selectedPlayerInjuries.length, color:'#0F172A' },
-                  { label:'Active Cases',    val: selectedPlayerActiveInj.length, color: selectedPlayerActiveInj.length ? '#D97706' : '#16A34A' },
-                  { label:'Rehab Sessions',  val: selectedPlayerRehabNotes.length, color:'#0D9488' },
-                ].map(s => (
-                  <div key={s.label} style={{ background:'#F8FAFC', padding:'10px', borderRadius:8, border:'1px solid #E2E8F0', textAlign:'center' }}>
-                    <div style={{ fontSize:9.5, color:'#64748B', fontWeight:700, textTransform:'uppercase', marginBottom:3 }}>{s.label}</div>
-                    <div style={{ fontSize:20, fontWeight:800, color:s.color }}>{s.val}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Active Rehab Plan */}
-              <div style={{ background:'#F0FDFA', border:'1px solid #99F6E4', borderRadius:10, padding:'12px 14px' }}>
-                <div style={{ fontSize:11, fontWeight:800, color:'#0D9488', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8, display:'flex', justifyContent:'space-between' }}>
-                  <span style={{ display:'flex', alignItems:'center', gap:5 }}><Activity size={13}/>Active Rehabilitation Plan</span>
-                  {latestPlayerRehab?.session_date && (
-                    <span style={{ fontSize:11, color:'#475569', fontWeight:600 }}>Logged: {fmtDate(latestPlayerRehab.session_date)}</span>
-                  )}
-                </div>
-                {latestPlayerRehab ? (
-                  <div style={{ fontSize:12.5, color:'#334155', lineHeight:1.55, display:'flex', flexDirection:'column', gap:5 }}>
-                    <div><strong style={{ color:'#0F172A' }}>Phase:</strong> {latestPlayerRehab.rehab_phase || 'Phase 1 - Acute Protection'}</div>
-                    <div><strong style={{ color:'#0F172A' }}>Protocol:</strong> {latestPlayerRehab.treatment_summary || 'Ongoing clinical protocols'}</div>
-                    {latestPlayerRehab.clinical_notes && <div><strong style={{ color:'#0F172A' }}>Clinical Notes:</strong> {latestPlayerRehab.clinical_notes}</div>}
-                    {latestPlayerRehab.target_milestone && <div><strong style={{ color:'#0F172A' }}>Target:</strong> {latestPlayerRehab.target_milestone}</div>}
-                    <div style={{ display:'flex', gap:14, fontSize:11.5, color:'#64748B', marginTop:4, paddingTop:6, borderTop:'1px dashed #CCFBF1', flexWrap:'wrap' }}>
-                      <span>Pain: <strong style={{ color:'#0F172A' }}>{latestPlayerRehab.pain_level ?? 0}/10</strong></span>
-                      <span>Clearance: <strong style={{ color: latestPlayerRehab.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706' }}>{latestPlayerRehab.clearance_status || 'In Rehab'}</strong></span>
-                    </div>
-                  </div>
-                ) : playerInjuryWithNotes ? (
-                  <div style={{ fontSize:12.5, color:'#334155', lineHeight:1.55, display:'flex', flexDirection:'column', gap:5 }}>
-                    <div><strong style={{ color:'#0F172A' }}>Diagnosis:</strong> {playerInjuryWithNotes.injury_type} ({playerInjuryWithNotes.severity})</div>
-                    <div><strong style={{ color:'#0F172A' }}>Protocol:</strong> {playerInjuryWithNotes.notes}</div>
-                    <div style={{ display:'flex', gap:14, fontSize:11.5, color:'#64748B', marginTop:4, paddingTop:6, borderTop:'1px dashed #CCFBF1', flexWrap:'wrap' }}>
-                      <span>Status: <strong style={{ color:'#D97706' }}>{playerInjuryWithNotes.status}</strong></span>
-                      <span>Injured: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.date_of_injury)}</strong></span>
-                      <span>Return: <strong style={{ color:'#0F172A' }}>{fmtDate(playerInjuryWithNotes.expected_return)}</strong></span>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ fontSize:12, color:'#64748B', fontStyle:'italic' }}>No rehabilitation notes recorded yet. The PDF will include baseline clinical data.</div>
-                )}
-              </div>
-
-              {/* Entry History Timeline */}
-              {selectedPlayerRehabNotes.length > 0 && (
-                <div style={{ background:'#FFFFFF', border:'1px solid #E2E8F0', borderRadius:10, padding:'12px 14px' }}>
-                  <div style={{ fontSize:11, fontWeight:800, color:'#475569', textTransform:'uppercase', letterSpacing:'0.04em', marginBottom:8, display:'flex', justifyContent:'space-between' }}>
-                    <span>Entry History ({selectedPlayerRehabNotes.length})</span>
-                    <span style={{ color:'#0D9488', fontWeight:600, fontSize:11 }}>Latest: {fmtDate(selectedPlayerRehabNotes[0]?.session_date)}</span>
-                  </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:180, overflowY:'auto' }}>
-                    {selectedPlayerRehabNotes.map((rn, idx) => (
-                      <div key={rn.id || idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#F8FAFC', padding:'7px 10px', borderRadius:7, border:'1px solid #F1F5F9', fontSize:11.5 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                          <span style={{ fontSize:9.5, background: idx === 0 ? '#CCFBF1' : '#E2E8F0', color: idx === 0 ? '#0F766E' : '#475569', padding:'2px 6px', borderRadius:4, fontWeight:700, flexShrink:0 }}>
-                            {idx === 0 ? 'Latest' : `#${idx + 1}`}
-                          </span>
-                          <strong style={{ color:'#0F172A' }}>{fmtDate(rn.session_date)}</strong>
-                          <span style={{ color:'#64748B' }}>· {rn.rehab_phase ? rn.rehab_phase.split('-')[0].trim() : 'Phase 1'}</span>
-                        </div>
-                        <span style={{ fontSize:10.5, fontWeight:700, color: rn.clearance_status === 'Full Match Clearance' ? '#16A34A' : '#D97706', flexShrink:0 }}>
-                          {rn.clearance_status || 'In Rehab'} · Pain {rn.pain_level ?? 0}/10
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Download Button */}
-              <button
-                id="btn-physio-player-pdf"
-                onClick={() => generateMedicalPDF('player')}
-                disabled={generating === 'medical_player'}
-                style={{
-                  width:'100%',
-                  padding:'13px 16px',
-                  background: generating === 'medical_player' ? '#E2E8F0' : 'linear-gradient(135deg, #0D9488, #0F766E)',
-                  color: generating === 'medical_player' ? '#94A3B8' : '#FFFFFF',
-                  border:'none',
-                  borderRadius:10,
-                  fontSize:14,
-                  fontWeight:700,
-                  cursor: generating === 'medical_player' ? 'not-allowed' : 'pointer',
-                  display:'flex',
-                  alignItems:'center',
-                  justifyContent:'center',
-                  gap:8,
-                  transition:'all 0.15s ease',
-                  boxShadow:'0 3px 10px rgba(13,148,136,0.3)',
-                  marginTop:4,
-                }}
-              >
-                {generating === 'medical_player' ? (
-                  <>
-                    <div style={{ width:14, height:14, border:'2px solid rgba(255,255,255,0.3)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
-                    Generating Clinical Dossier PDF…
-                  </>
-                ) : (
-                  <>
-                    <Download size={16}/>
-                    Download Player Clinical &amp; Rehab Dossier (PDF)
-                  </>
-                )}
-              </button>
-
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   )
 }

@@ -111,27 +111,34 @@ export async function POST(req) {
       injuryQuery = injuryQuery.eq('athlete_id', athleteId)
     }
 
-    let rehabQuery = db
-      .from('rehabilitation_notes')
-      .select('*, athletes(id, name, position, photo_url), injuries(id, injury_type, severity, notes, date_of_injury, expected_return)')
-      .eq('team_id', teamId)
-      .order('session_date', { ascending: false })
+    // Safely query rehabilitation_notes if table exists in DB, otherwise fallback gracefully
+    let rehabRaw = []
+    try {
+      let rehabQuery = db
+        .from('rehabilitation_notes')
+        .select('*, athletes(id, name, position, photo_url), injuries(id, injury_type, severity, notes, date_of_injury, expected_return)')
+        .eq('team_id', teamId)
+        .order('session_date', { ascending: false })
 
-    if (reportScope === 'player' && athleteId) {
-      rehabQuery = rehabQuery.eq('athlete_id', athleteId)
+      if (reportScope === 'player' && athleteId) {
+        rehabQuery = rehabQuery.eq('athlete_id', athleteId)
+      }
+      const { data: rData, error: rErr } = await rehabQuery
+      if (!rErr && rData) rehabRaw = rData
+    } catch (_rehabErr) {
+      rehabRaw = []
     }
 
     const [
       { data: athletesRaw },
       { data: injuriesRaw },
-      { data: rehabRaw },
-    ] = await Promise.all([athleteQuery, injuryQuery, rehabQuery])
+    ] = await Promise.all([athleteQuery, injuryQuery])
 
     const allAthletes = athletesRaw || []
     
     // Merge any client-supplied rehab notes (fallback cache or unsynced notes)
     const clientRehabList = Array.isArray(body.clientRehabNotes) ? body.clientRehabNotes : []
-    const combinedRehab = [...(rehabRaw || [])]
+    const combinedRehab = [...rehabRaw]
     for (const cr of clientRehabList) {
       if (!combinedRehab.some(r => r.id === cr.id || (r.athlete_id === cr.athlete_id && r.session_date === cr.session_date && r.created_at === cr.created_at))) {
         if (!athleteId || cr.athlete_id === athleteId) {
@@ -143,13 +150,35 @@ export async function POST(req) {
     // Sort descending by session_date
     combinedRehab.sort((a, b) => new Date(b.session_date || b.created_at || 0) - new Date(a.session_date || a.created_at || 0))
 
-    // For single-player clinical dossier, include all historical or period injuries & notes
-    // For general squad report, include all injuries in period (both active and recovered)
+    // Determine accurate medical caseload for the selected period:
+    // 1. Injury sustained or logged within the period
+    // 2. Injury was active during the period (date_of_injury <= periodEnd and status === 'Active')
+    // 3. Expected recovery fell within or after period start
     const isSinglePlayer = reportScope === 'player' && athleteId
-    
+
+    function isInjuryInScope(i) {
+      if (!i) return false
+      const injDate = i.date_of_injury || i.logged_at || i.created_at
+      // Event occurred in this period
+      if (isInPeriod(injDate)) return true
+      // Injury is currently active and occurred on or before periodEnd
+      if (i.status === 'Active') {
+        if (!injDate || new Date(injDate) <= periodEnd) return true
+      }
+      // Ongoing recovery across this period
+      if (i.expected_return) {
+        const retDate = new Date(i.expected_return)
+        if (!isNaN(retDate.getTime()) && retDate >= periodStart) {
+          if (!injDate || new Date(injDate) <= periodEnd) return true
+        }
+      }
+      if (isInPeriod(i.updated_at)) return true
+      return false
+    }
+
     const allInjuries = isSinglePlayer
       ? (injuriesRaw || [])
-      : (injuriesRaw || []).filter(i => isInPeriod(i.date_of_injury) || isInPeriod(i.updated_at) || isInPeriod(i.expected_return))
+      : (injuriesRaw || []).filter(isInjuryInScope)
 
     const allRehab = isSinglePlayer
       ? combinedRehab

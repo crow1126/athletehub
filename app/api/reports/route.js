@@ -136,7 +136,11 @@ export async function POST(req) {
 
     // Filter each dataset strictly by the selected period
     const athletes    = allAthletes.filter(a => isTenureActiveInPeriod(a.in_club_since || a.joined_date, null, a.created_at))
-    const injuries    = allInjuries.filter(i => isEventInPeriod(i.date_of_injury))
+    const injuries    = allInjuries.filter(i => {
+      if (isEventInPeriod(i.date_of_injury) || isEventInPeriod(i.logged_at) || isEventInPeriod(i.created_at)) return true
+      if (i.status === 'Active' && isTenureActiveInPeriod(i.date_of_injury || i.created_at, i.expected_return, i.created_at)) return true
+      return false
+    })
     const performance = allPerformance.filter(p => isEventInPeriod(p.match_date))
     const sessions    = allSessions.filter(s => isEventInPeriod(s.date))
     const coaches     = allCoaches.filter(c => isTenureActiveInPeriod(c.contract_start, c.contract_end, c.created_at))

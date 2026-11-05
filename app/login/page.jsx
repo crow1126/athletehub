@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import LoadingScreen from '@/components/LoadingScreen'
+import { isPersistentAppEnvironment } from '@/lib/appEnvironment'
 
 /* ── Animated canvas orbs ── */
 function OrbCanvas() {
@@ -101,22 +102,27 @@ export default function LoginPage() {
       if (p.get('tab') === 'signup') setTab('signup')
     }
 
-    // Only auto-redirect on login page if within native app (Capacitor/Electron).
-    // On the public website, opening /login should allow manual entry every time.
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
-    const isNative = typeof window !== 'undefined' && Boolean(
-      window.electronAPI?.isElectron ||
-      window.Capacitor?.isNativePlatform?.() ||
-      ua.includes('Electron') ||
-      ua.includes('ApexTrackDesktop') ||
-      (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')))
-    )
-
-    if (isNative) {
-      supabase.auth.getSession().then(async ({ data:{ session } }) => {
-        if (session) {
-          try {
-            const { data:profile } = await supabase.from('profiles').select('is_active, role').eq('id',session.user.id).single()
+    // In installed apps (Desktop PWA, Saved to Home, Android, Electron):
+    // auto-redirect to dashboard if an active session exists.
+    if (isPersistentAppEnvironment()) {
+      (async () => {
+        try {
+          let { data: { session } } = await supabase.auth.getSession()
+          if (!session && typeof window !== 'undefined') {
+            const rawBackup = localStorage.getItem('sb-session-backup')
+            if (rawBackup) {
+              const parsed = JSON.parse(rawBackup)
+              if (parsed?.access_token && parsed?.refresh_token) {
+                const restored = await supabase.auth.setSession({
+                  access_token: parsed.access_token,
+                  refresh_token: parsed.refresh_token,
+                })
+                session = restored.data?.session
+              }
+            }
+          }
+          if (session?.user) {
+            const { data: profile } = await supabase.from('profiles').select('is_active, role').eq('id', session.user.id).single()
             if (profile?.is_active !== false) {
               if (profile?.role === 'superadmin') {
                 router.replace('/superadmin')
@@ -126,9 +132,9 @@ export default function LoginPage() {
                 router.replace('/dashboard')
               }
             }
-          } catch (_e) { /* session check failed silently */ }
-        }
-      }).catch(()=>{})
+          }
+        } catch (_e) { /* session check failed silently */ }
+      })()
     }
   }, [])
 

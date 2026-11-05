@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { IconMenu, IconCheck } from '@/lib/icons'
 import { supabase } from '@/lib/supabase'
+import { isPersistentAppEnvironment } from '@/lib/appEnvironment'
 import LoadingScreen from '@/components/LoadingScreen'
 
 const NAV_LINKS = ['Features', 'Pricing', 'Download', 'FAQ', 'Support']
@@ -167,18 +168,11 @@ export default function LandingPage() {
   const [activeFaq, setActiveFaq] = useState(null)
   // For web visitors: NEVER auto-redirect away from the landing page.
   // Anyone opening the website lands cleanly on the landing page and must manually click Sign In.
-  // Native apps (Capacitor/Electron) check session on launch.
+  // In installed/persistent apps (Desktop PWA, Saved to Home, Android, Electron):
+  // check session on launch and forward directly to dashboard.
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined') {
-      const ua = navigator.userAgent || ''
-      const isNative = Boolean(
-        window.electronAPI?.isElectron ||
-        window.Capacitor?.isNativePlatform?.() ||
-        ua.includes('Electron') ||
-        ua.includes('ApexTrackDesktop') ||
-        (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')))
-      )
-      if (isNative) {
+      if (isPersistentAppEnvironment()) {
         return document.cookie.includes('sb-') || !!localStorage.getItem('sb-session-backup')
       }
     }
@@ -189,16 +183,9 @@ export default function LandingPage() {
     async function checkAuthSession() {
       // In a public web browser: do not auto-login or redirect to dashboard on landing page.
       // Every web visitor starts at the landing page and logs in deliberately.
+      // In persistent apps (Desktop PWA, Saved to Home, Android APK, Electron): auto-redirect to dashboard.
       if (typeof window !== 'undefined') {
-        const ua = navigator.userAgent || ''
-        const isNative = Boolean(
-          window.electronAPI?.isElectron ||
-          window.Capacitor?.isNativePlatform?.() ||
-          ua.includes('Electron') ||
-          ua.includes('ApexTrackDesktop') ||
-          (ua.includes('Android') && (ua.includes('wv') || ua.includes('Version/4.0') || ua.includes('Capacitor')))
-        )
-        if (!isNative) {
+        if (!isPersistentAppEnvironment()) {
           setShowSplash(false)
           return
         }

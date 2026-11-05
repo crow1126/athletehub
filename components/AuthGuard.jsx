@@ -41,7 +41,22 @@ export default function AuthGuard({ children }) {
     const cleanPath = pathWithoutQuery.length > 1 ? pathWithoutQuery.replace(/\/$/, '') : pathWithoutQuery
     if (PUBLIC_ROUTES.includes(cleanPath) || cleanPath.startsWith('/download')) return
     try {
-      const { data: { session } } = await supabase.auth.getSession()
+      let { data: { session } } = await supabase.auth.getSession()
+      if (!session && typeof window !== 'undefined') {
+        try {
+          const rawBackup = localStorage.getItem('sb-session-backup')
+          if (rawBackup) {
+            const parsed = JSON.parse(rawBackup)
+            if (parsed?.access_token && parsed?.refresh_token) {
+              const restored = await supabase.auth.setSession({
+                access_token: parsed.access_token,
+                refresh_token: parsed.refresh_token,
+              })
+              session = restored.data?.session
+            }
+          }
+        } catch (_e) {}
+      }
       if (!session) { router.replace('/login'); return }
 
       let profile = null

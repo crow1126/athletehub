@@ -29,13 +29,13 @@ export async function POST(req) {
       const authHeader = req.headers.get('authorization') || ''
       const token = authHeader.replace(/^Bearer\s+/i, '').trim()
       if (token) {
-        const { data: authData } = await supabase.auth.getUser(token)
-        if (authData?.user) {
+        const { data: authData, error: authErr } = await supabase.auth.getUser(token)
+        if (!authErr && authData?.user) {
           const { data: prof } = await supabase
             .from('profiles')
             .select('id, team_id')
             .eq('id', authData.user.id)
-            .single()
+            .maybeSingle()
           if (prof) {
             userId = prof.id
             teamId = prof.team_id
@@ -44,19 +44,7 @@ export async function POST(req) {
       }
     }
 
-    // 3. Fallback: bodyUserId if valid profile
-    if (!userId && bodyUserId) {
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('id, team_id')
-        .eq('id', bodyUserId)
-        .single()
-      if (prof) {
-        userId = prof.id
-        teamId = prof.team_id
-      }
-    }
-
+    // Require valid authentication (never trust arbitrary unverified body user_id)
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized to subscribe to push notifications' }, { status: 401 })
     }

@@ -368,7 +368,7 @@ export default function AdminActivityLogPage() {
       if (loginResult?.status === 'fulfilled') {
         const loginData = loginResult.value?.data || []
         loginData.forEach(l => {
-          const user = l.profiles
+          const user = Array.isArray(l.profiles) ? l.profiles[0] : l.profiles
           const roleName = ROLE_BADGES[user?.role]?.label || (user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'Member')
           events.push({
             id: `login-${l.id}`,
@@ -465,7 +465,7 @@ export default function AdminActivityLogPage() {
 
   // Summary counts
   const summaryCounts = useMemo(() => {
-    const counts = { all: activities.length, medical: 0, performance: 0, schedule: 0, athletes: 0, scouting: 0, notices: 0 }
+    const counts = { all: activities.length, medical: 0, performance: 0, schedule: 0, athletes: 0, scouting: 0, notices: 0, logins: 0 }
     activities.forEach(a => {
       if (counts[a.module] !== undefined) counts[a.module]++
     })

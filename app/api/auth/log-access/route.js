@@ -6,12 +6,13 @@ const supabase = createServiceClient()
 
 export async function POST(req) {
   try {
-    const requester = await getRequester(req, supabase)
     let userId = null
     let teamId = null
     let role = null
     let fullName = null
 
+    // 1. Try standard getRequester
+    const requester = await getRequester(req, supabase)
     if (!requester.error && requester.profile?.id) {
       userId = requester.profile.id
       teamId = requester.profile.team_id
@@ -19,26 +20,31 @@ export async function POST(req) {
       fullName = requester.profile.full_name
     }
 
-    // Fallback if session body was passed directly
+    // 2. Fallback: check Authorization Bearer token directly with Supabase Auth
     if (!userId) {
-      const body = await req.json().catch(() => ({}))
-      if (body.user_id) {
-        const { data: prof } = await supabase
-          .from('profiles')
-          .select('id, full_name, role, team_id')
-          .eq('id', body.user_id)
-          .maybeSingle()
-        if (prof) {
-          userId = prof.id
-          teamId = prof.team_id
-          role = prof.role
-          fullName = prof.full_name
+      const authHeader = req.headers.get('authorization') || ''
+      const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+      if (token) {
+        const { data: authData, error: authErr } = await supabase.auth.getUser(token)
+        if (!authErr && authData?.user) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('id, full_name, role, team_id')
+            .eq('id', authData.user.id)
+            .maybeSingle()
+          if (prof) {
+            userId = prof.id
+            teamId = prof.team_id
+            role = prof.role
+            fullName = prof.full_name
+          }
         }
       }
     }
 
+    // Never trust unauthenticated user_id - must be verified by Supabase Auth JWT
     if (!userId) {
-      return NextResponse.json({ ok: false, error: 'User not authenticated' }, { status: 401 })
+      return NextResponse.json({ ok: false, error: 'Unauthorized: valid session required' }, { status: 401 })
     }
 
     const now = new Date().toISOString()
@@ -80,3 +86,4 @@ export async function POST(req) {
     return NextResponse.json({ ok: false, error: err.message }, { status: 500 })
   }
 }
+

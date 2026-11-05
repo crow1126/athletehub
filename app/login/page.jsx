@@ -271,10 +271,16 @@ export default function LoginPage() {
       }
 
       // Record login activity in background
-      fetch('/api/auth/log-access', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_id: authenticatedUser.id }),
+      supabase.auth.getSession().then(({ data: sessData }) => {
+        const token = sessData?.session?.access_token
+        fetch('/api/auth/log-access', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ user_id: authenticatedUser.id }),
+        }).catch(() => {})
       }).catch(() => {})
 
       // Pre-warm profile in localStorage and cache so destination loads instantly

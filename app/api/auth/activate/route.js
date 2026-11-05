@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { activateUserProfile } from '@/lib/activateUser'
+import { getSiteUrl } from '@/lib/siteUrl'
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -45,6 +46,29 @@ export async function POST(req) {
     }
 
     const result = await activateUserProfile(db, user_id)
+
+    // Notify superadmin that the club admin verified their email and activated the club
+    if (!result.alreadyActive) {
+      try {
+        const profile = result.profile || {}
+        await fetch(`${SUPABASE_URL}/functions/v1/notify-registration`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            event: 'verified',
+            full_name: profile.full_name || sessionUser.user.user_metadata?.full_name || 'Club Admin',
+            email: profile.email || sessionUser.user.email,
+            club_name: profile.club_name || null,
+            role: profile.role || 'admin',
+          }),
+        })
+      } catch (notifyErr) {
+        console.warn('[activate] notify-registration call failed (non-blocking):', notifyErr?.message)
+      }
+    }
 
     return NextResponse.json({
       success: true,

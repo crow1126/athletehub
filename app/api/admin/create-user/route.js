@@ -240,15 +240,19 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
-    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant', 'analyst', 'scout']
-    const profileDbRole = allowedDbRoles.includes(safeRole) ? safeRole : 'coach'
+    // The profiles table has a strict database check constraint (profiles_role_check)
+    // allowing only: 'superadmin', 'admin', 'coach', 'physio', 'player', 'accountant'.
+    // Specialized staff roles such as 'analyst' and 'scout' are stored in profiles as 'coach'
+    // and enriched dynamically from staff_logins upon session load (see lib/tenant.js).
+    const validProfilesRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant']
+    const profileDbRole = validProfilesRoles.includes(safeRole) ? safeRole : 'coach'
 
     const { error: profileError } = await db
       .from('profiles')
       .upsert(
         {
           id: userId,
-          full_name,
+          full_name: full_name || username || 'Staff Member',
           role: profileDbRole,
           team_id: resolvedTeamId,
           is_active: true,
@@ -268,7 +272,7 @@ export async function POST(req) {
       } catch (cleanupErr) {
         console.error('Failed to cleanup auth user after profile failure:', cleanupErr.message)
       }
-      return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
+      return NextResponse.json({ error: `Failed to create profile: ${profileError.message}` }, { status: 500 })
     }
 
     if (coach_id || ['admin', 'accountant', 'analyst', 'scout', 'physio', 'coach'].includes(safeRole)) {

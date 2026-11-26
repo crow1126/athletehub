@@ -307,7 +307,7 @@ export default function SettingsPage() {
   }
 
   async function issueLogin() {
-    const isDirectRole = issueForm.role === 'accountant' || issueForm.role === 'admin'
+    const isDirectRole = ['accountant', 'admin', 'analyst', 'scout'].includes(issueForm.role)
     if (!issueForm.coach_id && !isDirectRole) { flashIssue('Select a staff member.','error'); return }
     if (isDirectRole && !issueForm.coach_id && !issueForm.full_name?.trim()) {
       flashIssue('Full Name is required when not selecting a staff member.','error'); return
@@ -652,8 +652,10 @@ export default function SettingsPage() {
   }
 
   async function updateUserRole(userId, role) {
-    const allowedDbRoles = ['superadmin', 'admin', 'coach', 'physio', 'analyst', 'scout', 'player', 'accountant']
-    const dbRole = allowedDbRoles.includes(role) ? role : 'coach'
+    // profiles table only allows: superadmin, admin, coach, physio, player, accountant
+    // analyst and scout must be stored as 'coach' in profiles and enriched from staff_logins
+    const validProfilesRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant']
+    const dbRole = validProfilesRoles.includes(role) ? role : 'coach'
     
     const { error } = await scopeTeam(supabase.from('profiles').update({ role: dbRole }).eq('id', userId), profile?.team_id)
     if (error) {
@@ -878,7 +880,7 @@ export default function SettingsPage() {
                     <h3 style={{ fontSize:16,fontWeight:700,color:'#0D9488',marginBottom:18 }}>New Login Credentials</h3>
                     <div style={{ display:'flex',flexDirection:'column',gap:14 }}>
                       <div>
-                        <label style={lbl}>Staff Member {issueForm.role !== 'accountant' && issueForm.role !== 'admin' && '*'}</label>
+                        <label style={lbl}>Staff Member {!['accountant', 'admin', 'analyst', 'scout'].includes(issueForm.role) && '*'}</label>
                         <select value={issueForm.coach_id} onChange={e => {
                           const coachId = e.target.value
                           const staff = allStaff.find(s => s.id === coachId)
@@ -912,7 +914,7 @@ export default function SettingsPage() {
                           Credentials (username and password) will be automatically sent to this phone number via SMS immediately.
                         </div>
                       </div>
-                      {(issueForm.role === 'accountant' || issueForm.role === 'admin') && !issueForm.coach_id && (
+                      {(['accountant', 'admin', 'analyst', 'scout'].includes(issueForm.role)) && !issueForm.coach_id && (
                         <div>
                           <label style={lbl}>Full Name *</label>
                           <input type="text" value={issueForm.full_name || ''} onChange={e=>setIssueForm(f=>({...f,full_name:e.target.value}))} style={{ ...inp,background:'#fff' }} placeholder="e.g. Kwame Asante" onFocus={onFocus} onBlur={onBlur}/>

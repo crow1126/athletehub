@@ -240,11 +240,8 @@ export async function POST(req) {
     })
     const userId = newUser.id
 
-    // The profiles table has a strict database check constraint (profiles_role_check)
-    // allowing only: 'superadmin', 'admin', 'coach', 'physio', 'player', 'accountant'.
-    // Specialized staff roles such as 'analyst' and 'scout' are stored in profiles as 'coach'
-    // and enriched dynamically from staff_logins upon session load (see lib/tenant.js).
-    const validProfilesRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant']
+    // profiles_role_check allows: superadmin, admin, coach, physio, player, accountant, analyst, scout
+    const validProfilesRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant', 'analyst', 'scout']
     const profileDbRole = validProfilesRoles.includes(safeRole) ? safeRole : 'coach'
 
     const { error: profileError } = await db

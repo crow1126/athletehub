@@ -652,9 +652,8 @@ export default function SettingsPage() {
   }
 
   async function updateUserRole(userId, role) {
-    // profiles table only allows: superadmin, admin, coach, physio, player, accountant
-    // analyst and scout must be stored as 'coach' in profiles and enriched from staff_logins
-    const validProfilesRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant']
+    // profiles_role_check allows: superadmin, admin, coach, physio, player, accountant, analyst, scout
+    const validProfilesRoles = ['superadmin', 'admin', 'coach', 'physio', 'player', 'accountant', 'analyst', 'scout']
     const dbRole = validProfilesRoles.includes(role) ? role : 'coach'
     
     const { error } = await scopeTeam(supabase.from('profiles').update({ role: dbRole }).eq('id', userId), profile?.team_id)

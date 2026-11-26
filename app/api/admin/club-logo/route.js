@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, isSuperadmin } from '@/lib/serverAuth'
+import { verifyImageMagicBytes, sanitizeSvgContent, sanitizeFilename } from '@/lib/imageSanitizer'
 
 export async function POST(req) {
   try {
@@ -61,17 +62,42 @@ export async function POST(req) {
 
     let publicUrl = logoUrlParam
 
-    // If a file was uploaded, upload to Supabase storage bucket `athlete-photos`
+    // If a file was uploaded, validate and upload to Supabase storage bucket `athlete-photos`
     if (file && typeof file === 'object' && file.name) {
+      if (file.size > 5 * 1024 * 1024) {
+        return NextResponse.json({ error: 'Image file too large. Max size is 5MB.' }, { status: 400 })
+      }
+
       const bytes = await file.arrayBuffer()
-      const buffer = Buffer.from(bytes)
-      const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '')
-      const fileName = `club-logos/${teamId || 'club'}-${Date.now()}.${ext}`
+      let buffer = Buffer.from(bytes)
+      const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')
+      let uploadContentType = file.type || 'image/png'
+
+      if (isSvg) {
+        // Sanitize SVG text to strip scripts, event handlers, and XXE
+        const rawSvg = buffer.toString('utf8')
+        const cleanSvg = sanitizeSvgContent(rawSvg)
+        buffer = Buffer.from(cleanSvg, 'utf8')
+        uploadContentType = 'image/svg+xml'
+      } else {
+        // Verify Magic Bytes for raster images (JPEG, PNG, WEBP, GIF)
+        const magic = verifyImageMagicBytes(buffer)
+        if (!magic.valid) {
+          return NextResponse.json(
+            { error: 'Invalid or corrupted image file. Only verified JPG, PNG, WEBP, or SVG files are allowed.' },
+            { status: 400 }
+          )
+        }
+        uploadContentType = magic.mimeType
+      }
+
+      const safeBaseName = sanitizeFilename(file.name, isSvg ? 'svg' : 'png')
+      const fileName = `club-logos/${teamId || 'club'}-${safeBaseName}`
 
       const { data: uploadData, error: uploadError } = await db.storage
         .from('athlete-photos')
         .upload(fileName, buffer, {
-          contentType: file.type || 'image/png',
+          contentType: uploadContentType,
           upsert: true,
         })
 

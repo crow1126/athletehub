@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Eye, EyeOff } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { sanitizeAndReencodeImage } from '@/lib/imageSanitizer'
 import LoadingScreen from '@/components/LoadingScreen'
 import { isPersistentAppEnvironment } from '@/lib/appEnvironment'
 
@@ -62,19 +63,16 @@ export default function LoginPage() {
   const loginStartRef = { current: 0 }
   const [error,      setError]     = useState('')
 
-  const handleLogoFile = (file) => {
+  const handleLogoFile = async (file) => {
     if (!file) return
-    if (!file.type || !file.type.startsWith('image/')) {
-      setError('Please upload a valid image file (PNG, JPG, SVG, WebP).')
-      return
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      setError('Logo must be under 2MB.')
-      return
-    }
     setError('')
-    setClubLogo(file)
-    setLogoPreview(URL.createObjectURL(file))
+    try {
+      const sanitized = await sanitizeAndReencodeImage(file, { maxWidth: 800, maxHeight: 800, outputType: 'image/png' })
+      setClubLogo(sanitized.file)
+      setLogoPreview(sanitized.previewUrl)
+    } catch (err) {
+      setError(err.message || 'Please upload a valid image file.')
+    }
   }
   const [success,    setSuccess]   = useState('')
   const [needsVerification, setNeedsVerification] = useState(false)

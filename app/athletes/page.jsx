@@ -6,6 +6,7 @@ import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import BulkAthleteUpload from '@/components/BulkAthleteUpload'
+import { sanitizeAndReencodeImage } from '@/lib/imageSanitizer'
 
 import Link from 'next/link'
 import { FileText, CheckCircle2, AlertTriangle, Check, FileEdit, X } from 'lucide-react'
@@ -245,17 +246,27 @@ export default function AthletesPage() {
     setPhotoFile(null); setPhotoPreview(ath.photo_url||null); setFormError(''); setShowForm(true)
   }
 
-  function handlePhotoChange(e) {
+  async function handlePhotoChange(e) {
     const file = e.target.files[0]
     if (!file) return
-    setPhotoFile(file); setPhotoPreview(URL.createObjectURL(file))
+    try {
+      const sanitized = await sanitizeAndReencodeImage(file, { maxWidth: 1000, maxHeight: 1000, quality: 0.88 })
+      setPhotoFile(sanitized.file)
+      setPhotoPreview(sanitized.previewUrl)
+    } catch (err) {
+      setFormError(err.message || 'Invalid image file.')
+    }
   }
 
   async function uploadPhoto(athleteId) {
     if (!photoFile) return null
-    const ext = photoFile.name.split('.').pop()
-    const path = teamId ? `${teamId}/${athleteId}.${ext}` : `${athleteId}.${ext}`
-    const { error } = await supabase.storage.from('athlete-photos').upload(path, photoFile, { upsert:true })
+    const ext = photoFile.name.split('.').pop() || 'jpg'
+    const safeExt = ['png', 'webp'].includes(ext.toLowerCase()) ? ext.toLowerCase() : 'jpg'
+    const path = teamId ? `${teamId}/${athleteId}.${safeExt}` : `${athleteId}.${safeExt}`
+    const { error } = await supabase.storage.from('athlete-photos').upload(path, photoFile, {
+      contentType: photoFile.type || 'image/jpeg',
+      upsert: true,
+    })
     if (error) { console.error('Upload error:', error); return null }
     const { data } = supabase.storage.from('athlete-photos').getPublicUrl(path)
     return data.publicUrl

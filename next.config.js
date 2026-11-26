@@ -29,7 +29,7 @@ const nextConfig = {
         headers: [
           // X-Frame-Options: use SAMEORIGIN so Electron BrowserWindow can load pages
           { key: 'X-Frame-Options',           value: 'SAMEORIGIN' },
-          // Block MIME sniffing
+          // Block MIME sniffing (strictly prevents browsers from executing scripts embedded in image files)
           { key: 'X-Content-Type-Options',    value: 'nosniff' },
           // Force HTTPS for 1 year, include subdomains
           { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains' },
@@ -37,16 +37,18 @@ const nextConfig = {
           { key: 'Referrer-Policy',           value: 'strict-origin-when-cross-origin' },
           // Minimal permissions policy
           { key: 'Permissions-Policy',        value: 'camera=(), microphone=(), geolocation=()' },
-          // Basic Content-Security-Policy (permits Next.js inline scripts & Google Fonts)
+          // Content-Security-Policy with object-src none and base-uri self
           {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires inline+eval
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js runtime requires inline+eval
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob: https:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.moolre.com https://pos.moolre.com",
+              "object-src 'none'", // Blocks <object>, <embed>, <applet>
+              "base-uri 'self'",
               "frame-ancestors 'self'",
             ].join('; '),
           },

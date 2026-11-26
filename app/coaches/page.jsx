@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { IconStar, IconCamera, IconCheck } from '@/lib/icons'
 
 import Layout from '@/components/Layout'
+import { sanitizeAndReencodeImage } from '@/lib/imageSanitizer'
 import PageHeader from '@/components/PageHeader'
 import Badge from '@/components/Badge'
 import { supabase } from '@/lib/supabase'
@@ -210,13 +211,17 @@ export default function CoachesPage() {
   async function uploadPhoto(coachId) {
     if (!photoFile) return null
     try {
-      const ext=photoFile.name.split('.').pop()
-      const path=teamId ? `${teamId}/staff_${coachId}.${ext}` : `staff/${coachId}.${ext}`
-      const {error}=await supabase.storage.from('athlete-photos').upload(path,photoFile,{upsert:true})
-      if (error){console.error('Photo upload:',error);return null}
-      const {data}=supabase.storage.from('athlete-photos').getPublicUrl(path)
+      const ext = photoFile.name.split('.').pop() || 'jpg'
+      const safeExt = ['png', 'webp'].includes(ext.toLowerCase()) ? ext.toLowerCase() : 'jpg'
+      const path = teamId ? `${teamId}/staff_${coachId}.${safeExt}` : `staff/${coachId}.${safeExt}`
+      const { error } = await supabase.storage.from('athlete-photos').upload(path, photoFile, {
+        contentType: photoFile.type || 'image/jpeg',
+        upsert: true,
+      })
+      if (error) { console.error('Photo upload:', error); return null }
+      const { data } = supabase.storage.from('athlete-photos').getPublicUrl(path)
       return data.publicUrl
-    } catch(e){console.error('Upload:',e);return null}
+    } catch (e) { console.error('Upload:', e); return null }
   }
 
   async function handleSave() {
@@ -576,7 +581,17 @@ export default function CoachesPage() {
                     <label htmlFor="staff-photo-upload" style={{ display:'inline-block',background:'#F0FDFA',color:'#0F766E',border:'1px solid #CCFBF1',padding:'8px 18px',borderRadius:'8px',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'var(--font)' }}>
                       {photoPreview?'Change Photo':'Upload Photo'}
                     </label>
-                    <input id="staff-photo-upload" type="file" accept="image/*" onChange={e=>{const f=e.target.files[0];if(!f)return;setPhotoFile(f);setPhotoPreview(URL.createObjectURL(f))}} style={{ display:'none' }}/>
+                    <input id="staff-photo-upload" type="file" accept="image/*" onChange={async e => {
+                      const f = e.target.files[0]
+                      if (!f) return
+                      try {
+                        const sanitized = await sanitizeAndReencodeImage(f, { maxWidth: 1000, maxHeight: 1000, quality: 0.88 })
+                        setPhotoFile(sanitized.file)
+                        setPhotoPreview(sanitized.previewUrl)
+                      } catch (err) {
+                        setFormError(err.message || 'Invalid image file.')
+                      }
+                    }} style={{ display:'none' }}/>
                     {photoPreview&&<button onClick={()=>{setPhotoFile(null);setPhotoPreview(null)}} style={{ marginLeft:8,background:'var(--danger-light)',color:'var(--danger)',border:'none',padding:'7px 14px',borderRadius:'var(--r-sm)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>Remove</button>}
                     <p style={{ fontSize:11,color:'var(--text3)',marginTop:6 }}>Passport-style. JPG or PNG.</p>
                   </div>

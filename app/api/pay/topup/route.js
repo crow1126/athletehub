@@ -10,7 +10,7 @@ const db = createServiceClient()
 
 export async function POST(req) {
   // ── Rate limiting ──────────────────────────────────────────────────────────
-  const limited = payLimiter(req)
+  const limited = await payLimiter(req)
   if (!limited.ok) return limited.response
 
   try {

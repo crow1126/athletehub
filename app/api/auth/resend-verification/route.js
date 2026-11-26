@@ -19,7 +19,7 @@ function getDb() {
  */
 export async function POST(req) {
   // Rate limit by IP (5 requests / minute per IP)
-  const limited = authLimiter(req)
+  const limited = await authLimiter(req)
   if (!limited.ok) return limited.response
 
   try {

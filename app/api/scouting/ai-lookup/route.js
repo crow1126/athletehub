@@ -126,7 +126,7 @@ async function callGroq(query, systemPrompt, apiKey) {
 
 export async function GET(req) {
   // Rate limit by IP (30 requests / minute)
-  const limited = generalLimiter(req)
+  const limited = await generalLimiter(req)
   if (!limited.ok) return limited.response
 
   try {

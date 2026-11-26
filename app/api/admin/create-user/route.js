@@ -109,7 +109,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   // Rate-limit: 5 create-user calls per 10 minutes per IP
-  const rl = userMgmtLimiter(req)
+  const rl = await userMgmtLimiter(req)
   if (!rl.ok) return rl.response
 
   try {
@@ -438,7 +438,7 @@ export async function PATCH(req) {
 
     if (action === 'reset_password') {
       // Rate-limit resets the same as user creation
-      const rlReset = userMgmtLimiter(req)
+      const rlReset = await userMgmtLimiter(req)
       if (!rlReset.ok) return rlReset.response
 
       // Players use 8-char minimum; all staff accounts require 12

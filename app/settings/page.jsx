@@ -250,14 +250,7 @@ export default function SettingsPage() {
           } catch (_uErr) {}
         }
 
-        const enrichedUsers = (loadedUsers||[]).map(u => {
-          const login = (loadedLogins||[]).find(l => l.email?.toLowerCase() === u.email?.toLowerCase() || l.username?.toLowerCase() === u.username?.toLowerCase())
-          if (login && u.role === 'coach' && (login.role === 'analyst' || login.role === 'scout')) {
-            return { ...u, role: login.role }
-          }
-          return u
-        })
-        setAllUsers(enrichedUsers)
+        setAllUsers(loadedUsers || [])
         setAllStaff(loadedStaff||[])
         setStaffLogins(loadedLogins||[])
         setAllAthletes(loadedAthletes||[])

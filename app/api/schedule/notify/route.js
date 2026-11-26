@@ -9,7 +9,7 @@ const supabase = createServiceClient()
 
 export async function POST(req) {
   // Rate limit by IP (10 requests / minute)
-  const limited = payLimiter(req)
+  const limited = await payLimiter(req)
   if (!limited.ok) return limited.response
 
   try {

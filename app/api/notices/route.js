@@ -49,7 +49,7 @@ export async function GET(req) {
 
 export async function POST(req) {
   // Rate limit
-  const limited = payLimiter(req)
+  const limited = await payLimiter(req)
   if (!limited.ok) return limited.response
 
   try {

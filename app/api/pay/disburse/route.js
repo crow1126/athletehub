@@ -60,7 +60,7 @@ const SIMULATE = !IS_SANDBOX && (process.env.NODE_ENV !== 'production' || proces
 
 export async function POST(req) {
   // ── Rate limiting ──────────────────────────────────────────────────────────
-  const limited = payLimiter(req)
+  const limited = await payLimiter(req)
   if (!limited.ok) return limited.response
 
   try {

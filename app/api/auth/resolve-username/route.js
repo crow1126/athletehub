@@ -21,7 +21,7 @@ function getDb() {
  * and returns it. Publicly accessible from the client side login screen.
  */
 export async function GET(req) {
-  const rl = resolveLimiter(req)
+  const rl = await resolveLimiter(req)
   if (!rl.ok) return rl.response
 
   try {

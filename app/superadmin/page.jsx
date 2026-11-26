@@ -413,6 +413,7 @@ export default function SuperadminPage() {
   // Global League Teams (GPL) States
   const [leagueTeams, setLeagueTeams] = useState([])
   const [leagueTeamsLoading, setLeagueTeamsLoading] = useState(false)
+  const [leagueTeamsMigrationPending, setLeagueTeamsMigrationPending] = useState(false)
   const [ltEditingId, setLtEditingId] = useState(null)
   const [ltName, setLtName] = useState('')
   const [ltShortName, setLtShortName] = useState('')
@@ -523,6 +524,7 @@ export default function SuperadminPage() {
     try {
       const data = await fetchWithAuth('/api/superadmin/league-teams')
       setLeagueTeams(data.teams || [])
+      setLeagueTeamsMigrationPending(!!data.migrationPending)
     } catch (err) {
       showToast('Failed to load league teams: ' + err.message, 'error')
     } finally {
@@ -2295,6 +2297,11 @@ export default function SuperadminPage() {
                   </div>
 
                   {/* Add / Edit League Team Form */}
+                  {leagueTeamsMigrationPending && (
+                    <div className="sa-card" style={{ padding:'14px 18px', background:'#FFFBEB', border:'1.5px solid #FCD34D', color:'#92400E', fontSize:12.5, lineHeight:1.5 }}>
+                      <strong>Database Setup Needed:</strong> Run <code>supabase/migrations/20261126180000_create_league_teams_and_fixtures.sql</code> in your Supabase SQL Editor to enable saving/editing teams &amp; fixtures in the database. Showing the 19 default 2026/2027 GPL clubs below in the meantime.
+                    </div>
+                  )}
                   <form onSubmit={handleSaveLeagueTeam} className="sa-card" style={{ padding:'20px' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
                       <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', margin:0 }}>

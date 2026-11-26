@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PlayerLayout from '@/components/PlayerLayout'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam } from '@/lib/tenant'
+import { DEFAULT_GPL_TEAMS } from '@/lib/gplTeams'
 import {
   Megaphone, Plus, Pin, Trash2, Send, Radio, Users, CheckCircle2,
   AlertCircle, Trophy, Calendar, HeartPulse, Search, MessageSquare,
@@ -204,13 +205,13 @@ export default function NoticeBoardPage() {
           if (hc && !mdHeadCoach) setMdHeadCoach(hc.name)
         }
 
-        // 6. Global GPL league teams for opponent dropdown
-        const { data: ltList } = await supabase
+        // 6. Global GPL league teams for opponent dropdown (fallback to built-in list if table not migrated yet)
+        const { data: ltList, error: ltErr } = await supabase
           .from('league_teams')
           .select('id, name, short_name, logo_url')
           .eq('is_active', true)
           .order('name', { ascending: true })
-        if (ltList) setLeagueTeams(ltList)
+        setLeagueTeams(!ltErr && ltList && ltList.length > 0 ? ltList : DEFAULT_GPL_TEAMS)
 
         // 5. Upcoming sessions for schedule linker
         const todayStr = new Date().toISOString().split('T')[0]

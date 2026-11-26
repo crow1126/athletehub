@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient, getRequester, isSuperadmin } from '@/lib/serverAuth'
 import { verifyImageMagicBytes, sanitizeSvgContent, sanitizeFilename } from '@/lib/imageSanitizer'
+import { DEFAULT_GPL_TEAMS } from '@/lib/gplTeams'
 
 export async function GET(req) {
   try {
@@ -16,10 +17,14 @@ export async function GET(req) {
       .order('name', { ascending: true })
 
     if (error) {
+      // Gracefully return default seeded list with migrationPending flag if table isn't created yet
+      if (error.message?.includes('league_teams') || error.code === '42P01' || error.code === 'PGRST205') {
+        return NextResponse.json({ teams: DEFAULT_GPL_TEAMS, migrationPending: true })
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ teams: data || [] })
+    return NextResponse.json({ teams: (data && data.length > 0) ? data : DEFAULT_GPL_TEAMS, migrationPending: false })
   } catch (err) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

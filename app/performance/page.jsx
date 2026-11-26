@@ -4,6 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
+import { DEFAULT_GPL_TEAMS } from '@/lib/gplTeams'
 import { Eye, Ban, ShieldAlert, CalendarDays, Trophy, Plus, Edit2, Trash2 } from 'lucide-react'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
@@ -42,6 +43,7 @@ export default function PerformancePage(){
   const [showFixModal, setShowFixModal]= useState(false)
   const [editFixId,    setEditFixId]   = useState(null)
   const [fixForm,      setFixForm]     = useState(EMPTY_FIXTURE)
+  const [fixCustomMode,setFixCustomMode]= useState(false)
   const [savingFix,    setSavingFix]   = useState(false)
 
   const fetchData = useCallback(async () => {
@@ -62,7 +64,8 @@ export default function PerformancePage(){
     const s = resStats.status === 'fulfilled' ? (resStats.value?.data || []) : []
     const a = resAth.status === 'fulfilled' ? (resAth.value?.data || []) : []
     const f = resFix.status === 'fulfilled' ? (resFix.value?.data || []) : []
-    const lt = resLT.status === 'fulfilled' ? (resLT.value?.data || []) : []
+    const ltOk = resLT.status === 'fulfilled' && !resLT.value?.error && (resLT.value?.data?.length || 0) > 0
+    const lt = ltOk ? resLT.value.data : DEFAULT_GPL_TEAMS
     setStats(s)
     setAthletes(a)
     setFixtures(f)
@@ -222,15 +225,18 @@ export default function PerformancePage(){
   function openAddFixture() {
     setEditFixId(null)
     setFixForm(EMPTY_FIXTURE)
+    setFixCustomMode(false)
     setShowFixModal(true)
   }
 
   function openEditFixture(fx) {
     setEditFixId(fx.id)
+    const matchedTeam = leagueTeams.find(t => t.id === fx.opponent_team_id || t.name?.toLowerCase() === fx.opponent_name?.toLowerCase())
+    setFixCustomMode(!matchedTeam && !!fx.opponent_name)
     setFixForm({
-      opponent_team_id: fx.opponent_team_id || '',
+      opponent_team_id: matchedTeam?.id || fx.opponent_team_id || '',
       opponent_name: fx.opponent_name || '',
-      opponent_logo_url: fx.opponent_logo_url || '',
+      opponent_logo_url: fx.opponent_logo_url || matchedTeam?.logo_url || '',
       competition: fx.competition || 'Ghana Premier League',
       match_date: fx.match_date || new Date().toISOString().split('T')[0],
       kickoff_time: fx.kickoff_time || '15:00',
@@ -249,9 +255,10 @@ export default function PerformancePage(){
     if (!fixForm.match_date) return alert('Match date is required.')
     if (!teamId) return alert('No active team assigned.')
     setSavingFix(true)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(fixForm.opponent_team_id || '')
     const payload = {
       team_id: teamId,
-      opponent_team_id: fixForm.opponent_team_id || null,
+      opponent_team_id: isUuid ? fixForm.opponent_team_id : null,
       opponent_name: fixForm.opponent_name.trim(),
       opponent_logo_url: fixForm.opponent_logo_url || null,
       competition: fixForm.competition.trim() || 'Ghana Premier League',
@@ -787,55 +794,124 @@ export default function PerformancePage(){
 
       {/* ── Official Fixture Add/Edit Modal ── */}
       {showFixModal && (
-        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowFixModal(false) }}>
-          <div className="modal" style={{ maxWidth: 540, width: '100%' }}>
+        <div
+          onClick={e => { if (e.target === e.currentTarget) setShowFixModal(false) }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.58)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 250,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
+        >
+          <div
+            style={{
+              background: '#FFFFFF',
+              borderRadius: 20,
+              width: '100%',
+              maxWidth: 560,
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxShadow: '0 25px 60px -12px rgba(15, 23, 42, 0.35)',
+              border: '1px solid #E2E8F0',
+            }}
+          >
+            {/* Header */}
             <div style={{ background: 'linear-gradient(135deg,#0F766E,#0D9488)', padding: '20px 24px', borderRadius: '20px 20px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: 0 }}>{editFixId ? 'Edit Official Fixture & Score' : 'Add Official Fixture'}</h2>
-                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', margin: '3px 0 0' }}>Select opponent from the Ghana Premier League directory</p>
+                <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>{editFixId ? 'Edit Official Fixture & Score' : 'Add Official Fixture'}</h2>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', margin: '3px 0 0' }}>2026/2027 Ghana Premier League &amp; Official Competitions</p>
               </div>
-              <button onClick={() => setShowFixModal(false)} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#fff', fontSize: 16 }}>✕</button>
+              <button onClick={() => setShowFixModal(false)} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#fff', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
             </div>
-            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Opponent Selector with GPL Directory vs Custom Toggle */}
               <div>
-                <label style={lbl}>Opponent Team *</label>
-                <select
-                  value={fixForm.opponent_team_id || (fixForm.opponent_name ? '__custom__' : '')}
-                  onChange={e => {
-                    const val = e.target.value
-                    if (val === '__custom__' || val === '') {
-                      setFixForm(f => ({ ...f, opponent_team_id: '', opponent_logo_url: '', ...(val === '' ? { opponent_name: '' } : {}) }))
-                    } else {
-                      const t = leagueTeams.find(x => x.id === val)
-                      if (t) {
-                        setFixForm(f => ({ ...f, opponent_team_id: t.id, opponent_name: t.name, opponent_logo_url: t.logo_url || '' }))
-                      }
-                    }
-                  }}
-                  style={inp}
-                >
-                  <option value="">-- Select GPL Team --</option>
-                  {leagueTeams.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}{t.short_name ? ` (${t.short_name})` : ''}</option>
-                  ))}
-                  <option value="__custom__">Other / Custom Opponent</option>
-                </select>
-                {(!fixForm.opponent_team_id) && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <label style={{ ...lbl, marginBottom: 0 }}>Opponent Team *</label>
+                  <div style={{ display: 'inline-flex', background: '#F1F5F9', borderRadius: 8, padding: 2 }}>
+                    {[
+                      { id: false, label: 'GPL Directory' },
+                      { id: true, label: 'Custom Team' },
+                    ].map(opt => (
+                      <button
+                        key={String(opt.id)}
+                        type="button"
+                        onClick={() => {
+                          setFixCustomMode(opt.id)
+                          if (opt.id) {
+                            setFixForm(f => ({ ...f, opponent_team_id: '', opponent_logo_url: '' }))
+                          }
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: 6,
+                          border: 'none',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: fixCustomMode === opt.id ? '#FFFFFF' : 'transparent',
+                          color: fixCustomMode === opt.id ? '#0F766E' : '#64748B',
+                          boxShadow: fixCustomMode === opt.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {!fixCustomMode ? (
+                  <>
+                    <select
+                      value={fixForm.opponent_team_id || ''}
+                      onChange={e => {
+                        const t = leagueTeams.find(x => x.id === e.target.value)
+                        if (t) {
+                          setFixForm(f => ({ ...f, opponent_team_id: t.id, opponent_name: t.name, opponent_logo_url: t.logo_url || '' }))
+                        } else {
+                          setFixForm(f => ({ ...f, opponent_team_id: '', opponent_name: '', opponent_logo_url: '' }))
+                        }
+                      }}
+                      style={inp}
+                    >
+                      <option value="">-- Select GPL Team ({leagueTeams.length} clubs) --</option>
+                      {leagueTeams.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}{t.short_name ? ` (${t.short_name})` : ''}</option>
+                      ))}
+                    </select>
+                    {fixForm.opponent_name && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, padding: '8px 12px', background: '#F0FDFA', borderRadius: 10, border: '1px solid #CCFBF1' }}>
+                        {fixForm.opponent_logo_url ? (
+                          <img src={fixForm.opponent_logo_url} alt={fixForm.opponent_name} style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 6, background: '#fff', padding: 2 }} />
+                        ) : (
+                          <div style={{ width: 28, height: 28, borderRadius: 6, background: '#0F766E', color: '#fff', fontSize: 10, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {fixForm.opponent_name.slice(0, 3).toUpperCase()}
+                          </div>
+                        )}
+                        <div>
+                          <div style={{ fontSize: 12.5, fontWeight: 800, color: '#0F172A' }}>{fixForm.opponent_name}</div>
+                          <div style={{ fontSize: 10.5, color: '#0F766E', fontWeight: 600 }}>Official 2026/2027 GPL Crest Ready</div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
                   <input
                     value={fixForm.opponent_name}
-                    onChange={e => setFixForm(f => ({ ...f, opponent_name: e.target.value }))}
-                    placeholder="Enter opponent team name"
-                    style={{ ...inp, marginTop: 8 }}
+                    onChange={e => setFixForm(f => ({ ...f, opponent_name: e.target.value, opponent_team_id: '', opponent_logo_url: '' }))}
+                    placeholder="Enter custom opponent club name"
+                    style={inp}
                   />
-                )}
-                {fixForm.opponent_logo_url && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '6px 10px', background: '#F0FDFA', borderRadius: 8, border: '1px solid #CCFBF1' }}>
-                    <img src={fixForm.opponent_logo_url} alt={fixForm.opponent_name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#0F766E' }}>{fixForm.opponent_name} crest selected</span>
-                  </div>
                 )}
               </div>
 
+              {/* Date & Kickoff */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Match Date *</label>
@@ -847,13 +923,34 @@ export default function PerformancePage(){
                 </div>
               </div>
 
+              {/* Venue Type Pills + Competition */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={lbl}>Home / Away</label>
-                  <select value={fixForm.is_home ? 'home' : 'away'} onChange={e => setFixForm(f => ({ ...f, is_home: e.target.value === 'home' }))} style={inp}>
-                    <option value="home">Home Fixture</option>
-                    <option value="away">Away Fixture</option>
-                  </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, background: '#F8FAFC', padding: 4, borderRadius: 12, border: '1px solid #E2E8F0' }}>
+                    {[
+                      { val: true, label: 'Home' },
+                      { val: false, label: 'Away' },
+                    ].map(opt => (
+                      <button
+                        key={String(opt.val)}
+                        type="button"
+                        onClick={() => setFixForm(f => ({ ...f, is_home: opt.val }))}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: 8,
+                          border: 'none',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: fixForm.is_home === opt.val ? '#0F766E' : 'transparent',
+                          color: fixForm.is_home === opt.val ? '#FFFFFF' : '#64748B',
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div>
                   <label style={lbl}>Competition</label>
@@ -861,37 +958,61 @@ export default function PerformancePage(){
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={lbl}>Venue</label>
-                  <input value={fixForm.venue} onChange={e => setFixForm(f => ({ ...f, venue: e.target.value }))} style={inp} placeholder="e.g. Baba Yara Stadium" />
-                </div>
-                <div>
-                  <label style={lbl}>Match Status</label>
-                  <select value={fixForm.status} onChange={e => setFixForm(f => ({ ...f, status: e.target.value }))} style={inp}>
-                    <option value="scheduled">Scheduled (Upcoming)</option>
-                    <option value="completed">Completed (Final Score)</option>
-                    <option value="postponed">Postponed</option>
-                  </select>
+              {/* Venue & Status */}
+              <div>
+                <label style={lbl}>Venue / Stadium</label>
+                <input value={fixForm.venue} onChange={e => setFixForm(f => ({ ...f, venue: e.target.value }))} style={inp} placeholder="e.g. Baba Yara Sports Stadium" />
+              </div>
+
+              <div>
+                <label style={lbl}>Match Status</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                  {[
+                    { id: 'scheduled', label: 'Scheduled', color: '#0F766E', bg: '#F0FDFA' },
+                    { id: 'completed', label: 'Completed', color: '#1D4ED8', bg: '#EFF6FF' },
+                    { id: 'postponed', label: 'Postponed', color: '#DC2626', bg: '#FEF2F2' },
+                  ].map(st => {
+                    const active = fixForm.status === st.id
+                    return (
+                      <button
+                        key={st.id}
+                        type="button"
+                        onClick={() => setFixForm(f => ({ ...f, status: st.id }))}
+                        style={{
+                          padding: '9px 10px',
+                          borderRadius: 10,
+                          border: active ? `1.5px solid ${st.color}` : '1px solid #E2E8F0',
+                          background: active ? st.bg : '#F8FAFC',
+                          color: active ? st.color : '#64748B',
+                          fontSize: 12.5,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {st.label}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
               {fixForm.status === 'completed' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 12, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 10, alignItems: 'center', padding: '14px 16px', background: '#F8FAFC', borderRadius: 14, border: '1px solid #E2E8F0' }}>
                   <div>
-                    <label style={lbl}>Home Team Score</label>
-                    <input type="number" min="0" value={fixForm.home_score} onChange={e => setFixForm(f => ({ ...f, home_score: e.target.value }))} style={inp} placeholder="0" />
+                    <label style={{ ...lbl, textAlign: 'center' }}>Home Score</label>
+                    <input type="number" min="0" value={fixForm.home_score} onChange={e => setFixForm(f => ({ ...f, home_score: e.target.value }))} style={{ ...inp, textAlign: 'center', fontSize: 18, fontWeight: 800 }} placeholder="0" />
                   </div>
+                  <div style={{ fontSize: 18, fontWeight: 900, color: '#94A3B8', paddingTop: 18 }}>:</div>
                   <div>
-                    <label style={lbl}>Away Team Score</label>
-                    <input type="number" min="0" value={fixForm.away_score} onChange={e => setFixForm(f => ({ ...f, away_score: e.target.value }))} style={inp} placeholder="0" />
+                    <label style={{ ...lbl, textAlign: 'center' }}>Away Score</label>
+                    <input type="number" min="0" value={fixForm.away_score} onChange={e => setFixForm(f => ({ ...f, away_score: e.target.value }))} style={{ ...inp, textAlign: 'center', fontSize: 18, fontWeight: 800 }} placeholder="0" />
                   </div>
                 </div>
               )}
 
               <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
-                <button onClick={() => setShowFixModal(false)} style={{ flex: 1, background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#334155', padding: 11, borderRadius: 12, fontSize: 14, cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font)' }}>Cancel</button>
-                <button onClick={handleSaveFixture} disabled={savingFix} style={{ flex: 2, padding: 11, fontSize: 14, background: 'linear-gradient(135deg,#0F766E,#0D9488)', border: 'none', color: '#fff', borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'var(--font)' }}>
+                <button type="button" onClick={() => setShowFixModal(false)} style={{ flex: 1, background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#334155', padding: 12, borderRadius: 12, fontSize: 14, cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font)' }}>Cancel</button>
+                <button type="button" onClick={handleSaveFixture} disabled={savingFix} style={{ flex: 2, padding: 12, fontSize: 14, background: 'linear-gradient(135deg,#0F766E,#0D9488)', border: 'none', color: '#fff', borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'var(--font)', boxShadow: '0 4px 14px rgba(13,148,136,0.28)' }}>
                   {savingFix ? 'Saving…' : editFixId ? 'Update Fixture' : 'Save Official Fixture'}
                 </button>
               </div>

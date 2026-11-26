@@ -122,18 +122,6 @@ const STATS = [
   { value: '96%', label: 'Satisfaction Rate' },
 ]
 
-const MOVING_PARTNERS = [
-  {
-    name: 'Ghana Premier League',
-    logo: '/ghana-premier-league.png',
-  },
-  {
-    name: 'Young Apostles FC',
-    logo: '/young-apostles-logo.png',
-  },
-]
-const MARQUEE_ITEMS = Array(6).fill(MOVING_PARTNERS).flat()
-
 const FAQS = [
   {
     q: 'What is ApexTrack GH?',
@@ -800,98 +788,6 @@ export default function LandingPage() {
         .feat-desc  { font-size: 13px; color: #64748B; line-height: 1.7; }
         .feat-link { color: #0D9488; text-decoration: underline; font-weight: 600; }
         .feat-link:hover { color: #0F766E; }
-
-        /* ── MOVING PARTNERS & LEAGUES TICKER ── */
-        .partner-marquee-section {
-          width: 100%;
-          overflow: hidden;
-          background: #EAECF0;
-          border-top: 1px solid #D0D5DD;
-          border-bottom: 1px solid #D0D5DD;
-          padding: 44px 0;
-          position: relative;
-        }
-        .partner-marquee-header {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          margin-bottom: 24px;
-          padding: 0 20px;
-        }
-        .marquee-live-dot { display: none; }
-        .partner-marquee-title {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          color: #475467;
-        }
-        .marquee-track-wrapper {
-          display: flex;
-          width: 100%;
-          overflow: hidden;
-          position: relative;
-          user-select: none;
-          mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-          -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
-        }
-        .marquee-track {
-          display: flex;
-          width: max-content;
-          animation: marqueeContinuous 28s linear infinite;
-          will-change: transform;
-        }
-        .marquee-track:hover {
-          animation-play-state: paused;
-        }
-        .marquee-group {
-          display: flex;
-          align-items: center;
-          gap: 84px;
-          padding-right: 84px;
-          flex-shrink: 0;
-        }
-        @keyframes marqueeContinuous {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        .marquee-card {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          padding: 0;
-          background: transparent;
-          border: none;
-          box-shadow: none;
-          transition: transform 0.2s ease, filter 0.2s ease;
-          user-select: none;
-          flex-shrink: 0;
-        }
-        .marquee-card:hover {
-          transform: scale(1.08);
-        }
-        .marquee-logo-frame {
-          height: 115px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .marquee-logo-img {
-          height: 115px;
-          max-height: 115px;
-          width: auto;
-          max-width: 280px;
-          object-fit: contain;
-          filter: drop-shadow(0 4px 10px rgba(0,0,0,0.06));
-        }
-        @media (max-width: 768px) {
-          .partner-marquee-section { padding: 32px 0; }
-          .marquee-group { gap: 48px; padding-right: 48px; }
-          .marquee-logo-frame { height: 76px; }
-          .marquee-logo-img { height: 76px; max-height: 76px; max-width: 170px; }
-        }
-        .marquee-info, .marquee-name, .marquee-badge-pill, .marquee-tag, .marquee-live-dot { display: none; }
 
         /* ── STATS BAND ── */
         .stats-band {
@@ -2020,35 +1916,6 @@ export default function LandingPage() {
                 <div className="feat-desc">{f.desc}</div>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── OFFICIAL CLUBS LOGO STRIP ── */}
-      <section className="partner-marquee-section">
-        <div className="partner-marquee-header">
-          <span className="partner-marquee-title">Official Partners &amp; Leagues on ApexTrack GH</span>
-        </div>
-        <div className="marquee-track-wrapper">
-          <div className="marquee-track">
-            <div className="marquee-group">
-              {MARQUEE_ITEMS.map((item, idx) => (
-                <div key={`mg1-${item.name}-${idx}`} className="marquee-card">
-                  <div className="marquee-logo-frame">
-                    <img src={item.logo} alt={item.name} className="marquee-logo-img" />
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="marquee-group" aria-hidden="true">
-              {MARQUEE_ITEMS.map((item, idx) => (
-                <div key={`mg2-${item.name}-${idx}`} className="marquee-card">
-                  <div className="marquee-logo-frame">
-                    <img src={item.logo} alt={item.name} className="marquee-logo-img" />
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

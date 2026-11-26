@@ -303,6 +303,7 @@ const IconAnalytics = () => (
 const NAV_ITEMS = [
   { id:'users',       label:'User Accounts',    icon:<IconUsers /> },
   { id:'clubs',       label:'Clubs & Teams',    icon:<IconClubs /> },
+  { id:'league_teams',label:'GPL League Teams', icon:<IconGlobe /> },
   { id:'analytics',   label:'Analytics & Clicks', icon:<IconAnalytics /> },
   { id:'maintenance', label:'Database & Roots', icon:<IconMaintenance /> },
   { id:'settings',    label:'System Settings',  icon:<IconSettings size={18} /> },
@@ -409,6 +410,20 @@ export default function SuperadminPage() {
   const [myNewPassword, setMyNewPassword] = useState('')
   const [myConfirmPassword, setMyConfirmPassword] = useState('')
 
+  // Global League Teams (GPL) States
+  const [leagueTeams, setLeagueTeams] = useState([])
+  const [leagueTeamsLoading, setLeagueTeamsLoading] = useState(false)
+  const [ltEditingId, setLtEditingId] = useState(null)
+  const [ltName, setLtName] = useState('')
+  const [ltShortName, setLtShortName] = useState('')
+  const [ltLeague, setLtLeague] = useState('Ghana Premier League')
+  const [ltSeason, setLtSeason] = useState('2026/2027')
+  const [ltLogoUrl, setLtLogoUrl] = useState('')
+  const [ltLogoFile, setLtLogoFile] = useState(null)
+  const [ltActive, setLtActive] = useState(true)
+  const [ltSaving, setLtSaving] = useState(false)
+  const [ltSearch, setLtSearch] = useState('')
+
   // Close mobile nav when section changes
   useEffect(() => { setMobileNav(false) }, [section])
 
@@ -503,6 +518,70 @@ export default function SuperadminPage() {
     }
   }, [fetchWithAuth])
 
+  const loadLeagueTeams = useCallback(async () => {
+    setLeagueTeamsLoading(true)
+    try {
+      const data = await fetchWithAuth('/api/superadmin/league-teams')
+      setLeagueTeams(data.teams || [])
+    } catch (err) {
+      showToast('Failed to load league teams: ' + err.message, 'error')
+    } finally {
+      setLeagueTeamsLoading(false)
+    }
+  }, [fetchWithAuth])
+
+  async function handleSaveLeagueTeam(e) {
+    if (e) e.preventDefault()
+    if (!ltName.trim()) { showToast('Team name is required', 'error'); return }
+    setLtSaving(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) throw new Error('No active session')
+      const fd = new FormData()
+      if (ltEditingId) fd.append('id', ltEditingId)
+      fd.append('name', ltName.trim())
+      fd.append('short_name', ltShortName.trim())
+      fd.append('league', ltLeague.trim() || 'Ghana Premier League')
+      fd.append('season', ltSeason.trim() || '2026/2027')
+      fd.append('logo_url', ltLogoUrl.trim())
+      fd.append('is_active', String(ltActive))
+      if (ltLogoFile) fd.append('file', ltLogoFile)
+
+      const res = await fetch('/api/superadmin/league-teams', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+        body: fd,
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save league team')
+      showToast(ltEditingId ? `Updated ${ltName}` : `Added ${ltName} to global league directory`)
+      setLtEditingId(null); setLtName(''); setLtShortName(''); setLtLogoUrl(''); setLtLogoFile(null); setLtActive(true)
+      loadLeagueTeams()
+    } catch (err) {
+      showToast(err.message, 'error')
+    } finally {
+      setLtSaving(false)
+    }
+  }
+
+  async function handleDeleteLeagueTeam(id, name) {
+    if (!confirm(`Remove "${name}" from the global GPL teams list?`)) return
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch(`/api/superadmin/league-teams?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${session?.access_token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Delete failed')
+      showToast(`Removed ${name}`)
+      loadLeagueTeams()
+    } catch (err) {
+      showToast(err.message, 'error')
+    }
+  }
+
+  useEffect(() => { if (authOk && section === 'league_teams') { loadLeagueTeams() } }, [authOk, section, loadLeagueTeams])
   useEffect(() => { if (authOk) { loadProfiles(); loadTeams() } }, [authOk, loadProfiles, loadTeams])
   useEffect(() => { if (authOk && section === 'maintenance') { loadTable(dbTable) } }, [authOk, section, dbTable, loadTable])
   useEffect(() => { if (authOk && section === 'analytics') { loadClicks() } }, [authOk, section, loadClicks])
@@ -2186,6 +2265,139 @@ export default function SuperadminPage() {
               </div>
             )
           })()}
+
+            {/* ── GLOBAL GPL LEAGUE TEAMS DIRECTORY ── */}
+            {section === 'league_teams' && (() => {
+              const filteredLT = leagueTeams.filter(t =>
+                !ltSearch.trim() ||
+                t.name?.toLowerCase().includes(ltSearch.toLowerCase()) ||
+                t.short_name?.toLowerCase().includes(ltSearch.toLowerCase())
+              )
+              return (
+                <div style={{ display:'flex', flexDirection:'column', gap:18, animation:'fadeIn 0.2s ease' }}>
+                  <div className="sa-card" style={{ background:'linear-gradient(135deg, #0F2218 0%, #0F766E 100%)', color:'#FFFFFF', padding:'22px 24px', border:'none' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:12 }}>
+                      <div>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#5EEAD4', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:6 }}>
+                          Shared Opponent Directory · All Tenants
+                        </div>
+                        <h2 style={{ fontSize:20, fontWeight:800, color:'#FFFFFF', margin:0 }}>
+                          Ghana Premier League Teams &amp; Logos
+                        </h2>
+                        <p style={{ fontSize:12.5, color:'rgba(255,255,255,0.8)', marginTop:4, marginBottom:0 }}>
+                          Teams added here automatically populate opponent dropdowns for all club analysts &amp; coaches (and appear on Matchday Team Sheets).
+                        </p>
+                      </div>
+                      <div style={{ fontSize:12, fontWeight:700, background:'rgba(255,255,255,0.14)', padding:'6px 14px', borderRadius:99 }}>
+                        {leagueTeams.length} Team{leagueTeams.length === 1 ? '' : 's'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Add / Edit League Team Form */}
+                  <form onSubmit={handleSaveLeagueTeam} className="sa-card" style={{ padding:'20px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14 }}>
+                      <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', margin:0 }}>
+                        {ltEditingId ? `Edit Team: ${ltName}` : 'Add League Team'}
+                      </h3>
+                      {ltEditingId && (
+                        <button type="button" onClick={() => { setLtEditingId(null); setLtName(''); setLtShortName(''); setLtLogoUrl(''); setLtLogoFile(null); setLtActive(true) }}
+                          style={{ fontSize:12, fontWeight:700, color:'#64748B', background:'#F1F5F9', border:'none', borderRadius:8, padding:'6px 12px', cursor:'pointer' }}>
+                          Cancel Edit
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(180px, 1fr))', gap:12 }}>
+                      <div>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', marginBottom:5 }}>Team Name *</label>
+                        <input value={ltName} onChange={e => setLtName(e.target.value)} placeholder="e.g. Asante Kotoko SC" required
+                          style={{ width:'100%', padding:'9px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13 }} />
+                      </div>
+                      <div>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', marginBottom:5 }}>Short Code</label>
+                        <input value={ltShortName} onChange={e => setLtShortName(e.target.value)} placeholder="e.g. KOT"
+                          style={{ width:'100%', padding:'9px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13 }} />
+                      </div>
+                      <div>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', marginBottom:5 }}>League</label>
+                        <input value={ltLeague} onChange={e => setLtLeague(e.target.value)} placeholder="Ghana Premier League"
+                          style={{ width:'100%', padding:'9px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13 }} />
+                      </div>
+                      <div>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', marginBottom:5 }}>Season</label>
+                        <input value={ltSeason} onChange={e => setLtSeason(e.target.value)} placeholder="2026/2027"
+                          style={{ width:'100%', padding:'9px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13 }} />
+                      </div>
+                      <div>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', marginBottom:5 }}>Logo URL (or upload file)</label>
+                        <input value={ltLogoUrl} onChange={e => setLtLogoUrl(e.target.value)} placeholder="https://..."
+                          style={{ width:'100%', padding:'9px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:13 }} />
+                      </div>
+                      <div>
+                        <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#64748B', marginBottom:5 }}>Upload Crest (PNG/SVG/JPG)</label>
+                        <input type="file" accept="image/*" onChange={e => setLtLogoFile(e.target.files?.[0] || null)}
+                          style={{ width:'100%', fontSize:12, padding:'6px 0' }} />
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:14, flexWrap:'wrap', gap:10 }}>
+                      <label style={{ display:'inline-flex', alignItems:'center', gap:8, fontSize:12.5, fontWeight:600, color:'#334155', cursor:'pointer' }}>
+                        <input type="checkbox" checked={ltActive} onChange={e => setLtActive(e.target.checked)} />
+                        Active in tenant dropdowns
+                      </label>
+                      <button type="submit" disabled={ltSaving}
+                        style={{ background:'#0D9488', color:'#FFFFFF', border:'none', borderRadius:8, padding:'9px 18px', fontSize:13, fontWeight:700, cursor:ltSaving ? 'wait' : 'pointer' }}>
+                        {ltSaving ? 'Saving...' : (ltEditingId ? 'Save Changes' : '+ Add League Team')}
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* Teams List */}
+                  <div className="sa-card" style={{ padding:'18px 20px' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:10 }}>
+                      <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', margin:0 }}>Registered League Teams</h3>
+                      <input value={ltSearch} onChange={e => setLtSearch(e.target.value)} placeholder="Search team name or code..."
+                        style={{ padding:'7px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:12.5, minWidth:220 }} />
+                    </div>
+                    {leagueTeamsLoading ? (
+                      <div style={{ padding:24, textAlign:'center', color:'#64748B', fontSize:13 }}>Loading league teams...</div>
+                    ) : filteredLT.length === 0 ? (
+                      <div style={{ padding:24, textAlign:'center', color:'#64748B', fontSize:13 }}>No league teams yet. Add your first GPL club above.</div>
+                    ) : (
+                      <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(260px, 1fr))', gap:12 }}>
+                        {filteredLT.map(team => (
+                          <div key={team.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'12px', border:'1px solid #E2E8F0', borderRadius:12, background: team.is_active ? '#FFFFFF' : '#F8FAFC', opacity: team.is_active ? 1 : 0.65 }}>
+                            {team.logo_url ? (
+                              <img src={team.logo_url} alt={team.name} style={{ width:42, height:42, borderRadius:8, objectFit:'contain', background:'#F8FAFC', border:'1px solid #E2E8F0', padding:3, flexShrink:0 }} />
+                            ) : (
+                              <div style={{ width:42, height:42, borderRadius:8, background:'#F0FDFA', color:'#0F766E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:800, flexShrink:0 }}>
+                                {team.short_name || team.name.slice(0, 3).toUpperCase()}
+                              </div>
+                            )}
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:800, color:'#0F172A', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{team.name}</div>
+                              <div style={{ fontSize:11, color:'#64748B' }}>{team.short_name || '—'} · {team.season}</div>
+                            </div>
+                            <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                              <button type="button" onClick={() => {
+                                setLtEditingId(team.id); setLtName(team.name || ''); setLtShortName(team.short_name || '')
+                                setLtLeague(team.league || 'Ghana Premier League'); setLtSeason(team.season || '2026/2027')
+                                setLtLogoUrl(team.logo_url || ''); setLtLogoFile(null); setLtActive(team.is_active !== false)
+                              }} style={{ fontSize:11, fontWeight:700, padding:'5px 9px', borderRadius:6, background:'#F1F5F9', color:'#334155', border:'none', cursor:'pointer' }}>
+                                Edit
+                              </button>
+                              <button type="button" onClick={() => handleDeleteLeagueTeam(team.id, team.name)}
+                                style={{ fontSize:11, fontWeight:700, padding:'5px 9px', borderRadius:6, background:'#FEE2E2', color:'#DC2626', border:'none', cursor:'pointer' }}>
+                                Del
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })()}
 
             {section === 'analytics' && (() => {
               const pathsList     = getAggregatedStats(clicks, c => getCleanPath(c.url))

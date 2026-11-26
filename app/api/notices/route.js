@@ -78,6 +78,10 @@ export async function POST(req) {
       match_details = null,
     } = body
 
+    if (category === 'matchday' && userRole !== 'coach') {
+      return NextResponse.json({ error: 'Only Coaches can publish Matchday Call-Ups.' }, { status: 403 })
+    }
+
     if (!title?.trim() || !content?.trim()) {
       return NextResponse.json({ error: 'Title and content are required.' }, { status: 400 })
     }

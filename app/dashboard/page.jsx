@@ -83,6 +83,7 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState(() => cachedData?.sessions || [])
   const [notices, setNotices] = useState(() => cachedData?.notices || [])
   const [performanceStats, setPerformanceStats] = useState(() => cachedData?.performanceStats || [])
+  const [fixtures, setFixtures] = useState(() => cachedData?.fixtures || [])
   const [loading, setLoading] = useState(() => !cachedData)
   const [profile, setProfile] = useState(null)
   const [teamId, setTeamId] = useState(() => getLastKnownTeamId())
@@ -104,25 +105,34 @@ export default function Dashboard() {
     const isAn = uRole === 'analyst' || p?.staff_type === 'analyst'
     setIsAdmin((uRole === 'admin' || uRole === 'superadmin' || uRole === 'coach') && !isAn)
 
-    const [{ data: a }, { data: i }, { data: c }, { data: s }, { data: n }, { data: ps }] = await Promise.all([
+    const [resA, resI, resC, resS, resN, resPS, resFX] = await Promise.allSettled([
       scopeTeam(supabase.from('athletes').select('*'), tid).order('created_at', { ascending: false }),
       scopeTeam(supabase.from('injuries').select('*,athletes(name,club,position,photo_url)'), tid),
       scopeTeam(supabase.from('coaches').select('*'), tid),
       scopeTeam(supabase.from('training_sessions').select('*,coaches(name)'), tid).order('date', { ascending: true }),
       scopeTeam(supabase.from('notices').select('*'), tid).order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(3),
       scopeTeam(supabase.from('performance_stats').select('*,athletes(id,name,position,photo_url)'), tid).order('match_date', { ascending: false }).limit(50),
+      scopeTeam(supabase.from('fixtures').select('*'), tid).order('match_date', { ascending: false }).limit(20),
     ])
-    setAthletes(a || []); setInjuries(i || []); setCoaches(c || []); setSessions(s || []); setNotices(n || []); setPerformanceStats(ps || [])
+    const a  = resA.status === 'fulfilled'  ? (resA.value?.data || [])  : []
+    const i  = resI.status === 'fulfilled'  ? (resI.value?.data || [])  : []
+    const c  = resC.status === 'fulfilled'  ? (resC.value?.data || [])  : []
+    const s  = resS.status === 'fulfilled'  ? (resS.value?.data || [])  : []
+    const n  = resN.status === 'fulfilled'  ? (resN.value?.data || [])  : []
+    const ps = resPS.status === 'fulfilled' ? (resPS.value?.data || []) : []
+    const fx = resFX.status === 'fulfilled' ? (resFX.value?.data || []) : []
+    setAthletes(a); setInjuries(i); setCoaches(c); setSessions(s); setNotices(n); setPerformanceStats(ps); setFixtures(fx)
     setLoading(false)
     if (typeof window !== 'undefined' && tid) {
       try {
         sessionStorage.setItem(`apex_dashboard_cache_${tid}`, JSON.stringify({
-          athletes: a || [],
-          injuries: i || [],
-          coaches: c || [],
-          sessions: s || [],
-          notices: n || [],
-          performanceStats: ps || [],
+          athletes: a,
+          injuries: i,
+          coaches: c,
+          sessions: s,
+          notices: n,
+          performanceStats: ps,
+          fixtures: fx,
           cachedAt: Date.now(),
         }))
       } catch {}
@@ -161,7 +171,18 @@ export default function Dashboard() {
   const greet = today.getHours() < 12 ? 'Good morning' : today.getHours() < 17 ? 'Good afternoon' : 'Good evening'
 
   // Analyst metrics
-  const uniqueMatchesCount = new Set((performanceStats || []).map(s => `${s.opponent || ''}_${s.match_date || ''}`).filter(Boolean)).size || (performanceStats || []).length
+  const upcomingOfficialFixtures = (fixtures || [])
+    .filter(f => f.status === 'scheduled' && f.match_date >= todayStr)
+    .sort((a, b) => a.match_date.localeCompare(b.match_date))
+    .slice(0, 3)
+  const completedOfficialResults = (fixtures || [])
+    .filter(f => f.status === 'completed')
+    .sort((a, b) => b.match_date.localeCompare(a.match_date))
+    .slice(0, 4)
+  const uniqueMatchesCount = Math.max(
+    (fixtures || []).filter(f => f.status === 'completed').length,
+    new Set((performanceStats || []).map(s => `${s.opponent || ''}_${s.match_date || ''}`).filter(Boolean)).size
+  ) || (performanceStats || []).length
   const ratedStats = (performanceStats || []).filter(s => typeof s.rating === 'number' && !isNaN(s.rating))
   const avgSquadRating = ratedStats.length > 0 
     ? (ratedStats.reduce((sum, s) => sum + s.rating, 0) / ratedStats.length).toFixed(1)
@@ -681,6 +702,107 @@ export default function Dashboard() {
                     <Badge status={inj.severity} />
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ── Official Fixtures & Results Widget (Analyst Exclusive) ── */}
+          {isAnalyst && (
+            <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #99F6E4', background: '#FFFFFF', borderRadius: 16 }}>
+              <div style={{ background: 'linear-gradient(90deg, #0F766E, #0D9488)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                  <CalendarDays size={15} color="#CCFBF1" />
+                  <h3 style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>Official Fixtures &amp; Scores</h3>
+                </div>
+                <Link href="/performance" style={{ fontSize: 11, color: '#FFFFFF', fontWeight: 700, background: 'rgba(255,255,255,0.18)', padding: '3px 10px', borderRadius: 99, textDecoration: 'none' }}>
+                  + Manage
+                </Link>
+              </div>
+              <div style={{ padding: '6px 0' }}>
+                {upcomingOfficialFixtures.length === 0 && completedOfficialResults.length === 0 ? (
+                  <div style={{ padding: '18px 16px', textAlign: 'center', color: 'var(--text3)', fontSize: 12.5 }}>
+                    <div>No official fixtures logged yet.</div>
+                    <Link href="/performance" style={{ display: 'inline-block', marginTop: 6, color: '#0D9488', fontWeight: 700, textDecoration: 'none' }}>
+                      + Add official fixture or score
+                    </Link>
+                  </div>
+                ) : (
+                  <>
+                    {upcomingOfficialFixtures.length > 0 && (
+                      <div style={{ padding: '6px 14px 4px', fontSize: 10, fontWeight: 800, color: '#0F766E', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Upcoming Fixtures
+                      </div>
+                    )}
+                    {upcomingOfficialFixtures.map((fx, idx) => (
+                      <div key={fx.id || idx} style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                          {fx.opponent_logo_url ? (
+                            <img src={fx.opponent_logo_url} alt={fx.opponent_name} style={{ width: 24, height: 24, borderRadius: 5, objectFit: 'contain', flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 24, height: 24, borderRadius: 5, background: '#F0FDFA', color: '#0F766E', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              {(fx.opponent_name || 'OP').slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {fx.is_home ? 'vs' : '@'} {fx.opponent_name}
+                            </div>
+                            <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>
+                              {new Date(fx.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} · {fx.kickoff_time || '15:00'}
+                            </div>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 5, background: fx.is_home ? '#EFF6FF' : '#F3E8FF', color: fx.is_home ? '#1D4ED8' : '#7C3AED', flexShrink: 0 }}>
+                          {fx.is_home ? 'H' : 'A'}
+                        </span>
+                      </div>
+                    ))}
+
+                    {completedOfficialResults.length > 0 && (
+                      <div style={{ padding: '8px 14px 4px', fontSize: 10, fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        Recent Results
+                      </div>
+                    )}
+                    {completedOfficialResults.map((fx, idx) => {
+                      const ourScore = fx.is_home ? fx.home_score : fx.away_score
+                      const oppScore = fx.is_home ? fx.away_score : fx.home_score
+                      const res = ourScore !== null && oppScore !== null
+                        ? (ourScore > oppScore ? { l: 'W', bg: '#DCFCE7', c: '#15803D' } : ourScore < oppScore ? { l: 'L', bg: '#FEE2E2', c: '#DC2626' } : { l: 'D', bg: '#FEF3C7', c: '#B45309' })
+                        : null
+                      return (
+                        <div key={fx.id || idx} style={{ padding: '8px 14px', borderBottom: idx < completedOfficialResults.length - 1 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                            {fx.opponent_logo_url ? (
+                              <img src={fx.opponent_logo_url} alt={fx.opponent_name} style={{ width: 24, height: 24, borderRadius: 5, objectFit: 'contain', flexShrink: 0 }} />
+                            ) : (
+                              <div style={{ width: 24, height: 24, borderRadius: 5, background: '#F1F5F9', color: '#475569', fontSize: 9, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                {(fx.opponent_name || 'OP').slice(0, 2).toUpperCase()}
+                              </div>
+                            )}
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {fx.is_home ? 'vs' : '@'} {fx.opponent_name}
+                              </div>
+                              <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>
+                                {new Date(fx.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                              </div>
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                            <span style={{ fontSize: 12, fontWeight: 900, color: '#0F172A', background: '#F8FAFC', border: '1px solid #E2E8F0', padding: '2px 7px', borderRadius: 6 }}>
+                              {fx.home_score ?? '—'} - {fx.away_score ?? '—'}
+                            </span>
+                            {res && (
+                              <span style={{ width: 20, height: 20, borderRadius: 5, background: res.bg, color: res.c, fontSize: 10, fontWeight: 900, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                {res.l}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
               </div>
             </div>
           )}

@@ -656,6 +656,7 @@ export default function ReportsPage() {
   const [injuries,       setInjuries]       = useState([])
   const [rehabNotes,     setRehabNotes]     = useState([])
   const [performance,    setPerformance]    = useState([])
+  const [fixtures,       setFixtures]       = useState([])
   const [sessions,       setSessions]       = useState([])
   const [coaches,        setCoaches]        = useState([])
   const [contracts,      setContracts]      = useState([])
@@ -702,6 +703,7 @@ export default function ReportsPage() {
           scopeTeam(supabase.from('training_sessions').select('*'), teamId),
           scopeTeam(supabase.from('coaches').select('*'), teamId),
           scopeTeam(supabase.from('contracts').select('*, athletes(name, position, club)'), teamId),
+          scopeTeam(supabase.from('fixtures').select('*'), teamId).order('match_date', { ascending: false }),
         ])
 
         const a  = results[0].status === 'fulfilled' ? (results[0].value?.data || []) : []
@@ -711,6 +713,7 @@ export default function ReportsPage() {
         const s  = results[4].status === 'fulfilled' ? (results[4].value?.data || []) : []
         const c  = results[5].status === 'fulfilled' ? (results[5].value?.data || []) : []
         const ct = results[6].status === 'fulfilled' ? (results[6].value?.data || []) : []
+        const fx = results[7].status === 'fulfilled' ? (results[7].value?.data || []) : []
 
         // Read local storage cache for rehab notes
         let localRehab = []
@@ -736,6 +739,7 @@ export default function ReportsPage() {
         setInjuries(i   || [])
         setRehabNotes(combinedRehab)
         setPerformance(p|| [])
+        setFixtures(fx  || [])
         setSessions(s   || [])
         setCoaches(c    || [])
         setContracts(ct || [])
@@ -1741,9 +1745,108 @@ export default function ReportsPage() {
             )}
 
             {/* ── B2: SQUAD MATCH ANALYTICS & PERFORMANCE ── */}
-            {activeCategory === 'analytics' && (
+            {activeCategory === 'analytics' && (() => {
+              const periodFixtures = (fixtures || []).filter(f => {
+                if (!f.match_date) return false
+                const d = new Date(f.match_date)
+                if (isNaN(d.getTime())) return false
+                return reportType === 'yearly'
+                  ? d.getFullYear() === selYear
+                  : (d.getFullYear() === selYear && d.getMonth() === selMonth)
+              })
+              const completedFx = periodFixtures.filter(f => f.status === 'completed' && f.home_score !== null && f.away_score !== null)
+              let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0
+              completedFx.forEach(f => {
+                const ourS = f.is_home ? f.home_score : f.away_score
+                const oppS = f.is_home ? f.away_score : f.home_score
+                gf += (ourS || 0); ga += (oppS || 0)
+                if (ourS > oppS) wins++
+                else if (ourS < oppS) losses++
+                else draws++
+              })
+
+              return (
               <div>
-                
+                {/* Official Fixtures & Match Results Overview */}
+                <div style={{
+                  background: '#FFFFFF',
+                  border: '1.5px solid #99F6E4',
+                  borderRadius: 12,
+                  padding: '18px 20px',
+                  marginBottom: 20,
+                  boxShadow: '0 2px 8px rgba(13,148,136,0.06)',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: '#0F172A' }}>Official Fixtures &amp; Match Results ({period})</div>
+                      <div style={{ fontSize: 12, color: '#64748B', marginTop: 2 }}>Official competitive schedule, scorelines &amp; W/D/L record included in Excel export</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {[
+                        { label: 'Fixtures', val: periodFixtures.length, bg: '#F8FAFC', c: '#0F172A' },
+                        { label: 'W-D-L', val: `${wins}-${draws}-${losses}`, bg: '#F0FDFA', c: '#0F766E' },
+                        { label: 'GF : GA', val: `${gf} : ${ga}`, bg: '#EFF6FF', c: '#1D4ED8' },
+                      ].map(chip => (
+                        <div key={chip.label} style={{ background: chip.bg, border: '1px solid #E2E8F0', borderRadius: 8, padding: '5px 11px', textAlign: 'center' }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>{chip.label}</div>
+                          <div style={{ fontSize: 13.5, fontWeight: 800, color: chip.c }}>{chip.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {periodFixtures.length === 0 ? (
+                    <div style={{ padding: '14px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0', fontSize: 12.5, color: '#64748B', textAlign: 'center' }}>
+                      No official fixtures logged for {period}. Analysts can add fixtures &amp; scores in the Performance tab.
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid #E2E8F0', color: '#64748B', textAlign: 'left', fontSize: 10.5, textTransform: 'uppercase' }}>
+                            <th style={{ padding: '8px 6px' }}>Date</th>
+                            <th style={{ padding: '8px 6px' }}>Opponent</th>
+                            <th style={{ padding: '8px 6px' }}>H/A</th>
+                            <th style={{ padding: '8px 6px' }}>Competition</th>
+                            <th style={{ padding: '8px 6px' }}>Score</th>
+                            <th style={{ padding: '8px 6px' }}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {periodFixtures.map(fx => {
+                            const ourS = fx.is_home ? fx.home_score : fx.away_score
+                            const oppS = fx.is_home ? fx.away_score : fx.home_score
+                            const isComp = fx.status === 'completed' && ourS !== null && oppS !== null
+                            const res = isComp ? (ourS > oppS ? 'W' : ourS < oppS ? 'L' : 'D') : null
+                            return (
+                              <tr key={fx.id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                                <td style={{ padding: '8px 6px', color: '#475569', whiteSpace: 'nowrap' }}>{fmtDate(fx.match_date)}</td>
+                                <td style={{ padding: '8px 6px', fontWeight: 700, color: '#0F172A' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                    {fx.opponent_logo_url && <img src={fx.opponent_logo_url} alt={fx.opponent_name} style={{ width: 20, height: 20, objectFit: 'contain' }} />}
+                                    <span>{fx.opponent_name}</span>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '8px 6px' }}>{fx.is_home ? 'Home' : 'Away'}</td>
+                                <td style={{ padding: '8px 6px', color: '#64748B' }}>{fx.competition}</td>
+                                <td style={{ padding: '8px 6px', fontWeight: 800 }}>
+                                  {fx.home_score !== null && fx.away_score !== null ? `${fx.home_score} - ${fx.away_score}` : '—'}
+                                  {res && (
+                                    <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 4, background: res === 'W' ? '#DCFCE7' : res === 'L' ? '#FEE2E2' : '#FEF3C7', color: res === 'W' ? '#15803D' : res === 'L' ? '#DC2626' : '#B45309' }}>
+                                      {res}
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '8px 6px', textTransform: 'capitalize', color: '#475569' }}>{fx.status}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
                 {/* Primary Card: Performance Register Excel */}
                 <div style={{
                   background: '#FFFFFF',
@@ -1866,7 +1969,8 @@ export default function ReportsPage() {
                 </div>
 
               </div>
-            )}
+              )
+            })()}
 
             {/* ── B3: OVERALL CLUB OPERATIONS & WORKBOOKS ── */}
             {activeCategory === 'overall' && (

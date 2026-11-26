@@ -4,21 +4,26 @@ import { Bell, Check, X } from 'lucide-react'
 import { requestNotificationPermission, sendTestNotificationToSelf } from '@/lib/notifications'
 
 export default function NotificationPromptBanner() {
+  const [mounted, setMounted] = useState(false)
   const [permission, setPermission] = useState('default')
   const [dismissed, setDismissed] = useState(false)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     if (typeof window === 'undefined') return
 
-    // Check if dismissed in this session
-    if (sessionStorage.getItem('apextrack_notif_banner_dismissed') === 'true') {
-      setDismissed(true)
-      return
-    }
+    // Check if dismissed permanently / across refreshes
+    try {
+      if (localStorage.getItem('apextrack_notif_banner_dismissed') === 'true') {
+        setDismissed(true)
+        return
+      }
+    } catch {}
 
     if (window.Capacitor?.isNativePlatform?.()) {
+      setDismissed(true)
       return
     }
 
@@ -29,7 +34,7 @@ export default function NotificationPromptBanner() {
     }
   }, [])
 
-  if (dismissed || permission === 'granted' || permission === 'unsupported') {
+  if (!mounted || dismissed || permission === 'granted' || permission === 'unsupported') {
     return null
   }
 
@@ -60,7 +65,7 @@ export default function NotificationPromptBanner() {
   function handleDismiss() {
     setDismissed(true)
     try {
-      sessionStorage.setItem('apextrack_notif_banner_dismissed', 'true')
+      localStorage.setItem('apextrack_notif_banner_dismissed', 'true')
     } catch {}
   }
 
@@ -68,21 +73,25 @@ export default function NotificationPromptBanner() {
     return (
       <div
         style={{
-          background: 'linear-gradient(90deg, #059669 0%, #10B981 100%)',
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          zIndex: 9999,
+          background: '#059669',
           color: '#FFFFFF',
           padding: '10px 16px',
+          borderRadius: 12,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: 10,
-          fontSize: 13,
+          gap: 8,
+          fontSize: 12.5,
           fontWeight: 600,
-          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
-          animation: 'fadeIn 0.2s ease-out',
+          boxShadow: '0 8px 24px rgba(5, 150, 105, 0.28)',
+          maxWidth: 310,
         }}
       >
-        <Check size={18} strokeWidth={2.5} />
-        <span>Push notifications enabled! You will now receive instant team alerts on your lock screen.</span>
+        <Check size={16} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+        <span>Push alerts enabled!</span>
       </div>
     )
   }
@@ -90,87 +99,86 @@ export default function NotificationPromptBanner() {
   return (
     <div
       style={{
-        background: 'linear-gradient(90deg, #0F172A 0%, #1E293B 100%)',
-        color: '#F8FAFC',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        padding: '10px 16px',
+        position: 'fixed',
+        bottom: 20,
+        right: 20,
+        zIndex: 9999,
+        background: '#FFFFFF',
+        color: '#0F172A',
+        border: '1px solid #E2E8F0',
+        borderRadius: 14,
+        padding: '10px 12px',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        fontSize: 12,
-        flexWrap: 'wrap',
-        position: 'relative',
-        zIndex: 50,
+        gap: 10,
+        boxShadow: '0 10px 30px rgba(15, 23, 42, 0.14)',
+        maxWidth: 310,
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 240, flex: 1 }}>
-        <div
-          style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            background: 'rgba(13, 148, 136, 0.25)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: '#2DD4BF',
-            flexShrink: 0,
-          }}
-        >
-          <Bell size={16} strokeWidth={2} />
+      <div
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 8,
+          background: '#F0FDFA',
+          border: '1px solid #CCFBF1',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#0D9488',
+          flexShrink: 0,
+        }}
+      >
+        <Bell size={15} strokeWidth={2.2} />
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, color: '#0F172A', fontSize: 12, lineHeight: 1.25 }}>
+          Enable push alerts
         </div>
-        <div>
-          <div style={{ fontWeight: 700, color: '#FFFFFF', fontSize: 12 }}>
-            Enable Device Notifications
-          </div>
-          <div style={{ color: '#94A3B8', fontSize: 11, lineHeight: 1.3 }}>
-            Receive matchday call-ups, training schedules, and urgent notices directly on this device.
-          </div>
+        <div style={{ color: '#64748B', fontSize: 11, lineHeight: 1.25 }}>
+          Get match &amp; schedule notices
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <button
-          onClick={handleEnable}
-          disabled={loading}
-          style={{
-            background: 'linear-gradient(135deg, #0D9488 0%, #0F766E 100%)',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: 7,
-            padding: '6px 14px',
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: loading ? 'wait' : 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            boxShadow: '0 2px 6px rgba(13, 148, 136, 0.4)',
-            fontFamily: 'inherit',
-          }}
-        >
-          <Bell size={13} />
-          {loading ? 'Enabling...' : 'Enable Push Alerts'}
-        </button>
-        <button
-          onClick={handleDismiss}
-          title="Dismiss for this session"
-          style={{
-            background: 'transparent',
-            color: '#64748B',
-            border: 'none',
-            padding: 6,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 6,
-          }}
-        >
-          <X size={15} />
-        </button>
-      </div>
+      <button
+        onClick={handleEnable}
+        disabled={loading}
+        style={{
+          background: '#0D9488',
+          color: '#FFFFFF',
+          border: 'none',
+          borderRadius: 8,
+          padding: '6px 10px',
+          fontSize: 11,
+          fontWeight: 700,
+          cursor: loading ? 'wait' : 'pointer',
+          flexShrink: 0,
+          fontFamily: 'inherit',
+        }}
+      >
+        {loading ? '...' : 'Enable'}
+      </button>
+
+      <button
+        onClick={handleDismiss}
+        title="Dismiss"
+        aria-label="Dismiss notification prompt"
+        style={{
+          background: 'transparent',
+          color: '#94A3B8',
+          border: 'none',
+          padding: 4,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 6,
+          flexShrink: 0,
+        }}
+      >
+        <X size={14} />
+      </button>
     </div>
   )
 }

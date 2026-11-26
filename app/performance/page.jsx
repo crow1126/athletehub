@@ -4,7 +4,7 @@ import Layout from '@/components/Layout'
 import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
-import { Eye, Ban, ShieldAlert } from 'lucide-react'
+import { Eye, Ban, ShieldAlert, CalendarDays, Trophy, Plus, Edit2, Trash2 } from 'lucide-react'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
 function initials(n){ return (n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() }
@@ -19,6 +19,7 @@ function AthleteAvatar({ ath, size=38, index=0 }) {
 const inp={width:'100%',padding:'10px 14px',background:'#F8FAFC',border:'1px solid #E2E8F0',borderRadius:'12px',fontSize:14,outline:'none',color:'#0F172A',fontFamily:'var(--font)',transition:'border-color 0.2s'}
 const lbl={display:'block',fontSize:11,fontWeight:700,letterSpacing:'0.08em',textTransform:'uppercase',color:'#64748B',marginBottom:6}
 const EMPTY={athlete_id:'',match_date:new Date().toISOString().split('T')[0],opponent:'',minutes_played:90,goals:0,assists:0,shots:0,shots_on_target:0,passes:0,pass_accuracy:0,distance_km:0,sprint_count:0,duels_won:0,duels_total:0,xg:0,xa:0,rating:0,notes:'',red_card:false,suspension_games:1,update_status_suspended:true}
+const EMPTY_FIXTURE={opponent_team_id:'',opponent_name:'',opponent_logo_url:'',competition:'Ghana Premier League',match_date:new Date().toISOString().split('T')[0],kickoff_time:'15:00',venue:'',is_home:true,home_score:'',away_score:'',status:'scheduled',notes:''}
 
 export default function PerformancePage(){
   const [stats,        setStats]       = useState([])
@@ -35,6 +36,13 @@ export default function PerformancePage(){
   const [unpublished,  setUnpublished] = useState([])  // unnotified stat rows
   const [publishing,   setPublishing]  = useState(false)
   const [publishMsg,   setPublishMsg]  = useState('')
+  const [activeTab,    setActiveTab]   = useState('fixtures') // 'fixtures' | 'stats'
+  const [fixtures,     setFixtures]    = useState([])
+  const [leagueTeams,  setLeagueTeams] = useState([])
+  const [showFixModal, setShowFixModal]= useState(false)
+  const [editFixId,    setEditFixId]   = useState(null)
+  const [fixForm,      setFixForm]     = useState(EMPTY_FIXTURE)
+  const [savingFix,    setSavingFix]   = useState(false)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -45,14 +53,22 @@ export default function PerformancePage(){
     }
     setCurrentUser(profile)
     setTeamId(currentTeamId)
-    const [{data:s},{data:a}] = await Promise.all([
+    const [resStats, resAth, resFix, resLT] = await Promise.allSettled([
       scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url,status,back_number)'), currentTeamId).order('match_date',{ascending:false}),
       scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url,status,back_number'), currentTeamId).order('name'),
+      scopeTeam(supabase.from('fixtures').select('*'), currentTeamId).order('match_date', { ascending: false }),
+      supabase.from('league_teams').select('*').eq('is_active', true).order('name', { ascending: true }),
     ])
-    setStats(s||[])
-    setAthletes(a||[])
+    const s = resStats.status === 'fulfilled' ? (resStats.value?.data || []) : []
+    const a = resAth.status === 'fulfilled' ? (resAth.value?.data || []) : []
+    const f = resFix.status === 'fulfilled' ? (resFix.value?.data || []) : []
+    const lt = resLT.status === 'fulfilled' ? (resLT.value?.data || []) : []
+    setStats(s)
+    setAthletes(a)
+    setFixtures(f)
+    setLeagueTeams(lt)
     // Track entries awaiting notification
-    setUnpublished((s||[]).filter(r => r.notified === false))
+    setUnpublished(s.filter(r => r.notified === false))
     setLoading(false)
   }, [])
 
@@ -203,6 +219,71 @@ export default function PerformancePage(){
     if (error)alert(error.message);else fetchData();setDeleting(null)
   }
 
+  function openAddFixture() {
+    setEditFixId(null)
+    setFixForm(EMPTY_FIXTURE)
+    setShowFixModal(true)
+  }
+
+  function openEditFixture(fx) {
+    setEditFixId(fx.id)
+    setFixForm({
+      opponent_team_id: fx.opponent_team_id || '',
+      opponent_name: fx.opponent_name || '',
+      opponent_logo_url: fx.opponent_logo_url || '',
+      competition: fx.competition || 'Ghana Premier League',
+      match_date: fx.match_date || new Date().toISOString().split('T')[0],
+      kickoff_time: fx.kickoff_time || '15:00',
+      venue: fx.venue || '',
+      is_home: fx.is_home !== false,
+      home_score: fx.home_score ?? '',
+      away_score: fx.away_score ?? '',
+      status: fx.status || 'scheduled',
+      notes: fx.notes || '',
+    })
+    setShowFixModal(true)
+  }
+
+  async function handleSaveFixture() {
+    if (!fixForm.opponent_name.trim()) return alert('Select or enter opponent team name.')
+    if (!fixForm.match_date) return alert('Match date is required.')
+    if (!teamId) return alert('No active team assigned.')
+    setSavingFix(true)
+    const payload = {
+      team_id: teamId,
+      opponent_team_id: fixForm.opponent_team_id || null,
+      opponent_name: fixForm.opponent_name.trim(),
+      opponent_logo_url: fixForm.opponent_logo_url || null,
+      competition: fixForm.competition.trim() || 'Ghana Premier League',
+      match_date: fixForm.match_date,
+      kickoff_time: fixForm.kickoff_time || '15:00',
+      venue: fixForm.venue.trim() || null,
+      is_home: !!fixForm.is_home,
+      home_score: fixForm.status === 'completed' && fixForm.home_score !== '' ? parseInt(fixForm.home_score, 10) : null,
+      away_score: fixForm.status === 'completed' && fixForm.away_score !== '' ? parseInt(fixForm.away_score, 10) : null,
+      status: fixForm.status || 'scheduled',
+      notes: fixForm.notes.trim() || null,
+      updated_at: new Date().toISOString(),
+    }
+    if (editFixId) {
+      const { error } = await scopeTeam(supabase.from('fixtures').update(payload).eq('id', editFixId), teamId)
+      if (error) alert(error.message)
+      else { setShowFixModal(false); fetchData() }
+    } else {
+      const { error } = await supabase.from('fixtures').insert([{ ...payload, created_by: currentUser?.id || null }])
+      if (error) alert(error.message)
+      else { setShowFixModal(false); fetchData() }
+    }
+    setSavingFix(false)
+  }
+
+  async function handleDeleteFixture(id) {
+    if (!confirm('Delete this official fixture?')) return
+    const { error } = await scopeTeam(supabase.from('fixtures').delete().eq('id', id), teamId)
+    if (error) alert(error.message)
+    else fetchData()
+  }
+
   const filtered=selAth==='all'?stats:stats.filter(s=>s.athlete_id===selAth)
 
   // Leaderboard
@@ -217,8 +298,34 @@ export default function PerformancePage(){
   return(
     <Layout>
       <div className="page-outer">
-        <PageHeader label="Analytics" title="Performance" subtitle="Match stats, xG, xA and player analytics"
-          action={!isAdminReadOnly && <button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>}/>
+        <PageHeader label="Analytics" title="Performance & Official Fixtures" subtitle="Official GPL fixtures, match scores, xG, xA and player analytics"
+          action={!isAdminReadOnly && (
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              <button onClick={openAddFixture} style={{ background:'#0F766E', color:'#fff', border:'none', borderRadius:10, padding:'9px 15px', fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, fontFamily:'var(--font)' }}>
+                <Plus size={15}/> Add Official Fixture
+              </button>
+              <button className="btn-blue" onClick={openAdd}>+ Log Match Stats</button>
+            </div>
+          )}/>
+
+        {/* ── Tab Switcher: Official Fixtures & Scores vs Player Match Stats ── */}
+        <div style={{ display:'flex', gap:8, marginBottom:20, flexWrap:'wrap' }}>
+          {[
+            { id:'fixtures', label:`Official Fixtures & Scores (${fixtures.length})`, icon:<CalendarDays size={15}/> },
+            { id:'stats', label:`Player Match Stats (${stats.length})`, icon:<Trophy size={15}/> },
+          ].map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{
+                display:'inline-flex', alignItems:'center', gap:7, padding:'9px 16px', borderRadius:10,
+                background: activeTab === t.id ? '#0F766E' : 'var(--surface)',
+                color: activeTab === t.id ? '#FFFFFF' : 'var(--text2)',
+                border: activeTab === t.id ? '1.5px solid #0F766E' : '1px solid var(--border)',
+                fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--font)',
+              }}>
+              {t.icon}{t.label}
+            </button>
+          ))}
+        </div>
         {isAdminReadOnly && (
           <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:20, color:'#0369A1', fontSize:13, fontWeight:600 }}>
             <Eye size={16} style={{ flexShrink: 0 }} />
@@ -337,6 +444,103 @@ export default function PerformancePage(){
           )
         })()}
 
+        {/* ── OFFICIAL FIXTURES & SCORES TAB ── */}
+        {activeTab === 'fixtures' && (
+          <div className="card fade-up" style={{ padding:0, overflow:'hidden', marginBottom:24 }}>
+            <div style={{ padding:'16px 20px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center', flexWrap:'wrap', gap:10 }}>
+              <div>
+                <h2 style={{ fontSize:16, fontWeight:800, margin:0, color:'var(--text)' }}>Official Fixtures &amp; Match Results</h2>
+                <div style={{ fontSize:12, color:'var(--text3)', marginTop:2 }}>Official competitive fixtures &amp; scorelines (feeds Analyst Dashboard &amp; Reports)</div>
+              </div>
+              {!isAdminReadOnly && (
+                <button onClick={openAddFixture} style={{ background:'#F0FDFA', color:'#0F766E', border:'1px solid #99F6E4', borderRadius:8, padding:'7px 14px', fontSize:12, fontWeight:700, cursor:'pointer' }}>
+                  + New Fixture / Score
+                </button>
+              )}
+            </div>
+            {loading ? (
+              <div style={{ padding:40, textAlign:'center', color:'var(--text3)', fontSize:13 }}>Loading official fixtures...</div>
+            ) : fixtures.length === 0 ? (
+              <div style={{ padding:40, textAlign:'center', color:'var(--text3)', fontSize:13 }}>
+                No official fixtures recorded yet. Click <strong>+ Add Official Fixture</strong> to schedule a match or enter a scoreline.
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column' }}>
+                {fixtures.map((fx, idx) => {
+                  const isCompleted = fx.status === 'completed'
+                  const ourScore = fx.is_home ? fx.home_score : fx.away_score
+                  const oppScore = fx.is_home ? fx.away_score : fx.home_score
+                  let resLabel = null, resBg = '#F1F5F9', resColor = '#475569'
+                  if (isCompleted && ourScore !== null && oppScore !== null) {
+                    if (ourScore > oppScore) { resLabel = 'W'; resBg = '#DCFCE7'; resColor = '#15803D' }
+                    else if (ourScore < oppScore) { resLabel = 'L'; resBg = '#FEE2E2'; resColor = '#DC2626' }
+                    else { resLabel = 'D'; resBg = '#FEF3C7'; resColor = '#B45309' }
+                  }
+                  return (
+                    <div key={fx.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'13px 20px', borderBottom: idx < fixtures.length - 1 ? '1px solid var(--border)' : 'none', flexWrap:'wrap' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:220, flex:1 }}>
+                        {fx.opponent_logo_url ? (
+                          <img src={fx.opponent_logo_url} alt={fx.opponent_name} style={{ width:36, height:36, borderRadius:8, objectFit:'contain', background:'#F8FAFC', border:'1px solid var(--border)', padding:2, flexShrink:0 }} />
+                        ) : (
+                          <div style={{ width:36, height:36, borderRadius:8, background:'#F0FDFA', color:'#0F766E', display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:800, flexShrink:0 }}>
+                            {(fx.opponent_name || 'OPP').slice(0, 3).toUpperCase()}
+                          </div>
+                        )}
+                        <div style={{ minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap' }}>
+                            <span style={{ fontSize:14, fontWeight:800, color:'var(--text)' }}>
+                              {fx.is_home ? 'vs' : '@'} {fx.opponent_name}
+                            </span>
+                            <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:5, background: fx.is_home ? '#EFF6FF' : '#F3E8FF', color: fx.is_home ? '#1D4ED8' : '#7C3AED' }}>
+                              {fx.is_home ? 'HOME' : 'AWAY'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize:11.5, color:'var(--text3)', marginTop:2 }}>
+                            {fx.match_date} {fx.kickoff_time ? `· ${fx.kickoff_time}` : ''} · {fx.competition}{fx.venue ? ` · ${fx.venue}` : ''}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        {isCompleted && fx.home_score !== null && fx.away_score !== null ? (
+                          <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                            <span style={{ fontSize:15, fontWeight:900, color:'#0F172A', background:'#F8FAFC', border:'1px solid #E2E8F0', padding:'4px 12px', borderRadius:8 }}>
+                              {fx.home_score} - {fx.away_score}
+                            </span>
+                            {resLabel && (
+                              <span style={{ width:24, height:24, borderRadius:6, background:resBg, color:resColor, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:900 }}>
+                                {resLabel}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize:11, fontWeight:700, padding:'4px 10px', borderRadius:6, background: fx.status === 'postponed' ? '#FEE2E2' : '#F0FDFA', color: fx.status === 'postponed' ? '#DC2626' : '#0F766E', textTransform:'uppercase' }}>
+                            {fx.status}
+                          </span>
+                        )}
+
+                        {!isAdminReadOnly && (
+                          <div style={{ display:'flex', gap:6 }}>
+                            <button onClick={() => openEditFixture(fx)} title="Edit fixture / score"
+                              style={{ padding:'6px 10px', borderRadius:7, border:'1px solid var(--border)', background:'var(--surface2)', color:'var(--text)', fontSize:11.5, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:4 }}>
+                              <Edit2 size={12}/> Edit
+                            </button>
+                            <button onClick={() => handleDeleteFixture(fx.id)} title="Delete fixture"
+                              style={{ padding:'6px 8px', borderRadius:7, border:'1px solid #FECACA', background:'#FEF2F2', color:'#DC2626', fontSize:11.5, cursor:'pointer', display:'inline-flex', alignItems:'center' }}>
+                              <Trash2 size={12}/>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'stats' && (<>
         {/* Leaderboard with photos */}
         {lb.length>0&&(
           <div className="fade-up" style={{ marginBottom:24 }}>
@@ -422,6 +626,7 @@ export default function PerformancePage(){
           </div>
           </div>
         </div>
+        </>)}
       </div>
 
       {/* Modal */}
@@ -451,9 +656,50 @@ export default function PerformancePage(){
                   return <div style={{ display:'flex',alignItems:'center',gap:10,marginTop:8,padding:'7px 12px',background:'var(--surface2)',borderRadius:'var(--r-sm)',border:'1px solid var(--border)' }}><AthleteAvatar ath={ath} size={30} index={0}/><span style={{ fontSize:13,fontWeight:600,color:'var(--text)' }}>{ath.name}</span></div>
                 })()}
               </div>
+              {/* ── Official Fixture Quick-Pick ── */}
+              {fixtures.length > 0 && (
+                <div>
+                  <label style={lbl}>Link to Official Fixture (Optional)</label>
+                  <select
+                    value=""
+                    onChange={e => {
+                      const fx = fixtures.find(f => f.id === e.target.value)
+                      if (fx) {
+                        setForm(f => ({ ...f, opponent: fx.opponent_name, match_date: fx.match_date }))
+                      }
+                    }}
+                    style={inp}
+                  >
+                    <option value="">-- Pick an entered official fixture to auto-fill --</option>
+                    {fixtures.map(fx => (
+                      <option key={fx.id} value={fx.id}>
+                        {fx.match_date} · {fx.is_home ? 'vs' : '@'} {fx.opponent_name} {fx.status === 'completed' && fx.home_score !== null ? `(${fx.home_score}-${fx.away_score})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
                 <div><label style={lbl}>Match Date</label><input type="date" value={form.match_date} onChange={e=>set('match_date')(e.target.value)} style={inp}/></div>
-                <div><label style={lbl}>Opponent</label><input value={form.opponent} onChange={e=>set('opponent')(e.target.value)} style={inp} placeholder="e.g. Asante Kotoko"/></div>
+                <div>
+                  <label style={lbl}>Opponent</label>
+                  {leagueTeams.length > 0 ? (
+                    <select
+                      value={leagueTeams.some(t => t.name === form.opponent) ? form.opponent : (form.opponent ? '__custom__' : '')}
+                      onChange={e => {
+                        if (e.target.value !== '__custom__') set('opponent')(e.target.value)
+                      }}
+                      style={inp}
+                    >
+                      <option value="">Select GPL Opponent…</option>
+                      {leagueTeams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                      <option value="__custom__">Other (type below)</option>
+                    </select>
+                  ) : null}
+                  {(leagueTeams.length === 0 || !leagueTeams.some(t => t.name === form.opponent)) && (
+                    <input value={form.opponent} onChange={e=>set('opponent')(e.target.value)} style={{ ...inp, marginTop: leagueTeams.length > 0 ? 6 : 0 }} placeholder="e.g. Asante Kotoko"/>
+                  )}
+                </div>
               </div>
               <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12 }}>
                 {[['Minutes','minutes_played'],['Goals','goals'],['Assists','assists'],['Shots','shots'],['On Target','shots_on_target'],['Passes','passes'],['Pass Acc%','pass_accuracy'],['Dist(km)','distance_km'],['Sprints','sprint_count'],['Duels Won','duels_won'],['Duels Total','duels_total'],['Rating/10','rating']].map(([label,key])=>(
@@ -533,6 +779,121 @@ export default function PerformancePage(){
               <div style={{ display:'flex',gap:10,paddingTop:8 }}>
                 <button onClick={()=>setShowForm(false)} style={{ flex:1,background:'#F1F5F9',border:'1px solid #E2E8F0',color:'#334155',padding:'11px',borderRadius:'12px',fontSize:14,cursor:'pointer',fontWeight:700,fontFamily:'var(--font)' }}>Cancel</button>
                 <button onClick={handleSave} disabled={saving} style={{ flex:2,padding:'11px',opacity:saving?0.7:1,fontSize:14,background:'linear-gradient(135deg,#0F766E,#0D9488)',border:'none',color:'#fff',borderRadius:'12px',cursor:'pointer',fontWeight:800,fontFamily:'var(--font)' }}>{saving?'Saving…':editId?'Save Changes':'Log Stats'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Official Fixture Add/Edit Modal ── */}
+      {showFixModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowFixModal(false) }}>
+          <div className="modal" style={{ maxWidth: 540, width: '100%' }}>
+            <div style={{ background: 'linear-gradient(135deg,#0F766E,#0D9488)', padding: '20px 24px', borderRadius: '20px 20px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: 17, fontWeight: 800, color: '#fff', margin: 0 }}>{editFixId ? 'Edit Official Fixture & Score' : 'Add Official Fixture'}</h2>
+                <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', margin: '3px 0 0' }}>Select opponent from the Ghana Premier League directory</p>
+              </div>
+              <button onClick={() => setShowFixModal(false)} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#fff', fontSize: 16 }}>✕</button>
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={lbl}>Opponent Team *</label>
+                <select
+                  value={fixForm.opponent_team_id || (fixForm.opponent_name ? '__custom__' : '')}
+                  onChange={e => {
+                    const val = e.target.value
+                    if (val === '__custom__' || val === '') {
+                      setFixForm(f => ({ ...f, opponent_team_id: '', opponent_logo_url: '', ...(val === '' ? { opponent_name: '' } : {}) }))
+                    } else {
+                      const t = leagueTeams.find(x => x.id === val)
+                      if (t) {
+                        setFixForm(f => ({ ...f, opponent_team_id: t.id, opponent_name: t.name, opponent_logo_url: t.logo_url || '' }))
+                      }
+                    }
+                  }}
+                  style={inp}
+                >
+                  <option value="">-- Select GPL Team --</option>
+                  {leagueTeams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}{t.short_name ? ` (${t.short_name})` : ''}</option>
+                  ))}
+                  <option value="__custom__">Other / Custom Opponent</option>
+                </select>
+                {(!fixForm.opponent_team_id) && (
+                  <input
+                    value={fixForm.opponent_name}
+                    onChange={e => setFixForm(f => ({ ...f, opponent_name: e.target.value }))}
+                    placeholder="Enter opponent team name"
+                    style={{ ...inp, marginTop: 8 }}
+                  />
+                )}
+                {fixForm.opponent_logo_url && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, padding: '6px 10px', background: '#F0FDFA', borderRadius: 8, border: '1px solid #CCFBF1' }}>
+                    <img src={fixForm.opponent_logo_url} alt={fixForm.opponent_name} style={{ width: 24, height: 24, objectFit: 'contain' }} />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#0F766E' }}>{fixForm.opponent_name} crest selected</span>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={lbl}>Match Date *</label>
+                  <input type="date" value={fixForm.match_date} onChange={e => setFixForm(f => ({ ...f, match_date: e.target.value }))} style={inp} />
+                </div>
+                <div>
+                  <label style={lbl}>Kickoff Time</label>
+                  <input type="time" value={fixForm.kickoff_time} onChange={e => setFixForm(f => ({ ...f, kickoff_time: e.target.value }))} style={inp} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={lbl}>Home / Away</label>
+                  <select value={fixForm.is_home ? 'home' : 'away'} onChange={e => setFixForm(f => ({ ...f, is_home: e.target.value === 'home' }))} style={inp}>
+                    <option value="home">Home Fixture</option>
+                    <option value="away">Away Fixture</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={lbl}>Competition</label>
+                  <input value={fixForm.competition} onChange={e => setFixForm(f => ({ ...f, competition: e.target.value }))} style={inp} placeholder="Ghana Premier League" />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={lbl}>Venue</label>
+                  <input value={fixForm.venue} onChange={e => setFixForm(f => ({ ...f, venue: e.target.value }))} style={inp} placeholder="e.g. Baba Yara Stadium" />
+                </div>
+                <div>
+                  <label style={lbl}>Match Status</label>
+                  <select value={fixForm.status} onChange={e => setFixForm(f => ({ ...f, status: e.target.value }))} style={inp}>
+                    <option value="scheduled">Scheduled (Upcoming)</option>
+                    <option value="completed">Completed (Final Score)</option>
+                    <option value="postponed">Postponed</option>
+                  </select>
+                </div>
+              </div>
+
+              {fixForm.status === 'completed' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 12, background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0' }}>
+                  <div>
+                    <label style={lbl}>Home Team Score</label>
+                    <input type="number" min="0" value={fixForm.home_score} onChange={e => setFixForm(f => ({ ...f, home_score: e.target.value }))} style={inp} placeholder="0" />
+                  </div>
+                  <div>
+                    <label style={lbl}>Away Team Score</label>
+                    <input type="number" min="0" value={fixForm.away_score} onChange={e => setFixForm(f => ({ ...f, away_score: e.target.value }))} style={inp} placeholder="0" />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, paddingTop: 6 }}>
+                <button onClick={() => setShowFixModal(false)} style={{ flex: 1, background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#334155', padding: 11, borderRadius: 12, fontSize: 14, cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font)' }}>Cancel</button>
+                <button onClick={handleSaveFixture} disabled={savingFix} style={{ flex: 2, padding: 11, fontSize: 14, background: 'linear-gradient(135deg,#0F766E,#0D9488)', border: 'none', color: '#fff', borderRadius: 12, cursor: 'pointer', fontWeight: 800, fontFamily: 'var(--font)' }}>
+                  {savingFix ? 'Saving…' : editFixId ? 'Update Fixture' : 'Save Official Fixture'}
+                </button>
               </div>
             </div>
           </div>

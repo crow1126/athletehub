@@ -60,6 +60,7 @@ export async function POST(req) {
       { data: sessionsRaw },
       { data: coachesRaw },
       { data: contractsRaw },
+      { data: fixturesRaw },
     ] = await Promise.all([
       db.from('athletes').select('*, coaches(name)').eq('team_id', teamId).order('name', { ascending: true }),
       db.from('injuries').select('*, athletes(name, club, position)').eq('team_id', teamId).order('date_of_injury', { ascending: false }),
@@ -67,6 +68,7 @@ export async function POST(req) {
       db.from('training_sessions').select('*').eq('team_id', teamId).order('date', { ascending: false }),
       db.from('coaches').select('*').eq('team_id', teamId).order('name', { ascending: true }),
       db.from('contracts').select('*, athletes(name, position, club)').eq('team_id', teamId).order('created_at', { ascending: false }),
+      db.from('fixtures').select('*').eq('team_id', teamId).order('match_date', { ascending: false }),
     ])
 
     const allAthletes    = athletesRaw    || []
@@ -75,6 +77,7 @@ export async function POST(req) {
     const allSessions    = sessionsRaw    || []
     const allCoaches     = coachesRaw     || []
     const allContracts   = contractsRaw   || []
+    const allFixtures    = fixturesRaw    || []
 
     const periodStr = isYearly ? `Year ${targetYear}` : `${MONTHS[targetMonth]} ${targetYear}`
     const fileDate  = isYearly ? `Year_${targetYear}` : `${MONTHS[targetMonth]}_${targetYear}`
@@ -142,6 +145,7 @@ export async function POST(req) {
       return false
     })
     const performance = allPerformance.filter(p => isEventInPeriod(p.match_date))
+    const fixtures    = allFixtures.filter(f => isEventInPeriod(f.match_date))
     const sessions    = allSessions.filter(s => isEventInPeriod(s.date))
     const coaches     = allCoaches.filter(c => isTenureActiveInPeriod(c.contract_start, c.contract_end, c.created_at))
     const contracts   = allContracts.filter(ct => isTenureActiveInPeriod(ct.contract_start, ct.contract_end, ct.created_at))
@@ -295,6 +299,32 @@ export async function POST(req) {
 
         addSheet('Player Totals Leaderboard', leaderRows)
       }
+    }
+
+    // ── OFFICIAL FIXTURES & RESULTS ──
+    if (type === 'fixtures' || type === 'performance' || type === 'summary') {
+      const fixtureRows = fixtures.map(f => {
+        const ourScore = f.is_home ? f.home_score : f.away_score
+        const oppScore = f.is_home ? f.away_score : f.home_score
+        let outcome = f.status === 'completed' ? 'Completed' : (f.status || 'Scheduled')
+        if (f.status === 'completed' && ourScore !== null && oppScore !== null) {
+          outcome = ourScore > oppScore ? 'Win' : ourScore < oppScore ? 'Loss' : 'Draw'
+        }
+        return {
+          'Match Date':   f.match_date || '-',
+          'Kickoff':      f.kickoff_time || '-',
+          'Opponent':     f.opponent_name || '-',
+          'Venue Type':   f.is_home ? 'Home' : 'Away',
+          'Competition':  f.competition || 'Ghana Premier League',
+          'Stadium':      f.venue || '-',
+          'Home Score':   f.home_score ?? '-',
+          'Away Score':   f.away_score ?? '-',
+          'Scoreline':    (f.home_score !== null && f.away_score !== null) ? `${f.home_score} - ${f.away_score}` : '-',
+          'Result':       outcome,
+          'Status':       (f.status || 'scheduled').toUpperCase(),
+        }
+      })
+      addSheet('Fixtures & Results', fixtureRows)
     }
 
     // ── TRAINING SESSIONS ──

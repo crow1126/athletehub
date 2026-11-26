@@ -116,7 +116,9 @@ export default function NoticeBoardPage() {
 
   // ── Matchday Call-Up Modal State ─────────────────────────────────────────────
   const [matchdayModal, setMatchdayModal] = useState(false)
+  const [leagueTeams, setLeagueTeams] = useState([])
   const [mdOpponent, setMdOpponent] = useState('')
+  const [mdOpponentLogo, setMdOpponentLogo] = useState('')
   const [mdDate, setMdDate] = useState('')
   const [mdKickoff, setMdKickoff] = useState('15:00')
   const [mdVenue, setMdVenue] = useState('')
@@ -140,6 +142,10 @@ export default function NoticeBoardPage() {
 
   const isPrivileged = useMemo(() => {
     return ['admin', 'coach', 'superadmin'].includes(profile?.role)
+  }, [profile?.role])
+
+  const isCoachOnly = useMemo(() => {
+    return profile?.role === 'coach'
   }, [profile?.role])
 
   const getAuthHeaders = async () => {
@@ -197,6 +203,14 @@ export default function NoticeBoardPage() {
           const hc = coachList.find(c => c.staff_type === 'head_coach' || c.staff_type === 'coach')
           if (hc && !mdHeadCoach) setMdHeadCoach(hc.name)
         }
+
+        // 6. Global GPL league teams for opponent dropdown
+        const { data: ltList } = await supabase
+          .from('league_teams')
+          .select('id, name, short_name, logo_url')
+          .eq('is_active', true)
+          .order('name', { ascending: true })
+        if (ltList) setLeagueTeams(ltList)
 
         // 5. Upcoming sessions for schedule linker
         const todayStr = new Date().toISOString().split('T')[0]
@@ -325,6 +339,7 @@ export default function NoticeBoardPage() {
         clubName: team?.name || profile?.club_name || 'Club',
         clubLogoUrl,
         opponentName: mdOpponent.trim(),
+        opponentLogoUrl: mdOpponentLogo || null,
         matchDate: mdDate,
         kickoffTime: mdKickoff,
         venue: mdVenue,
@@ -584,8 +599,8 @@ export default function NoticeBoardPage() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {/* Matchday Call-Up CTA */}
-            {isPrivileged && (
+            {/* Matchday Call-Up CTA (Coach Only) */}
+            {isCoachOnly && (
               <button
                 id="matchday-callup-btn"
                 onClick={() => setMatchdayModal(true)}
@@ -669,14 +684,18 @@ export default function NoticeBoardPage() {
             <p style={{ fontSize: 13, color: '#64748B', maxWidth: 420, margin: '6px auto 18px', lineHeight: 1.4 }}>
               {filterCat !== 'all' || searchQuery ? 'No notices match the selected category or search filter.' : 'Post announcements, training schedule updates, or matchday call-ups to notify your squad.'}
             </p>
-            {isPrivileged && (
+            {(isPrivileged || isCoachOnly) && (
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button onClick={() => setMatchdayModal(true)} style={{ background: 'linear-gradient(135deg, #059669, #10B981)', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <Trophy size={14} /> Matchday Call-Up
-                </button>
-                <button onClick={() => setComposeModal(true)} style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                  + Post a Notice
-                </button>
+                {isCoachOnly && (
+                  <button onClick={() => setMatchdayModal(true)} style={{ background: 'linear-gradient(135deg, #059669, #10B981)', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <Trophy size={14} /> Matchday Call-Up
+                  </button>
+                )}
+                {isPrivileged && (
+                  <button onClick={() => setComposeModal(true)} style={{ background: 'linear-gradient(135deg, #0F766E, #0D9488)', color: '#FFFFFF', border: 'none', borderRadius: 10, padding: '10px 20px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+                    + Post a Notice
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -772,8 +791,39 @@ export default function NoticeBoardPage() {
                   </div>
                   <div className="modal-form-grid">
                     <div style={{ gridColumn: '1 / -1' }}>
-                      <label style={labelStyle}>Opponent Team Name *</label>
-                      <input type="text" placeholder="e.g. Accra Hearts of Oak SC" value={mdOpponent} onChange={e => setMdOpponent(e.target.value)} style={inputStyle} />
+                      <label style={labelStyle}>Opponent Team *</label>
+                      {leagueTeams.length > 0 && (
+                        <select
+                          value={leagueTeams.some(t => t.name === mdOpponent) ? mdOpponent : (mdOpponent ? '__custom__' : '')}
+                          onChange={e => {
+                            const val = e.target.value
+                            if (val === '__custom__' || val === '') {
+                              setMdOpponentLogo('')
+                              if (val === '') setMdOpponent('')
+                            } else {
+                              const t = leagueTeams.find(x => x.name === val)
+                              setMdOpponent(t?.name || val)
+                              setMdOpponentLogo(t?.logo_url || '')
+                            }
+                          }}
+                          style={{ ...inputStyle, marginBottom: (!leagueTeams.some(t => t.name === mdOpponent)) ? 8 : 0 }}
+                        >
+                          <option value="">-- Select GPL Opponent --</option>
+                          {leagueTeams.map(t => (
+                            <option key={t.id} value={t.name}>{t.name}{t.short_name ? ` (${t.short_name})` : ''}</option>
+                          ))}
+                          <option value="__custom__">Other / Custom Opponent</option>
+                        </select>
+                      )}
+                      {(leagueTeams.length === 0 || !leagueTeams.some(t => t.name === mdOpponent)) && (
+                        <input type="text" placeholder="e.g. Accra Hearts of Oak SC" value={mdOpponent} onChange={e => { setMdOpponent(e.target.value); setMdOpponentLogo('') }} style={inputStyle} />
+                      )}
+                      {mdOpponentLogo && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6, padding: '5px 10px', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: 8 }}>
+                          <img src={mdOpponentLogo} alt={mdOpponent} style={{ width: 22, height: 22, objectFit: 'contain' }} />
+                          <span style={{ fontSize: 11.5, fontWeight: 700, color: '#065F46' }}>{mdOpponent} crest will appear on Team Sheet PDF</span>
+                        </div>
+                      )}
                     </div>
                     <div>
                       <label style={labelStyle}>Match Date *</label>

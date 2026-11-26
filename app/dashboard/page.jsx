@@ -84,10 +84,16 @@ export default function Dashboard() {
   const [notices, setNotices] = useState(() => cachedData?.notices || [])
   const [performanceStats, setPerformanceStats] = useState(() => cachedData?.performanceStats || [])
   const [fixtures, setFixtures] = useState(() => cachedData?.fixtures || [])
-  const [loading, setLoading] = useState(() => !cachedData)
-  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(() => !(cachedData && cachedData.profile))
+  const [profile, setProfile] = useState(() => cachedData?.profile || null)
   const [teamId, setTeamId] = useState(() => getLastKnownTeamId())
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(() => {
+    const p = cachedData?.profile
+    if (!p) return false
+    const uRole = p.role || 'staff'
+    const isAn = uRole === 'analyst' || p.staff_type === 'analyst'
+    return (uRole === 'admin' || uRole === 'superadmin' || uRole === 'coach') && !isAn
+  })
 
   const load = useCallback(async () => {
     const { session, profile: p, teamId: tid } = await getTenantProfile()
@@ -126,6 +132,16 @@ export default function Dashboard() {
     if (typeof window !== 'undefined' && tid) {
       try {
         sessionStorage.setItem(`apex_dashboard_cache_${tid}`, JSON.stringify({
+          profile: p ? {
+            id: p.id,
+            role: p.role,
+            staff_type: p.staff_type,
+            full_name: p.full_name,
+            email: p.email,
+            club_name: p.club_name,
+            club_logo_url: p.club_logo_url,
+            teams: p.teams,
+          } : null,
           athletes: a,
           injuries: i,
           coaches: c,

@@ -39,7 +39,7 @@ function OrbCanvas() {
 }
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('')
+  const [identifier, setIdentifier] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -48,20 +48,20 @@ export default function ForgotPasswordPage() {
     e.preventDefault()
     setError('')
     setSuccess('')
-    const targetEmail = email.trim().toLowerCase()
-    if (!targetEmail || !targetEmail.includes('@')) {
-      setError('Please enter a valid email address.')
+    const target = identifier.trim()
+    if (!target) {
+      setError('Please enter your email address or username.')
       return
     }
 
     setLoading(true)
     try {
       // Server-side route: admin.generateLink (service role) + Resend email
-      // Bypasses Supabase built-in SMTP which does not work on this project
+      // Verifies account existence before generating/sending
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail })
+        body: JSON.stringify({ identifier: target, email: target })
       })
       const data = await res.json()
 
@@ -69,8 +69,9 @@ export default function ForgotPasswordPage() {
         throw new Error(data.error || 'Failed to send reset email.')
       }
 
-      setSuccess('Password reset email sent! Check your inbox (and spam folder) for the reset link.')
-      setEmail('')
+      const dest = data.email ? ` to ${data.email}` : ''
+      setSuccess(`Password reset email sent${dest}! Check your inbox (and spam folder) for the reset link.`)
+      setIdentifier('')
     } catch (err) {
       setError(err.message || 'An unexpected error occurred. Please try again.')
     }
@@ -132,26 +133,27 @@ export default function ForgotPasswordPage() {
               </div>
 
               {error && (
-                <div style={{ background:'#F9E8E8', border:'1px solid rgba(180,50,50,0.18)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#8B2020', fontWeight:600 }}>
-                  {error}
+                <div style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#B91C1C', fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink:0 }}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                  <span>{error}</span>
                 </div>
               )}
 
               {success && (
-                <div style={{ background:'#E8F8EE', border:'1px solid rgba(39,174,96,0.3)', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#1B6B3A', fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 8l2.5 2.5 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {success}
+                <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:10, padding:'11px 14px', fontSize:13, color:'#166534', fontWeight:600, display:'flex', alignItems:'center', gap:8 }}>
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" style={{ flexShrink:0 }}><circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.5"/><path d="M5 8l2.5 2.5 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span>{success}</span>
                 </div>
               )}
 
               <div>
-                <label style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:'#64748B', marginBottom:6, display:'block' }}>Email Address</label>
+                <label style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.05em', color:'#64748B', marginBottom:6, display:'block' }}>Email Address or Username</label>
                 <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  autoComplete="email"
+                  type="text"
+                  value={identifier}
+                  onChange={e => setIdentifier(e.target.value)}
+                  placeholder="your@email.com or username"
+                  autoComplete="username"
                   style={inp}
                   onFocus={focusInp} onBlur={blurInp}
                   required

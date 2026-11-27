@@ -960,7 +960,8 @@ export default function NoticeBoardPage() {
                       </div>
                     )}
                   </div>
-                )}\n
+                )}
+
                 {/* ── STAFF NOTIFICATION ── */}
                 {coaches.filter(c => c.phone && c.phone.trim().length >= 8).length > 0 && (
                   <div style={{ marginTop: 8 }}>

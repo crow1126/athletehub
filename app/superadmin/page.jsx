@@ -2363,7 +2363,7 @@ export default function SuperadminPage() {
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:14, flexWrap:'wrap', gap:10 }}>
                       <h3 style={{ fontSize:15, fontWeight:800, color:'#0F172A', margin:0 }}>Registered League Teams</h3>
                       <input value={ltSearch} onChange={e => setLtSearch(e.target.value)} placeholder="Search team name or code..."
-                        style={{ padding:'7px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:12.5, minWidth:220 }} />
+                        style={{ padding:'7px 12px', border:'1px solid #CBD5E1', borderRadius:8, fontSize:12.5, flex:'1 1 200px', maxWidth:320, width:'100%' }} />
                     </div>
                     {leagueTeamsLoading ? (
                       <div style={{ padding:24, textAlign:'center', color:'#64748B', fontSize:13 }}>Loading league teams...</div>

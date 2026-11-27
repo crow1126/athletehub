@@ -304,10 +304,36 @@ export default function PerformancePage(){
 
   return(
     <Layout>
+      <style>{`
+        .perf-actions-bar { display:flex; gap:8px; flex-wrap:wrap; }
+        .perf-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+        .perf-tab-btn { display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:9px 16px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:var(--font); }
+        .perf-fixture-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 20px; flex-wrap:wrap; }
+        .perf-fixture-left { display:flex; align-items:center; gap:12px; min-width:0; flex:1 1 240px; }
+        .perf-fixture-actions { display:flex; align-items:center; gap:10px; flex-shrink:0; }
+        .perf-stats-scroll { overflow-x:auto !important; -webkit-overflow-scrolling:touch; width:100%; }
+        .perf-stats-scroll .table-scroll-inner { min-width:860px; }
+        .perf-stats-scroll .table-header-row { display:grid !important; }
+        .perf-modal-grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .perf-modal-grid-4 { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+        .perf-toggle-row { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px; }
+        @media(max-width:640px) {
+          .perf-actions-bar { width:100%; }
+          .perf-actions-bar > button { flex:1 1 160px; justify-content:center; }
+          .perf-tab-btn { flex:1 1 100%; }
+          .perf-fixture-row { flex-direction:column; align-items:stretch !important; gap:10px !important; padding:14px 16px !important; }
+          .perf-fixture-left { flex:1 1 auto !important; }
+          .perf-fixture-actions { width:100%; justify-content:space-between; padding-top:8px; border-top:1px dashed #E2E8F0; }
+          .perf-modal-header { padding:16px 18px !important; }
+          .perf-modal-body { padding:16px !important; }
+          .perf-modal-grid-2 { grid-template-columns:1fr !important; }
+          .perf-modal-grid-4 { grid-template-columns:repeat(2,1fr) !important; gap:10px !important; }
+        }
+      `}</style>
       <div className="page-outer">
         <PageHeader label="Analytics" title="Performance & Official Fixtures" subtitle="Official GPL fixtures, match scores, xG, xA and player analytics"
           action={!isAdminReadOnly && (
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <div className="perf-actions-bar">
               <button onClick={openAddFixture} style={{ background:'#0F766E', color:'#fff', border:'none', borderRadius:10, padding:'9px 15px', fontSize:13, fontWeight:700, cursor:'pointer', display:'inline-flex', alignItems:'center', gap:6, fontFamily:'var(--font)' }}>
                 <Plus size={15}/> Add Official Fixture
               </button>
@@ -316,18 +342,17 @@ export default function PerformancePage(){
           )}/>
 
         {/* ── Tab Switcher: Official Fixtures & Scores vs Player Match Stats ── */}
-        <div style={{ display:'flex', gap:8, marginBottom:20, flexWrap:'wrap' }}>
+        <div className="perf-tabs">
           {[
             { id:'fixtures', label:`Official Fixtures & Scores (${fixtures.length})`, icon:<CalendarDays size={15}/> },
             { id:'stats', label:`Player Match Stats (${stats.length})`, icon:<Trophy size={15}/> },
           ].map(t => (
             <button key={t.id} onClick={() => setActiveTab(t.id)}
+              className="perf-tab-btn"
               style={{
-                display:'inline-flex', alignItems:'center', gap:7, padding:'9px 16px', borderRadius:10,
                 background: activeTab === t.id ? '#0F766E' : 'var(--surface)',
                 color: activeTab === t.id ? '#FFFFFF' : 'var(--text2)',
                 border: activeTab === t.id ? '1.5px solid #0F766E' : '1px solid var(--border)',
-                fontSize:13, fontWeight:700, cursor:'pointer', fontFamily:'var(--font)',
               }}>
               {t.icon}{t.label}
             </button>
@@ -484,8 +509,8 @@ export default function PerformancePage(){
                     else { resLabel = 'D'; resBg = '#FEF3C7'; resColor = '#B45309' }
                   }
                   return (
-                    <div key={fx.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, padding:'13px 20px', borderBottom: idx < fixtures.length - 1 ? '1px solid var(--border)' : 'none', flexWrap:'wrap' }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:12, minWidth:220, flex:1 }}>
+                    <div key={fx.id} className="perf-fixture-row" style={{ borderBottom: idx < fixtures.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <div className="perf-fixture-left">
                         {fx.opponent_logo_url ? (
                           <img src={fx.opponent_logo_url} alt={fx.opponent_name} style={{ width:36, height:36, borderRadius:8, objectFit:'contain', background:'#F8FAFC', border:'1px solid var(--border)', padding:2, flexShrink:0 }} />
                         ) : (
@@ -508,7 +533,7 @@ export default function PerformancePage(){
                         </div>
                       </div>
 
-                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <div className="perf-fixture-actions">
                         {isCompleted && fx.home_score !== null && fx.away_score !== null ? (
                           <div style={{ display:'flex', alignItems:'center', gap:7 }}>
                             <span style={{ fontSize:15, fontWeight:900, color:'#0F172A', background:'#F8FAFC', border:'1px solid #E2E8F0', padding:'4px 12px', borderRadius:8 }}>
@@ -587,7 +612,7 @@ export default function PerformancePage(){
 
         {/* Stats table */}
         <div className="card fade-up fade-up-1" style={{ overflow:'hidden' }}>
-          <div className="table-scroll-wrap">
+          <div className="perf-stats-scroll">
           <div className="table-scroll-inner table-scroll-wide">
           <div className="table-header-row" style={{ display:'grid',gridTemplateColumns:'1.8fr 0.9fr 0.9fr 0.6fr 0.6fr 0.6fr 0.6fr 0.8fr 0.7fr 0.6fr 0.7fr 1fr',gap:6,padding:'11px 18px',background:'var(--surface2)',borderBottom:'1px solid var(--border)' }}>
             {['Athlete','Date','Opponent','Min','G','A','xG','xA','Pass%','Dist','Rating','Actions'].map(h=>(
@@ -641,7 +666,7 @@ export default function PerformancePage(){
         <div style={{ position:'fixed',inset:0,background:'rgba(15,23,42,0.6)',zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:16 }}>
           <div style={{ background:'#FFFFFF',borderRadius:'20px',width:'100%',maxWidth:620,maxHeight:'92vh',overflow:'auto',boxShadow:'0 25px 60px -10px rgba(0,0,0,0.25)',border:'1px solid #E2E8F0' }}>
             {/* Modal Header */}
-            <div style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)',padding:'20px 24px',display:'flex',justifyContent:'space-between',alignItems:'center',borderRadius:'20px 20px 0 0' }}>
+            <div className="perf-modal-header" style={{ background:'linear-gradient(135deg,#0F766E,#0D9488)',padding:'20px 24px',display:'flex',justifyContent:'space-between',alignItems:'center',borderRadius:'20px 20px 0 0' }}>
               <div>
                 <div style={{ fontSize:10,color:'rgba(255,255,255,0.65)',fontWeight:700,letterSpacing:'0.12em',textTransform:'uppercase',marginBottom:3 }}>{editId?'Edit Record':'New Registration'}</div>
                 <h2 style={{ fontSize:18,fontWeight:800,color:'#fff',margin:0 }}>{editId?'Edit Stats':'Log Match Stats'}</h2>
@@ -650,7 +675,7 @@ export default function PerformancePage(){
             </div>
 
             {/* Modal Body */}
-            <div style={{ padding:24,display:'flex',flexDirection:'column',gap:14 }}>
+            <div className="perf-modal-body" style={{ padding:24,display:'flex',flexDirection:'column',gap:14 }}>
               <div>
                 <label style={lbl}>Athlete *</label>
                 <select value={form.athlete_id} onChange={e=>set('athlete_id')(e.target.value)} style={inp}>
@@ -686,7 +711,7 @@ export default function PerformancePage(){
                   </select>
                 </div>
               )}
-              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:14 }}>
+              <div className="perf-modal-grid-2">
                 <div><label style={lbl}>Match Date</label><input type="date" value={form.match_date} onChange={e=>set('match_date')(e.target.value)} style={inp}/></div>
                 <div>
                   <label style={lbl}>Opponent</label>
@@ -708,12 +733,12 @@ export default function PerformancePage(){
                   )}
                 </div>
               </div>
-              <div style={{ display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:12 }}>
+              <div className="perf-modal-grid-4">
                 {[['Minutes','minutes_played'],['Goals','goals'],['Assists','assists'],['Shots','shots'],['On Target','shots_on_target'],['Passes','passes'],['Pass Acc%','pass_accuracy'],['Dist(km)','distance_km'],['Sprints','sprint_count'],['Duels Won','duels_won'],['Duels Total','duels_total'],['Rating/10','rating']].map(([label,key])=>(
                   <div key={key}><label style={lbl}>{label}</label><input type="number" step={['pass_accuracy','distance_km','rating'].includes(key)?'0.1':'1'} min="0" value={form[key]} onChange={e=>set(key)(e.target.value)} style={inp}/></div>
                 ))}
               </div>
-              <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:12 }}>
+              <div className="perf-modal-grid-2">
                 <div><label style={lbl}>xG</label><input type="number" step="0.001" min="0" value={form.xg} onChange={e=>set('xg')(e.target.value)} style={inp}/></div>
                 <div><label style={lbl}>xA</label><input type="number" step="0.001" min="0" value={form.xa} onChange={e=>set('xa')(e.target.value)} style={inp}/></div>
               </div>
@@ -747,7 +772,7 @@ export default function PerformancePage(){
 
                 {form.red_card && (
                   <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid #FECDD3', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div className="perf-modal-grid-2">
                       <div>
                         <label style={{ ...lbl, color: '#BE123C' }}>Suspension Length</label>
                         <select
@@ -821,18 +846,18 @@ export default function PerformancePage(){
             }}
           >
             {/* Header */}
-            <div style={{ background: 'linear-gradient(135deg,#0F766E,#0D9488)', padding: '20px 24px', borderRadius: '20px 20px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="perf-modal-header" style={{ background: 'linear-gradient(135deg,#0F766E,#0D9488)', padding: '20px 24px', borderRadius: '20px 20px 0 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>{editFixId ? 'Edit Official Fixture & Score' : 'Add Official Fixture'}</h2>
                 <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', margin: '3px 0 0' }}>2026/2027 Ghana Premier League &amp; Official Competitions</p>
               </div>
-              <button onClick={() => setShowFixModal(false)} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#fff', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              <button onClick={() => setShowFixModal(false)} style={{ background: 'rgba(255,255,255,0.18)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', color: '#fff', fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>✕</button>
             </div>
 
-            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="perf-modal-body" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
               {/* Opponent Selector with GPL Directory vs Custom Toggle */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <div className="perf-toggle-row">
                   <label style={{ ...lbl, marginBottom: 0 }}>Opponent Team *</label>
                   <div style={{ display: 'inline-flex', background: '#F1F5F9', borderRadius: 8, padding: 2 }}>
                     {[
@@ -912,7 +937,7 @@ export default function PerformancePage(){
               </div>
 
               {/* Date & Kickoff */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="perf-modal-grid-2">
                 <div>
                   <label style={lbl}>Match Date *</label>
                   <input type="date" value={fixForm.match_date} onChange={e => setFixForm(f => ({ ...f, match_date: e.target.value }))} style={inp} />
@@ -924,7 +949,7 @@ export default function PerformancePage(){
               </div>
 
               {/* Venue Type Pills + Competition */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div className="perf-modal-grid-2">
                 <div>
                   <label style={lbl}>Home / Away</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, background: '#F8FAFC', padding: 4, borderRadius: 12, border: '1px solid #E2E8F0' }}>

@@ -336,12 +336,15 @@ export default function Dashboard() {
         .dash-athletes-cols { grid-template-columns:minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto; }
         .dash-athletes-header { display:grid !important; }
         .dash-rehab-wrap { padding: 0 32px; }
+        .dash-card-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+        .dash-quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
         @media(max-width:1100px) {
           .dash-stats-row { grid-template-columns:repeat(3,1fr) !important; }
           .dash-grid { grid-template-columns:1fr !important; }
         }
         @media(max-width:768px) {
           .dash-hero { padding:18px 16px 16px !important; }
+          .dash-hero h1 { font-size:21px !important; word-break:break-word; }
           .dash-stats-wrap { padding:14px 12px 0 !important; }
           .dash-rehab-wrap { padding: 0 12px !important; }
           .dash-stats-row { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
@@ -350,6 +353,16 @@ export default function Dashboard() {
           .dash-athletes-header { display:none !important; }
           .dash-hide-mobile { display:none !important; }
           .dash-session-date { min-width:64px !important; }
+        }
+        @media(max-width:520px) {
+          .dash-notice-row { flex-wrap:wrap !important; gap:6px !important; padding:10px 14px !important; }
+          .dash-notice-title { flex:1 1 calc(100% - 20px) !important; white-space:normal !important; line-height:1.35 !important; }
+          .dash-notice-badges { width:100%; padding-left:18px; }
+          .dash-performer-row { padding:10px 14px !important; gap:8px !important; }
+          .dash-eval-row { flex-wrap:wrap !important; gap:6px !important; }
+        }
+        @media(max-width:400px) {
+          .dash-quick-actions { grid-template-columns:1fr !important; }
         }
       `}</style>
 
@@ -425,7 +438,7 @@ export default function Dashboard() {
 
           {/* ── Squad Notice Board Widget ── */}
           <div className="card fade-up" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CCFBF1', background: '#FFFFFF', borderRadius: 16 }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0FDFA, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="dash-card-header" style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0FDFA, #FFFFFF)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                 <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0F766E', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Megaphone size={15} />
@@ -460,6 +473,7 @@ export default function Dashboard() {
                     <Link
                       key={n.id}
                       href="/notices"
+                      className="dash-notice-row"
                       style={{
                         padding: '10px 18px',
                         borderBottom: idx < notices.length - 1 ? '1px solid #F1F5F9' : 'none',
@@ -477,12 +491,12 @@ export default function Dashboard() {
                       <span style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0, boxShadow: `0 0 0 2px ${dotColor}22` }} />
 
                       {/* Title */}
-                      <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
+                      <span className="dash-notice-title" style={{ flex: 1, fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0 }}>
                         {n.title}
                       </span>
 
                       {/* Indicators row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                      <div className="dash-notice-badges" style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0, flexWrap: 'wrap' }}>
                         {n.is_pinned && (
                           <span style={{ fontSize: 9, fontWeight: 800, background: '#FEF3C7', color: '#B45309', padding: '2px 6px', borderRadius: 4 }}>
                             <Pin size={9} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 2 }} />PIN
@@ -516,7 +530,7 @@ export default function Dashboard() {
           {/* ── Top Match Performers Widget (Analyst Exclusive) ── */}
           {isAnalyst && (
             <div className="card fade-up" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #BAE6FD', background: '#FFFFFF', borderRadius: 16 }}>
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0F9FF, #FFFFFF)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="dash-card-header" style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', background: 'linear-gradient(135deg, #F0F9FF, #FFFFFF)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                   <div style={{ width: 30, height: 30, borderRadius: 8, background: '#0284C7', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                     <TrendingUp size={16} />
@@ -550,6 +564,7 @@ export default function Dashboard() {
                     return (
                       <div
                         key={stat.id || idx}
+                        className="dash-performer-row"
                         style={{
                           padding: '12px 18px',
                           borderBottom: idx < topPerformers.length - 1 ? '1px solid #F1F5F9' : 'none',
@@ -725,7 +740,7 @@ export default function Dashboard() {
           {/* ── Official Fixtures & Results Widget (Analyst Exclusive) ── */}
           {isAnalyst && (
             <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #99F6E4', background: '#FFFFFF', borderRadius: 16 }}>
-              <div style={{ background: 'linear-gradient(90deg, #0F766E, #0D9488)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="dash-card-header" style={{ background: 'linear-gradient(90deg, #0F766E, #0D9488)', padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <CalendarDays size={15} color="#CCFBF1" />
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: '#FFFFFF', margin: 0 }}>Official Fixtures &amp; Scores</h3>
@@ -826,7 +841,7 @@ export default function Dashboard() {
           {/* ── Match Evaluations & Drafts Widget (Analyst Exclusive) ── */}
           {isAnalyst && (
             <div className="card fade-up fade-up-1" style={{ padding: 0, overflow: 'hidden', border: '1.5px solid #CBD5E1', background: '#FFFFFF', borderRadius: 16 }}>
-              <div style={{ background: 'linear-gradient(90deg, #1E293B, #334155)', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="dash-card-header" style={{ background: 'linear-gradient(90deg, #1E293B, #334155)', padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                   <ClipboardList size={15} color="#38BDF8" />
                   <h3 style={{ fontSize: 14, fontWeight: 700, color: '#FFFCF6', margin: 0 }}>Evaluations &amp; Drafts</h3>
@@ -839,7 +854,7 @@ export default function Dashboard() {
                 {performanceStats.length === 0 ? (
                   <p style={{ padding: '16px', color: 'var(--text3)', fontSize: 13, textAlign: 'center' }}>No match reviews logged yet</p>
                 ) : performanceStats.slice(0, 4).map((st, idx) => (
-                  <div key={st.id || idx} style={{ padding: '10px 14px', borderBottom: idx < 3 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div key={st.id || idx} className="dash-eval-row" style={{ padding: '10px 14px', borderBottom: idx < 3 ? '1px solid var(--border)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {st.athletes?.name || 'Player'}
@@ -907,7 +922,7 @@ export default function Dashboard() {
                 <h3 style={{ fontSize: 14, fontWeight: 700 }}>{isPhysio ? 'Physio Quick Actions' : isAnalyst ? 'Analyst Quick Actions' : 'Quick Actions'}</h3>
                 <TrendingUp size={14} color="var(--text3)" />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div className="dash-quick-actions">
                 {isPhysio ? [
                   { icon: <HeartPulse size={17} strokeWidth={2} />, label: 'Log Injury', href: '/injuries', bg: '#FDEDEC', color: '#C0392B' },
                   { icon: <Activity size={17} strokeWidth={2} />, label: 'Medical Hub', href: '/injuries', bg: '#EFF8F5', color: '#0D6E5E' },

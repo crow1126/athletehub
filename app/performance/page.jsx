@@ -5,6 +5,7 @@ import PageHeader from '@/components/PageHeader'
 import { supabase } from '@/lib/supabase'
 import { getTenantProfile, scopeTeam, getLastKnownTeamId } from '@/lib/tenant'
 import { DEFAULT_GPL_TEAMS } from '@/lib/gplTeams'
+import { computeSuspensionProgress } from '@/lib/suspensions'
 import { Eye, Ban, ShieldAlert, CalendarDays, Trophy, Plus, Edit2, Trash2 } from 'lucide-react'
 
 const AV_COLORS = ['#4A90E2','#27AE60','#E67E22','#9B59B6','#E74C3C','#1ABC9C']
@@ -45,6 +46,7 @@ export default function PerformancePage(){
   const [fixForm,      setFixForm]     = useState(EMPTY_FIXTURE)
   const [fixCustomMode,setFixCustomMode]= useState(false)
   const [savingFix,    setSavingFix]   = useState(false)
+  const [autoClearedMsg, setAutoClearedMsg] = useState('')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -55,6 +57,7 @@ export default function PerformancePage(){
     }
     setCurrentUser(profile)
     setTeamId(currentTeamId)
+    const canWritePerf = profile?.role === 'analyst' || profile?.staff_type === 'analyst' || profile?.role === 'superadmin'
     const [resStats, resAth, resFix, resLT] = await Promise.allSettled([
       scopeTeam(supabase.from('performance_stats').select('*,athletes(name,position,club,photo_url,status,back_number)'), currentTeamId).order('match_date',{ascending:false}),
       scopeTeam(supabase.from('athletes').select('id,name,position,club,photo_url,status,back_number'), currentTeamId).order('name'),
@@ -62,10 +65,35 @@ export default function PerformancePage(){
       supabase.from('league_teams').select('*').eq('is_active', true).order('name', { ascending: true }),
     ])
     const s = resStats.status === 'fulfilled' ? (resStats.value?.data || []) : []
-    const a = resAth.status === 'fulfilled' ? (resAth.value?.data || []) : []
+    let a = resAth.status === 'fulfilled' ? (resAth.value?.data || []) : []
     const f = resFix.status === 'fulfilled' ? (resFix.value?.data || []) : []
     const ltOk = resLT.status === 'fulfilled' && !resLT.value?.error && (resLT.value?.data?.length || 0) > 0
     const lt = ltOk ? resLT.value.data : DEFAULT_GPL_TEAMS
+
+    // Auto-clear suspended players once completed official fixtures >= suspension_games
+    if (canWritePerf && a.length > 0 && f.length > 0) {
+      const newlyCleared = []
+      const updatedAthletes = await Promise.all(a.map(async (ath) => {
+        if ((ath.status || '').toLowerCase() !== 'suspended') return ath
+        const prog = computeSuspensionProgress(ath.id, s, f)
+        if (prog && prog.isServed) {
+          const { error: clrErr } = await scopeTeam(
+            supabase.from('athletes').update({ status: 'Active' }).eq('id', ath.id),
+            currentTeamId
+          )
+          if (!clrErr) {
+            newlyCleared.push(`${ath.name} (${prog.totalGames} match${prog.totalGames > 1 ? 'es' : ''} served)`)
+            return { ...ath, status: 'Active' }
+          }
+        }
+        return ath
+      }))
+      a = updatedAthletes
+      if (newlyCleared.length > 0) {
+        setAutoClearedMsg(`Suspension automatically cleared after completed fixtures: ${newlyCleared.join(', ')}`)
+      }
+    }
+
     setStats(s)
     setAthletes(a)
     setFixtures(f)
@@ -299,8 +327,8 @@ export default function PerformancePage(){
     return{...a,goals:as.reduce((x,s)=>x+(s.goals||0),0),assists:as.reduce((x,s)=>x+(s.assists||0),0),matches:as.length,avgRating:as.length?(as.reduce((x,s)=>x+parseFloat(s.rating||0),0)/as.length).toFixed(1):0}
   }).filter(a=>a.matches>0).sort((a,b)=>b.goals-a.goals).slice(0,5)
 
-  // Admin (non-superadmin) has read-only access — coaches/analysts log match stats
-  const isAdminReadOnly = currentUser?.role === 'admin'
+  // Admin and Coach (non-analyst) have read-only access — analysts manage fixtures, stats & suspension clearance
+  const isAdminReadOnly = currentUser?.role === 'admin' || (currentUser?.role === 'coach' && currentUser?.staff_type !== 'analyst')
 
   return(
     <Layout>
@@ -361,7 +389,14 @@ export default function PerformancePage(){
         {isAdminReadOnly && (
           <div style={{ display:'flex', alignItems:'center', gap:10, background:'#F0F9FF', border:'1px solid #BAE6FD', borderRadius:10, padding:'10px 16px', marginBottom:20, color:'#0369A1', fontSize:13, fontWeight:600 }}>
             <Eye size={16} style={{ flexShrink: 0 }} />
-            <span><strong>View-Only Mode</strong> — Performance stats are logged by coaches and analysts. You can view and export all data.</span>
+            <span><strong>View-Only Mode</strong> — Official fixtures, match stats, and suspension clearances are managed by the Analyst. You have view-only access.</span>
+          </div>
+        )}
+
+        {autoClearedMsg && (
+          <div className="fade-up" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:10, background:'#ECFDF5', border:'1.5px solid #A7F3D0', borderRadius:12, padding:'12px 16px', marginBottom:20, color:'#065F46', fontSize:13, fontWeight:700 }}>
+            <span>✅ {autoClearedMsg}</span>
+            <button onClick={() => setAutoClearedMsg('')} style={{ background:'none', border:'none', color:'#065F46', cursor:'pointer', fontWeight:800, fontSize:14 }}>✕</button>
           </div>
         )}
 
@@ -443,35 +478,47 @@ export default function PerformancePage(){
                   <div style={{ fontSize: 13, fontWeight: 800, color: '#92400E' }}>
                     {suspendedAthletes.length} Player{suspendedAthletes.length > 1 ? 's' : ''} Suspended (Unavailable for Matchday Selection)
                   </div>
-                  <div style={{ fontSize: 12, color: '#B45309', marginTop: 2 }}>
-                    {suspendedAthletes.map(a => `${a.name}${a.back_number ? ' #' + a.back_number : ''}`).join(', ')}
+                  <div style={{ fontSize: 12, color: '#B45309', marginTop: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {suspendedAthletes.map(a => {
+                      const prog = computeSuspensionProgress(a.id, stats, fixtures)
+                      return (
+                        <span key={a.id}>
+                          <strong>{a.name}{a.back_number ? ` #${a.back_number}` : ''}</strong>
+                          {prog
+                            ? ` — ${prog.gamesServed}/${prog.totalGames} match${prog.totalGames > 1 ? 'es' : ''} served (${prog.remainingGames} remaining; auto-clears when completed fixtures are updated)`
+                            : ' — Pending Analyst clearance or completed fixtures'}
+                        </span>
+                      )
+                    })}
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {suspendedAthletes.map(a => (
-                  <button
-                    key={a.id}
-                    onClick={() => handleReinstate(a.id, a.name)}
-                    title={`Reinstate ${a.name} to active match status`}
-                    style={{
-                      background: '#FFFFFF',
-                      border: '1px solid #D97706',
-                      color: '#92400E',
-                      padding: '5px 12px',
-                      borderRadius: 8,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                    }}
-                  >
-                    ✓ Lift Ban for {a.name.split(' ')[0]}
-                  </button>
-                ))}
-              </div>
+              {!isAdminReadOnly && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {suspendedAthletes.map(a => (
+                    <button
+                      key={a.id}
+                      onClick={() => handleReinstate(a.id, a.name)}
+                      title={`Reinstate ${a.name} to active match status`}
+                      style={{
+                        background: '#FFFFFF',
+                        border: '1px solid #D97706',
+                        color: '#92400E',
+                        padding: '5px 12px',
+                        borderRadius: 8,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      ✓ Lift Ban for {a.name.split(' ')[0]}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )
         })()}

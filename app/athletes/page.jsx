@@ -92,6 +92,7 @@ export default function AthletesPage() {
   const [showForm,      setShowForm]      = useState(false)
   const [showBulkUpload,setShowBulkUpload]= useState(false)
   const [editId,        setEditId]        = useState(null)
+  const [originalStatus,setOriginalStatus]= useState('Active')
   const [form,          setForm]          = useState(EMPTY)
   const [photoFile,     setPhotoFile]     = useState(null)
   const [photoPreview,  setPhotoPreview]  = useState(null)
@@ -176,6 +177,7 @@ export default function AthletesPage() {
 
   function openAdd() {
     setEditId(null)
+    setOriginalStatus('Active')
     setPhotoFile(null); setPhotoPreview(null); setFormError('')
     // Restore draft if one exists
     try {
@@ -200,6 +202,7 @@ export default function AthletesPage() {
 
   function openEdit(ath) {
     setEditId(ath.id)
+    setOriginalStatus(ath.status || 'Active')
     setForm({
       name: ath.name||'',
       date_of_birth: ath.date_of_birth||'',
@@ -352,7 +355,9 @@ export default function AthletesPage() {
       bic: form.bic.trim() || null,
       tax_id: form.tax_id.trim() || null,
       gender: form.gender || 'Male',
-      status: form.status || 'Active',
+      status: (editId && (originalStatus === 'Injured' || originalStatus === 'Suspended'))
+        ? originalStatus
+        : (form.status || 'Active'),
     }
     if (editId) {
       const url = await uploadPhoto(editId)

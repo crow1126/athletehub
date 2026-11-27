@@ -112,6 +112,11 @@ export default function CoachesPage() {
         setLoading(false)
         return
       }
+      if (p?.role === 'coach') {
+        setLoading(false)
+        if (typeof window !== 'undefined') window.location.replace('/dashboard')
+        return
+      }
       setCurrentUser(p)
       setTeamId(currentTeamId)
 

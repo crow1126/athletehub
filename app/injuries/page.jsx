@@ -210,13 +210,17 @@ export default function InjuriesPage() {
   }
 
   async function markRecovered(id, athleteId) {
+    if (!canEdit) return
     const update = {
       status: 'Recovered',
       updated_by: currentUser?.id || null,
       updated_at: new Date().toISOString()
     }
     await scopeTeam(supabase.from('injuries').update(update).eq('id', id), teamId)
-    await scopeTeam(supabase.from('athletes').update({ status: 'Active' }).eq('id', athleteId), teamId)
+    const targetAth = athletes.find(a => a.id === athleteId)
+    if ((targetAth?.status || '').toLowerCase() !== 'suspended') {
+      await scopeTeam(supabase.from('athletes').update({ status: 'Active' }).eq('id', athleteId), teamId)
+    }
     fetchData()
   }
 

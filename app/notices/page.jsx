@@ -1002,8 +1002,8 @@ export default function NoticeBoardPage() {
               </div>
 
               {/* ── MODAL FOOTER ACTIONS ── */}
-              <div style={{ padding: '16px 24px', borderTop: '1px solid #F1F5F9', display: 'flex', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => setMatchdayModal(false)} style={{ flex: '0 0 auto', padding: '11px 18px', borderRadius: 10, background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#475569', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
+              <div style={{ padding: '14px 18px', borderTop: '1px solid #F1F5F9', display: 'flex', gap: 8, flexShrink: 0, flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => setMatchdayModal(false)} style={{ flex: '1 1 90px', padding: '11px 14px', borderRadius: 10, background: '#F1F5F9', border: '1px solid #E2E8F0', color: '#475569', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
                   Cancel
                 </button>
 
@@ -1012,7 +1012,7 @@ export default function NoticeBoardPage() {
                   type="button"
                   onClick={handleGenerateTeamSheet}
                   disabled={mdGeneratingPdf || !mdOpponent.trim()}
-                  style={{ flex: 1, padding: '11px', borderRadius: 10, background: mdOpponent.trim() ? 'linear-gradient(135deg, #4F46E5, #7C3AED)' : '#E2E8F0', border: 'none', color: mdOpponent.trim() ? '#FFFFFF' : '#94A3B8', fontSize: 13, fontWeight: 800, cursor: mdOpponent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: mdGeneratingPdf ? 0.7 : 1 }}
+                  style={{ flex: '1 1 180px', padding: '11px 14px', borderRadius: 10, background: mdOpponent.trim() ? 'linear-gradient(135deg, #4F46E5, #7C3AED)' : '#E2E8F0', border: 'none', color: mdOpponent.trim() ? '#FFFFFF' : '#94A3B8', fontSize: 13, fontWeight: 800, cursor: mdOpponent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: mdGeneratingPdf ? 0.7 : 1 }}
                 >
                   <FileText size={15} />
                   <span>{mdGeneratingPdf ? 'Generating PDF…' : 'Download Team Sheet (PDF)'}</span>
@@ -1023,7 +1023,7 @@ export default function NoticeBoardPage() {
                   type="button"
                   onClick={handlePublishMatchdayCallup}
                   disabled={mdSubmitting || (!mdSelectedXI.length && !mdSelectedBench.length) || !mdOpponent.trim()}
-                  style={{ flex: 2, padding: '11px', borderRadius: 10, background: 'linear-gradient(135deg, #059669, #10B981)', border: 'none', color: '#FFFFFF', fontSize: 13, fontWeight: 800, cursor: (mdSelectedXI.length || mdSelectedBench.length) && mdOpponent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: mdSubmitting ? 0.7 : 1, boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)' }}
+                  style={{ flex: '2 1 220px', padding: '11px 14px', borderRadius: 10, background: 'linear-gradient(135deg, #059669, #10B981)', border: 'none', color: '#FFFFFF', fontSize: 13, fontWeight: 800, cursor: (mdSelectedXI.length || mdSelectedBench.length) && mdOpponent.trim() ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: mdSubmitting ? 0.7 : 1, boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)' }}
                 >
                   <Send size={15} />
                   <span>{mdSubmitting ? 'Publishing…' : `Publish Call-Up & Notify Squad →`}</span>
